@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+
+<html lang="nl">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Pizzadeegcalculator v1.0.0</title>
+<link href="assets/css/app.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+<div class="brand">
+<div class="logo">🍕</div>
+<div>
+<h1>Pizzadeegcalculator</h1>
+<div class="subtitle" id="brandSubtitle">Van alleen deeg tot complete pizza's • kies wat je nodig hebt</div>
+</div>
+</div>
+<div class="top-tools">
+<button class="reset-button" onclick="resetCalculator()" title="Calculator resetten" type="button">↻ <span>Reset</span></button>
+<div aria-label="Taal / Language" class="language-switch">
+<button aria-label="Nederlands" id="langNl" onclick="setLanguage('nl')" type="button">NL</button>
+<button aria-label="English" id="langEn" onclick="setLanguage('en')" type="button">EN</button>
+</div>
+</div>
+</div><div class="wizard-nav-shell hidden" id="wizardNavShell">
+<button aria-label="Vorige navigatiestappen" class="nav-scroll-button nav-scroll-prev" id="navScrollPrev" onclick="scrollWizardNav(-1)" type="button">‹</button>
+<div class="wizard-nav-viewport"><div class="steps-nav hidden" id="stepsNav"><button class="navpill mode-choice-nav" onclick="showModeChooser()" type="button">← Keuze</button><button class="navpill active" id="nav1" onclick="showPage(1)" type="button">1. Deeg</button><button class="navpill" id="nav2" onclick="showPage(2)" type="button">2. Sauzen</button><button class="navpill" id="nav3" onclick="showPage(3)" type="button">3. Bollen &amp; recepten</button><button class="navpill" id="nav4" onclick="showPage(4)" type="button">4. Stappenplan</button></div></div>
+<button aria-label="Volgende navigatiestappen" class="nav-scroll-button nav-scroll-next" id="navScrollNext" onclick="scrollWizardNav(1)" type="button">›</button>
+</div>
+<section class="page active" id="page0">
+<div class="mode-start">
+<div class="mode-intro">
+<h2>Wat wil je maken?</h2>
+<p>Kies hoe uitgebreid je wilt starten. Dezelfde deegcalculator zit onder alle drie de opties; extra onderdelen verschijnen alleen wanneer je ze nodig hebt.</p>
+</div>
+<div class="mode-grid">
+<button class="mode-card" data-mode-card="dough" onclick="selectAppMode('dough')" type="button">
+<div class="mode-icon">🌾</div>
+<h3>Alleen deeg</h3>
+<p>Rustig beginnen met alleen deeg, fermentatie, gistadvies, kneden en bakadvies.</p>
+<div class="mode-features"><span>Deegberekening</span><span>Wetenschappelijk geïnformeerde fermentatie</span><span>Volledige werkwijze</span></div>
+<div class="mode-badge">Snel en overzichtelijk</div>
+</button>
+<button class="mode-card" data-mode-card="sauce" onclick="selectAppMode('sauce')" type="button">
+<div class="mode-icon">🍅</div>
+<h3>Deeg + saus</h3>
+<p>Alles voor het deeg plus een losse sausberekening, zonder recepten- en toppingkiezer.</p>
+<div class="mode-features"><span>Alles van Alleen deeg</span><span>Saustype &amp; hoeveelheid</span><span>Sausbatch &amp; ingrediënten</span></div>
+<div class="mode-badge">Praktisch</div>
+</button>
+<button class="mode-card" data-mode-card="full" onclick="selectAppMode('full')" type="button">
+<div class="mode-icon">🍕</div>
+<h3>Volledige pizza's</h3>
+<p>De volledige calculator met pizzarecepten, toppings, sauskeuzes en boodschappenlijst.</p>
+<div class="mode-features"><span>Alles van Deeg + saus</span><span><b id="fullRecipeCount">89</b> pizzarecepten</span><span>Pizzarecept per bol aanpassen</span></div>
+<div class="mode-badge">Alles erop en eraan</div>
+</button>
+</div>
+<div class="mode-note">Je kunt later altijd wisselen via <b>← Keuze</b>; je ingevulde waarden blijven staan.</div>
+</div>
+</section>
+<section class="page" id="page1">
+<div class="grid">
+<div>
+<div class="card">
+<h2>Deeg</h2>
+<p class="hint" id="presetSummaryHint">Deze preset komt uit op <b id="presetSummaryValue">–</b> (bloem – water – zout – gist).</p>
+<div class="form-grid align-fields">
+<label class="wide">Preset
+              <select class="field" id="preset">
+<option value="avpnMid">AVPN • 28,5 cm • 58,8% • 18 uur</option>
+<option value="sameDay">Napolitaans • 32 cm • 63% • 8 uur</option>
+<option selected="" value="kodaNight">Mijn standaardrecept • 32 cm • 63% • 25 uur</option>
+<option value="cold48">Napolitaans • 32 cm • 65% • 48 uur</option>
+<option value="cold72">Napolitaans • 32 cm • 65% • 72 uur</option>
+<option value="canotto">Canotto • 32 cm • 68% • 25 uur</option>
+<option value="home24">New York • 32 cm • 65% • 25 uur</option>
+<option value="custom">Eigen instellingen</option>
+</select>
+</label>
+<div class="wide info avpn-preset-info hidden" id="avpnPresetInfo">
+<b>AVPN middenprofiel:</b> 28,5 cm • 240 g per bol • 58,8% hydratatie • 2,94% zout • W285 • 18 uur totale fermentatie • 19 °C rijsomgeving • 405 °C steen.
+              Verse gist: rekenkundig midden van de AVPN-range, <b>1,55 g per liter water</b>.
+              <span class="avpn-caveat">Let op: die officiële range (0,1–3 g/L) spant een factor 30 en dekt bewust heel verschillende tijden, temperaturen en seizoenen. Het rekenkundige midden daarvan is een rekensom, geen aanbeveling — de balk hieronder toont daarom ook wat het praktische model voor dit specifieke schema voorstelt.</span>
+              <span class="avpn-caveat">De 2 uur bulk + 16 uur bolrijs is een praktische verdeling binnen de 18 uur; AVPN schrijft die onderlinge verdeling niet exact voor. De combinatie 240 g + 28,5 cm zijn de afzonderlijke middelpunten van de toegestane gewicht- en diameterbereiken. Praktisch afronden wordt voor deze preset uitgeschakeld, zodat de middenwaarden niet door keukenafronding verschuiven.</span>
+</div>
+<label>Aantal pizza's
+              <input class="field" id="pizzas" max="24" min="1" step="1" type="number" value="4"/>
+</label>
+<label>Deegstijl / dikte
+              <select class="field" id="doughStyle">
+<option value="neapolitan">Napolitaans</option>
+<option value="avpn">AVPN middenprofiel</option>
+<option value="canotto">Canotto / extra luchtige rand</option>
+<option value="ny">New York-stijl</option>
+<option value="thin">Dun / krokant</option>
+</select>
+</label>
+<label class="wide" id="diameterField">Diameter per pizza (cm)
+              <input class="field" id="diameter" max="40" min="20" step="0.5" type="number" value="32"/>
+</label>
+<div class="wide hint hidden" id="peelHint" style="margin:-4px 0 0"></div>
+<label class="wide hidden" id="ballWeightField">Bolgewicht per pizza (g)
+              <input class="field" id="ballWeight" max="500" min="100" step="5" type="number" value="250"/>
+</label>
+<label>Hydratatie (%)
+              <input class="field pct" id="hydration" max="85" min="45" step="0.01" type="number" value="63"/>
+</label>
+<label>Zout (% bloem)
+              <input class="field pct" id="saltPct" max="5" min="0" step="0.01" type="number" value="3"/>
+</label>
+<label>Gistsoort
+              <select class="field" id="yeastType">
+<option value="idy">Instant droge gist (IDY)</option>
+<option value="ady">Actieve droge gist (ADY)</option>
+<option value="fresh">Verse gist</option>
+</select>
+</label>
+<label>Gist (% bloem)
+              <input class="field pct" id="yeastPct" max="3" min="0" step="0.001" type="number" value="0.17"/>
+</label>
+<label>Olijfolie (% bloem)
+              <input class="field pct" id="oilPct" max="10" min="0" step="0.1" type="number" value="0"/>
+</label>
+</div>
+<div class="toggle-row first">
+<div>
+<b id="lblSizeFromDiameter">Bolgewicht uit diameter</b>
+<div class="hint" id="sizeModeHint" style="margin:2px 0 0">Aan = diameter invoeren → het benodigde bolgewicht wordt automatisch berekend.</div>
+</div>
+<div class="size-flip">
+<span class="size-mode active" id="diameterModeLabel">Diameter</span>
+<label class="switch" title="Aan: diameter gebruiken • Uit: bolgewicht direct invoeren">
+<input aria-labelledby="lblSizeFromDiameter" checked="" id="sizeFromDiameter" type="checkbox"/>
+<span class="slider"></span>
+</label>
+<span class="size-mode" id="weightModeLabel">Gewicht</span>
+</div>
+</div>
+<div class="toggle-row">
+<div>
+<b id="lblPractical">Praktisch afronden</b>
+<div class="hint" id="practicalHint" style="margin:2px 0 0">Bloem 5 g • water 5 g • zout 1 g • gist 0,1 g • olie 1 g.</div>
+</div>
+<label class="switch"><input aria-labelledby="lblPractical" checked="" id="practical" type="checkbox"/><span class="slider"></span></label>
+</div>
+<div class="toggle-row">
+<div>
+<b id="lblAutolyse">Autolyse (bloem + water)</b>
+<div class="hint" style="margin:2px 0 0">Ja = eerst alleen bloem + water; gist en zout pas na de rust.</div>
+</div>
+<label class="switch"><input aria-labelledby="lblAutolyse" checked="" id="autolyse" type="checkbox"/><span class="slider"></span></label>
+</div>
+</div>
+<div class="card">
+<h2>Fermentatie &amp; gistadvies</h2>
+<div class="form-grid align-fields">
+<label>Fermentatiemethode
+              <select class="field" id="fermentationMethod">
+<option value="hybrid">Kamertemperatuur + koelkast</option>
+<option value="room">Volledig kamertemperatuur</option>
+</select>
+</label>
+<label id="coldStorageModeWrap">Koelkast in als
+              <select class="field" id="coldStorageMode">
+<option value="bulk">Eén deegmassa (standaard)</option>
+<option value="balls">Eerst opbollen, dan koelkast</option>
+</select>
+</label>
+<div class="wide hint" id="coldStorageHint" style="margin-top:-2px">
+              Eén grote deegmassa koelt langzamer af dan losse pizzabollen. De calculator houdt daar met een praktische temperatuurschatting rekening mee.
+            </div>
+</div>
+<div class="form-grid three align-fields" style="margin-top:12px">
+<label><span id="bulkLabel">Bulk buiten (uur)</span>
+<input class="field" id="bulkHours" max="48" min="0" step="0.25" type="number" value="1"/>
+</label>
+<label><span id="coldLabel">Koelkast als massa (uur)</span>
+<input class="field" id="coldHours" max="120" min="0" step="0.25" type="number" value="20"/>
+</label>
+<label><span id="ballLabel">Bolrijs buiten (uur)</span>
+<input class="field" id="ballHours" max="48" min="0" step="0.25" type="number" value="4"/>
+</label>
+</div>
+<div class="form-grid align-fields fermentation-temperature-grid" style="margin-top:12px">
+<label>Kamertemperatuur (°C)
+              <input class="field" id="roomTemp" max="35" min="10" step="0.5" type="number" value="21"/>
+</label>
+<label>Verwachte gemiddelde koelkasttemp. (°C)
+              <input aria-describedby="fridgeTempHelp" class="field" id="fridgeTemp" max="15" min="0" step="0.5" type="number" value="4"/>
+</label>
+<span class="input-help fridge-temp-help" id="fridgeTempHelp">Weet je hem niet? Laat 4 °C staan als praktische standaard. In het stappenplan kun je later de werkelijk gemeten gemiddelde temperatuur invullen.</span>
+<div class="wide">
+<div class="field-group-label">Ik wil bakken (optioneel)</div>
+<div class="bake-plan-grid">
+<label>Dag
+                  <select class="field" id="bakeDay">
+<option value="">Geen planning</option>
+<option value="0">Vandaag</option>
+<option value="1">Morgen</option>
+<option value="2">Overmorgen</option>
+<option value="3">Over drie dagen</option>
+</select>
+</label>
+<label>Tijd
+                  <input class="field" id="bakeTime" type="time" value="18:00"/>
+</label>
+</div>
+<div class="deadline-advice hidden" id="deadlineAdvice"></div>
+</div>
+</div>
+<div class="advisor">
+<div class="advisor-result">
+<b id="yeastAdvice">Gistadvies berekenen</b>
+<span id="yeastAdviceDetail">Wetenschappelijk geïnformeerd model met fermentatiefasen en geschatte afkoeling/opwarming.</span>
+</div>
+<button class="btn secondary" onclick="applyYeastAdvice()">Advies toepassen</button>
+</div>
+<div class="yeast-range" id="yeastRangeBar"></div>
+<div class="ferment-dashboard" id="fermentDashboard"></div>
+<div id="fermentWarnings"></div>
+<details class="advanced-panel" id="advancedFermentation">
+<summary>⚙️ Geavanceerde deeginstellingen <span>optioneel</span></summary>
+<div class="form-grid" style="margin-top:12px">
+<label>Doel einddeegtemperatuur (°C)
+                <input class="field" id="finalDoughTemp" max="35" min="10" placeholder="24 (standaard)" step="0.5" type="number" value=""/>
+<span class="input-help">Vooraf ingestelde doeltemperatuur voor DDT/wateradvies en het oorspronkelijke fermentatieplan. De werkelijke temperatuur meet je na het kneden in het stappenplan.</span>
+</label>
+<label>Bloemsoort
+                <select class="field" id="flourType">
+<option value="caputoPizzeria">Caputo Pizzeria (tipo 00)</option>
+<option value="tipo00">Overige tipo 00 pizzabloem</option>
+<option value="manitoba">Manitoba / sterke tarwebloem</option>
+<option value="tarwebloem">Nederlandse tarwe-/patentbloem</option>
+<option value="speltWit">Witte spelt</option>
+<option value="speltVolkoren">Volkoren spelt</option>
+<option value="volkorenTarwe">Volkoren tarwe</option>
+<option value="custom">Eigen bloem (W zelf invullen)</option>
+</select>
+<span class="input-help" id="flourTypeHelp">Alleen bekende productspecificaties krijgen automatisch een W-waarde; bij generieke bloem blijft W bewust onbekend.</span>
+</label>
+<label>Bloemsterkte W
+                <input class="field" id="flourW" max="450" min="90" placeholder="alleen invullen als bekend" step="5" type="number" value=""/>
+<span class="input-help">Vul in als de W-waarde bekend is. Bij spelt is eiwitpercentage géén betrouwbare vervanger voor W.</span>
+</label>
+</div>
+<div class="info science-info">
+<b>Leeg laten is prima:</b> De calculator gebruikt dan 24 °C als doel-einddeegtemperatuur en W270 voor Caputo Pizzeria. De doeltemperatuur wordt vooraf gebruikt voor DDT/wateradvies en het oorspronkelijke plan; de werkelijk gemeten temperatuur na het kneden vul je pas in het stappenplan in. Een ingevulde W-waarde wordt behandeld als bekende productspecificatie.
+              <b>Waarom W270?</b> Caputo Pizzeria is officieel W260–280; W270 is precies het midden van dat bereik en daarom een logische standaard voor deze calculator.
+              Afkoeling en opwarming daarna worden automatisch geschat uit de deegmassa en of het deeg als bulk of als losse bollen staat.
+            </div>
+<details class="technical-details">
+<summary>🔬 Toon technische berekening</summary>
+<div id="fermentationTechnical"></div>
+</details>
+</details>
+<div class="info science-note"><b>Belangrijk:</b> dit is een wetenschappelijk geïnformeerde thuiscalculator, geen gevalideerd laboratoriummodel. De numerieke gistcurve, koel-/opwarmingsschatting en rijpingsindex zijn praktische modelaannames. Daarom toont de calculator bewust een bandbreedte en visuele rijpdoelen. <b>‘Napolitaans’ betekent hier een stijlprofiel, geen AVPN-certificering:</b> koude fermentatie, autolyse, sommige hydrataties en eventuele olie bij lagere oventemperaturen zijn praktische thuisvarianten.</div>
+</div>
+<div class="card">
+<h2>Steentemperatuur &amp; bakadvies</h2>
+<p class="hint">Los van merk of type oven: de calculator gebruikt de <b>werkelijke steentemperatuur</b> als uitgangspunt.</p>
+<div class="form-grid align-fields">
+<label>Doel steentemperatuur (°C)
+              <input class="field" id="stoneTemp" max="520" min="180" step="5" type="number" value="430"/>
+</label>
+<label>Voorverwarmtijd voor tijdlijn (min)
+              <input class="field" id="preheatMinutes" max="120" min="5" step="5" type="number" value="30"/>
+</label>
+</div>
+<div class="advisor">
+<div class="advisor-result">
+<b id="stoneBakeAdvice">Bakadvies</b>
+<span id="stoneBakeDetail"></span>
+</div>
+<button class="btn secondary" onclick="applyOilAdvice()">Olijfolieadvies toepassen</button>
+</div>
+<div class="info" id="oilAdviceBox"></div>
+<div class="recipebox mode-full" id="recipeTempAdvice"></div>
+<div class="btnrow mode-full">
+<button class="btn ghost" onclick="applyRecipeTempAdvice()">Temperatuuradvies van pizza's toepassen</button>
+</div>
+</div>
+<div class="btnrow">
+<button class="btn primary" id="page1NextBtn" onclick="nextWizardPage(1)">Volgende →</button>
+<button class="btn ghost" onclick="applyPreset(document.getElementById('preset').value)">Preset opnieuw laden</button>
+</div>
+</div>
+<div>
+<div class="card">
+<h2>Jouw deeg</h2>
+<p class="hint" id="targetSummary"></p>
+<div class="recipe-hero">
+<div class="ingredient"><div class="name">Bloem</div><div class="value" id="flourOut"></div><small id="flourSmall">Caputo Pizzeria</small></div>
+<div class="ingredient"><div class="name">Water</div><div class="value" id="waterOut"></div><small id="hydOut"></small></div>
+<div class="ingredient"><div class="name">Zout</div><div class="value" id="saltOut"></div><small id="saltPOut"></small></div>
+<div class="ingredient"><div class="name" id="yeastName">Instant gist</div><div class="value" id="yeastOut"></div><small id="yeastPOut"></small></div>
+<div class="ingredient hidden" id="oilCard"><div class="name">Olijfolie</div><div class="value" id="oilOut"></div><small id="oilPOut"></small></div>
+</div>
+<div class="memory">
+<div class="hint" style="margin:0 0 2px">Geheugenregel</div>
+<b id="memoryOut"></b>
+</div>
+<div class="stats">
+<div class="stat"><span>Totaal deeg</span><b id="totalOut"></b></div>
+<div class="stat"><span>Werkelijke bol</span><b id="actualBallOut"></b></div>
+<div class="stat"><span>Totale fermentatie</span><b id="fermentOut"></b></div>
+</div>
+<div class="warning" id="roundingInfo"></div>
+</div>
+</div>
+</div>
+</section>
+<section class="page mode-full" id="page3">
+<div class="wizard-page-intro">
+<div class="wizard-kicker" id="page3Kicker">Stap 3</div>
+<h2>Bollen &amp; recepten</h2>
+<p>Koppel je deegbollen aan pizzarecepten en pas ze daarna per bol aan.</p>
+</div>
+<div class="grid">
+<div id="page3Left"><div class="card mode-full"><h2>Bollen &amp; recepten</h2><p class="hint">Kies eerst snel één recept voor alle bollen of pas iedere bol afzonderlijk aan. Daarna kun je toppings, sausvariant en extra kaas per bol finetunen.</p><div class="form-grid mode-full">
+<label class="wide">Snelle keuze voor alle bollen
+              <button class="pick-button" id="pizzaRecipeAllButton" onclick="openPizzaPicker('all')" type="button">
+<span>
+<span class="pick-main" id="pizzaRecipeAllMain">Margherita</span>
+<span class="pick-sub">Klik om een recept te selecteren • pas het daarna rechts aan</span>
+</span>
+<span class="chev">›</span>
+</button>
+</label>
+</div><div class="pizza-balls mode-full" id="pizzaBallSelectors"></div></div><div class="card mode-full">
+<h2>Pizzarecept per bol aanpassen</h2>
+<p class="hint">Pas per deegbol het pizzarecept aan. Vink toppings uit die je niet wilt; extra kaas blijft automatisch binnen een verstandige hoeveelheid voor de gekozen steentemperatuur.</p>
+<div class="customize-grid" id="pizzaCustomize"></div>
+</div></div>
+<div id="page3Right"><div class="card mode-full">
+<h2>Gekozen pizza's</h2>
+<div id="pizzaSummary"></div>
+</div></div>
+</div>
+<div class="wizard-bottom-nav">
+<button class="btn secondary" onclick="previousWizardPage(3)" type="button">← Vorige</button>
+<button class="btn primary" onclick="nextWizardPage(3)" type="button">Volgende →</button>
+</div>
+</section><section class="page" id="page2">
+<div class="wizard-page-intro">
+<div class="wizard-kicker" id="page2Kicker">Stap 2</div>
+<h2>Saus(en)</h2>
+<p>Bereken hier de saus(en). In de volledige versie volgen de hoeveelheden automatisch uit de gekozen recepten per bol; in Deeg + saus kies je de saus zelf.</p>
+</div>
+<div class="grid">
+<div id="page2Left"><div class="card mode-sauce" id="pizzaSauceCard">
+<h2 id="pizzaSauceHeading">Saus(en)</h2>
+<p class="hint" id="pizzaSauceHint">Kies hoe je de saus wilt bepalen. In de volledige versie kan de saus automatisch met de recepten uit stap 3 meegaan, of je kiest hier zelf één saus voor alle pizza's.</p>
+<div class="info mode-full sauce-step-note" id="sauceStepNote">Tip: laat ‘Saus automatisch uit pizzakeuzes’ aan als je in stap 3 per bol een recept kiest. De sausberekening wordt daarna automatisch bijgewerkt.</div><div class="toggle-row first mode-full" id="pizzaSauceAutoToggle">
+<div>
+<b id="lblAutoSauce">Saus automatisch uit pizzakeuzes</b>
+<div class="hint" style="margin:2px 0 0">Aanbevolen saustype én hoeveelheid volgen automatisch de gekozen pizza per bol.</div>
+</div>
+<label class="switch"><input aria-labelledby="lblAutoSauce" checked="" id="autoSauceFromPizzas" type="checkbox"/><span class="slider"></span></label>
+</div>
+<div class="hidden" id="manualSauceControls">
+<div class="form-grid align-fields">
+<label>Saus voor alle pizza's
+                <select class="field" id="sauceType">
+<option value="sanMarzano">San Marzano crudo</option>
+<option value="marinara">Marinara</option>
+<option value="ny">New York tomatensaus</option>
+<option value="bianca">Bianca • olijfolie (traditioneler)</option><option value="white">Romige witte saus • crème fraîche</option><option value="bbq">BBQ-saus</option>
+<option value="pesto">Pesto-basis</option>
+</select>
+</label>
+<label>Saus per pizza (g)
+                <input class="field" id="saucePerPizza" max="200" min="0" step="5" type="number" value="80"/>
+</label>
+</div>
+</div>
+<div class="toggle-row">
+<div>
+<b id="lblIncludeSauce">Saus meerekenen</b>
+<div class="hint" style="margin:2px 0 0">Bereken de benodigde sausbatch(es) en ingrediënten.</div>
+</div>
+<label class="switch"><input aria-labelledby="lblIncludeSauce" checked="" id="includeSauce" type="checkbox"/><span class="slider"></span></label>
+</div>
+</div></div>
+<div id="page2Right"><div class="card mode-sauce">
+<h2>Sausberekening</h2>
+<div id="sauceSummary"></div>
+</div></div>
+</div>
+<div class="wizard-bottom-nav">
+<button class="btn secondary" onclick="previousWizardPage(2)" type="button">← Vorige</button>
+<button class="btn primary" onclick="nextWizardPage(2)" type="button">Volgende →</button>
+</div>
+</section><section class="page" id="page4"><div class="wizard-page-intro">
+<div class="wizard-kicker" id="finalStepKicker">Laatste stap</div>
+<h2>Stappenplan</h2>
+<p>Hier komt alles samen: kneden, fermenteren, saus, beleggen, tijdlijn, oven en bakken.</p>
+</div>
+<div class="grid">
+<div>
+<div class="card">
+<h2>Kneedmethode</h2>
+<p class="hint">De ingrediënten blijven hetzelfde; de meng- en kneedstappen passen zich aan.</p>
+<div class="method-tabs">
+<button class="method" data-method="hand" onclick="setMethod('hand')">✋ Hand</button>
+<button class="method active" data-method="kitchenaid" onclick="setMethod('kitchenaid')">KitchenAid</button>
+<button class="method" data-method="kenwood" onclick="setMethod('kenwood')">Kenwood</button>
+<button class="method" data-method="pro" onclick="setMethod('pro')">Spiraalkneder</button>
+</div>
+<div id="mixerCapacityNote"></div>
+<div class="badges" id="recipeBadges"></div>
+<div class="btnrow">
+<button class="btn secondary" onclick="previousWizardPage(4)">← Vorige</button>
+<button class="btn secondary" onclick="window.print()">Print stappen</button>
+<button class="btn ghost" onclick="copyRecipe()">Kopieer recept</button>
+</div>
+</div>
+<div class="card">
+<h2>Alle stappen</h2><div class="steps-progress" id="stepsProgress">
+<div class="steps-progress-copy">
+<b id="stepsProgressText">0 van 0 stappen afgerond</b>
+<span>Vink iedere stap af terwijl je bezig bent.</span>
+</div>
+<button class="btn ghost step-progress-reset" onclick="clearStepProgress()" type="button">Vinkjes wissen</button>
+<div class="steps-progress-track"><span id="stepsProgressBar"></span></div>
+</div>
+<div class="step-list" id="stepsList"></div>
+</div>
+</div>
+<div>
+<div class="card">
+<h2>Jouw tijdlijn</h2>
+<p class="hint">Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen. Zonder baktijd zie je de totale doorlooptijd en wat er achter elkaar gebeurt.</p>
+<div class="timeline" id="timeline"></div>
+</div>
+<div class="card mode-sauce" id="shoppingCard">
+<h2 id="shoppingHeading">Ingrediënten voor de pizza's</h2>
+<div id="shoppingList"></div>
+</div>
+<div class="card">
+<h2>Oven</h2>
+<div id="ovenCard"></div>
+</div>
+<div class="card">
+<h2>Deeglogboek &amp; kalibratie</h2>
+<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.0.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
+<div class="form-grid align-fields">
+<label>Werkelijke watertemperatuur (°C)
+  <input class="field" id="logWaterTemp" max="50" min="0" step="0.5" type="number" placeholder="bijv. 18"/>
+</label>
+<label>Einddeegtemperatuur • uit stappenplan
+  <input class="field" id="logFinalDoughTemp" type="text" readonly placeholder="nog niet gemeten"/>
+</label>
+<label>Koelkasttemperatuur • uit stappenplan
+  <input class="field" id="logFridgeTemp" type="text" readonly placeholder="planning / nog niet gemeten"/>
+</label>
+<label>Fermentatie-uitkomst
+  <select class="field" id="logRiseRating">
+    <option value="good">Goed / zoals bedoeld</option>
+    <option value="slow">Te traag / onderrijs</option>
+    <option value="fast">Te snel / overrijs</option>
+  </select>
+</label>
+<label>Notitie
+  <textarea class="field" id="logNotes" rows="2" placeholder="bijv. mooi luchtig, iets slap, bodem perfect..."></textarea>
+</label>
+</div>
+<div class="btnrow">
+  <button class="btn secondary" onclick="saveBakeLogEntry()" type="button">Bakresultaat opslaan</button>
+  <button class="btn ghost" onclick="clearBakeLog()" type="button">Logboek wissen</button>
+</div>
+<div id="bakeLogSummary"></div>
+</div>
+<div class="card">
+<h2>Wanneer zijn de bollen klaar?</h2>
+<div class="callout"><b>Kijk naar het deeg:</b> duidelijk groter, zacht, luchtig en ontspannen. Kleine gasbelletjes zijn goed. Bij zacht indrukken veert het langzaam gedeeltelijk terug.</div>
+<div class="warning">De klok is een richtlijn. Als het deeg nog strak en compact is, geef het langer. Als het heel slap wordt en nauwelijks spanning houdt, zit je richting overrijs.</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<script src="assets/js/foundation.js"></script>
+<script src="assets/js/translations.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/catalog.js"></script>
+<script src="assets/js/pizza-picker.js"></script>
+<script src="assets/js/dough-fermentation.js"></script>
+<script src="assets/js/sauce-recipes.js"></script>
+<script src="assets/js/fermentation-live.js"></script>
+<script src="assets/js/planning-shopping.js"></script>
+<script src="assets/js/navigation-logbook.js"></script>
+<script src="assets/js/persistence-bootstrap.js"></script>
+<div class="float-actions hidden" id="floatingActions">
+<button class="float-next" id="floatNext" onclick="nextWizardPage(currentWizardPage)">Volgende →</button>
+<button class="float-ingredients" onclick="openIngredientsModal()">🧾 Ingrediënten</button>
+</div>
+<div class="modal-overlay hidden" id="ingredientsModal" onclick="modalBackdropClose(event)">
+<div aria-labelledby="ingredientsModalTitle" aria-modal="true" class="modal-panel" role="dialog">
+<div class="modal-head">
+<div><h2 id="ingredientsModalTitle">Ingrediënten</h2><div class="hint" style="margin:0">Deeg, saus, per pizza en gecombineerde hoeveelheden.</div></div>
+<div class="modal-head-actions">
+<button class="modal-copy" id="copyIngredientsBtn" onclick="copyIngredients()" type="button">📋 <span id="copyIngredientsLabel">Kopiëren</span></button>
+<button aria-label="Sluiten" class="modal-close" onclick="closeIngredientsModal()">×</button>
+</div>
+</div>
+<div id="ingredientsModalBody"></div>
+</div>
+</div>
+<div class="picker-overlay" id="pizzaPickerOverlay" onclick="overlayBackgroundClose(event)">
+<div aria-labelledby="pickerTitle" aria-modal="true" class="picker-modal" role="dialog">
+<div class="picker-list-wrap">
+<div class="picker-head">
+<h3 id="pickerTitle">Kies pizzarecept</h3>
+<button aria-label="Sluiten" class="picker-close" onclick="closePizzaPicker()" type="button">✕</button>
+</div>
+<div class="picker-search">
+<div class="picker-search-row">
+<input autocomplete="off" class="field" id="pizzaPickerSearch" placeholder="Zoek op naam of ingrediënt, bv. Parmaham, gorgonzola, salami..." spellcheck="false" type="search"/>
+<button aria-label="Zoekopdracht wissen" class="picker-search-clear hidden" id="pizzaPickerSearchClear" onclick="clearPizzaSearch()" type="button">✕</button>
+</div>
+<div class="pizza-filter-chips" id="pizzaFilterChips">
+<button class="filter-chip active" data-filter="all" onclick="setPizzaFilter('all')" type="button">Alles</button>
+<button class="filter-chip" data-filter="meat" onclick="setPizzaFilter('meat')" type="button">🥩 Vlees</button>
+<button class="filter-chip" data-filter="fish" onclick="setPizzaFilter('fish')" type="button">🐟 Vis</button>
+<button class="filter-chip" data-filter="vegetarian" onclick="setPizzaFilter('vegetarian')" type="button">🌱 Vega</button>
+<button class="filter-chip" data-filter="mushroom" onclick="setPizzaFilter('mushroom')" type="button">🍄 Paddenstoel</button>
+<button class="filter-chip" data-filter="cheese" onclick="setPizzaFilter('cheese')" type="button">🧀 Kaas</button>
+<button class="filter-chip" data-filter="tomato" onclick="setPizzaFilter('tomato')" type="button">🍅 Tomatenbasis</button>
+<button class="filter-chip" data-filter="noTomato" onclick="setPizzaFilter('noTomato')" type="button">⚪ Zonder tomaat</button>
+<button class="filter-chip" data-filter="spicy" onclick="setPizzaFilter('spicy')" type="button">🌶️ Pittig</button>
+</div>
+<div class="filter-combine-hint" id="pickerSelectionHelp">Klik op een pizza om hem te selecteren en pas het recept daarna aan. De keuze wordt pas voor de bol opgeslagen wanneer je op <b>Kies pizza</b> drukt.</div>
+<div class="picker-search-status" id="pizzaPickerSearchStatus">Top 10 populaire pizza’s + alle recepten</div>
+</div>
+<div class="picker-list" id="pizzaPickerList"></div>
+</div>
+<div class="picker-preview" id="pizzaPickerPreview"></div>
+</div>
+</div>
+</body>
+</html>

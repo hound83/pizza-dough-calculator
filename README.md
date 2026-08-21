@@ -1,168 +1,201 @@
-# 🍕 Pizzadeegcalculator
+# 🍕 Pizza Dough Calculator
+
+[English](README.md) | [Nederlands](README.nl.md)
 
 [![Version](https://img.shields.io/badge/version-v1.0.0_release-76c990)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 [![Tests](https://img.shields.io/badge/regression_tests-64%2F64_passing-76c990)](tests/test_v50.js)
-[![App](https://img.shields.io/badge/app-single_file_HTML-f0b45a)](index.html)
-[![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
+[![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
+[![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
-Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fermentatie, saus, toppings en een compleet praktisch stappenplan.
+A comprehensive Dutch and English calculator for pizza dough, fermentation, sauce, toppings, and a complete practical workflow.
 
-De calculator werkt als één zelfvoorzienend `index.html`-bestand: geen installatie, geen backend en geen buildstap. Daardoor is hij direct lokaal te openen en eenvoudig via GitHub Pages te publiceren.
+The downloadable v1.0.0 application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the same standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
-**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
+**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.0.0 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
-> **v1.0.0** is de eerste golden release en staat op `main`. De historische auditbranch blijft `v50-golden-candidate` heten; opslag- en testnamen met v50 blijven bewust bestaan voor backwards compatibility en traceerbaarheid.
+> Tag **v1.0.0** is the immutable golden behavior baseline. The maintainable source structure changes how developers work, not what users receive: recombined CSS and JavaScript remain byte-for-byte identical to the release, and storage/migration schema 50 is unchanged.
 
-## Wat kan de calculator?
+## Features
 
-De app heeft drie huidige gebruiksmodi:
+The app currently offers three usage modes:
 
-| Modus | Inhoud |
+| Mode | Includes |
 |---|---|
-| **Alleen deeg** | Deegberekening, fermentatie, gistadvies, kneden en bakadvies |
-| **Deeg + saus** | Alles van Alleen deeg, plus een losse sausberekening |
-| **Volledige pizza’s** | Deeg, saus, recept per bol, toppings, boodschappenlijst en compleet stappenplan |
+| **Dough only** | Dough calculation, fermentation, yeast advice, kneading, and baking advice |
+| **Dough + sauce** | Everything in Dough only, plus a separate sauce calculator |
+| **Complete pizzas** | Dough, sauce, one recipe per dough ball, toppings, shopping list, and complete workflow |
 
-Belangrijkste mogelijkheden:
+Highlights:
 
-- rekenen vanuit diameter of gewenst bolgewicht;
-- maximaal 24 pizza’s van 20 tot 40 cm;
-- zeven deegpresets plus volledig eigen instellingen;
-- vijf deegstijlen: Napolitaans, AVPN-middenprofiel, Canotto, New York en dun/krokant;
-- hydratatie, zout, olie en IDY-, ADY- of verse gist;
-- hybride, koude of volledige kamertemperatuurfermentatie;
-- rekening houden met kamer-, koelkast- en einddeegtemperatuur;
-- praktisch water- en DDT-advies voor handmatig kneden, KitchenAid, Kenwood en spiraalkneders;
-- bloemkeuze met bekende of handmatig ingevoerde W-waarde;
-- 92 pizzarecepten, zeven sausvarianten en zoeken/filteren op naam of ingrediënt;
-- per deegbol een eigen recept, sausvariant, pizzastijl en toppingaanpassing;
-- toppings automatisch schalen op basis van het pizza-oppervlak;
-- gecombineerde sausberekening, ingrediëntenoverzicht en boodschappenhoeveelheden;
-- planning terugrekenen vanaf een gewenste bakdag en baktijd;
-- afvinkbaar stappenplan, printweergave en kopieerbare recepten;
-- optionele live temperatuurmetingen en een lokaal deeglogboek;
-- volledige Nederlandse en Engelse interface.
+- calculate from pizza diameter or target dough-ball weight;
+- up to 24 pizzas between 20 and 40 cm;
+- seven dough presets plus fully custom settings;
+- five dough styles: Neapolitan, AVPN midpoint profile, Canotto, New York, and thin/crispy;
+- hydration, salt, oil, and IDY, ADY, or fresh yeast;
+- hybrid, cold, or all-room-temperature fermentation;
+- room, refrigerator, and final dough temperatures;
+- practical water-temperature and DDT guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers;
+- flour selection with known or manually entered W value;
+- 92 pizza recipes, seven sauce variants, and search/filtering by name or ingredient;
+- an individual recipe, sauce, pizza style, and topping customization for every dough ball;
+- topping quantities scaled automatically by pizza surface area;
+- combined sauce batches, ingredient summaries, and shopping quantities;
+- backward planning from a desired baking day and time;
+- checkable steps, print layout, and copyable recipes;
+- optional live temperature measurements and a local dough log;
+- complete Dutch and English interface.
 
-## Zo gebruik je hem
+## Usage
 
-1. Kies op het beginscherm hoeveel onderdelen je nodig hebt.
-2. Selecteer een preset of vul je eigen deegwaarden in.
-3. Kies diameter of bolgewicht als leidende maat.
-4. Stel fermentatie, temperaturen en eventueel een gewenste baktijd in.
-5. Voeg in de modus Volledige pizza’s per deegbol een pizzarecept toe.
-6. Volg daarna het berekende stappenplan van mengen tot bakken.
+1. Choose how much of the calculator you need on the start screen.
+2. Select a preset or enter your own dough values.
+3. Choose diameter or dough-ball weight as the leading measurement.
+4. Configure fermentation, temperatures, and optionally a target baking time.
+5. In Complete pizzas mode, assign a recipe to each dough ball.
+6. Follow the generated workflow from mixing through baking.
 
-Alle berekeningen worden direct bijgewerkt. Ingevoerde waarden en voortgang worden lokaal in de browser bewaard, zodat een refresh je recept niet wist.
+All calculations update immediately. Values and progress are stored locally in the browser, so refreshing the page does not discard the recipe.
 
-## Wetenschappelijk geïnformeerd, praktisch bedoeld
+## Scientifically informed, practically oriented
 
-De calculator combineert bakkerspercentages, tijd, temperatuur, gistsoort, deegmassa en bloemsterkte in één praktisch thuismodel. De AVPN-preset gebruikt gepubliceerde AVPN-kaders voor onder andere deeg, tijd en gistbereik. Andere onderdelen gebruiken onderbouwde relaties uit deeg- en gistliteratuur, aangevuld met expliciet herkenbare praktische thuiskalibraties.
+The calculator combines baker's percentages, time, temperature, yeast type, dough mass, and flour strength in one practical home model. The AVPN preset uses published AVPN constraints for dough, time, and yeast range. Other parts use evidence-informed relationships from dough and yeast literature, supplemented by clearly identifiable practical home-baking calibrations.
 
-Dit is bewust **geen gevalideerd laboratoriummodel** en ook geen officiële AVPN-calculator. Zie adviezen als een goed onderbouwd vertrekpunt en beoordeel altijd het daadwerkelijke deeg: volume, spanning, luchtigheid, temperatuur en rijpheid blijven belangrijker dan alleen de klok.
+This is intentionally **not a validated laboratory model** or an official AVPN calculator. Treat its advice as a well-informed starting point and always assess the actual dough: volume, tension, aeration, temperature, and maturity matter more than the clock alone.
 
-## Taal, privacy en opslag
+## Language, privacy, and storage
 
-- De interface kan direct wisselen tussen Nederlands en Engels.
-- Er is geen account of server nodig.
-- Receptinstellingen, voortgang en het deeglogboek worden alleen via `localStorage` in je eigen browser bewaard.
-- De app verstuurt geen recept- of logboekgegevens naar een backend.
-- `Reset` wist de lokaal opgeslagen calculatorstate; de taalkeuze blijft behouden.
+- The interface switches immediately between Dutch and English.
+- No account or server is required.
+- Recipe settings, progress, and the dough log are stored only in the browser through `localStorage`.
+- The app sends no recipe or log data to a backend.
+- `Reset` removes the locally stored calculator state but preserves the language choice.
 
-## Lokaal draaien
+## Running locally
 
-De eenvoudigste manier is `index.html` downloaden en rechtstreeks in een moderne browser openen.
+The simplest option is to download `index.html` and open it directly in a modern browser.
 
-Je kunt de repository ook klonen:
+You can also clone the repository:
 
 ```bash
 git clone https://github.com/hound83/pizza-dough-calculator.git
 cd pizza-dough-calculator
 ```
 
-Open daarna `index.html`, of start eventueel een eenvoudige lokale webserver:
+Then open `index.html`, or preferably start a small local web server:
 
 ```bash
 python -m http.server 8000
 ```
 
-Ga vervolgens naar `http://localhost:8000`.
+Open `http://localhost:8000`.
 
-## Publiceren met GitHub Pages
+## Publishing with GitHub Pages
 
-Omdat de complete app al `index.html` heet, is geen buildconfiguratie nodig:
+Because the complete distributable app is already named `index.html`, no production build configuration is required:
 
-1. open in GitHub **Settings → Pages**;
-2. kies **Deploy from a branch**;
-3. selecteer `main` en de map `/ (root)`;
-4. sla de instelling op.
+1. open **Settings → Pages** in GitHub;
+2. choose **Deploy from a branch**;
+3. select `main` and `/ (root)`;
+4. save the setting.
 
-Na publicatie staat de pagina normaal op:
+The site will normally be available at:
 
 ```text
-https://<gebruikersnaam>.github.io/<repositorynaam>/
+https://<username>.github.io/<repository-name>/
 ```
 
-## Tests
+## Development and tests
 
-De snelle regressiesuite gebruikt alleen Node.js en heeft geen extra packages nodig:
+The published application has no runtime dependencies. Development requires Node.js 20 or newer; Playwright is the single development dependency used for real Chromium coverage.
+
+Install the reproducible development environment once:
 
 ```bash
-node tests/test_v50.js
+npm ci
+npx playwright install chromium
 ```
 
-Huidige uitslag:
+Then run the complete suite:
+
+```bash
+npm test
+```
+
+Current result:
 
 ```text
-64 regression tests passed
+12 refactor-structure tests passed
+64 bundle regression tests passed
+64 source regression tests passed
+19 Chromium browser/layout tests passed
 ```
 
-De suite controleert onder meer:
+The suite covers, among other things:
 
-- receptberekeningen en numerieke grenzen;
-- meer dan 1.500 fermentatie-/solvercombinaties;
-- invoer per toetsaanslag, lege velden en browserachtige focus/blur-semantiek;
-- migratie en opslag van oudere calculatorversies;
-- behoud van recepten en stapvinkjes bij wijziging van het pizza-aantal;
-- alle 92 pizzarecepten in Nederlands en Engels;
-- pickerselectie, zoeken, filters, customizations en commitgedrag;
-- AVPN-waarschuwingen en het volledige tweetalige AVPN-infoblok;
-- sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
-- render-smokes over talen, modi en deegstijlen.
+- recipe calculations and numeric boundaries;
+- more than 1,500 fermentation and solver combinations;
+- per-keystroke input, empty fields, and browser-like focus/blur semantics;
+- migration and storage of older calculator versions;
+- preservation of recipes and checked steps when the pizza count changes;
+- all 92 pizza recipes in Dutch and English;
+- picker selection, search, filters, customizations, and explicit commit behavior;
+- AVPN warnings and the complete bilingual AVPN information block;
+- sauce aggregation, shopping quantities, and copyable output;
+- render smoke tests across languages, modes, and dough styles.
 
-Naast deze snelle suite is v1.0.0 onafhankelijk in een echte Chromium-browser gecontroleerd op toetsenbordbediening, native events, herladen en mobiele viewports van 320 tot 1280 px.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, and exact reconstruction of the golden single-file source. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading, horizontal fit, mobile picker space, filter scrolling, and the click-versus-hover selection contract.
 
-## Versienummering
+Use the following commands when working on the modular sources:
 
-Vanaf de eerste golden release gebruikt het project semantic versioning:
+```bash
+npm run bundle        # regenerate root index.html from src/
+npm run check:bundle  # fail if the committed bundle is stale
+```
 
-| Voorbeeld | Betekenis |
+## Versioning
+
+The project uses semantic versioning from the first golden release onward:
+
+| Example | Meaning |
 |---|---|
-| **v1.0.0** | Eerste golden functionele release |
-| **v1.0.1** | Achterwaarts compatibele bugfix na v1.0.0 |
-| **v1.1.0** | Nieuwe achterwaarts compatibele functionaliteit, zoals Basis/Uitgebreid |
-| **v2.0.0** | Alleen nodig bij een werkelijk brekende wijziging |
+| **v1.0.0** | First golden functional release |
+| **v1.0.1** | Backward-compatible bug fix after v1.0.0 |
+| **v1.1.0** | New backward-compatible functionality, such as Basic/Full |
+| **v2.0.0** | Reserved for a genuinely breaking change |
 
-Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigraties, testbestanden en auditdocumenten. Ze worden niet langer als publieke productversie doorgeteld.
+Historic working versions such as v50 remain where technically necessary in storage migrations, test names, and audit documents. They are no longer used as public product versions.
 
-## Projectstructuur
+## Project structure
 
-| Pad | Doel |
+| Path | Purpose |
 |---|---|
-| [`index.html`](index.html) | Complete applicatie: HTML, CSS, JavaScript, data en recepten |
-| [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
-| [`docs/`](docs/) | Audit-handoffs, wijzigingsonderbouwing en testinstructies |
+| [`index.html`](index.html) | Generated standalone publication for Pages and offline use |
+| [`src/index.html`](src/index.html) | Semantic source HTML and fixed asset-loading order |
+| [`src/assets/css/app.css`](src/assets/css/app.css) | Complete presentation and responsive layout |
+| [`src/assets/js/`](src/assets/js/) | Eleven ordered responsibility-based modules |
+| [`tools/bundle.js`](tools/bundle.js) | Dependency-free standalone bundler and drift check |
+| [`tests/test_v50.js`](tests/test_v50.js) | Fast Node/VM functional regression suite |
+| [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architecture, integrity, and golden-equivalence tests |
+| [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromium loading, responsive layout, and picker interaction tests |
+| [`playwright.config.js`](playwright.config.js) | Reproducible local and CI browser-test configuration |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module boundaries, dependencies, and change rules |
+| [`docs/PRODUCT_GUARDRAILS.md`](docs/PRODUCT_GUARDRAILS.md) | Non-negotiable product behavior and change protocol |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quality rules and review checklist |
+| [`README.nl.md`](README.nl.md) | Complete Dutch project documentation |
+| [`docs/`](docs/) | Audit handoffs, rationale, and test instructions |
 
-De single-file-opzet is voor v1.0.0 bewust behouden. Dat maakt downloaden, delen, lokaal openen en hosten via GitHub Pages uitzonderlijk eenvoudig. Een toekomstige gedrag-neutrale refactor mag de interne code opsplitsen, maar moet die eenvoudige publicatie-ervaring behouden.
+The standalone root `index.html` remains the downloadable and directly published calculator. The modular `src/` gives developers smaller files, explicit ownership, and automatic protection against a stale bundle or accidental behavioral drift.
 
-## Status en roadmap
+## Status and roadmap
 
-- **Nu:** v1.0.0 golden release op `main`, met de onafhankelijk geaudite kandidaat bewaard op `v50-golden-candidate`.
-- **Kleine follow-up:** de resterende niet-blokkerende toegankelijkheidsverbetering voor zeven uitgebreide veldlabels, beoogd voor v1.0.1 of de refactor.
-- **Parallel voorbereid:** gedrag-neutrale opsplitsing van HTML, CSS en JavaScript op `refactor/post-v1.0-prep`.
-- **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
+- **Release:** tag v1.0.0 remains the immutable golden functional baseline.
+- **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the byte-identical standalone publication used by GitHub Pages.
+- **Audit:** the behavior-neutral refactor and final test-infrastructure follow-up passed independent Claude crosschecks.
+- **Small follow-up:** the remaining non-blocking accessibility improvement for seven extended field labels stays outside this behavior-neutral refactor.
+- **v1.1.0:** a clear **Basic/Full** toggle without creating two separate calculation models.
 
-## Achtergrond
+## Background
 
-Dit begon als een eenvoudige persoonlijke deegcalculator en liep, zoals goede pizzaprojecten dat blijkbaar doen, enigszins uit de hand. 😄
+This started as a simple personal dough calculator and, as good pizza projects apparently do, got slightly out of hand. 😄
 
-Ontwikkeld door Michael, in iteratieve samenwerking met GPT/Codex en onafhankelijke crosschecks door Claude.
+Developed by Michael through iterative collaboration with GPT/Codex and independent cross-checks by Claude.
