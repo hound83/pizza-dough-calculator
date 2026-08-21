@@ -1,13 +1,14 @@
-# Claude-handoff — Pizzadeegcalculator v49 → v50
+# Claude-handoff — Pizzadeegcalculator v49 → v1.0.0 (historische v50)
 
-**Doel:** onafhankelijke browser-crosscheck en sluiting van de bevindingen voor de beoogde functionele baseline (“golden v50”)  
+**Doel:** onafhankelijke browser-crosscheck en sluiting van de bevindingen voor de eerste functionele golden release  
 **Datum:** 21 augustus 2026  
 **Bron:** `index.html` op `main` (v49)  
-**Kandidaat:** `pizzadeeg_calculator_v50.html`
+**Release:** v1.0.0; intern opslag-/migratieschema 50  
+**Historische kandidaat:** `pizzadeeg_calculator_v50.html`
 
 ## 0. Samenvatting
 
-v50 verwerkt alle vijf aanbevelingsgroepen uit `Crosscheck_v49_door_Claude.md`, één aanvullend door Michael gevonden pickerprobleem, alle zeven bevindingen uit de echte Chromium-audit `Crosscheck_v50_door_Claude.md` en de gerichte follow-up uit `Crosscheck_v50b_door_Claude.md`. De distributievorm blijft bewust één zelfvoorzienend HTML-bestand voor GitHub Pages. De grotere HTML/CSS/JS-refactor is niet met deze functionele ronde vermengd.
+v1.0.0 verwerkt alle vijf aanbevelingsgroepen uit `Crosscheck_v49_door_Claude.md`, één aanvullend door Michael gevonden pickerprobleem, alle zeven bevindingen uit de echte Chromium-audit `Crosscheck_v50_door_Claude.md` en de gerichte follow-up uit `Crosscheck_v50b_door_Claude.md`. De distributievorm blijft bewust één zelfvoorzienend HTML-bestand voor GitHub Pages. De grotere HTML/CSS/JS-refactor is niet met deze functionele ronde vermengd.
 
 De zes wijzigingsgroepen zijn:
 
@@ -22,7 +23,7 @@ Lokale uitslag na de follow-upfixes: **64/64 regressietests groen**. Daarbinnen 
 
 ### 0.1 Sluiting van `Crosscheck_v50_door_Claude.md`
 
-| Auditbevinding | Sluiting in de golden candidate |
+| Auditbevinding | Sluiting in v1.0.0 |
 |---|---|
 | H-1 stale bollen bij 4 → 8 → 4 | `blur` is nu een expliciet commitmoment voor het pizza-aantal, ook wanneer de browser terecht geen `change` afvuurt |
 | H-2 onbruikbare mobiele receptenlijst | vaste 46vh-linkerkolom verwijderd, receptenlijst krijgt 26vh minimum en filterchips scrollen horizontaal op één regel |
@@ -34,7 +35,7 @@ Lokale uitslag na de follow-upfixes: **64/64 regressietests groen**. Daarbinnen 
 
 ### 0.2 Sluiting van `Crosscheck_v50b_door_Claude.md`
 
-| Follow-upbevinding | Sluiting in de golden candidate |
+| Follow-upbevinding | Sluiting in v1.0.0 |
 |---|---|
 | M-2 half vertaalde hulpregel bij taalwissel met open picker | een geopende picker wordt na `update()` volledig opnieuw opgebouwd voordat de algemene tekstnodevertaler draait |
 | Achtergebleven `drukt. → on the right.`-fragment | het verouderde fragment wordt expliciet uit `EN_TEXT` verwijderd en kan de nieuwe positie-onafhankelijke zin niet meer raken |
@@ -42,6 +43,12 @@ Lokale uitslag na de follow-upfixes: **64/64 regressietests groen**. Daarbinnen 
 | L-6 AVPN-steentemperatuur | productregel expliciet getest: alleen AVPN schrijft 405 °C; alle overige presets behouden de gekozen steentemperatuur |
 | Door Michael gevonden uitlijningsbug bij temperatuurvelden | koelkasthelp staat buiten het label in een eigen gridcel; `aria-describedby` houdt de semantische koppeling intact |
 | L-7 CSS-test versus echte layout | bewust geen schijnzekerheid toegevoegd; werkelijke geometrie blijft onderdeel van de gerichte browsertest |
+
+### 0.3 Definitieve golden audit en releasebesluit
+
+`Crosscheck_v50_golden_60309d3_door_Claude.md` heeft de elf eerdere bevindingen opnieuw in Chromium gecontroleerd. De audit rapporteert 20 gerichte browserscenario's, 84 combinaties, 10 viewports, nul paginafouten en een expliciet golden oordeel. De enige nieuwe bevinding is een niet-blokkerende LOW: bij zeven geavanceerde velden staat hulptekst nog binnen het `<label>`, waardoor de toegankelijke naam voor sommige screenreaders onnodig lang kan zijn. Dit verandert geen berekening, invoer of zichtbaar gedrag en is bewust als post-v1.0.0-toegankelijkheidsverbetering gepland.
+
+Na deze audit is de publieke productversie vastgezet op **v1.0.0**. Opslagkey `pizzaCalcV50`, schema 50, migratiepaden en historische test-/auditnamen blijven ongewijzigd om bestaande browserdata en traceerbaarheid te behouden.
 
 ## 1. Functionele wijzigingen
 
@@ -159,11 +166,12 @@ Onder 760 px gebruikt de linkerkolom geen vaste hoogte van 46vh meer. De recepte
 
 ## 2. Versie en migratie
 
+- `APP_VERSION = '1.0.0'` voor titel en zichtbare productteksten
 - `SAVE_KEY = 'pizzaCalcV50'`
 - `SAVE_VERSION = 50`
 - eerste legacybron: dynamisch `pizzaCalcV49`
 - na succesvolle migratie wordt de v49-key verwijderd en de genormaliseerde state als v50 opgeslagen;
-- titel, documenttitel en zichtbare v49-logboekteksten verwijzen naar v50.
+- publieke productversie en intern opslagschema zijn bewust van elkaar gescheiden.
 
 ## 3. Lokale tests
 
@@ -203,11 +211,11 @@ Belangrijkste nieuwe dekking:
 Aanvullende statische controle:
 
 - exact één doctype en scriptblok;
-- 153 statische id's, geen duplicaten;
-- alle 51 statische inline-handleraanroepen verwijzen naar een bestaande functie of bekende browserfunctie;
+- 154 statische id's, geen duplicaten;
+- alle 50 statische inline-handleraanroepen verwijzen naar een bestaande functie of bekende browserfunctie;
 - geen picker-`mouseenter`-handler;
-- titel en storagekey staan op v50.
-- HTML parseert zonder fouten, met 153 statische id's en zonder duplicaten;
+- statische en dynamische titels en zichtbare logboekteksten staan op v1.0.0, terwijl storagekey en migratieschema op 50 blijven;
+- HTML parseert zonder fouten, met 154 statische id's en zonder duplicaten;
 - de volledige suite slaagt ook wanneer hij buiten de projectmap wordt gestart.
 
 ## 4. Gewenste onafhankelijke browsertest
@@ -231,11 +239,11 @@ Deze runtime bevat Playwright maar geen geïnstalleerde Chromium/Firefox/WebKit-
 
 | Bestand | Regels | Bytes | SHA-256 |
 |---|---:|---:|---|
-| `index.html` | 6.504 | 403.881 | `179a5b6176bb5343808630f7ef91f5b1196e49d97286027b10fc849bd3ad4af4` |
-| `tests/test_v50.js` | 587 | 49.569 | `5fea79288b0da7750150f808776e9051bb025f6ed335ac3ef79a20bbc98247ce` |
+| `index.html` | 6.507 | 404.414 | `7045421500a5497ca403699a2297c2ad8fa3e53f81f053300e8abdd84630cf3f` |
+| `tests/test_v50.js` | 590 | 50.564 | `644eb712dfd41da6fdb5f298a890bcf619960d254de8ccd6a0248be0d5f5e24d` |
 
 ## 6. Scopegrens en advies
 
-Deze versie wijzigt geen receptformules, fermentatiecurves, sausberekeningen, catalogusinhoud of hardwaregrenzen. Ook is geen automatische learning toegevoegd. v50 blijft één bestand en is daarmee direct als `index.html` op GitHub Pages te hosten.
+Deze versie wijzigt geen receptformules, fermentatiecurves, sausberekeningen, catalogusinhoud of hardwaregrenzen. Ook is geen automatische learning toegevoegd. v1.0.0 blijft één bestand en is daarmee direct als `index.html` op GitHub Pages te hosten.
 
-Als de gerichte heraudit van de zeven gesloten bevindingen en de bestaande tien browserscenario's groen is, is v50 de functionele baseline voor de huidige scope. Een eventuele opsplitsing naar aparte HTML/CSS/JS-bestanden hoort daarna in een afzonderlijke architectuurbranch, zodat functionele regressies niet met de refactor worden vermengd.
+De gerichte heraudit van de gesloten bevindingen en bestaande browserscenario's is groen; deze code is daarmee **v1.0.0**, de functionele baseline voor de huidige scope. Een eventuele opsplitsing naar aparte HTML/CSS/JS-bestanden blijft op een afzonderlijke architectuurbranch, zodat functionele regressies niet met de refactor worden vermengd.
