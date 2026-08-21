@@ -2,15 +2,33 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 
+const requestedCalculator=process.argv[2]?path.resolve(process.cwd(),process.argv[2]):null;
 const calculatorPath=[
+  requestedCalculator,
   path.join(__dirname,'..','index.html'),
   path.join(__dirname,'index.html'),
   path.join(__dirname,'..','pizzadeeg_calculator_v50.html'),
   path.join(__dirname,'pizzadeeg_calculator_v50.html')
-].find(candidate=>fs.existsSync(candidate));
+].find(candidate=>candidate&&fs.existsSync(candidate));
 if(!calculatorPath)throw new Error('Could not find index.html or pizzadeeg_calculator_v50.html relative to the test file.');
 const html=fs.readFileSync(calculatorPath,'utf8');
-const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).join('\n');
+const linkedStyles=[...html.matchAll(/<link\s+([^>]+)>/gi)].map(match=>{
+  const attributes=match[1]||'';
+  const rel=attributes.match(/\brel\s*=\s*["']([^"']+)["']/i)?.[1]||'';
+  const href=attributes.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1];
+  return /(^|\s)stylesheet(\s|$)/i.test(rel)&&href
+    ? fs.readFileSync(path.resolve(path.dirname(calculatorPath),href),'utf8')
+    : '';
+}).join('\n');
+const styleSource=html+'\n'+linkedStyles;
+const script=[...html.matchAll(/<script(?:\s([^>]*))?>([\s\S]*?)<\/script>/gi)].map(match=>{
+  const attributes=match[1]||'';
+  const src=attributes.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1];
+  return src
+    ? fs.readFileSync(path.resolve(path.dirname(calculatorPath),src),'utf8')
+    : match[2];
+}).join('\n');
+if(!script.trim())throw new Error(`No executable calculator script found in ${calculatorPath}.`);
 
 class DummyClassList{
   constructor(){this.values=new Set();}
@@ -25,10 +43,11 @@ class DummyClassList{
 }
 class DummyElement{
   constructor(id=''){
+    this.nodeType=1;
     this.id=id;this._value='';this.value='';this.checked=false;this.min='';this.max='';this.step='';
     this.defaultValue='';this.type='';this.placeholder='';
     this.textContent='';this.innerHTML='';this.className='';this.classList=new DummyClassList();
-    this.style={};this.dataset={};this.children=[];this.attributes={};this.listeners={};
+    this.style={};this.dataset={};this.childNodes=[];this.children=this.childNodes;this.attributes={};this.listeners={};
   }
   get value(){return this._value;}
   set value(v){this._value=String(v??'');}
@@ -36,6 +55,7 @@ class DummyElement{
   removeEventListener(type,fn){this.listeners[type]=(this.listeners[type]||[]).filter(x=>x!==fn);}
   dispatchEvent(event){for(const fn of this.listeners[event.type]||[])fn.call(this,event);return true;}
   setAttribute(k,v){this.attributes[k]=String(v);}
+  hasAttribute(k){return Object.prototype.hasOwnProperty.call(this.attributes,k);}
   getAttribute(k){return this.attributes[k]??null;}
   appendChild(x){this.children.push(x);return x;}
   prepend(x){this.children.unshift(x);return x;}
@@ -58,6 +78,7 @@ const storage={data:new Map(),fail:false,
   removeItem(k){if(this.fail)throw new Error('blocked');this.data.delete(k);}
 };
 const document={
+  activeElement:null,
   getElementById:get,
   addEventListener(){},
   querySelector(sel){return sel==='.app'?app:null;},
@@ -76,6 +97,7 @@ const ctx={
   window:{addEventListener(){},scrollTo(){},confirm(){return true;},setTimeout,clearTimeout,isSecureContext:true},
   alert(){},confirm(){return true;},MutationObserver:class{observe(){} disconnect(){}},
   setTimeout,clearTimeout,requestAnimationFrame:fn=>fn(),Date,Intl,Math,JSON,Number,String,Array,Object,Set,Map,WeakMap,
+  Node:{TEXT_NODE:3,ELEMENT_NODE:1,DOCUMENT_NODE:9},
   encodeURIComponent,decodeURIComponent,parseFloat,parseInt,isFinite
 };
 ctx.window.window=ctx.window;ctx.window.document=document;ctx.window.navigator=ctx.navigator;
@@ -244,6 +266,16 @@ test('picker shows either current or selected marker and uses position-independe
   assert(!/links|rechts/.test(x.helpNl)&&!/left|right/.test(x.helpEn),JSON.stringify({nl:x.helpNl,en:x.helpEn}));
 });
 
+test('an open picker is fully rebuilt when the language changes',()=>{
+  defaults();
+  const x=run(`(()=>{currentLang='nl';currentWizardPage=0;appMode='full';$('pizzas').value='1';pizzaSelections=['margherita'];pizzaCustomizations=[];pickerTarget=0;pickerSelectedId='salami';loadPickerPendingCustomization('salami');pickerPendingNoSauce=true;$('pizzaPickerSearch').value='salami';activePizzaFilters=new Set(['meat']);$('pizzaPickerOverlay').classList.add('open');renderPickerList();renderPickerPreview();setLanguage('en');const en={help:$('pickerSelectionHelp').innerHTML,preview:$('pizzaPickerPreview').innerHTML,selected:pickerSelectedId,pending:pickerPendingRecipeId,noSauce:pickerPendingNoSauce,search:$('pizzaPickerSearch').value,filters:[...activePizzaFilters],open:$('pizzaPickerOverlay').classList.contains('open')};setLanguage('nl');const nl={help:$('pickerSelectionHelp').innerHTML,preview:$('pizzaPickerPreview').innerHTML,selected:pickerSelectedId,pending:pickerPendingRecipeId,noSauce:pickerPendingNoSauce,search:$('pizzaPickerSearch').value,filters:[...activePizzaFilters],open:$('pizzaPickerOverlay').classList.contains('open')};return {en,nl,dangerousFragment:EN_TEXT['drukt.']};})()`);
+  assert(x.en.help.includes('Click a pizza')&&x.en.help.includes('Choose pizza')&&!/Klik|drukt|on the right/.test(x.en.help),x.en.help);
+  assert(x.nl.help.includes('Klik op een pizza')&&x.nl.help.includes('Kies pizza')&&!/Click a pizza|on the right/.test(x.nl.help),x.nl.help);
+  assert(x.en.preview.includes('Pizza style / cheese')&&x.nl.preview.includes('Pizzastijl / kaas'),JSON.stringify({en:x.en.preview.slice(0,250),nl:x.nl.preview.slice(0,250)}));
+  for(const state of [x.en,x.nl])assert(state.selected==='salami'&&state.pending==='salami'&&state.noSauce&&state.search==='salami'&&state.filters.join(',')==='meat'&&state.open,JSON.stringify(state));
+  assert(x.dangerousFragment===undefined,`stale translation fragment=${x.dangerousFragment}`);
+});
+
 test('clicking the already selected recipe preserves pending edits',()=>{
   defaults();
   const x=run(`(()=>{$('pizzas').value='1';pizzaSelections=['margherita'];pizzaCustomizations=[];pickerTarget=0;pickerSelectedId='margherita';loadPickerPendingCustomization('margherita');pickerPendingExcluded={'Fior di latte':true};pickerPendingNoSauce=true;selectPickerRecipe('margherita');return {excluded:pickerPendingExcluded,noSauce:pickerPendingNoSauce,pending:pickerPendingRecipeId};})()`);
@@ -307,6 +339,18 @@ test('cleared required fields restore the value from the start of the edit acros
   defaults();
   const x=run(`(()=>{const ids=['hydration','saltPct','yeastPct','diameter','roomTemp','stoneTemp'];const rows=[];for(const preset of ['avpnMid','sameDay','kodaNight','cold48','cold72','canotto','home24']){applyPreset(preset);for(const id of ids){const el=$(id),before=el.value;rememberNumericEditStart(el);el.value='';normalizeNumericInput(el);rows.push({preset,id,before,after:el.value});_numericEditStartValues.delete(el);}}return rows;})()`);
   assert(x.every(row=>row.after===row.before),JSON.stringify(x.filter(row=>row.after!==row.before)));
+});
+
+test('programmatic preset loading refreshes the focused numeric edit baseline',()=>{
+  defaults();
+  const x=run(`(()=>{const el=$('hydration');el.value='72';document.activeElement=el;rememberNumericEditStart(el);applyPreset('kodaNight');const visible=el.value;el.value='';normalizeNumericInput(el);const restored=el.value;document.activeElement=null;return {visible,restored};})()`);
+  assert(x.visible==='63'&&x.restored==='63',JSON.stringify(x));
+});
+
+test('only the AVPN preset changes the chosen stone temperature',()=>{
+  defaults();
+  const x=run(`(()=>{document.activeElement=null;$('stoneTemp').value='447';applyPreset('kodaNight');const regular=$('stoneTemp').value;applyPreset('avpnMid');const avpn=$('stoneTemp').value;$('stoneTemp').value='412';applyPreset('cold48');const afterOther=$('stoneTemp').value;return {regular,avpn,afterOther};})()`);
+  assert(x.regular==='447'&&x.avpn==='405'&&x.afterOther==='412',JSON.stringify(x));
 });
 
 test('blank yeast fallback without focus history respects the selected yeast type',()=>{
@@ -421,9 +465,17 @@ test('AVPN information block renders completely and consistently in both languag
 });
 
 test('mobile picker CSS reserves recipe space and keeps filters on one scrollable row',()=>{
-  assert(/\.picker-list\s*\{min-height:26vh\}/.test(html),'missing mobile picker list minimum height');
-  assert(/\.pizza-filter-chips\s*\{[\s\S]*?flex-wrap:nowrap;[\s\S]*?overflow-x:auto;[\s\S]*?overscroll-behavior-x:contain;[\s\S]*?padding-bottom:4px;[\s\S]*?\}/.test(html),'missing mobile filter scrolling');
-  assert(/\.filter-chip\s*\{flex:0 0 auto\}/.test(html),'filter chips may shrink');
+  assert(/\.picker-list\s*\{min-height:26vh\}/.test(styleSource),'missing mobile picker list minimum height');
+  assert(/\.pizza-filter-chips\s*\{[\s\S]*?flex-wrap:nowrap;[\s\S]*?overflow-x:auto;[\s\S]*?overscroll-behavior-x:contain;[\s\S]*?padding-bottom:4px;[\s\S]*?\}/.test(styleSource),'missing mobile filter scrolling');
+  assert(/\.filter-chip\s*\{flex:0 0 auto\}/.test(styleSource),'filter chips may shrink');
+});
+
+test('fermentation temperature help cannot push the room field downward',()=>{
+  assert(html.includes('form-grid align-fields fermentation-temperature-grid'),'missing scoped temperature grid');
+  assert(html.includes('aria-describedby="fridgeTempHelp"'),'fridge field is not linked to its help text');
+  assert(/<\/label>\s*<span class="input-help fridge-temp-help" id="fridgeTempHelp">/.test(html),'fridge help must be outside both field labels');
+  assert(/\.fridge-temp-help\s*\{[\s\S]*?grid-column:2;[\s\S]*?margin-top:-7px;[\s\S]*?\}/.test(styleSource),'missing desktop help placement');
+  assert(/@media\(max-width:560px\)[\s\S]*?\.fridge-temp-help\s*\{[\s\S]*?grid-column:1;[\s\S]*?\}/.test(styleSource),'missing mobile help placement');
 });
 
 test('remaining audited static labels have exact English translations',()=>{
