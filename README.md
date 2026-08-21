@@ -1,6 +1,6 @@
 # 🍕 Pizzadeegcalculator
 
-[![Version](https://img.shields.io/badge/version-v1.0.0_release_candidate-ee6b49)](https://github.com/hound83/pizza-dough-calculator/tree/v50-golden-candidate)
+[![Version](https://img.shields.io/badge/version-v1.0.0_release-76c990)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 [![Tests](https://img.shields.io/badge/regression_tests-64%2F64_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/app-single_file_HTML-f0b45a)](index.html)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
@@ -9,9 +9,9 @@ Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fe
 
 De calculator werkt als één zelfvoorzienend `index.html`-bestand: geen installatie, geen backend en geen buildstap. Daardoor is hij direct lokaal te openen en eenvoudig via GitHub Pages te publiceren.
 
-**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-releasecandidate](https://github.com/hound83/pizza-dough-calculator/tree/v50-golden-candidate)
+**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
-> De openbare GitHub Pages-versie volgt de inhoud van `main`. De historische auditbranch heet nog `v50-golden-candidate`; na een groene heraudit wordt deze kandidaat als **v1.0.0** uitgebracht.
+> **v1.0.0** is de eerste golden release en staat op `main`. De historische auditbranch blijft `v50-golden-candidate` heten; opslag- en testnamen met v50 blijven bewust bestaan voor backwards compatibility en traceerbaarheid.
 
 ## Wat kan de calculator?
 
@@ -129,7 +129,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-Naast deze snelle suite wordt de golden candidate onafhankelijk in een echte Chromium-browser gecontroleerd op toetsenbordbediening, native events, herladen en mobiele viewports van 320 tot 1280 px.
+Naast deze snelle suite is v1.0.0 onafhankelijk in een echte Chromium-browser gecontroleerd op toetsenbordbediening, native events, herladen en mobiele viewports van 320 tot 1280 px.
 
 ## Versienummering
 
@@ -152,13 +152,13 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 | [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
 | [`docs/`](docs/) | Audit-handoffs, wijzigingsonderbouwing en testinstructies |
 
-De single-file-opzet is voor de v1.0.0-releasecandidate bewust behouden. Dat maakt downloaden, delen, lokaal openen en hosten via GitHub Pages uitzonderlijk eenvoudig. Een toekomstige gedrag-neutrale refactor mag de interne code opsplitsen, maar moet die eenvoudige publicatie-ervaring behouden.
+De single-file-opzet is voor v1.0.0 bewust behouden. Dat maakt downloaden, delen, lokaal openen en hosten via GitHub Pages uitzonderlijk eenvoudig. Een toekomstige gedrag-neutrale refactor mag de interne code opsplitsen, maar moet die eenvoudige publicatie-ervaring behouden.
 
 ## Status en roadmap
 
-- **Nu:** v1.0.0-releasecandidate op de historische auditbranch `v50-golden-candidate`.
-- **Volgende controle:** gerichte browser-heraudit en daarna, bij groen resultaat, v1.0.0 naar `main` en als release taggen.
-- **Parallel voorbereid:** gedrag-neutrale opsplitsing van HTML, CSS en JavaScript op een aparte refactorbranch.
+- **Nu:** v1.0.0 golden release op `main`, met de onafhankelijk geaudite kandidaat bewaard op `v50-golden-candidate`.
+- **Kleine follow-up:** de resterende niet-blokkerende toegankelijkheidsverbetering voor zeven uitgebreide veldlabels, beoogd voor v1.0.1 of de refactor.
+- **Parallel voorbereid:** gedrag-neutrale opsplitsing van HTML, CSS en JavaScript op `refactor/post-v1.0-prep`.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
 
 ## Achtergrond

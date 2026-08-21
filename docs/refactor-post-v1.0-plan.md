@@ -2,21 +2,21 @@
 
 ## Doel
 
-De huidige releasecandidate blijft tijdens de onafhankelijke browseraudit één zelfvoorzienend `index.html`-bestand. Deze branch bereidt parallel een mechanische opsplitsing voor zonder functies, formules, opslag of gebruikersgedrag te veranderen.
+De uitgebrachte v1.0.0 blijft één zelfvoorzienend `index.html`-bestand. Deze branch bereidt parallel een mechanische opsplitsing voor zonder functies, formules, opslag of gebruikersgedrag te veranderen.
 
-De publieke productversie wordt na een groene audit **v1.0.0**. De historische naam v50 blijft alleen bestaan waar die technisch nodig is voor audits, tests en backwards-compatible `localStorage`-migratie.
+De publieke productversie is na een groene audit **v1.0.0** geworden. De historische naam v50 blijft alleen bestaan waar die technisch nodig is voor audits, tests en backwards-compatible `localStorage`-migratie.
 
 ## Waarom deze tussenstap?
 
 Een directe handmatige opsplitsing tijdens de audit zou iedere nieuwe v50-fix op twee sterk verschillende codevormen laten landen. Dat vergroot het risico op dubbele reparaties en mergeconflicten.
 
-Daarom geldt tot de v1.0.0-promotie:
+Daarom gold tijdens de v1.0.0-promotie, en blijft voor de voorbereidende refactor gelden:
 
 1. de monolithische root-`index.html` is de canonieke bron;
 2. `split-preview/` wordt daar deterministisch uit gegenereerd;
 3. een check faalt zodra de preview achterloopt op de bron;
 4. dezelfde 64 regressietests draaien tegen beide varianten;
-5. de split wordt pas na de browseraudit de rootstructuur.
+5. de split wordt pas in een afzonderlijke, volledig geteste refactorstap de rootstructuur.
 
 ## Voorbereide structuur
 
@@ -52,12 +52,12 @@ Alle tests tegen beide varianten uitvoeren:
 npm test
 ```
 
-## Claude-feedback verwerken
+## Nieuwe feedback verwerken
 
-Wanneer tijdens de v50-audit nog een bevinding komt:
+Wanneer na v1.0.0 nog een bevinding komt:
 
-1. analyseer en repareer die eerst op `v50-golden-candidate`;
-2. test de ongesplitste kandidaat en commit de fix daar;
+1. analyseer en repareer die eerst op een aparte bugfixbranch vanaf `main`;
+2. test de ongesplitste versie en commit de fix daar;
 3. merge die commit in `refactor/post-v1.0-prep`;
 4. voer `npm run prepare:split` uit;
 5. voer `npm test` uit;
@@ -65,11 +65,11 @@ Wanneer tijdens de v50-audit nog een bevinding komt:
 
 Omdat de refactorbranch de canonieke `index.html` nog niet uiteen heeft getrokken, hoort een inhoudelijke auditfix normaal zonder HTML/CSS/JS-splitconflict te mergen. Alleen de gegenereerde preview wordt daarna vernieuwd.
 
-## Na de groene v1.0.0-audit
+## Na v1.0.0
 
 De uiteindelijke refactor volgt in afzonderlijke, controleerbare stappen:
 
-1. productversie zichtbaar scheiden van opslag-/migratieversie;
+1. de al gescheiden productversie en opslag-/migratieversie intact houden;
 2. de gegenereerde HTML/CSS/JS-structuur naar de root promoveren;
 3. browser- en VM-regressies opnieuw uitvoeren;
 4. pas daarna JavaScript per verantwoordelijkheid opdelen, bijvoorbeeld data, pure berekeningen, state/opslag, internationalisatie en UI;
