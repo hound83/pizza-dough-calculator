@@ -198,8 +198,7 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 .pick-button .chev{color:var(--muted);font-size:18px}
 @media(max-width:760px){
   .picker-modal{grid-template-columns:1fr;max-height:92vh}
-  .picker-list-wrap{border-right:0;border-bottom:1px solid var(--line);max-height:44vh}
-  .picker-preview{max-height:44vh}
+  .picker-list-wrap{border-right:0;border-bottom:1px solid var(--line)}
 }
 
 
@@ -333,8 +332,16 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 }
 @media(max-width:760px){
   .picker-modal{height:92vh;max-height:92vh}
-  .picker-list-wrap{height:46vh;max-height:none!important}
-  .picker-preview{max-height:none!important;min-height:0}
+  .picker-list-wrap{height:auto!important;max-height:none!important;min-height:0}
+  .picker-list{min-height:26vh}
+  .pizza-filter-chips{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    padding-bottom:4px;
+  }
+  .filter-chip{flex:0 0 auto}
+  .picker-preview{max-height:none!important;min-height:0;overflow:auto}
 }
 
 
@@ -1571,15 +1578,45 @@ function boundedNumDefault(id,fallback){
 function nonNegativeNum(id,fallback=0){
   return Math.max(0,boundedNum(id,fallback));
 }
+const _numericEditStartValues=new WeakMap();
+const OPTIONAL_NUMBER_FIELDS=new Set(['finalDoughTemp','flourW','saucePerPizza','logWaterTemp']);
+
+// Een verplicht getal dat per ongeluk volledig wordt gewist, keert terug naar
+// de waarde waarmee deze bewerking begon. Zo blijven presetwaarden en de
+// gekozen gistsoort intact in plaats van terug te vallen op één HTML-default.
+function rememberNumericEditStart(el){
+  if(!el||el.type!=='number')return;
+  const raw=String(el.value).trim();
+  const n=parseFloat(raw);
+  const bounds=numericBounds(el);
+  if(raw!==''&&Number.isFinite(n)&&n>=bounds.min&&n<=bounds.max){
+    _numericEditStartValues.set(el,raw);
+  }else{
+    _numericEditStartValues.delete(el);
+  }
+}
+function numericEmptyFallback(el){
+  const remembered=String(_numericEditStartValues.get(el)??'').trim();
+  if(remembered!=='')return remembered;
+  const htmlDefault=String(el.defaultValue??'').trim();
+  if(htmlDefault===''||!Number.isFinite(parseFloat(htmlDefault)))return '';
+  // Voor oude opgeslagen states zonder focusgeschiedenis blijft de generieke
+  // fallback ten minste overeenkomen met de momenteel gekozen gistsoort.
+  if(el.id==='yeastPct'){
+    const yeastType=yeastTypes[$('yeastType').value]||yeastTypes.idy;
+    return String(parseFloat(htmlDefault)*yeastType.mult);
+  }
+  return htmlDefault;
+}
 function normalizeNumericInput(el){
   if(!el||el.type!=='number')return false;
   const raw=String(el.value).trim();
   // Leeg blijft tijdens het typen altijd toegestaan. Bij change/blur en na
-  // state-load herstellen alleen verplichte velden hun eigen HTML-default.
+  // state-load herstellen alleen verplichte velden een veilige fallback.
   // De vier expliciet optionele velden gebruiken leeg juist als betekenis.
   if(raw===''){
-    if(['finalDoughTemp','flourW','saucePerPizza','logWaterTemp'].includes(el.id))return false;
-    const fallback=String(el.defaultValue??'').trim();
+    if(OPTIONAL_NUMBER_FIELDS.has(el.id))return false;
+    const fallback=numericEmptyFallback(el);
     if(fallback==='')return false;
     let defaultNumber=parseFloat(fallback);
     if(!Number.isFinite(defaultNumber))return false;
@@ -3314,7 +3351,7 @@ function pickerItemHtml(r,currentId){
       onclick="selectPickerRecipe('${r.id}')">
       <span>${recipeNameText(r)}${recipeIcons(r)}</span>
       <span class="meta">
-        ${isSelected?`<span class="assigned-mark">${L('✓ gekozen','✓ selected')}</span> `:''}
+        ${isSelected&&!isCurrent?`<span class="assigned-mark">${L('✓ gekozen','✓ selected')}</span> `:''}
         ${isCurrent?`<span class="current-mark">${L('huidig','current')}</span> `:''}
         ${recipeTagText(r)}
       </span>
@@ -3329,8 +3366,8 @@ function renderPickerList(){
   clearBtn.classList.toggle('hidden',!q);
   const help=$('pickerSelectionHelp');
   if(help)help.innerHTML=L(
-    'Klik links op een pizza om hem te selecteren en pas hem rechts aan. De keuze wordt pas voor de bol opgeslagen wanneer je rechts op <b>Kies pizza</b> drukt.',
-    'Click a pizza on the left to select it, then customize it on the right. It is only saved to the dough ball when you click <b>Choose pizza</b> on the right.');
+    'Klik op een pizza om hem te selecteren en pas het recept daarna aan. De keuze wordt pas voor de bol opgeslagen wanneer je op <b>Kies pizza</b> drukt.',
+    'Click a pizza to select it, then customize the recipe. It is only saved to the dough ball when you click <b>Choose pizza</b>.');
 
   const filterText=activePizzaFilters.size ? activeFilterLabel() : '';
   let results=pizzaRecipes.filter(recipeMatchesFilter);
@@ -3607,7 +3644,20 @@ function estimatedDiameterFromWeight(weight=num('ballWeight')){
 
 function refreshAvpnPresetInfo(){
   const box=$('avpnPresetInfo');
-  if(box)box.classList.toggle('hidden',$('preset').value!=='avpnMid');
+  if(!box)return;
+  box.classList.toggle('hidden',$('preset').value!=='avpnMid');
+  // Dit lange informatieblok wordt bewust volledig taalafhankelijk opgebouwd.
+  // De generieke tekstnode-vertaler kan samengestelde HTML stil gedeeltelijk
+  // vertalen en gaf hier daardoor Nederlands én Engelse getalnotatie door elkaar.
+  box.innerHTML=L(
+    `<b>AVPN middenprofiel:</b> ${fmt(28.5,1)} cm • 240 g per bol • ${fmt(58.8,1)}% hydratatie • ${fmt(2.94,2)}% zout • W285 • 18 uur totale fermentatie • 19 °C rijsomgeving • 405 °C steen.
+      Verse gist: rekenkundig midden van de AVPN-range, <b>${fmt(1.55,2)} g per liter water</b>.
+      <span class="avpn-caveat">Let op: die officiële range (${fmt(.1,1)}–3 g/L) spant een factor 30 en dekt bewust heel verschillende tijden, temperaturen en seizoenen. Het rekenkundige midden daarvan is een rekensom, geen aanbeveling — de balk hieronder toont daarom ook wat het praktische model voor dit specifieke schema voorstelt.</span>
+      <span class="avpn-caveat">De 2 uur bulk + 16 uur bolrijs is een praktische verdeling binnen de 18 uur; AVPN schrijft die onderlinge verdeling niet exact voor. De combinatie 240 g + ${fmt(28.5,1)} cm zijn de afzonderlijke middelpunten van de toegestane gewicht- en diameterbereiken. Praktisch afronden wordt voor deze preset uitgeschakeld, zodat de middenwaarden niet door keukenafronding verschuiven.</span>`,
+    `<b>AVPN midpoint profile:</b> ${fmt(28.5,1)} cm • 240 g per dough ball • ${fmt(58.8,1)}% hydration • ${fmt(2.94,2)}% salt • W285 • 18 hours total fermentation • 19 °C proofing environment • 405 °C stone.
+      Fresh yeast: arithmetic midpoint of the AVPN range, <b>${fmt(1.55,2)} g per litre of water</b>.
+      <span class="avpn-caveat">Note: the official range (${fmt(.1,1)}–3 g/L) spans a factor of 30 and deliberately covers very different times, temperatures and seasons. Its arithmetic midpoint is a calculation, not a recommendation — the bar below therefore also shows what the practical model suggests for this specific schedule.</span>
+      <span class="avpn-caveat">The 2-hour bulk + 16-hour ball proof is a practical split within the 18 hours; AVPN does not prescribe that internal split exactly. The combination of 240 g + ${fmt(28.5,1)} cm uses the separate midpoints of the permitted weight and diameter ranges. Practical rounding is disabled for this preset so kitchen rounding does not shift the midpoint values.</span>`);
 }
 
 function refreshSizeModeUI(){
@@ -6258,6 +6308,7 @@ function loadState(){
 
 function wireEvents(){
   document.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('focus',()=>rememberNumericEditStart(el));
     el.addEventListener('input',()=>{
       if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
       if(el.classList.contains('pct')) markCustomField(el.id);
@@ -6303,6 +6354,24 @@ function wireEvents(){
         markCustomField(el.id);
       }
       update();
+    });
+    el.addEventListener('blur',()=>{
+      if(el.type!=='number')return;
+      const normalized=normalizeNumericInput(el);
+      try{
+        if(el.id==='pizzas'){
+          // blur is het echte commitmoment: een browser vuurt geen change af
+          // wanneer 4 → 8 → 4 uiteindelijk weer op de focus-startwaarde eindigt.
+          _deferDependentStatePrune=false;
+          ensurePizzaSelections();
+          update();
+          pruneCompletedStepState();
+        }else if(normalized){
+          update();
+        }
+      }finally{
+        _numericEditStartValues.delete(el);
+      }
     });
   });
   $('includeSauce').addEventListener('change',update);
@@ -6396,7 +6465,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <button class="filter-chip" data-filter="noTomato" onclick="setPizzaFilter('noTomato')" type="button">⚪ Zonder tomaat</button>
 <button class="filter-chip" data-filter="spicy" onclick="setPizzaFilter('spicy')" type="button">🌶️ Pittig</button>
 </div>
-<div class="filter-combine-hint" id="pickerSelectionHelp">Klik links op een pizza om hem te selecteren en pas hem rechts aan. De keuze wordt pas voor de bol opgeslagen wanneer je rechts op <b>Kies pizza</b> drukt.</div>
+<div class="filter-combine-hint" id="pickerSelectionHelp">Klik op een pizza om hem te selecteren en pas het recept daarna aan. De keuze wordt pas voor de bol opgeslagen wanneer je op <b>Kies pizza</b> drukt.</div>
 <div class="picker-search-status" id="pizzaPickerSearchStatus">Top 10 populaire pizza’s + alle recepten</div>
 </div>
 <div class="picker-list" id="pizzaPickerList"></div>

@@ -1,7 +1,14 @@
 const fs=require('fs');
+const path=require('path');
 const vm=require('vm');
 
-const calculatorPath=fs.existsSync('index.html')?'index.html':'pizzadeeg_calculator_v50.html';
+const calculatorPath=[
+  path.join(__dirname,'..','index.html'),
+  path.join(__dirname,'index.html'),
+  path.join(__dirname,'..','pizzadeeg_calculator_v50.html'),
+  path.join(__dirname,'pizzadeeg_calculator_v50.html')
+].find(candidate=>fs.existsSync(candidate));
+if(!calculatorPath)throw new Error('Could not find index.html or pizzadeeg_calculator_v50.html relative to the test file.');
 const html=fs.readFileSync(calculatorPath,'utf8');
 const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).join('\n');
 
@@ -18,11 +25,13 @@ class DummyClassList{
 }
 class DummyElement{
   constructor(id=''){
-    this.id=id;this.value='';this.checked=false;this.min='';this.max='';this.step='';
+    this.id=id;this._value='';this.value='';this.checked=false;this.min='';this.max='';this.step='';
     this.defaultValue='';this.type='';this.placeholder='';
     this.textContent='';this.innerHTML='';this.className='';this.classList=new DummyClassList();
     this.style={};this.dataset={};this.children=[];this.attributes={};this.listeners={};
   }
+  get value(){return this._value;}
+  set value(v){this._value=String(v??'');}
   addEventListener(type,fn){(this.listeners[type]??=[]).push(fn);}
   removeEventListener(type,fn){this.listeners[type]=(this.listeners[type]||[]).filter(x=>x!==fn);}
   dispatchEvent(event){for(const fn of this.listeners[event.type]||[])fn.call(this,event);return true;}
@@ -227,6 +236,14 @@ test('picker selection changes only through an explicit recipe click',()=>{
   assert(!x.quattroButton.includes('onmouseenter')&&!x.quattroButton.includes('onfocus')&&x.quattroButton.includes("selectPickerRecipe('quattroFormaggi')"),x.quattroButton);
 });
 
+test('picker shows either current or selected marker and uses position-independent help',()=>{
+  defaults();
+  const x=run(`(()=>{pickerTarget=0;pizzaSelections=['margherita'];pickerSelectedId='margherita';currentLang='nl';const current=pickerItemHtml(recipeById('margherita'),'margherita');pickerSelectedId='salami';const selected=pickerItemHtml(recipeById('salami'),'margherita');renderPickerList();const helpNl=$('pickerSelectionHelp').innerHTML;currentLang='en';renderPickerList();const helpEn=$('pickerSelectionHelp').innerHTML;return {current,selected,helpNl,helpEn};})()`);
+  assert(x.current.includes('huidig')&&!x.current.includes('✓ gekozen'),x.current);
+  assert(x.selected.includes('✓ gekozen')&&!x.selected.includes('huidig'),x.selected);
+  assert(!/links|rechts/.test(x.helpNl)&&!/left|right/.test(x.helpEn),JSON.stringify({nl:x.helpNl,en:x.helpEn}));
+});
+
 test('clicking the already selected recipe preserves pending edits',()=>{
   defaults();
   const x=run(`(()=>{$('pizzas').value='1';pizzaSelections=['margherita'];pizzaCustomizations=[];pickerTarget=0;pickerSelectedId='margherita';loadPickerPendingCustomization('margherita');pickerPendingExcluded={'Fior di latte':true};pickerPendingNoSauce=true;selectPickerRecipe('margherita');return {excluded:pickerPendingExcluded,noSauce:pickerPendingNoSauce,pending:pickerPendingRecipeId};})()`);
@@ -286,6 +303,18 @@ test('required empty numeric fields restore their own defaults on change',()=>{
   assert(x.dough===''&&x.w===''&&x.sauce==='',JSON.stringify(x));
 });
 
+test('cleared required fields restore the value from the start of the edit across all presets',()=>{
+  defaults();
+  const x=run(`(()=>{const ids=['hydration','saltPct','yeastPct','diameter','roomTemp','stoneTemp'];const rows=[];for(const preset of ['avpnMid','sameDay','kodaNight','cold48','cold72','canotto','home24']){applyPreset(preset);for(const id of ids){const el=$(id),before=el.value;rememberNumericEditStart(el);el.value='';normalizeNumericInput(el);rows.push({preset,id,before,after:el.value});_numericEditStartValues.delete(el);}}return rows;})()`);
+  assert(x.every(row=>row.after===row.before),JSON.stringify(x.filter(row=>row.after!==row.before)));
+});
+
+test('blank yeast fallback without focus history respects the selected yeast type',()=>{
+  defaults();
+  const x=run(`(()=>{const el=$('yeastPct');const rows=[];for(const type of ['idy','ady','fresh']){$('yeastType').value=type;el.value='';_numericEditStartValues.delete(el);normalizeNumericInput(el);rows.push({type,value:el.value});}return rows;})()`);
+  assert(x[0].value==='0.17'&&x[1].value==='0.213'&&x[2].value==='0.51',JSON.stringify(x));
+});
+
 test('stored blank required fields recover before they can be persisted again',()=>{
   defaults();
   storage.data.clear();
@@ -321,6 +350,37 @@ test('real input and change handlers preserve transient state and then normalize
   assert(afterChange.length===20&&afterChange.last==='marinara'&&hydrationDuring===''&&hydration.value==='63',JSON.stringify({afterChange,hydrationDuring,hydration:hydration.value}));
 });
 
+test('pizza count blur commits 4 to 8 to 4 even when no change event fires',()=>{
+  defaults();
+  run(`$('pizzas').value='4';pizzaSelections=Array(4).fill('margherita');pizzaCustomizations=[];ensurePizzaCustomizations();completedSteps={};`);
+  const pizzas=get('pizzas');
+  pizzas.dispatchEvent({type:'focus'});
+  pizzas.value='8';pizzas.dispatchEvent({type:'input'});
+  run(`completedSteps['s-top-7-margherita-traditional']=true;`);
+  const afterEight=run(`({selections:pizzaSelections.length,customs:pizzaCustomizations.length})`);
+  pizzas.value='4';pizzas.dispatchEvent({type:'input'});
+  const beforeBlur=run(`({selections:pizzaSelections.length,customs:pizzaCustomizations.length,stale:!!completedSteps['s-top-7-margherita-traditional']})`);
+  pizzas.dispatchEvent({type:'blur'});
+  const afterBlur=run(`({selections:pizzaSelections.length,customs:pizzaCustomizations.length,stale:!!completedSteps['s-top-7-margherita-traditional']})`);
+  assert(afterEight.selections===8&&afterEight.customs===8,JSON.stringify(afterEight));
+  assert(beforeBlur.selections===8&&beforeBlur.customs===8&&beforeBlur.stale,JSON.stringify(beforeBlur));
+  assert(afterBlur.selections===4&&afterBlur.customs===4&&!afterBlur.stale,JSON.stringify(afterBlur));
+});
+
+test('registered focus and blur handlers restore preset and fresh-yeast edit values',()=>{
+  defaults();
+  run(`applyPreset('canotto')`);
+  const hydration=get('hydration');
+  hydration.dispatchEvent({type:'focus'});
+  hydration.value='';hydration.dispatchEvent({type:'input'});hydration.dispatchEvent({type:'blur'});
+  const restoredHydration=hydration.value;
+  const yeast=get('yeastPct');
+  run(`$('yeastType').value='fresh';$('yeastPct').value='0.51';`);
+  yeast.dispatchEvent({type:'focus'});
+  yeast.value='';yeast.dispatchEvent({type:'input'});yeast.dispatchEvent({type:'blur'});
+  assert(restoredHydration==='68'&&yeast.value==='0.51',JSON.stringify({restoredHydration,yeast:yeast.value}));
+});
+
 test('dough style changes update only the hidden derived size field',()=>{
   defaults();
   const x=run(`(()=>{$('sizeFromDiameter').checked=false;$('ballWeight').value='300';$('doughStyle').value='ny';const weightMode=calc();const afterWeight={ball:$('ballWeight').value,diameter:$('diameter').value,calcBall:weightMode.targetBall};$('sizeFromDiameter').checked=true;$('diameter').value='35';$('doughStyle').value='thin';const diameterMode=calc();return {afterWeight,afterDiameter:{diameter:$('diameter').value,ball:$('ballWeight').value,calcDiameter:diameterMode.targetDiameter}};})()`);
@@ -350,6 +410,20 @@ test('AVPN warnings are fully English in English mode',()=>{
   defaults();
   const x=run(`(()=>{currentLang='en';$('preset').value='avpnMid';$('doughStyle').value='avpn';$('fermentationMethod').value='room';$('bulkHours').value='2';$('coldHours').value='0';$('ballHours').value='16';$('roomTemp').value='19';$('finalDoughTemp').value='24';const warnings=avpnMidpointYeastAdvice(calc()).warnings.map(w=>w.text);return {warnings,bad:warnings.filter(t=>/AVPN-preset|Let op:|Het generieke thuismodel|rekenkundige|officiële|gistsoort/.test(t))};})()`);
   assert(x.warnings.length>=1&&x.bad.length===0&&x.warnings[0].startsWith('AVPN preset:'),JSON.stringify(x));
+});
+
+test('AVPN information block renders completely and consistently in both languages',()=>{
+  defaults();
+  const x=run(`(()=>{$('preset').value='avpnMid';currentLang='en';refreshAvpnPresetInfo();const en=$('avpnPresetInfo').innerHTML;currentLang='nl';refreshAvpnPresetInfo();const nl=$('avpnPresetInfo').innerHTML;return {en,nl};})()`);
+  assert(x.en.includes('AVPN midpoint profile:')&&x.en.includes('28.5 cm')&&x.en.includes('58.8% hydration')&&x.en.includes('2.94% salt'),x.en);
+  assert(!/hydratatie|zout|totale fermentatie|rijsomgeving|steen|Verse gist|Let op|rekenkundig|bolrijs/.test(x.en),x.en);
+  assert(x.nl.includes('AVPN middenprofiel:')&&x.nl.includes('28,5 cm')&&x.nl.includes('58,8% hydratatie')&&x.nl.includes('2,94% zout'),x.nl);
+});
+
+test('mobile picker CSS reserves recipe space and keeps filters on one scrollable row',()=>{
+  assert(/\.picker-list\s*\{min-height:26vh\}/.test(html),'missing mobile picker list minimum height');
+  assert(/\.pizza-filter-chips\s*\{[\s\S]*?flex-wrap:nowrap;[\s\S]*?overflow-x:auto;[\s\S]*?overscroll-behavior-x:contain;[\s\S]*?padding-bottom:4px;[\s\S]*?\}/.test(html),'missing mobile filter scrolling');
+  assert(/\.filter-chip\s*\{flex:0 0 auto\}/.test(html),'filter chips may shrink');
 });
 
 test('remaining audited static labels have exact English translations',()=>{
