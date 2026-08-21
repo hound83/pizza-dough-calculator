@@ -96,4 +96,13 @@ const missing=[...new Set(called.filter(name=>!declared.has(name)&&!browserFunct
 assert(missing.length===0,`Inline handlers reference missing functions: ${missing.join(', ')}`);
 pass(`${ids.length} static ids are unique and all ${handlers.length} inline handlers resolve`);
 
-console.log('\n11 refactor-structure tests passed');
+const readmeEnglish=fs.readFileSync(path.join(ROOT,'README.md'),'utf8');
+const readmeDutch=fs.readFileSync(path.join(ROOT,'README.nl.md'),'utf8');
+const languageNavigation='[English](README.md) | [Nederlands](README.nl.md)';
+const headingLevels=markdown=>[...markdown.matchAll(/^(#{1,6})\s+\S.*$/gm)].map(match=>match[1].length);
+assert(readmeEnglish.includes(languageNavigation)&&readmeDutch.includes(languageNavigation),'Both README files must contain the language navigation.');
+assert(JSON.stringify(headingLevels(readmeEnglish))===JSON.stringify(headingLevels(readmeDutch)),'English and Dutch README heading structures differ.');
+assert(/README\.md.*canonieke/i.test(readmeDutch),'Dutch README must identify README.md as the canonical version.');
+pass('English and Dutch README files retain equivalent structure and canonical-language guidance');
+
+console.log('\n12 refactor-structure tests passed');
