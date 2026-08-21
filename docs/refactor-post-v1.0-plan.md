@@ -20,6 +20,7 @@ index.html                         generated standalone publication
 tools/bundle.js                    dependency-free bundler and drift check
 tests/test_refactor_structure.js   architecture and golden-equivalence tests
 tests/test_v50.js                  64 functional regression tests
+tests/browser/refactor.spec.js     18 Chromium browser and layout tests
 docs/ARCHITECTURE.md               ownership and change rules
 package.json                       reproducible development commands
 ```
@@ -44,6 +45,7 @@ npm test
 1. Split the original inline stylesheet and script into maintainable source files while preserving their bytes and load order.
 2. Move the modular source under `src/` and restore the standalone root publication with automatic drift detection.
 3. Standardize active developer documentation in English, retain a complete Dutch README, and preserve historic Dutch audit evidence.
+4. Add reproducible Chromium coverage for both publications and six responsive viewport widths, with focused mobile picker assertions.
 
 ## Processing new feedback
 
@@ -59,11 +61,10 @@ A functional fix on `main` must be distributed across the relevant refactor modu
 
 ## Next architecture steps
 
-1. Add reproducible Chromium layout coverage for the standalone bundle and modular source.
-2. Ask Claude to compare the completed refactor directly with `main`.
-3. Resolve any loading, hosting, browser, or maintainability findings on this branch.
-4. Keep product version 1.0.0 while behavior remains fully equivalent.
-5. Consider ES modules, removal of inline handlers, and a DOM-independent calculation core only in separately audited architecture work.
-6. Build Basic/Full as new **v1.1.0** functionality after the refactor is accepted.
+1. Ask Claude to compare the completed refactor directly with `main`.
+2. Resolve any loading, hosting, browser, or maintainability findings on this branch.
+3. Keep product version 1.0.0 while behavior remains fully equivalent.
+4. Consider ES modules, removal of inline handlers, and a DOM-independent calculation core only in separately audited architecture work.
+5. Build Basic/Full as new **v1.1.0** functionality after the refactor is accepted.
 
 Module responsibilities and change rules are documented in `docs/ARCHITECTURE.md`. The independent audit scope is in `docs/Claude_refactor_handoff_v1.0.0.md`.

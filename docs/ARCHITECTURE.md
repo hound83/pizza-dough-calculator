@@ -68,12 +68,16 @@ The test concatenates the eleven modules without separators, restores CSS and Ja
 
 `tests/test_v50.js` runs all 64 functional regressions against both the modular source and the standalone bundle.
 
+`tests/browser/refactor.spec.js` runs 18 Chromium checks across the standalone bundle and modular source. Six viewport widths (320, 390, 430, 760, 1024, and 1280 px) cover initialization, page/console/request failures, and horizontal fit. The three mobile sizes additionally protect usable recipe-list height, the horizontally scrollable filter row, modal fit, and explicit click selection that cannot be changed by hover.
+
+Playwright is a development-only dependency. It is not bundled into `index.html`, loaded by the application, or required by GitHub Pages and offline users.
+
 ## Change workflow
 
 1. Identify the module that owns the behavior.
 2. Add a focused regression test before fixing a bug or adding a feature.
 3. Edit source files under `src/` and run `npm run bundle`.
-4. Run `npm test`.
+4. Run `npm test`; use `npm run test:fast` only when intentionally skipping the local browser layer during intermediate work.
 5. Do not automatically update golden hashes after an intentional behavioral change; first document why the branch is no longer behavior-neutral and establish the reviewed new baseline.
 6. Test layout, keyboard behavior, and native browser signals in Chromium at the relevant viewports.
 

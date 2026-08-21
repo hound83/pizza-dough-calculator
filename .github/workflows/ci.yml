@@ -18,5 +18,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run architecture and regression tests
+          cache: npm
+      - name: Install development dependencies
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run architecture, functional, and browser tests
         run: npm test

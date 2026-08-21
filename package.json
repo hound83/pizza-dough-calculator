@@ -9,9 +9,14 @@
     "test:structure": "node tests/test_refactor_structure.js",
     "test:bundle": "node tests/test_v50.js index.html",
     "test:source": "node tests/test_v50.js src/index.html",
-    "test": "npm run check:bundle && npm run test:structure && npm run test:bundle && npm run test:source"
+    "test:fast": "npm run check:bundle && npm run test:structure && npm run test:bundle && npm run test:source",
+    "test:browser": "playwright test",
+    "test": "npm run test:fast && npm run test:browser"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
   }
 }

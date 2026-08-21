@@ -106,7 +106,16 @@ https://<username>.github.io/<repository-name>/
 
 ## Development and tests
 
-Node.js 18 or newer is required for development. The current structural and functional suite uses only Node.js and requires no installed packages:
+The published application has no runtime dependencies. Development requires Node.js 20 or newer; Playwright is the single development dependency used for real Chromium coverage.
+
+Install the reproducible development environment once:
+
+```bash
+npm ci
+npx playwright install chromium
+```
+
+Then run the complete suite:
 
 ```bash
 npm test
@@ -118,6 +127,7 @@ Current result:
 11 refactor-structure tests passed
 64 bundle regression tests passed
 64 source regression tests passed
+18 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:
@@ -133,7 +143,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, and exact reconstruction of the golden single-file source.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, and exact reconstruction of the golden single-file source. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading, horizontal fit, mobile picker space, filter scrolling, and the click-versus-hover selection contract.
 
 Use the following commands when working on the modular sources:
 
@@ -166,6 +176,8 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`tools/bundle.js`](tools/bundle.js) | Dependency-free standalone bundler and drift check |
 | [`tests/test_v50.js`](tests/test_v50.js) | Fast Node/VM functional regression suite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architecture, integrity, and golden-equivalence tests |
+| [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromium loading, responsive layout, and picker interaction tests |
+| [`playwright.config.js`](playwright.config.js) | Reproducible local and CI browser-test configuration |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module boundaries, dependencies, and change rules |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quality rules and review checklist |
 | [`README.nl.md`](README.nl.md) | Complete Dutch project documentation |

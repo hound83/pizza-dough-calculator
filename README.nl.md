@@ -106,7 +106,16 @@ https://<gebruikersnaam>.github.io/<repositorynaam>/
 
 ## Ontwikkelen en testen
 
-Voor ontwikkeling is Node.js 18 of nieuwer nodig. De huidige structuur- en functiesuite gebruikt alleen Node.js en heeft geen geïnstalleerde packages nodig:
+De gepubliceerde applicatie heeft geen runtime-dependencies. Voor ontwikkeling is Node.js 20 of nieuwer nodig; Playwright is de enige ontwikkeldependency en verzorgt de echte Chromium-controles.
+
+Installeer de reproduceerbare ontwikkelomgeving eenmalig:
+
+```bash
+npm ci
+npx playwright install chromium
+```
+
+Voer daarna de complete suite uit:
 
 ```bash
 npm test
@@ -118,6 +127,7 @@ Huidige uitslag:
 11 refactor-structure tests passed
 64 bundle regression tests passed
 64 source regression tests passed
+18 Chromium browser/layout tests passed
 ```
 
 De suite controleert onder meer:
@@ -133,7 +143,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit en exacte reconstructie van de golden single-filebron.
+De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit en exacte reconstructie van de golden single-filebron. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden, horizontale passing, mobiele pickerruimte, filterscrollen en het klik-versus-hover-selectiecontract.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -166,6 +176,8 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 | [`tools/bundle.js`](tools/bundle.js) | Dependencyvrije standalone bundler en driftcontrole |
 | [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architectuur-, integriteits- en golden-equivalentietests |
+| [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromiumtests voor laden, responsive layout en pickerinteractie |
+| [`playwright.config.js`](playwright.config.js) | Reproduceerbare browsertestconfiguratie voor lokaal gebruik en CI |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Modulegrenzen, afhankelijkheden en wijzigingsregels |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Kwaliteitsregels en reviewchecklist voor vervolgwerk |
 | [`README.md`](README.md) | Canonieke Engelse projectdocumentatie |

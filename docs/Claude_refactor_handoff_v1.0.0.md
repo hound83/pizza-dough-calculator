@@ -37,12 +37,13 @@ Inlining those source assets produces the golden v1.0.0 single-file source byte-
 
 `tests/test_refactor_structure.js` enforces all three values and verifies that the committed root bundle is current.
 
-## Automated evidence before browser coverage
+## Automated evidence
 
 ```text
 11 refactor-structure tests passed
 64 bundle regression tests passed
 64 source regression tests passed
+18 Chromium browser/layout tests passed
 ```
 
 The structure suite additionally checks:
@@ -55,6 +56,10 @@ The structure suite additionally checks:
 - one explicit owner for persistence and bootstrap;
 - 154 unique static HTML IDs;
 - all 50 inline handlers resolve to application or browser functions.
+
+The Playwright suite opens both `/index.html` and `/src/index.html` in Chromium. At 320, 390, 430, 760, 1024, and 1280 px it checks clean initialization, failed requests, browser errors, and horizontal fit. At all three mobile widths it additionally checks modal fit, meaningful recipe-list height, horizontal filter-chip scrolling, visible recipes, and the regression contract that clicking Salami followed by hovering Quattro Formaggi keeps Salami selected and previewed.
+
+GitHub Actions installs the locked Playwright 1.62.1 dependency and matching Chromium browser before running the complete suite on every push and pull request. Playwright remains development-only; both application publications have zero runtime dependencies.
 
 ## Requested independent browser comparison
 
