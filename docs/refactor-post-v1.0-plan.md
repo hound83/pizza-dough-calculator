@@ -1,66 +1,69 @@
-# Uitvoering gedrag-neutrale refactor na v1.0.0
+# Behavior-neutral refactor after v1.0.0
 
-## Doel
+## Goal
 
-De uitgebrachte v1.0.0 blijft één zelfvoorzienend `index.html`-bestand. Deze branch bewaart de onderhoudbare opsplitsing onder `src/` en genereert daaruit dezelfde standalone rootpublicatie, zonder functies, formules, opslag of gebruikersgedrag te veranderen.
+The released v1.0.0 remains one self-contained `index.html`. This branch keeps maintainable sources under `src/` and generates the same standalone root publication without changing features, formulas, persistence, or user behavior.
 
-De publieke productversie is na een groene audit **v1.0.0** geworden. De historische naam v50 blijft alleen bestaan waar die technisch nodig is voor audits, tests en backwards-compatible `localStorage`-migratie.
+After a successful audit, the public product version became **v1.0.0**. The historic v50 name remains only where technically required for audits, tests, and backward-compatible `localStorage` migration.
 
-## Waarom deze afzonderlijke branch?
+## Why a separate branch?
 
-De functionele release en de architectuurwijziging zijn bewust niet vermengd. Daardoor blijft bij iedere vergelijking duidelijk of een verschil uit productlogica of alleen uit de bestandsstructuur komt. De v1.0.0-single-filebron en zijn drie golden hashes vormen de vaste referentie voor deze branch.
+Functional release changes and architecture changes are deliberately separated. Every comparison can therefore show whether a difference comes from product logic or file structure alone. The v1.0.0 single-file source and its three golden hashes are the fixed reference for this branch.
 
-## Gerealiseerde structuur
+## Implemented structure
 
 ```text
-src/index.html                     semantische HTML en vaste scriptvolgorde
-src/assets/css/app.css             exact geëxtraheerde stylesheet
-src/assets/js/                     elf scripts per verantwoordelijkheid
-index.html                         gegenereerde standalone publicatie voor Pages en lokaal gebruik
-tools/bundle.js                    dependencyvrije bundler en driftcontrole
-tests/test_refactor_structure.js   architectuur- en golden-equivalentietest
-tests/test_v50.js                  64 functionele regressietests
-docs/ARCHITECTURE.md               eigenaarschap en wijzigingsregels
-package.json                       reproduceerbaar npm test zonder dependencies
+src/index.html                     semantic HTML and fixed script order
+src/assets/css/app.css             exactly extracted stylesheet
+src/assets/js/                     eleven responsibility-based scripts
+index.html                         generated standalone publication
+tools/bundle.js                    dependency-free bundler and drift check
+tests/test_refactor_structure.js   architecture and golden-equivalence tests
+tests/test_v50.js                  64 functional regression tests
+docs/ARCHITECTURE.md               ownership and change rules
+package.json                       reproducible development commands
 ```
 
-## Commando's
+## Commands
 
-Standalone publicatie bouwen of controleren:
+Build or verify the standalone publication:
 
 ```bash
 npm run bundle
 npm run check:bundle
 ```
 
-Alle architectuur- en functionele tests uitvoeren:
+Run every architecture and functional test:
 
 ```bash
 npm test
 ```
 
-## Status
+## Completed phases
 
-Variant A uit de onafhankelijke audit is gekozen: modulaire bronnen onder `src/`, een gecommitteerde standalone root-`index.html` en automatische driftcontrole. Samengevoegde CSS en JavaScript blijven byte-voor-byte gelijk aan v1.0.0; de rootbundle is exact de golden single-filebron. `split-preview/` is daardoor niet langer nodig en de oorspronkelijke één-bestand-publicatieregel blijft intact.
+1. Split the original inline stylesheet and script into maintainable source files while preserving their bytes and load order.
+2. Move the modular source under `src/` and restore the standalone root publication with automatic drift detection.
+3. Standardize active developer documentation in English, retain a complete Dutch README, and preserve historic Dutch audit evidence.
 
-## Nieuwe feedback verwerken
+## Processing new feedback
 
-Wanneer na v1.0.0 nog een bevinding komt:
+When a new v1.0.0 finding appears:
 
-1. analyseer en repareer die eerst op een aparte bugfixbranch vanaf `main`;
-2. test de ongesplitste versie en commit de fix daar;
-3. merge of cherry-pick de fix in `refactor/post-v1.0-prep` binnen de bezittende module;
-4. voer `npm test` uit;
-5. herhaal de gerichte browsertest op de refactorroot.
+1. analyze and repair it first on a dedicated bug-fix branch from `main`;
+2. test and commit the unsplit fix there;
+3. merge or cherry-pick it into `refactor/post-v1.0-prep` within the owning module;
+4. regenerate the root bundle and run the complete suite;
+5. repeat the focused browser test against both source and distribution.
 
-Een inhoudelijke fix op `main` moet in de refactor over de relevante modules worden verdeeld. De golden-hashtest faalt dan bewust totdat de nieuwe functionele baseline en reden zijn vastgelegd.
+A functional fix on `main` must be distributed across the relevant refactor modules. The golden-hash test should fail until the new functional baseline and its rationale are explicitly recorded.
 
-## Volgende architectuurstappen
+## Next architecture steps
 
-1. laat Claude de refactor in een echte Chromium-browser vergelijken met `main`;
-2. sluit eventuele laadvolgorde-, hosting- of onderhoudbaarheidsbevindingen op deze branch;
-3. behoud productversie 1.0.0 zolang gedrag volledig equivalent blijft;
-4. overweeg ES-modules en het verwijderen van inline handlers pas in een aparte, opnieuw geaudite architectuurstap;
-5. bouw Basis/Uitgebreid vervolgens als nieuwe functionaliteit in **v1.1.0**.
+1. Add reproducible Chromium layout coverage for the standalone bundle and modular source.
+2. Ask Claude to compare the completed refactor directly with `main`.
+3. Resolve any loading, hosting, browser, or maintainability findings on this branch.
+4. Keep product version 1.0.0 while behavior remains fully equivalent.
+5. Consider ES modules, removal of inline handlers, and a DOM-independent calculation core only in separately audited architecture work.
+6. Build Basic/Full as new **v1.1.0** functionality after the refactor is accepted.
 
-De moduleverantwoordelijkheden en wijzigingsregels staan in `docs/ARCHITECTURE.md`; de gerichte onafhankelijke auditopdracht staat in `docs/Claude_refactor_handoff_v1.0.0.md`.
+Module responsibilities and change rules are documented in `docs/ARCHITECTURE.md`. The independent audit scope is in `docs/Claude_refactor_handoff_v1.0.0.md`.

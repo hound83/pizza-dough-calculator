@@ -1,66 +1,82 @@
-# Architectuur van de v1.0.0-refactor
+# v1.0.0 refactor architecture
 
-## Ontwerpdoelen
+## Design goals
 
-Deze branch maakt de golden v1.0.0 beter onderhoudbaar zonder productgedrag te wijzigen. De architectuur houdt daarom vijf harde uitgangspunten aan:
+This branch makes golden v1.0.0 easier to maintain without changing product behavior. The architecture therefore has five hard constraints:
 
-1. `main` en tag `v1.0.0` blijven de bevroren referentie.
-2. Er is geen framework, package dependency, transpiler of productiebuild nodig.
-3. GitHub Pages serveert de gegenereerde standalone root-`index.html` rechtstreeks.
-4. De onderhoudbare bron staat onder `src/`; de elf scripts worden daar als klassieke browserscripts in een vaste volgorde geladen.
-5. Samengevoegde CSS en JavaScript moeten byte-voor-byte gelijk blijven aan v1.0.0 zolang deze gedrag-neutrale refactor wordt beoordeeld.
+1. `main` and tag `v1.0.0` remain the frozen reference.
+2. The shipped application requires no framework, package dependency, transpiler, or production build at runtime.
+3. GitHub Pages serves the generated standalone root `index.html` directly.
+4. Maintainable sources live under `src/`; eleven classic browser scripts load there in a fixed order.
+5. Recombined CSS and JavaScript must remain byte-for-byte identical to v1.0.0 while this behavior-neutral refactor is under review.
 
-Klassieke scripts zijn hier een bewuste tussenarchitectuur. Ze behouden ondersteuning voor de bestaande inline HTML-handlers en de wereldwijde lexicale runtime zonder honderden functieaanroepen tegelijk te herschrijven. De vaste volgorde en eigenaarschapstests maken die gedeelde runtime expliciet in plaats van impliciet.
+Classic scripts are a deliberate intermediate architecture. They preserve the existing inline HTML handlers and shared global lexical runtime without rewriting hundreds of calls at once. Fixed load order and ownership tests make this shared runtime explicit instead of merely implicit.
 
-## Laadvolgorde en verantwoordelijkheden
+## Distribution model
 
-| Volgorde | Bestand | Eigen verantwoordelijkheid |
+`src/` is the source of truth for application code. `tools/bundle.js` reads `src/index.html`, inlines the stylesheet and the eleven scripts without changing their bytes, and writes the standalone root `index.html`. The generated root file is committed so GitHub Pages and downloaded offline use require no build step.
+
+```text
+src/index.html + src/assets/css/app.css + src/assets/js/*.js
+                              │
+                       tools/bundle.js
+                              │
+                              ▼
+                   index.html (standalone)
+```
+
+`npm run check:bundle` fails if the committed distribution differs from a fresh source reconstruction.
+
+## Load order and responsibilities
+
+| Order | File | Owned responsibility |
 |---:|---|---|
-| 1 | `foundation.js` | veilige browseropslagwrapper, getalvelden, globale UI-state en productversie |
-| 2 | `translations.js` | statisch Nederlands-Engels woordenboek en gerichte aanvullingen |
-| 3 | `i18n.js` | vertaalengine, taalwissel en taalafhankelijke teksthelpers |
-| 4 | `catalog.js` | gist-, bloem-, deegstijl-, saus-, temperatuur-, ingrediënt- en pizzadata |
-| 5 | `pizza-picker.js` | per-bol-customizations, filters, zoeken, modalbediening en expliciete pickerselectie |
-| 6 | `dough-fermentation.js` | bakkerspercentages, bolmaat, thermisch model, gistadvies, presets en hoofd-updatecyclus |
-| 7 | `sauce-recipes.js` | sausaggregatie, receptsamenvattingen, pizzacustomization en kneedinstructies |
-| 8 | `fermentation-live.js` | DDT/wateradvies, live temperatuurcorrecties, solver en afvinkbare fermentatiestappen |
-| 9 | `planning-shopping.js` | deadlineplanning, tijdlijn, boodschappen, ovenadvies, kopieertekst en ingrediëntenmodal |
-| 10 | `navigation-logbook.js` | wizardnavigatie, appmodi, receptkopie en deeglogboekweergave |
-| 11 | `persistence-bootstrap.js` | schema-50-opslag/migratie, eventregistratie en de enige `DOMContentLoaded`-bootstrap |
+| 1 | `foundation.js` | safe browser-storage wrapper, numeric fields, global UI state, and product version |
+| 2 | `translations.js` | static Dutch/English dictionary and targeted additions |
+| 3 | `i18n.js` | translation engine, language switching, and localized text helpers |
+| 4 | `catalog.js` | yeast, flour, dough-style, sauce, temperature, ingredient, and pizza data |
+| 5 | `pizza-picker.js` | per-ball customizations, filters, search, modal controls, and explicit picker selection |
+| 6 | `dough-fermentation.js` | baker's percentages, ball sizing, thermal model, yeast advice, presets, and main update cycle |
+| 7 | `sauce-recipes.js` | sauce aggregation, recipe summaries, pizza customization, and kneading instructions |
+| 8 | `fermentation-live.js` | DDT/water advice, live temperature corrections, solver, and checkable fermentation steps |
+| 9 | `planning-shopping.js` | deadline planning, timeline, shopping, oven advice, copy output, and ingredients modal |
+| 10 | `navigation-logbook.js` | wizard navigation, app modes, recipe copying, and dough-log presentation |
+| 11 | `persistence-bootstrap.js` | schema-50 persistence/migration, event registration, and the sole `DOMContentLoaded` bootstrap |
 
-De volgorde is een contract: latere modules mogen functies en state uit eerdere modules gebruiken. Functiedeclaraties kunnen ook pas bij gebruikersinteractie functies uit later geladen modules aanroepen, omdat alle elf scripts geladen zijn voordat de gebruiker de app bedient.
+The order is a contract: later modules may use functions and state from earlier modules. Function declarations may also call later-loaded functions after user interaction, because all eleven scripts have loaded before the user can operate the application.
 
-## Belangrijkste eigenaarschapsregels
+## Ownership rules
 
-- Alleen `persistence-bootstrap.js` bezit `SAVE_KEY`, `SAVE_VERSION`, migratie en `DOMContentLoaded`.
-- Alleen `foundation.js` bezit `APP_VERSION`, taalstate en de generieke DOM-/getalhelpers; woordenboekdata en vertaalengine hebben afzonderlijke eigenaren.
-- Recept- en ingrediëntdata horen in `catalog.js`; pickerinteractie hoort in `pizza-picker.js`.
-- `dough-fermentation.js` bevat de deeg- en fermentatieberekeningen én de bijbehorende formulierbediening. DOM-ontkoppeling is een aparte architectuurstap; deze refactor verplaatst uitsluitend bestaande code.
-- `src/index.html` bepaalt uitsluitend structuur en scriptvolgorde; presentatie hoort in `src/assets/css/app.css`.
-- De resterende inline handlers zijn de bestaande publieke browser-API. Nieuwe interacties gebruiken bij voorkeur `addEventListener` in de bezittende module.
+- Only `persistence-bootstrap.js` owns `SAVE_KEY`, `SAVE_VERSION`, migration, and `DOMContentLoaded`.
+- Only `foundation.js` owns `APP_VERSION`, language state, and generic DOM/numeric helpers; dictionary data and the translation engine have separate owners.
+- Recipe and ingredient data belong in `catalog.js`; picker interaction belongs in `pizza-picker.js`.
+- `dough-fermentation.js` contains dough and fermentation calculations **and** their form orchestration. Extracting a DOM-independent calculation core is a separate architecture step; this refactor only relocates existing code.
+- `src/index.html` owns structure and script order only; presentation belongs in `src/assets/css/app.css`.
+- Remaining inline handlers form the existing public browser API. New interactions should use `addEventListener` in the owning module.
 
-## Gedragsequivalentie
+## Behavioral equivalence
 
-`tools/bundle.js` bouwt zonder dependencies de standalone root-`index.html` uit `src/`. `npm run check:bundle` faalt wanneer die gecommitteerde publicatie achterloopt. `tests/test_refactor_structure.js` bewaakt daarnaast drie golden hashes:
+`tests/test_refactor_structure.js` protects three golden hashes:
 
 | Artefact | SHA-256 |
 |---|---|
-| v1.0.0 single-filebron | `7045421500a5497ca403699a2297c2ad8fa3e53f81f053300e8abdd84630cf3f` |
+| v1.0.0 single-file source | `7045421500a5497ca403699a2297c2ad8fa3e53f81f053300e8abdd84630cf3f` |
 | v1.0.0 CSS | `262e12b5356f5a50c63aa7cd7249b3c5c8b101d8954f076de1360efbc222b896` |
 | v1.0.0 JavaScript | `2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7` |
 
-De test voegt de elf modules zonder scheidingstekens samen, plaatst CSS en JavaScript terug in `index.html` en eist daarna exact de single-filehash van de release. Ook valideert hij parseerbaarheid, modulevolgorde, unieke HTML-id's, alle inline-handlerfuncties en het exclusieve opslag-/bootstrap-eigenaarschap.
+The test concatenates the eleven modules without separators, restores CSS and JavaScript to `src/index.html`, and requires the exact release single-file hash. It also validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the current committed bundle.
 
-De bestaande `tests/test_v50.js` draait alle 64 functionele regressies zowel tegen de modulaire bron als tegen de standalone bundle.
+`tests/test_v50.js` runs all 64 functional regressions against both the modular source and the standalone bundle.
 
-## Wijzigingsworkflow
+## Change workflow
 
-1. Kies eerst de module die eigenaar is van het te wijzigen gedrag.
-2. Voeg voor een bug of functie eerst een gerichte regressietest toe.
-3. Voer `npm test` uit.
-4. Bij een bewuste gedragswijziging veranderen de golden hashes niet automatisch: documenteer eerst waarom de branch niet langer gedrag-neutraal is.
-5. Test veranderingen aan layout, toetsenbordbediening of native browsersignalen aanvullend in Chromium op de relevante viewports.
+1. Identify the module that owns the behavior.
+2. Add a focused regression test before fixing a bug or adding a feature.
+3. Edit source files under `src/` and run `npm run bundle`.
+4. Run `npm test`.
+5. Do not automatically update golden hashes after an intentional behavioral change; first document why the branch is no longer behavior-neutral and establish the reviewed new baseline.
+6. Test layout, keyboard behavior, and native browser signals in Chromium at the relevant viewports.
 
-## Bewuste vervolgstappen
+## Deliberate follow-ups
 
-ES-modules en het verwijderen van de laatste inline handlers kunnen later waardevol zijn, maar vormen een afzonderlijke architectuurstap. Dat verandert naamresolutie en de publieke browser-API en hoort daarom niet stilletjes in deze mechanische refactor. Hetzelfde geldt voor de geplande Basis/Uitgebreid-functionaliteit en de resterende LOW-toegankelijkheidsverbetering uit de golden audit.
+ES modules, removal of the remaining inline handlers, and extraction of a DOM-independent calculation core may be valuable later, but each is a separate architecture step. They change name resolution, coupling, or the public browser API and must not be hidden in this mechanical refactor. The planned Basic/Full feature and the remaining low-severity accessibility improvement from the golden audit are similarly out of scope.
