@@ -31,6 +31,12 @@ function observeBrowserFailures(page){
   return failures;
 }
 
+test('test server handles the implicit browser favicon request',async({request})=>{
+  const response=await request.get('/favicon.ico');
+  expect(response.status()).toBe(204);
+  expect((await response.body()).length).toBe(0);
+});
+
 async function openPicker(page,publication){
   await page.goto(publication.path,{waitUntil:'load'});
   await page.locator('[data-mode-card="full"]').click();
