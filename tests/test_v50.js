@@ -2,15 +2,33 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 
+const requestedCalculator=process.argv[2]?path.resolve(process.cwd(),process.argv[2]):null;
 const calculatorPath=[
+  requestedCalculator,
   path.join(__dirname,'..','index.html'),
   path.join(__dirname,'index.html'),
   path.join(__dirname,'..','pizzadeeg_calculator_v50.html'),
   path.join(__dirname,'pizzadeeg_calculator_v50.html')
-].find(candidate=>fs.existsSync(candidate));
+].find(candidate=>candidate&&fs.existsSync(candidate));
 if(!calculatorPath)throw new Error('Could not find index.html or pizzadeeg_calculator_v50.html relative to the test file.');
 const html=fs.readFileSync(calculatorPath,'utf8');
-const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).join('\n');
+const linkedStyles=[...html.matchAll(/<link\s+([^>]+)>/gi)].map(match=>{
+  const attributes=match[1]||'';
+  const rel=attributes.match(/\brel\s*=\s*["']([^"']+)["']/i)?.[1]||'';
+  const href=attributes.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1];
+  return /(^|\s)stylesheet(\s|$)/i.test(rel)&&href
+    ? fs.readFileSync(path.resolve(path.dirname(calculatorPath),href),'utf8')
+    : '';
+}).join('\n');
+const styleSource=html+'\n'+linkedStyles;
+const script=[...html.matchAll(/<script(?:\s([^>]*))?>([\s\S]*?)<\/script>/gi)].map(match=>{
+  const attributes=match[1]||'';
+  const src=attributes.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1];
+  return src
+    ? fs.readFileSync(path.resolve(path.dirname(calculatorPath),src),'utf8')
+    : match[2];
+}).join('\n');
+if(!script.trim())throw new Error(`No executable calculator script found in ${calculatorPath}.`);
 
 class DummyClassList{
   constructor(){this.values=new Set();}
@@ -421,9 +439,9 @@ test('AVPN information block renders completely and consistently in both languag
 });
 
 test('mobile picker CSS reserves recipe space and keeps filters on one scrollable row',()=>{
-  assert(/\.picker-list\s*\{min-height:26vh\}/.test(html),'missing mobile picker list minimum height');
-  assert(/\.pizza-filter-chips\s*\{[\s\S]*?flex-wrap:nowrap;[\s\S]*?overflow-x:auto;[\s\S]*?overscroll-behavior-x:contain;[\s\S]*?padding-bottom:4px;[\s\S]*?\}/.test(html),'missing mobile filter scrolling');
-  assert(/\.filter-chip\s*\{flex:0 0 auto\}/.test(html),'filter chips may shrink');
+  assert(/\.picker-list\s*\{min-height:26vh\}/.test(styleSource),'missing mobile picker list minimum height');
+  assert(/\.pizza-filter-chips\s*\{[\s\S]*?flex-wrap:nowrap;[\s\S]*?overflow-x:auto;[\s\S]*?overscroll-behavior-x:contain;[\s\S]*?padding-bottom:4px;[\s\S]*?\}/.test(styleSource),'missing mobile filter scrolling');
+  assert(/\.filter-chip\s*\{flex:0 0 auto\}/.test(styleSource),'filter chips may shrink');
 });
 
 test('remaining audited static labels have exact English translations',()=>{

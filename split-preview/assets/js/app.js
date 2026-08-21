@@ -1,0 +1,4903 @@
+
+const $ = id => document.getElementById(id);
+
+// localStorage kan gooien (Safari private mode, geblokkeerde cookies, volle opslag).
+// Alle toegang loopt daarom via SAFE, zodat de app nooit op opslag stukloopt.
+const SAFE={
+  get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}},
+  del(k){try{localStorage.removeItem(k);}catch(e){}},
+  keys(){try{return Object.keys(localStorage);}catch(e){return [];}}
+};
+function esc(x){return String(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+
+let currentLang=SAFE.get('pizzaCalcLanguage')||'nl';
+const roundTo=(n,s)=>Math.round(n/s)*s;
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+// Waarde voor een <input type="number">: altijd punt-decimaal, geen overbodige nullen.
+function fieldNum(x,dec=3){const v=Number(x);return Number.isFinite(v)?String(Number(v.toFixed(dec))):'';}
+function fmt(n,d=1){return Number(n).toLocaleString(currentLang==='en'?'en-US':'nl-NL',{minimumFractionDigits:0,maximumFractionDigits:d});}
+function fmtFixed(n,d=1){return Number(n).toLocaleString(currentLang==='en'?'en-US':'nl-NL',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function num(id){return parseFloat($(id).value)||0;}
+function numDefault(id,fallback){
+  const el=$(id),raw=el?String(el.value).trim():'';
+  if(raw==='')return fallback;
+  const n=parseFloat(raw);return Number.isFinite(n)?n:fallback;
+}
+function numericBounds(el){
+  const min=el&&String(el.min).trim()!==''?Number(el.min):-Infinity;
+  const max=el&&String(el.max).trim()!==''?Number(el.max):Infinity;
+  return {
+    min:Number.isFinite(min)?min:-Infinity,
+    max:Number.isFinite(max)?max:Infinity
+  };
+}
+function clampToInputBounds(el,value){
+  const bounds=numericBounds(el);
+  return clamp(value,bounds.min,bounds.max);
+}
+
+// Lezen en zichtbaar corrigeren zijn bewust gescheiden. calc() draait tijdens
+// iedere toetsaanslag: terugschrijven vanuit deze helper zou een tussenstand
+// zoals "4" bij het typen van "480" direct naar het minimum veranderen.
+function boundedNum(id,fallback=0){
+  const el=$(id),raw=el?String(el.value).trim():'';
+  if(raw==='')return fallback;
+  let n=parseFloat(raw);
+  if(!Number.isFinite(n))n=fallback;
+  return clampToInputBounds(el,n);
+}
+function boundedNumDefault(id,fallback){
+  const el=$(id),raw=el?String(el.value).trim():'';
+  return raw===''?fallback:boundedNum(id,fallback);
+}
+function nonNegativeNum(id,fallback=0){
+  return Math.max(0,boundedNum(id,fallback));
+}
+const _numericEditStartValues=new WeakMap();
+const OPTIONAL_NUMBER_FIELDS=new Set(['finalDoughTemp','flourW','saucePerPizza','logWaterTemp']);
+
+// Een verplicht getal dat per ongeluk volledig wordt gewist, keert terug naar
+// de waarde waarmee deze bewerking begon. Zo blijven presetwaarden en de
+// gekozen gistsoort intact in plaats van terug te vallen op één HTML-default.
+function rememberNumericEditStart(el){
+  if(!el||el.type!=='number')return;
+  const raw=String(el.value).trim();
+  const n=parseFloat(raw);
+  const bounds=numericBounds(el);
+  if(raw!==''&&Number.isFinite(n)&&n>=bounds.min&&n<=bounds.max){
+    _numericEditStartValues.set(el,raw);
+  }else{
+    _numericEditStartValues.delete(el);
+  }
+}
+function numericEmptyFallback(el){
+  const remembered=String(_numericEditStartValues.get(el)??'').trim();
+  if(remembered!=='')return remembered;
+  const htmlDefault=String(el.defaultValue??'').trim();
+  if(htmlDefault===''||!Number.isFinite(parseFloat(htmlDefault)))return '';
+  // Voor oude opgeslagen states zonder focusgeschiedenis blijft de generieke
+  // fallback ten minste overeenkomen met de momenteel gekozen gistsoort.
+  if(el.id==='yeastPct'){
+    const yeastType=yeastTypes[$('yeastType').value]||yeastTypes.idy;
+    return String(parseFloat(htmlDefault)*yeastType.mult);
+  }
+  return htmlDefault;
+}
+function normalizeNumericInput(el){
+  if(!el||el.type!=='number')return false;
+  const raw=String(el.value).trim();
+  // Leeg blijft tijdens het typen altijd toegestaan. Bij change/blur en na
+  // state-load herstellen alleen verplichte velden een veilige fallback.
+  // De vier expliciet optionele velden gebruiken leeg juist als betekenis.
+  if(raw===''){
+    if(OPTIONAL_NUMBER_FIELDS.has(el.id))return false;
+    const fallback=numericEmptyFallback(el);
+    if(fallback==='')return false;
+    let defaultNumber=parseFloat(fallback);
+    if(!Number.isFinite(defaultNumber))return false;
+    defaultNumber=clampToInputBounds(el,defaultNumber);
+    if(el.id==='pizzas')defaultNumber=Math.round(defaultNumber);
+    el.value=fieldNum(defaultNumber,3);
+    return true;
+  }
+  let n=parseFloat(raw);
+  if(!Number.isFinite(n))return false;
+  n=clampToInputBounds(el,n);
+  if(el.id==='pizzas')n=Math.round(n);
+  const normalized=fieldNum(n,3);
+  if(el.value===normalized)return false;
+  el.value=normalized;
+  return true;
+}
+function normalizeStoredNumberInputs(){
+  // Alleen na state-load. Nooit vanuit de live input-handler.
+  refreshSizeModeUI();
+  document.querySelectorAll('input[type="number"]').forEach(normalizeNumericInput);
+}
+const FERMENT_DEFAULTS={finalDoughTemp:24,flourW:270};
+
+// Bloemsoorten. Alleen Caputo Pizzeria is een officiële productspecificatie;
+// de rest is expliciet een praktische schatting, omdat alveograafwaarden voor
+// consumentenbloem (en zeker voor spelt) zelden gepubliceerd worden.
+const flourTypes={
+  caputoPizzeria:{name:'Caputo Pizzeria',nameEn:'Caputo Pizzeria',w:270,official:true,structure:'standard',
+    note:'Officiële specificatie W260–280; W270 is precies het midden.',noteEn:'Official specification W260–280; W270 is exactly the midpoint.'},
+  tipo00:{name:'Tipo 00 pizzabloem',nameEn:'Tipo 00 pizza flour',w:null,official:false,structure:'standard',
+    note:'W verschilt sterk per merk. Vul de fabrikant-W in als die bekend is; anders wordt geen numerieke W-risicoscore berekend.',noteEn:'W varies widely by brand. Enter the manufacturer W if known; otherwise no numerical W-risk score is calculated.'},
+  manitoba:{name:'Manitoba / sterke tarwebloem',nameEn:'Manitoba / strong wheat flour',w:null,official:false,structure:'standard',
+    note:'Meestal sterk, maar “Manitoba” is geen vaste W-waarde. Gebruik de productspecificatie als je die hebt.',noteEn:'Usually strong, but “Manitoba” is not a fixed W value. Use the product specification if available.'},
+  tarwebloem:{name:'Tarwebloem / patentbloem',nameEn:'Wheat flour / patent flour',w:null,official:false,structure:'standard',
+    note:'Consumentenbloem varieert sterk; zonder productspecificatie blijft W bewust onbekend.',noteEn:'Consumer flour varies widely; without a product specification W deliberately remains unknown.'},
+  speltWit:{name:'Witte spelt',nameEn:'White spelt flour',w:null,official:false,structure:'spelt',
+    note:'Spelt kan zeer uiteenlopende W-waarden hebben en gedraagt zich structureel anders dan tarwe. Eiwitpercentage is geen betrouwbare W-vervanger.',noteEn:'Spelt can have very different W values and behaves structurally differently from wheat. Protein percentage is not a reliable substitute for W.'},
+  speltVolkoren:{name:'Volkoren spelt',nameEn:'Wholemeal spelt flour',w:null,official:false,structure:'speltWhole',
+    note:'Spelt + zemelen verkleinen doorgaans de fermentatiemarge, maar één vaste W- of “tolerance”-factor zou schijnprecisie zijn.',noteEn:'Spelt plus bran generally reduces fermentation tolerance, but one fixed W or “tolerance” factor would imply false precision.'},
+  volkorenTarwe:{name:'Volkoren tarwe',nameEn:'Wholemeal wheat flour',w:null,official:false,structure:'wholegrain',
+    note:'Zemelen beïnvloeden het glutennetwerk; zonder productspecificatie wordt geen exacte W-risicoscore gegeven.',noteEn:'Bran affects the gluten network; without a product specification no exact W-risk score is shown.'},
+  custom:{name:'Eigen bloem',nameEn:'Custom flour',w:null,official:false,structure:'custom',
+    note:'Vul de W-waarde zelf in als je die van de fabrikant kent.',noteEn:'Enter the W value yourself if you know it from the manufacturer.'}
+};
+function currentFlourType(){
+  const el=$('flourType');
+  return (el && flourTypes[el.value]) || flourTypes.caputoPizzeria;
+}
+function flourTypeName(ft=currentFlourType()){return currentLang==='en'?(ft.nameEn||ft.name):ft.name;}
+function flourTypeNote(ft=currentFlourType()){return currentLang==='en'?(ft.noteEn||ft.note):ft.note;}
+
+// Alle receptgrammen in de bibliotheek zijn opgeschreven voor een pizza van 32 cm.
+// Bij een andere diameter schalen ze mee met het OPPERVLAK, niet met de diameter.
+const REF_DIAMETER=32;
+// Huidige hardwareprofiel van deze calculator:
+// - Ooni Koda 2 / 14" ovenruimte: 35,5 cm als praktische fysieke referentie;
+// - 12" schep: 30,5 cm als comfortabele lanceerreferentie.
+// De hardwaregrenzen blijven zacht; de calculator laat dus >35,5 cm toe.
+// De absolute appgrens is 40 cm: daarboven is thuisgebruik te ver buiten scope.
+const OVEN_DIAMETER=35.5;
+const MIN_DIAMETER=20;
+const MAX_DIAMETER=40;   // globale appgrens; 40 cm is al een zeer grote thuispizza
+const PEEL_DIAMETER=30.5;
+const MAX_PIZZAS=24;
+let toppingScale=1;
+function setToppingScale(diameter){
+  const d=Math.max(MIN_DIAMETER,Number(diameter)||REF_DIAMETER);
+  toppingScale=Math.max(0.2,Math.pow(d/REF_DIAMETER,2));
+}
+function scaleQty(qty,unit){
+  const q=Number(qty)*toppingScale;
+  if(unit==='g') return q>=20?roundTo(q,5):Math.max(1,roundTo(q,1));
+  return Math.max(1,Math.round(q));
+}
+
+let currentMethod='kitchenaid';
+let exactOverride=null;
+let previousYeastType='idy';
+let suppressCustom=false;
+let appMode='full';
+let currentWizardPage=0;
+let completedSteps={};
+let liveMeasurements={doughTemp:null,fridgeTemp:null};
+let _livePlanCache={key:null,value:null};
+// Tijdens het typen van het pizza-aantal mag een geldige tussenstand (de "2"
+// van "20") nooit recepten of afgevinkte stappen vernietigen.
+let _deferDependentStatePrune=false;
+
+const EN_TEXT={"Pizzadeegcalculator":"Pizza dough calculator","Reset":"Reset","Calculator resetten":"Reset calculator","0 van 0 stappen afgerond":"0 of 0 steps completed","Vink iedere stap af terwijl je bezig bent.":"Check off each step as you go.","Vinkjes wissen":"Clear checks","Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen. Zonder baktijd zie je de totale doorlooptijd en wat er achter elkaar gebeurt.":"With a desired bake time, the calculator works backwards to show when you should start. Without a bake time, it shows the total lead time and the sequence of phases.","Vorige navigatiestappen":"Previous navigation steps","Volgende navigatiestappen":"Next navigation steps","Stap 2":"Step 2","Saus(en)":"Sauce(s)","Bereken hier de saus(en). In de volledige versie volgen de hoeveelheden automatisch uit de gekozen recepten per bol; in Deeg + saus kies je de saus zelf.":"Calculate the sauce(s) here. In the full version, quantities follow automatically from the recipes selected per dough ball; in Dough + sauce you choose the sauce yourself.","Tip: laat ‘Saus automatisch uit pizzakeuzes’ aan als je in stap 3 per bol een recept kiest. De sausberekening wordt daarna automatisch bijgewerkt.":"Tip: leave ‘Automatic sauce from pizza choices’ enabled when choosing a recipe per dough ball in step 3. The sauce calculation will update automatically.","Stap 3":"Step 3","Bollen & recepten":"Dough balls & recipes","Koppel je deegbollen aan pizzarecepten en pas ze daarna per bol aan.":"Link your dough balls to pizza recipes and then customize them per dough ball.","Kies eerst snel één recept voor alle bollen of pas iedere bol afzonderlijk aan. Daarna kun je toppings, sausvariant en extra kaas per bol finetunen.":"Quickly choose one recipe for all dough balls or customize each ball separately. Then fine-tune toppings, sauce variant and extra cheese per dough ball.","Laatste stap":"Final step","Stappenplan":"Workflow","Hier komt alles samen: kneden, fermenteren, saus, beleggen, tijdlijn, oven en bakken.":"Everything comes together here: kneading, fermentation, sauce, toppings, timeline, oven and baking.","Romige witte saus • crème fraîche":"Creamy white sauce • crème fraîche","BBQ-saus":"BBQ sauce","Romige witte pizzabasis. Dun aanbrengen; vooral geschikt voor kaas-, aardappel-, kip- en groentepizza’s.":"Creamy white pizza base. Apply thinly; especially suitable for cheese, potato, chicken and vegetable pizzas.","Dunne laag BBQ-saus; gebruik wat minder dan tomatensaus omdat deze zoeter en geconcentreerder is.":"Thin layer of BBQ sauce; use less than tomato sauce because it is sweeter and more concentrated.","Crème fraîche":"Crème fraîche","Zwarte peper":"Black pepper","Van alleen deeg tot complete pizza's • kies wat je nodig hebt":"From dough only to complete pizzas • choose what you need","← Keuze":"← Mode","1. Calculator":"1. Calculator","2. Alle stappen":"2. All steps","Wat wil je maken?":"What do you want to make?","Kies hoe uitgebreid je wilt starten. Dezelfde deegcalculator zit onder alle drie de opties; extra onderdelen verschijnen alleen wanneer je ze nodig hebt.":"Choose how much you want to include. The same dough calculator is used in all three modes; extra sections only appear when you need them.","Alleen deeg":"Dough only","Rustig beginnen met alleen deeg, fermentatie, gistadvies, kneden en bakadvies.":"Start simply with dough, fermentation, yeast guidance, kneading and baking advice.","Deegberekening":"Dough calculation","Wetenschappelijk geïnformeerde fermentatie":"Science-informed fermentation","Volledige werkwijze":"Complete workflow","Snel en overzichtelijk":"Quick and simple","Deeg + saus":"Dough + sauce","Alles voor het deeg plus een losse sausberekening, zonder recepten- en toppingkiezer.":"Everything for the dough plus a separate sauce calculation, without the recipe and topping selector.","Alles van Alleen deeg":"Everything from Dough only","Saustype & hoeveelheid":"Sauce type & quantity","Sausbatch & ingrediënten":"Sauce batch & ingredients","Praktisch":"Practical","Volledige pizza's":"Complete pizzas","De volledige calculator met pizzarecepten, toppings, sauskeuzes en boodschappenlijst.":"The full calculator with pizza recipes, toppings, sauce choices and shopping list.","Alles van Deeg + saus":"Everything from Dough + sauce","pizzarecepten":"pizza recipes","Pizzarecept per bol aanpassen":"Customize recipe per dough ball","Alles erop en eraan":"Everything included","Je kunt later altijd wisselen via":"You can always switch later via","; je ingevulde waarden blijven staan.":"; your entered values are preserved.","Deeg":"Dough","De standaardpreset is jouw":"The default preset is your","recept.":"recipe.","Preset":"Preset","Eigen recept":"Custom recipe","Eigen instellingen":"Custom settings","Mijn standaardrecept • 32 cm • 63% • 25 uur":"My default recipe • 32 cm • 63% • 25 hours","AVPN • 28,5 cm • 58,8% • 18 uur":"AVPN • 28.5 cm • 58.8% • 18 hours","Napolitaans • 32 cm • 63% • 8 uur":"Neapolitan • 32 cm • 63% • 8 hours","Napolitaans • 32 cm • 65% • 48 uur":"Neapolitan • 32 cm • 65% • 48 hours","Napolitaans • 32 cm • 65% • 72 uur":"Neapolitan • 32 cm • 65% • 72 hours","Canotto • 32 cm • 68% • 25 uur":"Canotto • 32 cm • 68% • 25 hours","New York • 32 cm • 65% • 25 uur":"New York • 32 cm • 65% • 25 hours","28,5 cm • AVPN middenwaarden • 18 uur":"28.5 cm • AVPN midpoint values • 18 hours","AVPN middenprofiel":"AVPN midpoint profile","AVPN middenprofiel:":"AVPN midpoint profile:","De 2 uur bulk + 16 uur bolrijs is een praktische verdeling binnen de 18 uur; AVPN schrijft die onderlinge verdeling niet exact voor. De combinatie 240 g + 28,5 cm zijn de afzonderlijke middelpunten van de toegestane gewicht- en diameterbereiken. Praktisch afronden wordt voor deze preset uitgeschakeld, zodat de middenwaarden niet door keukenafronding verschuiven.":"The 2-hour bulk + 16-hour ball proof is a practical split within the 18 hours; AVPN does not prescribe that internal split exactly. The 240 g + 28.5 cm combination uses the separate midpoints of the allowed weight and diameter ranges. Practical rounding is disabled for this preset so the midpoint values are not shifted by kitchen rounding.","Verse gist: rekenkundig midden van de AVPN-range,":"Fresh yeast: arithmetic midpoint of the AVPN range,","Officiële AVPN-range omgerekend:":"Converted official AVPN range:","Aantal pizza's":"Number of pizzas","Deegstijl / dikte":"Dough style / thickness","Napolitaans":"Neapolitan","Canotto / extra luchtige rand":"Canotto / extra airy crust","New York-stijl":"New York style","Dun / krokant":"Thin / crispy","Diameter per pizza (cm)":"Diameter per pizza (cm)","Bolgewicht per pizza (g)":"Dough-ball weight per pizza (g)","Hydratatie (%)":"Hydration (%)","Zout (% bloem)":"Salt (% flour)","Gistsoort":"Yeast type","Instant droge gist (IDY)":"Instant dry yeast (IDY)","Actieve droge gist (ADY)":"Active dry yeast (ADY)","Verse gist":"Fresh yeast","Gist (% bloem)":"Yeast (% flour)","Olijfolie (% bloem)":"Olive oil (% flour)","Bolgewicht uit diameter":"Calculate dough-ball weight from diameter","Aan = diameter invoeren → het benodigde bolgewicht wordt automatisch berekend.":"On = enter diameter → the required dough-ball weight is calculated automatically.","Diameter":"Diameter","Gewicht":"Weight","Praktisch afronden":"Practical rounding","Bloem 5 g • water 5 g • zout 1 g • gist 0,1 g • olie 1 g.":"Flour 5 g • water 5 g • salt 1 g • yeast 0.1 g • oil 1 g.","Autolyse (bloem + water)":"Autolyse (flour + water)","KitchenAid-tip:":"KitchenAid tip:","Kenwood-tip:":"Kenwood tip:","zet de kom met bloem + water tijdens deze 20 minuten gerust in de koelkast. Zo koelen deeg én metalen kom wat af vóór het kneden, wat helpt om de einddeegtemperatuur te beperken.":"put the bowl with flour + water in the refrigerator during these 20 minutes if you like. This cools both the dough and metal bowl before kneading and helps limit the final dough temperature.","Alleen bloem + water tijdens deze rust. Een koude autolyse van 20 minuten is geen probleem; hydratatie en glutenontwikkeling gaan gewoon door, alleen iets rustiger.":"Only flour + water during this rest. A 20-minute cold autolyse is fine; hydration and gluten development continue, just a little more slowly.","Ja = eerst alleen bloem + water; gist en zout pas na de rust.":"Yes = flour + water first; add yeast and salt only after the rest.","Fermentatie & gistadvies":"Fermentation & yeast guidance","Fermentatiemethode":"Fermentation method","Kamertemperatuur + koelkast":"Room temperature + refrigerator","Koelkast in als":"Refrigerate as","Eén deegmassa (standaard)":"One dough mass (default)","Eerst opbollen, dan koelkast":"Shape dough balls first, then refrigerate","Eén grote deegmassa koelt langzamer af dan losse pizzabollen. De calculator houdt daar met een praktische temperatuurschatting rekening mee.":"One large dough mass cools more slowly than separate dough balls. The calculator accounts for this with a practical temperature estimate.","Hybride • bulk → koelkast als massa → bolrijs":"Hybrid • bulk → refrigerate as one mass → dough-ball proof","Volledig kamertemperatuur":"Entirely at room temperature","Koud als pizzabollen":"Cold ferment as dough balls","Bulk buiten (uur)":"Bulk at room temp (hours)","Koelkast als massa (uur)":"Refrigerator as one mass (hours)","Koelkast als één massa (uur)":"Refrigerator as one mass (hours)","Bolrijs buiten (uur)":"Dough-ball proof at room temp (hours)","Kamertemperatuur (°C)":"Room temperature (°C)","Koelkast (°C)":"Refrigerator (°C)","Verwachte gemiddelde koelkasttemp. (°C)":"Expected average refrigerator temp. (°C)","Doel einddeegtemperatuur (°C)":"Target final dough temperature (°C)","Weet je hem niet? Laat 4 °C staan als praktische standaard. In het stappenplan kun je later de werkelijk gemeten gemiddelde temperatuur invullen.":"If you do not know it, leave 4 °C as the practical default. You can enter the actually measured average temperature later in the workflow.","Vooraf ingestelde doeltemperatuur voor DDT/wateradvies en het oorspronkelijke fermentatieplan. De werkelijke temperatuur meet je na het kneden in het stappenplan.":"Pre-set target temperature for DDT/water guidance and the original fermentation plan. Measure the actual temperature after kneading in the workflow.","De calculator gebruikt dan 24 °C als doel-einddeegtemperatuur en W270 voor Caputo Pizzeria. De doeltemperatuur wordt vooraf gebruikt voor DDT/wateradvies en het oorspronkelijke plan; de werkelijk gemeten temperatuur na het kneden vul je pas in het stappenplan in. Een ingevulde W-waarde wordt behandeld als bekende productspecificatie.":"The calculator then uses 24 °C as the target final dough temperature and W270 for Caputo Pizzeria. The target temperature is used in advance for DDT/water guidance and the original plan; enter the actually measured post-kneading temperature only in the workflow. An entered W value is treated as a known product specification.","De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Daarmee kan DDT voor jouw eigen werkwijze worden gekalibreerd; de gistcurve leert bewust nog niet automatisch van één of twee bakes.":"Final dough and refrigerator temperatures are taken directly from the workflow. After baking, add your actual water temperature and evaluation. This can calibrate DDT for your own workflow; the yeast curve deliberately does not learn automatically from one or two bakes.","Werkelijke watertemperatuur (°C)":"Actual water temperature (°C)","Einddeegtemperatuur • uit stappenplan":"Final dough temperature • from workflow","Koelkasttemperatuur • uit stappenplan":"Refrigerator temperature • from workflow","Fermentatie-uitkomst":"Fermentation outcome","Notitie":"Note","Bakresultaat opslaan":"Save bake result","Logboek wissen":"Clear log","nog niet gemeten":"not measured yet","planning / nog niet gemeten":"planned / not measured yet","Ik wil bakken om (optioneel)":"I want to bake at (optional)","Gistadvies berekenen":"Calculate yeast guidance","Wetenschappelijk geïnformeerd model met fermentatiefasen en geschatte afkoeling/opwarming.":"Science-informed model with fermentation phases and estimated cooling/warming.","Advies toepassen":"Apply guidance","⚙️ Geavanceerde deeginstellingen":"⚙️ Advanced dough settings","optioneel":"optional","Deegtemperatuur na kneden (°C)":"Dough temperature after kneading (°C)","Vul alleen in als je hem direct na het kneden hebt gemeten.":"Only enter this if you measured it directly after kneading.","Vul alleen in als de W-waarde van je bloem bekend is.":"Only enter this if your flour’s W value is known.","Bloemsterkte W":"Flour strength W","Leeg laten is prima:":"Leaving these blank is fine:","Een ingevulde deegtemperatuur wordt behandeld als":"An entered dough temperature is treated as","gemeten eindtemperatuur na het kneden":"a measured final dough temperature after kneading","een ingevulde W-waarde als":"an entered W value as","bekende productspecificatie":"a known product specification","Waarom W270?":"Why W270?","Caputo Pizzeria is officieel W260–280; W270 is precies het midden van dat bereik en daarom een logische standaard voor deze calculator.":"Caputo Pizzeria is officially W260–280; W270 is exactly the midpoint of that range and is therefore a logical default for this calculator.","Afkoeling en opwarming daarna worden automatisch geschat uit de deegmassa en of het deeg als bulk of als losse bollen staat.":"Subsequent cooling and warming are estimated automatically from the dough mass and whether it is stored as bulk dough or separate dough balls.","de calculator gebruikt dan":"the calculator then uses","24 °C deegtemperatuur":"24 °C dough temperature","als praktische standaardwaarden voor een middelsterke pizzabloem.":"as practical default values for a medium-strength pizza flour.","Afkoeling en opwarming worden automatisch geschat uit de deegmassa en of het deeg als bulk of als losse bollen staat.":"Cooling and warming are estimated automatically from the dough mass and whether it is stored as one bulk or as separate dough balls.","🔬 Toon technische berekening":"🔬 Show technical calculation","Belangrijk:":"Important:","dit is een wetenschappelijk geïnformeerde thuiscalculator, geen gevalideerd laboratoriummodel. De numerieke gistcurve, koel-/opwarmingsschatting en rijpingsindex zijn praktische modelaannames. Daarom toont de calculator bewust een bandbreedte en visuele rijpdoelen.":"this is a science-informed home calculator, not a validated laboratory model. The numerical yeast curve, cooling/warming estimate and maturation index are practical model assumptions. The calculator therefore intentionally shows a range and visual fermentation targets.","‘Napolitaans’ betekent hier een stijlprofiel, geen AVPN-certificering:":"‘Neapolitan’ here means a style profile, not AVPN certification:","koude fermentatie, autolyse, sommige hydrataties en eventuele olie bij lagere oventemperaturen zijn praktische thuisvarianten.":"cold fermentation, autolyse, some hydration levels and optional oil for lower-temperature baking are practical home variations.","Steentemperatuur & bakadvies":"Stone temperature & baking advice","Los van merk of type oven: de calculator gebruikt de":"Regardless of oven brand or type, the calculator uses the","werkelijke steentemperatuur":"actual stone temperature","als uitgangspunt.":"as its starting point.","Doel steentemperatuur (°C)":"Target stone temperature (°C)","Voorverwarmtijd voor tijdlijn (min)":"Preheat time for timeline (min)","Bakadvies":"Baking advice","Olijfolieadvies toepassen":"Apply olive-oil guidance","Temperatuuradvies van pizza's toepassen":"Apply pizza temperature guidance","Pizza's & saus":"Pizzas & sauce","Kies per deegbol welke pizza je wilt maken. Klik op een keuze en":"Choose which pizza to make from each dough ball. Click a choice and","hover over een recept":"hover over a recipe","om rechts direct saus, toppings en hoeveelheden te zien.":"to immediately see sauce, toppings and quantities on the right.","Snelle keuze voor alle bollen":"Quick choice for all dough balls","Klik om recept te kiezen • hover in het venster voor ingrediënten":"Click to choose a recipe • hover in the window to preview ingredients","Saus automatisch uit pizzakeuzes":"Automatically choose sauce from pizza recipes","Aanbevolen saustype én hoeveelheid volgen automatisch de gekozen pizza per bol.":"Recommended sauce type and quantity automatically follow the selected pizza for each dough ball.","Saus voor alle pizza's":"Sauce for all pizzas","New York tomatensaus":"New York tomato sauce","Bianca • olijfolie (traditioneler)":"Bianca • olive oil (more traditional)","Pesto-basis":"Pesto base","Saus per pizza (g)":"Sauce per pizza (g)","Saus meerekenen":"Include sauce","Bereken de benodigde sausbatch(es) en ingrediënten.":"Calculate the required sauce batch(es) and ingredients.","Volgende: alle stappen →":"Next: all steps →","Preset opnieuw laden":"Reload preset","Jouw deeg":"Your dough","Bloem":"Flour","Water":"Water","Zout":"Salt","Instant gist":"Instant yeast","Olijfolie":"Olive oil","Geheugenregel":"Memory line","Totaal deeg":"Total dough","Werkelijke bol":"Actual dough ball","Totale fermentatie":"Total fermentation","Sausberekening":"Sauce calculation","Gekozen pizza's":"Selected pizzas","Kneedmethode":"Kneading method","De ingrediënten blijven hetzelfde; de meng- en kneedstappen passen zich aan.":"The ingredients stay the same; the mixing and kneading steps adapt to the selected method.","✋ Hand":"✋ By hand","Spiraalkneder":"Spiral mixer","← Calculator":"← Calculator","Print stappen":"Print steps","Kopieer recept":"Copy recipe","Pas per deegbol het pizzarecept aan. Vink toppings uit die je niet wilt; extra kaas blijft automatisch binnen een verstandige hoeveelheid voor de gekozen steentemperatuur.":"Customize the pizza recipe for each dough ball. Untick toppings you do not want; extra cheese stays automatically within a sensible amount for the selected stone temperature.","Alle stappen":"All steps","Jouw tijdlijn":"Your timeline","Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen.":"If you enter a desired bake time, the calculator works backwards to show when to start.","Ingrediënten voor de pizza's":"Ingredients for the pizzas","Ingrediënten voor de saus":"Ingredients for the sauce","Oven":"Oven","Wanneer zijn de bollen klaar?":"When are the dough balls ready?","Kijk naar het deeg:":"Look at the dough:","duidelijk groter, zacht, luchtig en ontspannen. Kleine gasbelletjes zijn goed. Bij zacht indrukken veert het langzaam gedeeltelijk terug.":"noticeably larger, soft, airy and relaxed. Small gas bubbles are good. When gently pressed, it should slowly spring back partway.","De klok is een richtlijn. Als het deeg nog strak en compact is, geef het langer. Als het heel slap wordt en nauwelijks spanning houdt, zit je richting overrijs.":"The clock is a guide. If the dough is still tight and compact, give it more time. If it becomes very slack and barely holds tension, it is moving toward overproofing.","Volgende →":"Next →","🧾 Ingrediënten":"🧾 Ingredients","Ingrediënten":"Ingredients","Deeg, saus, per pizza en gecombineerde hoeveelheden.":"Dough, sauce, per-pizza and combined quantities.","Sluiten":"Close","Kies pizzarecept":"Choose pizza recipe","Alles":"All","🥩 Vlees":"🥩 Meat","🐟 Vis":"🐟 Fish","🌱 Vega":"🌱 Vegetarian","🍄 Paddenstoel":"🍄 Mushroom","🧀 Kaas":"🧀 Cheese","🔴 Rode saus":"🔴 Red sauce","⚪ Witte basis":"⚪ White base","🌶️ Pittig":"🌶️ Spicy","Combineer filters, bijvoorbeeld":"Combine filters, for example","🥩 Vlees + 🧀 Kaas":"🥩 Meat + 🧀 Cheese",". Klik op een recept om het te kiezen in dit venster.":". Click a recipe to select it in this window.","✓ gekozen":"✓ selected","springt dan meteen mee. Je definitieve pizza voor de bol wordt pas opgeslagen als je rechts op":"moves immediately. The final pizza for the dough ball is only saved when you click","Kies pizza":"Choose pizza","drukt.":"on the right.","Top 10 populaire pizza’s + alle recepten":"Top 10 popular pizzas + all recipes","Zoek op naam of ingrediënt, bv. Parmaham, gorgonzola, salami...":"Search by name or ingredient, e.g. Parma ham, gorgonzola, salami...","24 (standaard)":"24 (default)","270 (standaard)":"270 (default)","Aan: diameter gebruiken • Uit: bolgewicht direct invoeren":"On: use diameter • Off: enter dough-ball weight directly","1. Deegcalculator":"1. Dough calculator","2. Stappen":"2. Steps","1. Deeg + saus":"1. Dough + sauce","Deeg • fermentatie • gistadvies • werkwijze":"Dough • fermentation • yeast guidance • workflow","Deeg • fermentatie • saus • werkwijze":"Dough • fermentation • sauce • workflow","Deeg • fermentatie • saus • toppings • complete werkwijze":"Dough • fermentation • sauce • toppings • complete workflow","Kies een saustype en hoeveelheid per pizza. Geen recepten of toppings nodig.":"Choose a sauce type and quantity per pizza. No recipes or toppings needed.","Saus":"Sauce","Per pizza":"Per pizza","Gecombineerd toppings & saus":"Combined toppings & sauce","Deeg • hele batch":"Dough • whole batch","Olijfolie in deeg":"Olive oil in dough","Op pizza's nodig":"Required on pizzas","Batch":"Batch","uitgevinkt":"unticked","extra kaas":"extra cheese","gemengd":"mixed","Nodig op pizza's":"Required on pizzas","Geen koelkast":"No refrigerator","Koelkast • bulk":"Refrigerator • bulk","Bolrijs / opwarming":"Dough-ball proof / warming","Koelkast • bollen":"Refrigerator • dough balls","Laatste opwarming":"Final warming","Koud als bollen":"Cold as dough balls","Koud als massa":"Cold as one mass","Start deeg":"Start dough","Koelkast in":"Into refrigerator","Verdelen/opbollen":"Divide / ball","Start voorverwarmen":"Start preheating","Opbollen + koelkast":"Ball + refrigerate","Koelkast uit":"Out of refrigerator","Gistactiviteit":"Yeast activity","Bloemschatting":"Flour estimate","Rijpingsindex":"Maturation index","Huidige gist":"Current yeast","geïntegreerd over geschatte deegtemperatuur":"integrated over actual dough temperature","modelindex voor tijd/temperatuur; geen labwaarde":"separate, milder time/temperature clock","ruime marge":"wide margin","goed passend":"well matched","opletten":"watch closely","hoog risico":"high risk","onder advies":"below guidance","boven advies":"above guidance","binnen bereik":"within range","standaard:":"default:","eigen waarden":"custom values","Fase":"Phase","Tijd":"Time","Deegtemp":"Dough temp","Gist-u":"Yeast-h","Rijping":"Maturation","Modelwaarden:":"Model values:","Onderbouwing:":"Basis:","Steentemperatuur":"Stone temperature","Baktijd startpunt":"Starting bake time","Draaien":"Turning","steen":"stone","Temperatuuradvies voor je pizza's":"Temperature guidance for your pizzas","Geen pizza gevonden. Wis een filter of probeer een andere zoekterm.":"No pizza found. Clear a filter or try another search term.","Geen recepten met deze combinatie van filters.":"No recipes match this combination of filters.","Top 10 • populaire pizza’s":"Top 10 • popular pizzas","Alle recepten":"All recipes","totaal":"total","na bakken":"after baking","Pizzastijl / kaas":"Pizza style / cheese","🇮🇹 Traditioneel":"🇮🇹 Traditional","🇳🇱 NL / afhaalstijl":"🇳🇱 Dutch / takeaway style","🇳🇱 NL / afhaal":"🇳🇱 Dutch / takeaway","Sauskeuze":"Sauce choice","⚪ Wit / bianca":"⚪ White / bianca","🔴 Rood / San Marzano":"🔴 Red / San Marzano","Ingrediënten kiezen":"Choose ingredients","Je kunt hier al toppings of saus uitvinken voordat je de pizza kiest.":"You can already untick toppings or sauce here before choosing the pizza.","⚪ Wit":"⚪ White","🔴 Rood":"🔴 Red","Reset toppings":"Reset toppings","Traditioneel":"Traditional","NL / afhaalstijl":"Dutch / takeaway style","Koelkast als bollen (uur)":"Refrigerator as dough balls (hours)","Laatste opwarming buiten (uur)":"Final warming at room temp (hours)","Aanbevolen saus":"Recommended sauce","Sausberekening staat uit.":"Sauce calculation is turned off.","Alle saus is voor de gekozen pizza's uitgevinkt.":"Sauce is unticked for all selected pizzas.","Voor pizza's":"For pizzas","Maak als batch":"Make as batch","Praktische batch":"Practical batch","bevat champignons":"contains mushrooms","Maximaal ongeveer":"Maximum about","kaas vóór het bakken bij":"cheese before baking at","Deze pizza zit qua kaas al rond de verstandige bovengrens voor":"This pizza is already around the sensible upper cheese limit for","Nog geen gist of zout.":"No yeast or salt yet.","Bij veel weerstand: 5 min rust en daarna verder.":"If there is a lot of resistance: rest for 5 min, then continue.","Bulkrijs op kamertemperatuur":"Bulk proof at room temperature","Koude fermentatie als één massa":"Cold fermentation as one mass","Verdelen en opbollen":"Divide and ball","Bolrijs":"Dough-ball proof","Bolrijs op kamertemperatuur":"Dough-ball proof at room temperature","Korte bulkrijs":"Short bulk proof","Koude fermentatie als bollen":"Cold fermentation as dough balls","Laatste opwarming / eindrijs":"Final warming / final proof","Weeg de ingrediënten":"Weigh the ingredients","Autolyse (bloem + water) • 20 min":"Autolyse (flour + water) • 20 min","Hydratatierust • 20 min":"Hydration rest • 20 min","Alleen bloem + water tijdens deze rust.":"Only flour + water during this rest.","De gist zit al in het deeg; dit is dus geen klassieke autolyse.":"The yeast is already in the dough, so this is not a classic autolyse.","Toevoegen & kneden":"Add & knead","Controleer deegontwikkeling":"Check dough development","Een perfecte windowpane is niet nodig.":"A perfect windowpane is not necessary.","Controleer deegtemperatuur":"Check dough temperature","Kijk naar het deeg, niet alleen naar de klok":"Watch the dough, not only the clock","Breng de steen op temperatuur":"Bring the stone to temperature","Open de deegbol":"Open the dough ball","Saus aanbrengen":"Apply sauce","Bakken":"Bake","Mengen/rust/kneden":"Mix/rest/knead","Bulk buiten":"Bulk at room temp","Binnen bereik":"Within range","✓ binnen bereik":"✓ within range","Olijfolieadvies:":"Olive-oil guidance:","Olijfolie:":"Olive oil:","richtwaarde":"guideline","Draaien:":"Turning:","Geen toppings vóór het bakken":"No toppings before baking","geen toppings vóór het bakken":"no toppings before baking","Na het bakken:":"After baking:","Saus •":"Sauce •","Praktisch afgerond.":"Practically rounded.","Doelhydratatie":"Target hydration","Verse bol":"Fresh dough ball","Rode variant":"Red variant","Originele witte variant":"Original white variant","Geen tomatensaus":"No tomato sauce","Startdeeg":"Starting dough","kamer":"room","Praktische thermische modelconstante:":"Estimated thermal time constant:","IDY-equivalent advies":"IDY-equivalent guidance","zoutcorrectie":"salt correction","stijlcorrectie":"style correction","Hydratatie beïnvloedt in dit model vooral de structurele/rijpingswaarschuwing en niet rechtstreeks de gistactiviteit.":"In this model, hydration mainly affects the structural/maturation warning and not yeast activity directly.","Geen recepten of toppings nodig.":"No recipes or toppings needed.","Aardappel, dun voorgegaard":"Potato, thinly sliced and pre-cooked","Ananas, goed uitgelekt":"Pineapple, well drained","Ansjovis":"Anchovies","Artisjok":"Artichoke","Aubergine":"Eggplant","Aubergine, gegrild/gebakken":"Eggplant, grilled/cooked","Basilicum":"Basil","Bresaola":"Bresaola","Burrata":"Burrata","Champignons":"Mushrooms","Cherrytomaat":"Cherry tomato","Chilivlokken":"Chili flakes","Courgette":"Zucchini","Dik vleesragù":"Thick meat ragù","EVOO":"EVOO","Eidooier":"Egg yolk","Fior di latte (mozzarella)":"Fior di latte (mozzarella)","Friarielli":"Friarielli","Garnalen, voorgegaard":"Shrimp, pre-cooked","Gekookte ham":"Cooked ham","Gerookte zalm":"Smoked salmon","Gorgonzola":"Gorgonzola","Guanciale":"Guanciale","Ham":"Ham","Italiaanse worst":"Italian sausage","Kappertjes":"Capers","Kleine gehaktballetjes":"Small meatballs","Knoflook":"Garlic","Mais, uitgelekt":"Corn, drained","Mortadella":"Mortadella","Mozzarella di bufala":"Buffalo mozzarella","Olijven":"Olives","Oregano":"Oregano","Pancetta":"Pancetta","Paprika":"Bell pepper","Parmigiano Reggiano":"Parmigiano Reggiano","Parmigiano Reggiano (optioneel)":"Parmigiano Reggiano (optional)","Pecorino Romano":"Pecorino Romano","Peer, dun gesneden":"Pear, thinly sliced","Pepperoni":"Pepperoni","Peterselie":"Parsley","Pistache":"Pistachio","Pittige salami":"Spicy salami","Porchetta":"Porchetta","Porcini / eekhoorntjesbrood":"Porcini mushrooms","Prosciutto crudo / Parmaham":"Prosciutto crudo / Parma ham","Provola":"Provola","Provola of fior di latte":"Provola or fior di latte","Provolone":"Provolone","Ricotta":"Ricotta","Rode ui":"Red onion","Rozemarijn":"Rosemary","Rucola":"Arugula","Salami":"Salami","Sardines, uitgelekt":"Sardines, drained","Scamorza":"Scamorza","Scamorza Affumicata":"Smoked scamorza","Speck":"Speck","Stracciatella":"Stracciatella","Taleggio":"Taleggio","Tonijn, uitgelekt":"Tuna, drained","Truffelcrème":"Truffle cream","Walnoot":"Walnut","Zeevruchtenmix, voorgegaard en droog":"Seafood mix, pre-cooked and dry","Zwarte peper":"Black pepper","Geraspte mozzarella / pizzakaas":"Grated mozzarella / pizza cheese","Fijn zeezout":"Fine sea salt","Fijn zout":"Fine salt","Extra vierge olijfolie":"Extra-virgin olive oil","San Marzano tomaten":"San Marzano tomatoes","Tomaten":"Tomatoes","Gedroogde oregano":"Dried oregano","Suiker":"Sugar","Pesto":"Pesto","optioneel, klein scheutje":"optional, small drizzle","optioneel, alleen indien de tomaten zuur zijn":"optional, only if the tomatoes are acidic","heel licht, naar smaak":"very lightly, to taste","blaadjes":"leaves","teen":"clove","tenen":"cloves","Italiaans":"Italian","Italiaans-Amerikaans":"Italian-American","Italiaanse klassieker":"Italian classic","Kaas & pittig":"Cheese & spicy","Kaas & vis":"Cheese & fish","Kaas & vlees":"Cheese & meat","Kaasgericht":"Cheese-focused","Klassiek":"Classic","Klassiek Italiaans":"Classic Italian","Modern Italiaans":"Modern Italian","Modern Romeins":"Modern Roman","NL / afhaal":"Dutch / takeaway","Napolitaanse klassieker":"Neapolitan classic","Noord-Italiaans":"Northern Italian","Pittig":"Spicy","Populair":"Popular","Rijk Italiaans":"Rich Italian","Vis":"Fish","Zuid-Italiaans":"Southern Italian","Tonno e Cipolla (Tonijn & Ui)":"Tonno e Cipolla (Tuna & Onion)","Tonijn & Mais":"Tuna & Corn","Gorgonzola & Peer":"Gorgonzola & Pear","Salsiccia & Aardappel":"Salsiccia & Potato","Aardappel & Rozemarijn":"Potato & Rosemary","Prosciutto Cotto":"Prosciutto Cotto","Tomaat, fior di latte (mozzarella), basilicum en olijfolie. Een klein beetje geraspte Parmigiano is optioneel en kan in de ingrediëntenpicker worden uitgevinkt.":"Tomato, fior di latte (mozzarella), basil and olive oil. A small amount of grated Parmigiano is optional and can be unticked in the ingredient picker.","Zonder kaas. Simpel, uitgesproken en klassiek.":"No cheese. Simple, bold and classic.","Variant met mozzarella di bufala. Laat de buffelmozzarella zeer goed uitlekken; Parmigiano is optioneel.":"Variant with mozzarella di bufala. Drain the buffalo mozzarella very well; Parmigiano is optional.","Zout beleg, dus wees terughoudend met extra zout.":"The toppings are salty, so be conservative with extra salt.","Gebruik dun gesneden pittige salami.":"Use thinly sliced spicy salami.","Snijd champignons dun zodat ze snel garen.":"Slice the mushrooms thinly so they cook quickly.","Witte pizza; kazen variëren per streek en pizzeria.":"White pizza; the cheeses vary by region and pizzeria.","Klassieke combinatie; regionale uitvoeringen verschillen.":"Classic combination; regional versions vary.","Verdeel de toppings in vier duidelijke kwarten.":"Divide the toppings into four distinct quarters.","Groenten vooraf licht grillen helpt tegen overtollig vocht.":"Lightly grilling the vegetables beforehand helps reduce excess moisture.","Geen tomaat. Een echte Campania-combinatie. Gebruik bij een zeer korte bak bij voorkeur voorgegaarde worst of heel kleine stukjes.":"No tomato. A true Campania combination. For very short bakes, preferably use pre-cooked sausage or very small pieces.","Snijd de ui zeer dun.":"Slice the onion very thinly.","Geïnspireerd op melanzane alla parmigiana.":"Inspired by melanzane alla parmigiana.","Mortadella, stracciatella en pistache pas na het bakken.":"Add mortadella, stracciatella and pistachio after baking.","Tomatensaus + kaas als basis; Parmaham, rucola en Parmezaan pas na het bakken.":"Tomato sauce + cheese as the base; add Parma ham, arugula and Parmesan after baking.","Eenvoudig: tomaat, mozzarella en Parmaham. Ham na het bakken voor de beste textuur.":"Simple: tomato, mozzarella and Parma ham. Add the ham after baking for the best texture.","Burrata na het bakken toevoegen zodat hij romig blijft.":"Add burrata after baking so it stays creamy.","Witte pizza. Speck en walnoot liefst na het bakken toevoegen.":"White pizza. Preferably add speck and walnut after baking.","Een eenvoudige klassieke combinatie met tomaat, kaas, salami en champignons.":"A simple classic combination of tomato, cheese, salami and mushrooms.","Witte pizza geïnspireerd op carbonara. Eidooier, Pecorino en peper na het bakken toevoegen.":"White pizza inspired by carbonara. Add egg yolk, Pecorino and pepper after baking.","Tomaat, guanciale en Pecorino; geïnspireerd op pasta all’amatriciana.":"Tomato, guanciale and Pecorino; inspired by pasta all’amatriciana.","Witte pizza met guanciale, Pecorino en zwarte peper.":"White pizza with guanciale, Pecorino and black pepper.","Zeer kaasgericht; een deel van de harde kaas na het bakken houdt hem romiger.":"Very cheese-focused; adding some of the hard cheese after baking keeps it creamier.","Rijke witte pizza met worst en blauwe kaas.":"Rich white pizza with sausage and blue cheese.","Pittige salami en Gorgonzola; zwaar genoeg om iets rustiger te bakken.":"Spicy salami and Gorgonzola; rich enough to benefit from a slightly gentler bake.","Tomaat en lichte mozzarella-basis; Parmaham en burrata na het bakken.":"Tomato and a light mozzarella base; add Parma ham and burrata after baking.","Lichte witte basis; bresaola, rucola en Parmezaan na het bakken.":"Light white base; add bresaola, arugula and Parmesan after baking.","Rokerig en kaasrijk; scamorza geeft veel karakter.":"Smoky and cheese-rich; scamorza adds lots of character.","Tomaat, gerookte/volle provola en gekookte ham.":"Tomato, smoky/full-flavoured provola and cooked ham.","Eenvoudig en stevig: tomaat, provola en salami.":"Simple and substantial: tomato, provola and salami.","Worst en zeer dun gesneden ui. Gebruik bij zeer korte bak kleine of voorgegaarde stukjes worst.":"Sausage and very thinly sliced onion. For very short bakes, use small or pre-cooked pieces of sausage.","Porchetta liefst pas na het bakken of alleen heel kort mee verwarmen.":"Preferably add porchetta after baking, or warm it only very briefly.","Gebruik volledig gegaarde kleine gehaktballetjes.":"Use fully cooked small meatballs.","Gebruik een dikke, niet-waterige ragù zodat de bodem niet zompig wordt.":"Use a thick, non-watery ragù so the base does not become soggy.","Aardappel dun snijden en vooraf garen; worst klein of voorgegaard.":"Slice the potato thinly and pre-cook it; use small or pre-cooked sausage pieces.","Witte pizza met dunne voorgegaarde aardappel en rozemarijn.":"White pizza with thin pre-cooked potato and rosemary.","Taleggio smelt zeer rijk; speck na het bakken voor betere textuur.":"Taleggio melts very richly; add speck after baking for better texture.","Volle kaas en worst; bak iets rustiger dan een Margherita.":"Rich cheese and sausage; bake a little more gently than a Margherita.","Pittig, vet en kaasrijk. Kleine dotjes ’nduja zijn genoeg.":"Spicy, fatty and cheese-rich. Small dots of ’nduja are enough.","Gekookte ham kan mee bakken; burrata pas erna.":"Cooked ham can bake with the pizza; add burrata afterwards.","Zout en krachtig; voeg harde kaas na het bakken toe.":"Salty and powerful; add the hard cheese after baking.","Fris en eenvoudig. Gebruik niet te veel verse tomaat vanwege vocht.":"Fresh and simple. Do not use too much fresh tomato because of moisture.","Witte kaasbasis met Parmaham en Parmezaan na het bakken.":"White cheese base with Parma ham and Parmesan added after baking.","Pittige Zuid-Italiaanse stijl met salami en ’nduja.":"Spicy Southern Italian style with salami and ’nduja.","Zout, hartig en aromatisch; wees zuinig met extra zout.":"Salty, savoury and aromatic; go easy on extra salt.","Een veelvoorkomende klassieke combinatie van tomaat, mozzarella, ansjovis en kappertjes.":"A common classic combination of tomato, mozzarella, anchovies and capers.","Pesto dun gebruiken; rijke toppings na het bakken.":"Use a thin layer of pesto; add the rich toppings after baking.","Pesto als dunne basis, Parmaham en burrata na het bakken.":"Use pesto as a thin base; add Parma ham and burrata after baking.","Romige ricotta met salami; ricotta in kleine dotjes verdelen.":"Creamy ricotta with salami; distribute the ricotta in small dollops.","Ricotta tempert de pittigheid van ’nduja.":"Ricotta softens the heat of ’nduja.","Zoet-hartig en kaasgericht. Gebruik peer zeer dun zodat hij niet te nat wordt.":"Sweet-savoury and cheese-focused. Slice the pear very thinly so it does not make the pizza too wet.","Vier kazen met een lichte tomatenbasis.":"Four cheeses with a light tomato base.","Zeer kaasrijk. Houd de totale hoeveelheid beheerst zodat hij goed bakt.":"Very cheese-rich. Keep the total amount controlled so it bakes well.","Truffelcrème en Parmaham na het bakken voor het meeste aroma.":"Add truffle cream and Parma ham after baking for maximum aroma.","Worst en truffel; truffelcrème pas na het bakken toevoegen.":"Sausage and truffle; add the truffle cream only after baking.","Eenvoudige klassieke pizza met tomaat, mozzarella en champignons.":"Simple classic pizza with tomato, mozzarella and mushrooms.","Witte pizza met worst en champignons; een bekende hartige combinatie.":"White pizza with sausage and mushrooms; a familiar savoury combination.","Tomaat, mozzarella, worst en champignons.":"Tomato, mozzarella, sausage and mushrooms.","Champignons bakken mee; speck pas na het bakken voor betere textuur.":"Bake the mushrooms on the pizza; add speck after baking for better texture.","Champignons bakken mee; Parmaham en Parmezaan pas na het bakken.":"Bake the mushrooms on the pizza; add Parma ham and Parmesan after baking.","Romige witte pizza met Gorgonzola en champignons.":"Creamy white pizza with Gorgonzola and mushrooms.","Aardse porcini met volle Taleggio; gebruik goed uitgelekte paddenstoelen.":"Earthy porcini with rich Taleggio; use well-drained mushrooms.","Rijke witte pizza met porcini en worst.":"Rich white pizza with porcini and sausage.","Vier kazen plus champignons; bak iets rustiger vanwege de totale toppingmassa.":"Four cheeses plus mushrooms; bake a little more gently because of the total topping load.","Champignons bakken mee; truffelcrème en Parmezaan pas na het bakken.":"Bake the mushrooms on the pizza; add truffle cream and Parmesan after baking.","Eenvoudige publieksfavoriet met tomaat, mozzarella en salami.":"Simple crowd favourite with tomato, mozzarella and salami.","Klassieke Italiaans-Amerikaanse combinatie met pittige pepperoni.":"Classic Italian-American combination with spicy pepperoni.","Bekende combinatie met ham en ananas. Laat ananas zeer goed uitlekken vanwege vocht.":"Familiar combination of ham and pineapple. Drain the pineapple very well because of its moisture.","Klassieke pizza met tomaat, mozzarella en gekookte ham.":"Classic pizza with tomato, mozzarella and cooked ham.","Vier kazen met kleine dotjes pittige ’nduja.":"Four cheeses with small dollops of spicy ’nduja.","Vier kazen met salami en een lichte tomatenbasis.":"Four cheeses with salami and a light tomato base.","Vier kazen met Parmaham; ham pas na het bakken toevoegen.":"Four cheeses with Parma ham; add the ham after baking.","Rijke witte vierkazenpizza met Italiaanse worst.":"Rich white four-cheese pizza with Italian sausage.","Vier kazen met pittige ’nduja; gebruik kleine dotjes.":"Four cheeses with spicy ’nduja; use small dollops.","Rokerige vierkazenvariant met gerookte scamorza.":"Smoky four-cheese variant with smoked scamorza.","Romige vierkazenvariant waarin Taleggio de hoofdrol krijgt.":"Creamy four-cheese variant with Taleggio in the leading role.","Zout-krachtige vierkazenvariant met Pecorino Romano.":"Salty, powerful four-cheese variant with Pecorino Romano.","Eenvoudige tonijnpizza met tomaat, mozzarella en goed uitgelekte tonijn.":"Simple tuna pizza with tomato, mozzarella and well-drained tuna.","Tonijn met olijven; zout en hartig, dus rustig met extra zout.":"Tuna with olives; salty and savoury, so go easy on extra salt.","Tonijn met kappertjes; fris-zout en eenvoudig.":"Tuna with capers; fresh, salty and simple.","Pittige tonijnpizza met dunne rode ui en chilivlokken.":"Spicy tuna pizza with thin red onion and chili flakes.","Krachtige combinatie van tonijn en Gorgonzola; gebruik een lichte tomatenbasis.":"Powerful combination of tuna and Gorgonzola; use a light tomato base.","Bekende afhaalstijl-combinatie; laat tonijn en mais goed uitlekken.":"Familiar takeaway-style combination; drain the tuna and corn well.","Gerookte zalm en rucola pas na het bakken toevoegen.":"Add smoked salmon and arugula after baking.","Gebruik voorgegaarde, goed droge garnalen; voeg peterselie na het bakken toe.":"Use pre-cooked, well-dried shrimp; add parsley after baking.","Gebruik voorgegaarde en goed uitgelekte zeevruchten om een natte bodem te voorkomen.":"Use pre-cooked and well-drained seafood to prevent a soggy base.","Krachtige, zoute vispizza; ui zeer dun snijden.":"Powerful, salty fish pizza; slice the onion very thinly.","Klassieke zoute combinatie van ansjovis, olijven en kappertjes.":"Classic salty combination of anchovies, olives and capers.","Lichte klassieke topping; hoog vuur werkt uitstekend.":"Light classic topping; high heat works very well.","Geen kaas, dus kan relatief heet en snel.":"No cheese, so it can bake relatively hot and fast.","Buffelmozzarella is vochtiger; iets rustiger helpt.":"Buffalo mozzarella is wetter; a slightly gentler bake helps.","Ansjovis en kappertjes verdragen hitte goed, maar laat ze niet uitdrogen.":"Anchovies and capers tolerate heat well, but do not let them dry out.","Salami kleurt en vet snel; iets lager dan een pure Margherita is prettig.":"Salami browns and renders fat quickly; slightly lower than a plain Margherita works well.","Meer en vochtiger beleg; geef de topping iets meer tijd.":"More and wetter toppings; give them a little more time.","Veel kaas kan bij zeer hoge hitte snel verbranden of splitsen.":"A lot of cheese can burn or split quickly at very high heat.","Relatief zware topping; iets langere bak is meestal mooier.":"Relatively heavy topping; a slightly longer bake is usually better.","Veel verschillende toppings; iets lager geeft gelijkmatiger resultaat.":"Many different toppings; slightly lower heat gives a more even result.","Voorgegaarde/gegrilde groenten werken goed in dit bereik.":"Pre-cooked/grilled vegetables work well in this range.","Gebruik voorgegaarde of zeer kleine stukjes worst bij korte baktijden.":"Use pre-cooked or very small sausage pieces for short bake times.","Tonijn droogt snel uit; niet onnodig heet bakken.":"Tuna dries out quickly; do not bake hotter than necessary.","Aubergine is al gaar; middelheet houdt kaas en topping in balans.":"The eggplant is already cooked; medium-high heat keeps cheese and toppings balanced.","De rijke toppings gaan na het bakken erop, dus de basis mag heet en snel.":"The rich toppings go on after baking, so the base can bake hot and fast.","Parmaham, rucola en Parmezaan gaan na het bakken erop; de basis kan heet en snel.":"Parma ham, arugula and Parmesan go on after baking; the base can bake hot and fast.","Parmaham gaat na het bakken erop, dus de tomaat/kaasbasis kan heet en snel.":"Parma ham goes on after baking, so the tomato/cheese base can bake hot and fast.","Burrata gaat na het bakken erop; de basis kan relatief heet worden gebakken.":"Burrata goes on after baking; the base can be baked relatively hot.","Gorgonzola vraagt iets meer rust; speck en walnoot gaan na het bakken erop.":"Gorgonzola benefits from a gentler bake; speck and walnut go on after baking.","Champignons bevatten vocht en salami kleurt snel; iets rustiger bakken werkt beter.":"Mushrooms contain moisture and salami browns quickly; a gentler bake works better.","Bak de basis iets rustiger; eidooier en harde kaas pas na het bakken.":"Bake the base a little more gently; add egg yolk and hard cheese after baking.","Veel harde kaas; iets lager voorkomt verbranden en splitsen.":"Lots of hard cheese; slightly lower heat helps prevent burning and splitting.","Zeer kaasrijk; lagere steentemperatuur geeft de kazen meer tijd zonder verbranden.":"Very cheese-rich; a lower stone temperature gives the cheeses more time without burning.","Veel kaas; iets rustiger dan Margherita bakken.":"Lots of cheese; bake a little more gently than a Margherita.","Worst plus veel kaas vraagt een iets langere, rustigere bak.":"Sausage plus lots of cheese benefits from a slightly longer, gentler bake.","Salami en Gorgonzola kleuren snel.":"Salami and Gorgonzola brown quickly.","Parmaham en burrata gaan na het bakken erop, dus de basis kan heet en snel.":"Parma ham and burrata go on after baking, so the base can bake hot and fast.","Bresaola, rucola en Parmezaan gaan na het bakken erop.":"Bresaola, arugula and Parmesan go on after baking.","Taleggio is rijk; speck gaat na het bakken erop.":"Taleggio is rich; speck goes on after baking.","Vet en kaasrijk beleg; iets rustiger bakken.":"Fatty, cheese-rich topping; bake a little more gently.","Gebruik pesto dun; mortadella en stracciatella gaan na het bakken erop.":"Use pesto thinly; mortadella and stracciatella go on after baking.","Rijke toppings gaan na het bakken erop; basis kan relatief heet.":"Rich toppings go on after baking; the base can be relatively hot.","Truffel en Parmaham pas na het bakken voor maximaal aroma.":"Add truffle and Parma ham after baking for maximum aroma.","Champignons geven vocht af; iets rustiger bakken helpt.":"Mushrooms release moisture; a gentler bake helps.","Worst en champignons vragen wat meer tijd dan een lichte Margherita.":"Sausage and mushrooms need a little more time than a light Margherita.","Worst plus champignons: iets rustiger bakken voor goede garing.":"Sausage plus mushrooms: bake a little more gently for proper cooking.","Champignons bakken mee; speck gaat pas na het bakken erop.":"Bake the mushrooms on the pizza; add speck after baking.","Champignons bakken mee; Parmaham pas na het bakken.":"Bake the mushrooms on the pizza; add Parma ham after baking.","Gorgonzola en champignons zijn rijk en vochtig; bak iets rustiger.":"Gorgonzola and mushrooms are rich and moist; bake a little more gently.","Porcini en Taleggio profiteren van een iets langere, rustigere bak.":"Porcini and Taleggio benefit from a slightly longer, gentler bake.","Porcini plus worst vraagt meer tijd dan een lichte pizza.":"Porcini plus sausage needs more time than a light pizza.","Veel kaas plus champignons; lagere steentemperatuur voorkomt verbranden.":"Lots of cheese plus mushrooms; a lower stone temperature helps prevent burning.","Champignons bakken mee; truffelcrème pas na het bakken.":"Bake the mushrooms on the pizza; add truffle cream after baking.","Salami kleurt snel; middelheet tot heet werkt goed.":"Salami browns quickly; medium-high to high heat works well.","Pepperoni geeft vet af en kleurt snel; iets rustiger bakken.":"Pepperoni renders fat and browns quickly; bake a little more gently.","Ananas bevat vocht; goed uitlekken en iets rustiger bakken.":"Pineapple contains moisture; drain well and bake a little more gently.","Ham en mozzarella kunnen goed op een middelhete tot hete steen.":"Ham and mozzarella work well on a medium-hot to hot stone.","Veel kaas plus ’nduja: rustiger bakken voorkomt verbranden en vet afscheiden.":"Lots of cheese plus ’nduja: a gentler bake helps prevent burning and excessive fat rendering.","Veel kaas en salami vragen een wat langere, rustigere bak.":"Lots of cheese and salami need a somewhat longer, gentler bake.","Parmaham gaat na het bakken erop; de kaasbasis vraagt iets meer tijd.":"Parma ham goes on after baking; the cheese base needs a little more time.","Veel kaas plus worst: lager en langer voor gelijkmatige garing.":"Lots of cheese plus sausage: lower and longer for even cooking.","Veel kaas en ’nduja zijn rijk; rustig bakken werkt het best.":"Lots of cheese and ’nduja are rich; a gentle bake works best.","Rijke smeltkazen; iets rustiger dan een Margherita.":"Rich melting cheeses; bake a little more gently than a Margherita.","Taleggio is zeer romig; middelhoge steentemperatuur werkt mooi.":"Taleggio is very creamy; a medium-high stone temperature works well.","Harde kaas kan snel kleuren; bak iets rustiger.":"Hard cheese can brown quickly; bake a little more gently.","Tonijn droogt snel uit; middelheet werkt beter dan extreem heet.":"Tuna dries out quickly; medium-high heat works better than extreme heat.","Tonijn droogt snel; olijven kunnen gewoon mee bakken.":"Tuna dries quickly; olives can bake with the pizza.","Tonijn droogt snel; kappertjes zijn al krachtig van smaak.":"Tuna dries quickly; capers are already strong in flavour.","Tonijn en ui profiteren van een iets rustigere bak.":"Tuna and onion benefit from a slightly gentler bake.","Tonijn plus Gorgonzola is rijk; iets lager houdt de kaas mooier.":"Tuna plus Gorgonzola is rich; slightly lower heat keeps the cheese nicer.","Mais en tonijn bevatten vocht; goed uitlekken en rustiger bakken.":"Corn and tuna contain moisture; drain well and bake more gently.","Zalm en rucola gaan na het bakken erop; de basis mag relatief heet.":"Salmon and arugula go on after baking; the base can be relatively hot.","Gebruik voorgegaarde garnalen; voorkom uitdrogen met een iets rustigere bak.":"Use pre-cooked shrimp; prevent drying out with a slightly gentler bake.","Zeevruchten geven vocht af; lager en iets langer werkt beter.":"Seafood releases moisture; lower and slightly longer works better.","Sardines zijn al gaar; ui moet vooral zacht worden.":"Sardines are already cooked; the onion mainly needs to soften.","Ansjovis hoeft niet lang te garen; middelheet tot heet is prima.":"Anchovies do not need long cooking; medium-high to high heat is fine.","Algemeen Italiaans bereik.":"General Italian range.","Ongekookte San Marzano-basis.":"Uncooked San Marzano base.","Ongekookte tomatenbasis met knoflook en oregano.":"Uncooked tomato base with garlic and oregano.","Kort gekookte, iets krachtigere tomatensaus.":"Briefly cooked, slightly stronger tomato sauce.","Geen tomatensaus; alleen een dun laagje extra vierge olijfolie.":"No tomato sauce; just a thin layer of extra-virgin olive oil.","Dunne pestolaag; voeg bij zeer hete pizzaovens liever een deel na het bakken toe.":"Thin pesto layer; in very hot pizza ovens, preferably add part of it after baking.","San Marzano crudo":"San Marzano crudo","Kopiëren":"Copy","Gekopieerd!":"Copied!","Kopiëren mislukt":"Copy failed","Ik wil bakken (optioneel)":"I want to bake (optional)","Dag":"Day","Geen planning":"No planning","Vandaag":"Today","Morgen":"Tomorrow","Overmorgen":"Day after tomorrow","Over drie dagen":"In three days","Tijd":"Time"};
+
+Object.assign(EN_TEXT,{
+  "← Vorige":"← Previous",
+  "Witte spelt":"White spelt flour",
+  "Volkoren spelt":"Wholemeal spelt flour",
+  "Volkoren tarwe":"Wholemeal wheat flour",
+  "Eigen bloem (W zelf invullen)":"Custom flour (enter W manually)",
+  "Alleen bekende productspecificaties krijgen automatisch een W-waarde; bij generieke bloem blijft W bewust onbekend.":"Only known product specifications receive a W value automatically; for generic flour, W deliberately remains unknown.",
+  "Vul in als de W-waarde bekend is. Bij spelt is eiwitpercentage géén betrouwbare vervanger voor W.":"Enter a value if the flour's W value is known. For spelt, protein percentage is not a reliable substitute for W.",
+  "Klik om een recept te selecteren • pas het daarna rechts aan":"Click to select a recipe • then customize it on the right",
+  "🍅 Tomatenbasis":"🍅 Tomato base",
+  "⚪ Zonder tomaat":"⚪ No tomato",
+  "Deeglogboek & kalibratie":"Dough log & calibration",
+  "De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.":"Final dough and refrigerator temperatures are taken directly from the workflow. After baking, add your actual water temperature and assessment. The log keeps the information as reference, but v50 deliberately does not automatically adjust the DDT, yeast or timing model based on previous bakes.",
+  "Werkelijke watertemperatuur (°C)":"Actual water temperature (°C)",
+  "Einddeegtemperatuur • uit stappenplan":"Final dough temperature • from workflow",
+  "Koelkasttemperatuur • uit stappenplan":"Refrigerator temperature • from workflow",
+  "Fermentatie-uitkomst":"Fermentation result",
+  "Goed / zoals bedoeld":"Good / as intended",
+  "Te traag / onderrijs":"Too slow / underproofed",
+  "Te snel / overrijs":"Too fast / overproofed",
+  "Notitie":"Notes",
+  "Bakresultaat opslaan":"Save bake result",
+  "Logboek wissen":"Clear log",
+  "nog niet gemeten":"not measured yet",
+  "planning / nog niet gemeten":"planned / not measured yet",
+  "bijv. mooi luchtig, iets slap, bodem perfect...":"e.g. nicely airy, slightly slack, perfect base...",
+  "alleen invullen als bekend":"only enter if known"
+});
+
+const _i18nOriginalText=new WeakMap();
+const _i18nOriginalAttrs=new WeakMap();
+let _i18nObserver=null;
+
+function translateNlText(raw){
+  const s=String(raw??'');
+  const m=s.match(/^(\s*)([\s\S]*?)(\s*)$/);
+  const lead=m?m[1]:''; let core=m?m[2]:s; const trail=m?m[3]:'';
+  if(!core)return s;
+  if(Object.prototype.hasOwnProperty.call(EN_TEXT,core))return lead+EN_TEXT[core]+trail;
+
+  // Veel regels hieronder zijn geschreven voor het tekstfragment dat vóór een
+  // <b>-tag staat, en dat eindigt juist op een spatie. Door eerst te trimmen
+  // konden 19 van die regels nooit matchen. Regels draaien nu op core+trail.
+  const coreT=core+trail;
+
+  const rules=[
+    [/^Maak (.+)$/,'Make $1'],
+    [/^Kies pizza voor alle bollen$/,'Choose pizza for all dough balls'],
+    [/^(\d+(?:[.,]\d+)?) uur$/,'$1 hours'],
+    [/^(\d+(?:[.,]\d+)?) u$/,'$1 h'],
+    [/^(\d+(?:[.,]\d+)?) minuten$/,'$1 minutes'],
+    [/^(\d+(?:[.,]\d+)?) pizza's$/,'$1 pizzas'],
+    [/^(\d+) pizza’s$/,'$1 pizzas'],
+    [/^(\d+) recepten$/,'$1 recipes'],
+    [/^(\d+) totaal$/,'$1 total'],
+    [/^Bol (\d+)$/,'Dough ball $1'],
+    [/^Bol (\d+) • /,'Dough ball $1 • '],
+    [/^([0-9.,]+) g bloem$/,'$1 g flour'],
+    [/^([0-9.,]+) g water$/,'$1 g water'],
+    [/^([0-9.,]+) g zout$/,'$1 g salt'],
+    [/^([0-9.,]+) g olijfolie$/,'$1 g olive oil'],
+    [/^werkelijk ([0-9.,]+)%$/,'actual $1%'],
+    [/^Advies ± (.+)$/,'Guidance ± $1'],
+    [/^Praktisch bereik (.+) • (.+) gistactiviteitsuren @ 21 °C$/,'Practical range $1 • $2 yeast-activity hours @ 21 °C'],
+    [/^([0-9.,]+) u @ 21 °C$/,'$1 h @ 21 °C'],
+    [/^Huidige gist: /,'Current yeast: '],
+    [/ ten opzichte van de berekende bandbreedte\.$/,' relative to the calculated range.'],
+    [/^Visuele eindcheck: /,'Visual final check: '],
+    [/^bulk richtwaarde /,'bulk target '],
+    [/; voor bakken /,'; before baking '],
+    [/De klok is een planning, niet het enige eindpunt\./,'The clock is a planning tool, not the only endpoint.'],
+    [/^Je koelkast staat op /,'Your refrigerator is at '],
+    [/Dat is een actieve koude fermentatie, geen sterke retardatie; controleer het deeg eerder\./,'This is active cold fermentation, not strong retardation; check the dough earlier.'],
+    [/^Bij /,'At '],
+    [/wordt gist zeer sterk afgeremd\./,'yeast is very strongly slowed.'],
+    [/De warme fasen en het langzaam afkoelen leveren relatief veel van de gasproductie\./,'The warm phases and gradual cooling contribute a relatively large share of gas production.'],
+    [/^Deegtemperatuur na kneden /,'Dough temperature after kneading '],
+    [/is hoog voor een lang schema: de eerste uren verlopen duidelijk sneller\./,'is high for a long schedule: the first hours proceed noticeably faster.'],
+    [/is laag: de start van de fermentatie is trager dan normaal\./,'is low: fermentation starts more slowly than normal.'],
+    [/^Rijpingsbelasting versus /,'Maturation load versus '],
+    [/Kijk extra naar deegsterkte en volume in plaats van alleen naar de klok\./,'Pay extra attention to dough strength and volume rather than only the clock.'],
+    [/^Meer dan 72 uur koud is sterk afhankelijk van bloem, koelkast en deegtemperatuur; de onzekerheidsmarge wordt groter\.$/,'More than 72 hours cold depends strongly on flour, refrigerator and dough temperature; uncertainty increases.'],
+    [/^Praktisch afgerond\. Doelhydratatie /,'Practically rounded. Target hydration '],
+    [/ → werkelijk /,' → actual '],
+    [/vrijwel exact/,'virtually exact'],
+    [/ procentpunt verschil/,' percentage-point difference'],
+    [/^ongeveer /,'about '],
+    [/ het volume van een verse bol$/,' the volume of a fresh dough ball'],
+    [/; duidelijk luchtig maar nog sterk$/,'; clearly airy but still strong'],
+    [/; zacht en goed ontspannen$/,'; soft and well relaxed'],
+    [/; niet maximaal laten opblazen$/,'; do not let it inflate to the maximum'],
+    [/^Kies pizza voor bol (\d+)$/,'Choose pizza for dough ball $1'],
+    [/^Kies /,'Choose '],
+    [/^Geen extra kaas aangeraden bij /,'No extra cheese recommended at '],
+    [/^Kaas toevoegen: /,'Add cheese: '],
+    [/^Extra kaas: /,'Extra cheese: '],
+    [/^Advies op basis van /,'Guidance based on '],
+    [/ steentemperatuur; richtlimiet voor kaas vóór het bakken /,' stone temperature; guideline limit for cheese before baking '],
+    [/Deze pizza zit bij /,'At '],
+    [/ al rond de verstandige kaaslimiet\./,' this pizza is already around the sensible cheese limit.'],
+    [/^Rode variant: /,'Red variant: '],
+    [/zodat de tomaat de kazen en toppings niet overheerst\./,'so the tomato does not overpower the cheeses and toppings.'],
+    [/^Originele witte variant: /,'Original white variant: '],
+    [/geen tomatensaus, alleen een dun laagje olijfolie\./,'no tomato sauce, just a thin layer of olive oil.'],
+    [/^Geraspte mozzarella \/ pizzakaas vervangt verse fior di latte of buffelmozzarella en wordt ongeveer 15% royaler gedoseerd\. Speciale kazen blijven behouden\.$/,'Grated mozzarella / pizza cheese replaces fresh fior di latte or buffalo mozzarella and is used about 15% more generously. Specialty cheeses remain unchanged.'],
+    [/^Verse fior di latte \/ mozzarella volgens het recept\. Speciale Italiaanse kazen blijven zoals bedoeld\.$/,'Fresh fior di latte / mozzarella as specified by the recipe. Specialty Italian cheeses remain as intended.'],
+    [/^([0-9]+) pizza’s • (.+)$/,'$1 pizzas • $2'],
+    [/^([0-9]+) pizza's • (.+)$/,'$1 pizzas • $2'],
+    [/ per bol/,' per dough ball'],
+    [/ geschat /,' estimated '],
+    [/ berekend /,' calculated '],
+    [/^Top 10 populaire pizza’s \+ (\d+) recepten$/,'Top 10 popular pizzas + $1 recipes'],
+    [/^(.+) gevonden voor “(.+)”$/,'$1 found for “$2”'],
+    [/ pizza’s gevonden voor /,' pizzas found for '],
+    [/ pizza gevonden voor /,' pizza found for '],
+    [/^([0-9]+) pizza’s • /,'$1 pizzas • '],
+    [/^([0-9]+) pizza • /,'$1 pizza • '],
+    [/^Op pizza's nodig$/,'Required on pizzas'],
+    [/ g op pizza's$/,' g on pizzas'],
+    [/^Nodig voor pizza's /,'Required for pizzas '],
+    [/^Deeg • hele batch$/,'Dough • whole batch'],
+    [/^Saus meerekenen staat uit\.$/,'Include sauce is turned off.'],
+    [/^Geen toppings vóór het bakken$/i,'no toppings before baking'],
+    [/geen toppings vóór het bakken/,'no toppings before baking'],
+    [/^Na het bakken:$/,'After baking:'],
+    [/^Beleggen • bol (\d+)$/,'Top • dough ball $1'],
+    [/^Temperatuuradvies: /,'Temperature guidance: '],
+    [/ °C steen\.$/,' °C stone.'],
+    [/^Bak bij deze steentemperatuur als startpunt ongeveer /,'At this stone temperature, start with a bake of about '],
+    [/ en draai /,' and turn '],
+    [/^Steentemperatuur is de basis; vlam\/bovenwarmte en hoeveelheid beleg blijven mede bepalend\.$/,'Stone temperature is the basis; flame/top heat and topping load still matter.'],
+    [/^Mik op een /,'Aim for a '],
+    [/^Laat /,'Let '],
+    [/^Zet /,'Put '],
+    [/^Haal /,'Take '],
+    [/^Verdeel /,'Divide '],
+    [/^Voeg /,'Add '],
+    [/^Meng /,'Mix '],
+    [/^Kneed /,'Knead '],
+    [/^Stop wanneer /,'Stop when '],
+    [/^Als je een thermometer hebt: /,'If you have a thermometer: '],
+    [/^Richtwaarde bulk: /,'Bulk target: '],
+    [/^Bij duidelijk sneller of trager rijzen /,'If proofing is clearly faster or slower '],
+    [/^Bestuif licht met /,'Dust lightly with '],
+    [/^Gebruik liever iets te weinig dan te veel; /,'Prefer slightly too little rather than too much; '],
+    [/^als normale thuiswaarden\.\s+Afkoeling en opwarming worden automatisch geschat uit de deegmassa en of het deeg als bulk of als losse bollen staat\.$/,'as normal home-use defaults. Cooling and warming are estimated automatically from the dough mass and whether the dough is stored as one bulk or as separate dough balls.'],
+    [/^Voor alle gekozen pizza's is /,'For all selected pizzas, '],
+    [/ een gezamenlijk goed bereik\. Adviesknop kiest /,' is a shared good range. The guidance button selects '],
+    [/^De gekozen pizza's hebben geen volledig overlappend ideaal bereik\. Een praktisch compromis is /,'The selected pizzas do not have a fully overlapping ideal range. A practical compromise is '],
+    [/^Je huidige /,'Your current '],
+    [/ olie ligt onder het richtbereik\.$/,' oil is below the guideline range.'],
+    [/ olie ligt boven het richtbereik\.$/,' oil is above the guideline range.'],
+    [/ olie past bij dit temperatuurbereik\.$/,' oil fits this temperature range.'],
+    [/ van de bloem bij ongeveer /,' of the flour at about '],
+    [/^Draaien: /,'Turning: '],
+    [/^Voor KitchenAid: /,'For KitchenAid: '],
+    [/^Kenwood-modellen verschillen; /,'Kenwood models differ; '],
+    [/^Bij professionele spiraalkneders /,'With professional spiral mixers '],
+    [/^Het voorafmodel rekent vanaf /,'The pre-bake model calculates from '],
+    [/ na het kneden/,' after kneading'],
+    [/ standaardwaarde/,' default value'],
+    [/^De ingrediënten$/,'The ingredients'],
+    [/^Bloem /,'Flour '],
+    [/^water /,'water '],
+    [/^zout /,'salt '],
+    [/^olijfolie /,'olive oil '],
+    [/^gist /,'yeast '],
+    [/ uur bij ongeveer /,' hours at about '],
+    [/ uur bij /,' hours at '],
+    [/ uur/,' hours'],
+    [/ minuten/,' minutes'],
+    [/ bollen/,' dough balls'],
+    [/ bol /,' dough ball '],
+    [/ deegmassa/,' dough mass'],
+    [/ koelkast/,' refrigerator'],
+    [/ kamertemperatuur/,' room temperature'],
+    [/ na het bakken/,' after baking'],
+    [/ vóór het bakken/,' before baking'],
+  ];
+  // Regels draaien op core inclusief afsluitende spatie, zodat prefixregels
+  // als /^Voeg / en /^Meng / ook werken op het fragment vóór een <b>-tag.
+  let out=coreT;
+  for(const [re,repl] of rules)out=out.replace(re,repl);
+  if(out!==coreT) return lead+out;
+  return lead+core+trail;
+}
+
+function _captureTextTree(root,force=false){
+  if(!root)return;
+  if(root.nodeType===Node.TEXT_NODE){if(force||!_i18nOriginalText.has(root))_i18nOriginalText.set(root,root.nodeValue);return;}
+  if(root.nodeType!==Node.ELEMENT_NODE && root.nodeType!==Node.DOCUMENT_NODE)return;
+  if(root.nodeType===Node.ELEMENT_NODE){
+    const attrs={};
+    for(const a of ['placeholder','title','aria-label'])if(root.hasAttribute(a))attrs[a]=root.getAttribute(a);
+    if(force||!_i18nOriginalAttrs.has(root))_i18nOriginalAttrs.set(root,attrs);
+  }
+  root.childNodes.forEach(n=>_captureTextTree(n,force));
+}
+
+function _applyLanguageTree(root){
+  if(!root)return;
+  if(root.nodeType===Node.TEXT_NODE){
+    if(!_i18nOriginalText.has(root))_i18nOriginalText.set(root,root.nodeValue);
+    const nl=_i18nOriginalText.get(root);
+    root.nodeValue=currentLang==='en'?translateNlText(nl):nl;
+    return;
+  }
+  if(root.nodeType!==Node.ELEMENT_NODE && root.nodeType!==Node.DOCUMENT_NODE)return;
+  if(root.nodeType===Node.ELEMENT_NODE){
+    if(!_i18nOriginalAttrs.has(root)){
+      const attrs={};for(const a of ['placeholder','title','aria-label'])if(root.hasAttribute(a))attrs[a]=root.getAttribute(a);_i18nOriginalAttrs.set(root,attrs);
+    }
+    const attrs=_i18nOriginalAttrs.get(root)||{};
+    for(const [a,nl] of Object.entries(attrs))root.setAttribute(a,currentLang==='en'?translateNlText(nl):nl);
+  }
+  root.childNodes.forEach(_applyLanguageTree);
+}
+
+function _observeI18n(){
+  if(_i18nObserver)_i18nObserver.disconnect();
+  _i18nObserver=new MutationObserver(muts=>{
+    _i18nObserver.disconnect();
+    for(const m of muts){
+      if(m.type==='characterData'){
+        _i18nOriginalText.set(m.target,m.target.nodeValue);
+        if(currentLang==='en')m.target.nodeValue=translateNlText(m.target.nodeValue);
+      }else if(m.type==='childList'){
+        m.addedNodes.forEach(n=>{_captureTextTree(n,true);if(currentLang==='en')_applyLanguageTree(n);});
+      }
+    }
+    _i18nObserver.observe(document.body,{subtree:true,childList:true,characterData:true});
+  });
+  _i18nObserver.observe(document.body,{subtree:true,childList:true,characterData:true});
+}
+
+
+function resetCalculator(){
+  const nl=currentLang!=='en';
+  const message=nl
+    ? 'Weet je het zeker?\n\nAlle ingevulde waarden, pizzakeuzes, aanpassingen en planning worden gewist. De calculator keert terug naar het beginscherm met de standaardwaarden.\n\nJe taalkeuze blijft behouden.'
+    : 'Are you sure?\n\nAll entered values, pizza choices, customizations and planning will be cleared. The calculator will return to the start screen with the default values.\n\nYour language choice will be kept.';
+
+  if(!window.confirm(message))return;
+
+  // Wis iedere opgeslagen calculatorversie, zodat een oude state
+  // niet via de backwards-compatible loader opnieuw wordt geladen.
+  SAFE.keys()
+    .filter(key=>/^pizzaCalcV\d+$/.test(key))
+    .forEach(key=>SAFE.del(key));
+
+  // Taal is een interfacevoorkeur en blijft bewust behouden.
+  SAFE.set('pizzaCalcLanguage',currentLang);
+  window.location.reload();
+}
+
+function updateLanguageSwitch(){
+  const nl=$('langNl'),en=$('langEn');
+  if(nl)nl.classList.toggle('active',currentLang==='nl');
+  if(en)en.classList.toggle('active',currentLang==='en');
+  document.documentElement.lang=currentLang;
+  document.title=currentLang==='en'?'Pizza dough calculator v50':'Pizzadeegcalculator v50';
+}
+
+function setLanguage(lang){
+  lang=lang==='en'?'en':'nl';
+  if(_i18nObserver)_i18nObserver.disconnect();
+  // Eerst terug naar de Nederlandse brontekst, daarna de dynamische secties
+  // opnieuw laten renderen. De eerste _applyLanguageTree van vroeger was een
+  // no-op en is verwijderd.
+  currentLang='nl';
+  _applyLanguageTree(document.body);
+  currentLang=lang;
+  clearSearchCaches();
+  SAFE.set('pizzaCalcLanguage',currentLang);
+  update();
+  if(currentWizardPage===0) showModeChooser(); else applyAppModeUI();
+  _captureTextTree(document.body,true);
+  _applyLanguageTree(document.body);
+  updateLanguageSwitch();
+  if(_storageWarningShown)showStorageWarningOnce();
+  _observeI18n();
+}
+
+function initI18n(){
+  _captureTextTree(document.body,true);
+  _applyLanguageTree(document.body);
+  updateLanguageSwitch();
+  _observeI18n();
+}
+
+function translatedPlainText(text){
+  if(currentLang!=='en')return text;
+  return String(text).split('\n').map(line=>translateNlText(line)).join('\n');
+}
+
+function uiText(nl,en=null){
+  if(currentLang!=='en')return String(nl??'');
+  if(en!=null)return String(en);
+  if(Object.prototype.hasOwnProperty.call(EN_TEXT,String(nl)))return EN_TEXT[String(nl)];
+  return translateNlText(String(nl??''));
+}
+function recipeNameText(r){return uiText(r?.name||'',r?.nameEn);}
+function recipeTagText(r){return uiText(r?.tag||'',r?.tagEn);}
+function recipeNoteText(r){return uiText(r?.note||'',r?.noteEn);}
+function englishDataText(nl,en=null){
+  if(en!=null)return String(en);
+  if(Object.prototype.hasOwnProperty.call(EN_TEXT,String(nl)))return EN_TEXT[String(nl)];
+  return translateNlText(String(nl??''));
+}
+function sauceChoiceLabel(sc,short=false){
+  if(!sc)return '';
+  if(currentLang==='en')return short?(sc.shortEn||sc.short):(sc.labelEn||sc.label);
+  return short?sc.short:sc.label;
+}
+
+
+// Omrekening tussen gistsoorten, uitgedrukt als factor op de IDY-massa.
+// ADY is merk- en productspecifiek: fabrikanten adviseren grofweg van 1:1
+// tot circa 1,25× ten opzichte van instant gist. De calculator gebruikt
+// 1,25× als voorzichtige praktische default; fabrikantadvies gaat voor.
+// Voor AVPN blijft de officiële regel droog = 1/3 van vers leidend.
+const yeastTypes={
+  idy:{name:'Instant droge gist',nameEn:'Instant dry yeast',short:'IDY',mult:1},
+  ady:{name:'Actieve droge gist',nameEn:'Active dry yeast',short:'ADY',mult:1.25},
+  fresh:{name:'Verse gist',nameEn:'Fresh yeast',short:'vers',shortEn:'fresh',mult:3.0}
+};
+function yeastName(key){const y=yeastTypes[key]||yeastTypes.idy;return currentLang==='en'?(y.nameEn||y.name):y.name;}
+function yeastShort(key){const y=yeastTypes[key]||yeastTypes.idy;return currentLang==='en'?(y.shortEn||y.short):y.short;}
+function sauceName(key){const x=sauces[key];if(!x)return '';return currentLang==='en'?(x.nameEn||x.name):x.name;}
+function sauceDesc(key){const x=sauces[key];if(!x)return '';return currentLang==='en'?(x.descEn||x.desc):x.desc;}
+
+const doughStyles={
+  neapolitan:{name:'Napolitaans',factor:250/(Math.PI*16*16)},
+  avpn:{name:'AVPN middenprofiel',factor:240/(Math.PI*14.25*14.25)},
+  canotto:{name:'Canotto',factor:0.335},
+  ny:{name:'New York',factor:0.275},
+  thin:{name:'Dun / krokant',factor:0.245}
+};
+
+
+function stoneProfile(temp){
+  const t=clamp(temp,180,520);
+  let time,turn,oilLow,oilHigh,note;
+  if(t<270){time='6–10 min';turn=L('eenmaal rond halverwege','once around halfway');oilLow=2;oilHigh=3;note=L('Lange bak. De korst wordt eerder krokant/broodachtig dan klassiek Napolitaans.','Long bake. The crust turns crisp/bready rather than classic Neapolitan.');}
+  else if(t<300){time='5–7 min';turn=L('eenmaal rond halverwege','once around halfway');oilLow=1.5;oilHigh=2.5;note=L('Geschikt voor een gewone oven; wat olie helpt met kleur en malsheid.','Suitable for a normal oven; some oil helps with colour and tenderness.');}
+  else if(t<330){time='4–6 min';turn='1×';oilLow=1;oilHigh=2;note=L('Middellange bak. Olie kan nog duidelijk helpen met bruining.','Medium bake. Oil still clearly helps with browning.');}
+  else if(t<360){time='3–4 min';turn='1–2×';oilLow=.5;oilHigh=1.5;note=L('Snellere bak; gebruik olie vooral als je een zachtere/NY-achtige korst wilt.','Faster bake; use oil mainly if you want a softer, NY-style crust.');}
+  else if(t<390){time='2–3 min';turn=L('regelmatig','regularly');oilLow=.5;oilHigh=1;note=L('Vrij heet. Voor Napolitaanse stijl wordt olie steeds minder nodig.','Fairly hot. For Neapolitan style, oil becomes less and less necessary.');}
+  else if(t<420){time='90–150 sec';turn=L('elke 25–35 sec','every 25–35 sec');oilLow=0;oilHigh=.5;note=L('Zeer geschikt voor lichte Italiaanse pizza’s; weinig tot geen olie nodig.','Well suited to light Italian pizzas; little to no oil needed.');}
+  else if(t<450){time='60–100 sec';turn=L('elke 20–30 sec','every 20–30 sec');oilLow=0;oilHigh=0;note=L('Napolitaans bereik. Olie in het deeg is doorgaans niet nodig.','Neapolitan range. Oil in the dough is usually unnecessary.');}
+  else {time='50–80 sec';turn=L('zeer regelmatig','very regularly');oilLow=0;oilHigh=0;note=L('Extreem heet. Let extra op verbrande bodem en toppings; bovenwarmte/vlam moet hierbij passen.','Extremely hot. Watch for a burnt base and toppings; top heat/flame must match.');}
+  // Numerieke baktijd zodat de tijdlijn kan rekenen met meerdere pizza's achter elkaar.
+  const secs={'6–10 min':[360,600],'5–7 min':[300,420],'4–6 min':[240,360],'3–4 min':[180,240],
+              '2–3 min':[120,180],'90–150 sec':[90,150],'60–100 sec':[60,100],'50–80 sec':[50,80]}[time]||[90,150];
+  return {temp:t,time,turn,oilLow,oilHigh,note,secLow:secs[0],secHigh:secs[1],targetOil:roundTo((oilLow+oilHigh)/2,.5)};
+}
+
+const recipeTemps={
+  amatriciana:{low:420,high:450,note:'Guanciale en pecorino houden van kort en heet; het vet rendert snel uit.'},
+  gricia:{low:410,high:440,note:'Zonder tomaat droogt de bodem sneller uit; iets minder heet dan Amatriciana.'},
+  pancettaScamorza:{low:410,high:440,note:'Scamorza smelt traag; iets meer tijd helpt hem doorlopen.'},
+  cottoProvola:{low:420,high:450,note:'Gekookte ham is al gaar; kort en heet houdt hem sappig.'},
+  salameProvola:{low:420,high:450,note:'Dun gesneden salami krult mooi op bij hoog vuur.'},
+  salsicciaCipolla:{low:395,high:425,note:'Rauwe worst en ui hebben iets meer tijd nodig; verkruimel de worst klein.'},
+  porchettaProvola:{low:410,high:440,note:'Porchetta is voorgegaard; te heet maakt hem droog.'},
+  polpette:{low:395,high:425,note:'Gehaktballetjes moeten doorwarmen; houd ze klein of gaar ze voor.'},
+  raguParmigiano:{low:410,high:440,note:'Dikke ragù is al gaar; vooral doorwarmen en de bodem droog houden.'},
+  salsicciaPatate:{low:385,high:415,note:'Aardappel en rauwe worst vragen de langste baktijd van deze bibliotheek.'},
+  patateRosmarino:{low:380,high:410,note:'Aardappel gaart niet in 90 seconden; snijd flinterdun of gaar voor.'},
+  taleggioSalsiccia:{low:400,high:430,note:'Taleggio wordt snel vloeibaar; matig vuur voorkomt een plas.'},
+  cottoBurrata:{low:425,high:455,note:'Burrata gaat pas ná het bakken op de pizza; de bodem mag heet en snel.'},
+  pancettaPecorino:{low:420,high:450,note:'Pancetta rendert snel uit; pecorino niet te lang blootstellen.'},
+  caprese:{low:430,high:460,note:'Verse tomaat en basilicum grotendeels na het bakken; korte, hete bak.'},
+  biancaProsciutto:{low:430,high:460,note:'Prosciutto gaat na het bakken erop; de witte bodem mag kort en heet.'},
+  calabrese:{low:420,high:450,note:'Pittige salami en \'nduja smelten snel uit bij hoog vuur.'},
+  siciliana:{low:420,high:450,note:'Ansjovis, olijven en kappertjes zijn zout; kort bakken houdt ze fris.'},
+  romana:{low:420,high:450,note:'Klassiek Napolitaans profiel met ansjovis; hoog vuur werkt goed.'},
+  ricottaSalame:{low:410,high:440,note:'Ricotta droogt uit bij extreem vuur; iets gematigder is beter.'},
+  ricottaNduja:{low:415,high:445,note:'\'Nduja smelt uit in de ricotta; net iets heter mag.'},
+  gorgonzolaPera:{low:395,high:425,note:'Peer geeft vocht af en verbrandt snel aan de randen.'},
+  tartufoSalsiccia:{low:400,high:430,note:'Truffel verliest aroma bij extreme hitte; voeg truffelcrème liefst na het bakken toe.'},
+  margherita:{low:420,high:450,note:'Lichte klassieke topping; hoog vuur werkt uitstekend.'},
+  marinara:{low:430,high:460,note:'Geen kaas, dus kan relatief heet en snel.'},
+  margheritaExtra:{low:400,high:430,note:'Buffelmozzarella is vochtiger; iets rustiger helpt.'},
+  napoletana:{low:410,high:440,note:'Ansjovis en kappertjes verdragen hitte goed, maar laat ze niet uitdrogen.'},
+  diavola:{low:400,high:430,note:'Salami kleurt en vet snel; iets lager dan een pure Margherita is prettig.'},
+  prosciuttoFunghi:{low:390,high:420,note:'Meer en vochtiger beleg; geef de topping iets meer tijd.'},
+  quattroFormaggi:{low:380,high:410,note:'Veel kaas kan bij zeer hoge hitte snel verbranden of splitsen.'},
+  capricciosa:{low:380,high:410,note:'Relatief zware topping; iets langere bak is meestal mooier.'},
+  quattroStagioni:{low:380,high:410,note:'Veel verschillende toppings; iets lager geeft gelijkmatiger resultaat.'},
+  ortolana:{low:390,high:420,note:'Voorgegaarde/gegrilde groenten werken goed in dit bereik.'},
+  salsicciaFriarielli:{low:390,high:420,note:'Gebruik voorgegaarde of zeer kleine stukjes worst bij korte baktijden.'},
+  tonnoCipolla:{low:390,high:420,note:'Tonijn droogt snel uit; niet onnodig heet bakken.'},
+  parmigiana:{low:390,high:420,note:'Aubergine is al gaar; middelheet houdt kaas en topping in balans.'},
+  mortadella:{low:420,high:450,note:'De rijke toppings gaan na het bakken erop, dus de basis mag heet en snel.'},
+  nduja:{low:410,high:440,note:"'Nduja bakt snel; burrata gaat na het bakken erop."},
+  prosciuttoCrudo:{low:420,high:450,note:'Parmaham, rucola en Parmezaan gaan na het bakken erop; de basis kan heet en snel.'},
+  prosciuttoCrudoSimple:{low:420,high:450,note:'Parmaham gaat na het bakken erop, dus de tomaat/kaasbasis kan heet en snel.'},
+  burrataPomodoro:{low:420,high:450,note:'Burrata gaat na het bakken erop; de basis kan relatief heet worden gebakken.'},
+  speckGorgonzola:{low:390,high:420,note:'Gorgonzola vraagt iets meer rust; speck en walnoot gaan na het bakken erop.'},
+  salameFunghi:{low:390,high:420,note:'Champignons bevatten vocht en salami kleurt snel; iets rustiger bakken werkt beter.'},
+  carbonara:{low:390,high:420,note:'Bak de basis iets rustiger; eidooier en harde kaas pas na het bakken.'},
+  cacioPepe:{low:390,high:420,note:'Veel harde kaas; iets lager voorkomt verbranden en splitsen.'},
+  cinqueFormaggi:{low:370,high:400,note:'Zeer kaasrijk; lagere steentemperatuur geeft de kazen meer tijd zonder verbranden.'},
+  quattroFormaggiRosso:{low:380,high:410,note:'Veel kaas; iets rustiger dan Margherita bakken.'},
+  salsicciaGorgonzola:{low:380,high:410,note:'Worst plus veel kaas vraagt een iets langere, rustigere bak.'},
+  diavolaGorgonzola:{low:390,high:420,note:'Salami en Gorgonzola kleuren snel.'},
+  parmaBurrata:{low:420,high:450,note:'Parmaham en burrata gaan na het bakken erop, dus de basis kan heet en snel.'},
+  bresaolaRucola:{low:420,high:450,note:'Bresaola, rucola en Parmezaan gaan na het bakken erop.'},
+  taleggioSpeck:{low:390,high:420,note:'Taleggio is rijk; speck gaat na het bakken erop.'},
+  gorgonzolaNduja:{low:390,high:420,note:'Vet en kaasrijk beleg; iets rustiger bakken.'},
+  pestoMortadella:{low:410,high:440,note:'Gebruik pesto dun; mortadella en stracciatella gaan na het bakken erop.'},
+  pestoParmaBurrata:{low:410,high:440,note:'Rijke toppings gaan na het bakken erop; basis kan relatief heet.'},
+  tartufoProsciutto:{low:420,high:450,note:'Truffel en Parmaham pas na het bakken voor maximaal aroma.'},
+  funghi:{low:390,high:420,note:'Champignons geven vocht af; iets rustiger bakken helpt.'},
+  boscaiola:{low:380,high:410,note:'Worst en champignons vragen wat meer tijd dan een lichte Margherita.'},
+  salsicciaFunghi:{low:380,high:410,note:'Worst plus champignons: iets rustiger bakken voor goede garing.'},
+  speckFunghi:{low:390,high:420,note:'Champignons bakken mee; speck gaat pas na het bakken erop.'},
+  parmaFunghi:{low:390,high:420,note:'Champignons bakken mee; Parmaham pas na het bakken.'},
+  gorgonzolaFunghi:{low:380,high:410,note:'Gorgonzola en champignons zijn rijk en vochtig; bak iets rustiger.'},
+  porciniTaleggio:{low:380,high:410,note:'Porcini en Taleggio profiteren van een iets langere, rustigere bak.'},
+  porciniSalsiccia:{low:380,high:410,note:'Porcini plus worst vraagt meer tijd dan een lichte pizza.'},
+  quattroFormaggiFunghi:{low:370,high:400,note:'Veel kaas plus champignons; lagere steentemperatuur voorkomt verbranden.'},
+  tartufoFunghi:{low:390,high:420,note:'Champignons bakken mee; truffelcrème pas na het bakken.'},
+  salami:{low:400,high:430,note:'Salami kleurt snel; middelheet tot heet werkt goed.'},
+  pepperoni:{low:390,high:420,note:'Pepperoni geeft vet af en kleurt snel; iets rustiger bakken.'},
+  hawaii:{low:380,high:410,note:'Ananas bevat vocht; goed uitlekken en iets rustiger bakken.'},
+  prosciuttoCotto:{low:400,high:430,note:'Ham en mozzarella kunnen goed op een middelhete tot hete steen.'},
+  quattroFormaggiPiccante:{low:370,high:400,note:'Veel kaas plus ’nduja: rustiger bakken voorkomt verbranden en vet afscheiden.'},
+  quattroFormaggiSalame:{low:370,high:400,note:'Veel kaas en salami vragen een wat langere, rustigere bak.'},
+  quattroFormaggiProsciutto:{low:380,high:410,note:'Parmaham gaat na het bakken erop; de kaasbasis vraagt iets meer tijd.'},
+  quattroFormaggiSalsiccia:{low:370,high:400,note:'Veel kaas plus worst: lager en langer voor gelijkmatige garing.'},
+  quattroFormaggiNduja:{low:370,high:400,note:'Veel kaas en ’nduja zijn rijk; rustig bakken werkt het best.'},
+  quattroFormaggiAffumicata:{low:380,high:410,note:'Rijke smeltkazen; iets rustiger dan een Margherita.'},
+  quattroFormaggiTaleggio:{low:380,high:410,note:'Taleggio is zeer romig; middelhoge steentemperatuur werkt mooi.'},
+  quattroFormaggiPecorino:{low:380,high:410,note:'Harde kaas kan snel kleuren; bak iets rustiger.'},
+  tonno:{low:390,high:420,note:'Tonijn droogt snel uit; middelheet werkt beter dan extreem heet.'},
+  tonnoOlive:{low:390,high:420,note:'Tonijn droogt snel; olijven kunnen gewoon mee bakken.'},
+  tonnoCapperi:{low:390,high:420,note:'Tonijn droogt snel; kappertjes zijn al krachtig van smaak.'},
+  tonnoPiccante:{low:390,high:420,note:'Tonijn en ui profiteren van een iets rustigere bak.'},
+  tonnoGorgonzola:{low:380,high:410,note:'Tonijn plus Gorgonzola is rijk; iets lager houdt de kaas mooier.'},
+  tonnoMais:{low:380,high:410,note:'Mais en tonijn bevatten vocht; goed uitlekken en rustiger bakken.'},
+  salmoneRucola:{low:410,high:440,note:'Zalm en rucola gaan na het bakken erop; de basis mag relatief heet.'},
+  gamberiAglio:{low:380,high:410,note:'Gebruik voorgegaarde garnalen; voorkom uitdrogen met een iets rustigere bak.'},
+  fruttiMare:{low:370,high:400,note:'Zeevruchten geven vocht af; lager en iets langer werkt beter.'},
+  sardineCipolla:{low:390,high:420,note:'Sardines zijn al gaar; ui moet vooral zacht worden.'},
+  acciugheOlive:{low:400,high:430,note:'Ansjovis hoeft niet lang te garen; middelheet tot heet is prima.'},
+  polloFunghiWhite:{low:380,high:410,note:'Romige saus, kip en champignons vragen iets meer tijd en rustiger vuur.'},
+  bbqChicken:{low:380,high:410,note:'BBQ-saus bevat suiker en kleurt snel; bak rustiger dan een Margherita.'},
+  bbqChickenPancetta:{low:375,high:405,note:'BBQ-saus en pancetta kleuren snel; iets lager voorkomt verbranden.'}
+};
+
+function recipeTempFor(id){return recipeTemps[id]||{low:400,high:430,note:'Algemeen Italiaans bereik.'};}
+function selectedRecipeTempAdvice(){
+  ensurePizzaSelections();
+  const rows=pizzaSelections.map((id,i)=>({i:i+1,id,r:recipeById(id),...recipeTempFor(id)}));
+  const commonLow=Math.max(...rows.map(x=>x.low));
+  const commonHigh=Math.min(...rows.map(x=>x.high));
+  let suggested,hasCommon=commonLow<=commonHigh;
+  if(hasCommon) suggested=roundTo((commonLow+commonHigh)/2,5);
+  else suggested=roundTo(rows.reduce((a,x)=>a+(x.low+x.high)/2,0)/rows.length,5);
+  return {rows,commonLow,commonHigh,hasCommon,suggested};
+}
+
+const presets={
+  avpnMid:{
+    name:'AVPN • 28,5 cm • 58,8% • 18 uur',
+    h:58.823529411765,s:2.941176470588,yIdy:0.030392156863,ySelected:0.091176470588,yeastType:'fresh',o:0,
+    pizzas:4,diameter:28.5,style:'avpn',fermentation:'room',bulk:2,cold:0,ball:16,
+    room:19,fridge:4,autolyse:false,practical:false,flourW:285,flourType:'custom',stoneTemp:405,avpn:true
+  },
+  kodaNight:{
+    name:'Mijn standaardrecept • 32 cm • 63% • 25 uur',
+    h:63,s:18/600*100,yIdy:0.17,o:0,
+    pizzas:4,diameter:32,style:'neapolitan',fermentation:'hybrid',bulk:1,cold:20,ball:4,
+    room:21,fridge:4,autolyse:true,flourType:'caputoPizzeria'
+  },
+  sameDay:{
+    name:'Napolitaans • 32 cm • 63% • 8 uur',
+    h:63,s:2.5,yIdy:0.12,o:0,
+    pizzas:4,diameter:32,style:'neapolitan',fermentation:'room',bulk:2,cold:0,ball:6,
+    room:21,fridge:4,autolyse:false
+  },
+  cold48:{
+    name:'Napolitaans • 32 cm • 65% • 48 uur',
+    h:65,s:3,yIdy:0.15,o:0,
+    pizzas:4,diameter:32,style:'neapolitan',fermentation:'hybrid',bulk:1,cold:43,ball:4,
+    room:21,fridge:4,autolyse:true
+  },
+  cold72:{
+    name:'Napolitaans • 32 cm • 65% • 72 uur',
+    h:65,s:3,yIdy:0.13,o:0,
+    pizzas:4,diameter:32,style:'neapolitan',fermentation:'hybrid',bulk:1,cold:67,ball:4,
+    room:21,fridge:4,autolyse:true
+  },
+  canotto:{
+    name:'Canotto • 32 cm • 68% • 25 uur',
+    h:68,s:3,yIdy:0.18,o:0,
+    pizzas:4,diameter:32,style:'canotto',fermentation:'hybrid',bulk:1,cold:20,ball:4,
+    room:21,fridge:4,autolyse:true
+  },
+  home24:{
+    name:'New York • 32 cm • 65% • 25 uur',
+    h:65,s:2.5,yIdy:0.17,o:2,
+    pizzas:4,diameter:32,style:'ny',fermentation:'hybrid',bulk:1,cold:20,ball:4,
+    room:21,fridge:4,autolyse:false
+  }
+};
+
+const sauces={
+  sanMarzano:{
+    name:'San Marzano crudo',nameEn:'San Marzano crudo',perPizza:80,tomato:true,cooked:false,
+    desc:'Ongekookt. Tomaten met de hand fijnknijpen.',
+    descEn:'Uncooked. Crush the tomatoes by hand.',
+    ingredients:(batch,p)=>[
+      ['San Marzano gepelde tomaten',`${fmt(batch,0)} g`],
+      ['Fijn zeezout',`${fmt(batch*0.01,1)} g`],
+      ['Basilicum',`${p}–${Math.ceil(p*1.5)} ${L('blaadjes','leaves')}`],
+      ['EVOO',L('optioneel, klein scheutje','optional, small drizzle')]
+    ]
+  },
+  marinara:{
+    name:'Marinara',nameEn:'Marinara',perPizza:80,tomato:true,cooked:false,
+    desc:'Ongekookte tomatenbasis met knoflook en oregano.',
+    descEn:'Uncooked tomato base with garlic and oregano.',
+    ingredients:(batch,p)=>[
+      ['San Marzano tomaten',`${fmt(batch,0)} g`],
+      ['Fijn zeezout',`${fmt(batch*0.01,1)} g`],
+      ['Knoflook',`${Math.max(1,Math.ceil(batch/250))} ${L('teen/tenen','clove(s)')}`],
+      ['Gedroogde oregano',`${fmt(batch*0.002,1)} g`],
+      ['EVOO',`${fmt(batch*0.015,1)} g`]
+    ]
+  },
+  ny:{
+    name:'New York tomatensaus',nameEn:'New York tomato sauce',perPizza:90,tomato:true,cooked:true,yield:0.75,
+    desc:'Kort gekookte, iets krachtigere tomatensaus.',
+    descEn:'Briefly cooked, slightly richer tomato sauce.',
+    ingredients:(batch,p)=>[
+      ['Tomaten',`${fmt(batch,0)} g`],
+      ['Zout',`${fmt(batch*0.012,1)} g`],
+      ['EVOO',`${fmt(batch*0.02,1)} g`],
+      ['Oregano',`${fmt(batch*0.0025,1)} g`],
+      ['Knoflook',`${Math.max(1,Math.ceil(batch/300))} ${L('teen/tenen','clove(s)')}`],
+      ['Suiker',L('optioneel, alleen indien de tomaten zuur zijn','optional, only if the tomatoes are sharp')]
+    ]
+  },
+  bianca:{
+    name:'Bianca • olijfolie (traditioneler)',nameEn:'Bianca • olive oil (more traditional)',perPizza:5,tomato:false,cooked:false,
+    desc:'Traditionelere witte basis zonder saus: alleen een dun laagje extra vierge olijfolie.',
+    descEn:'More traditional white base with no sauce: just a thin layer of extra virgin olive oil.',
+    ingredients:(batch,p)=>[
+      ['Extra vierge olijfolie',`${fmt(batch,0)} g`],
+      ['Fijn zout',L('heel licht, naar smaak','very light, to taste')]
+    ]
+  },
+  white:{
+    name:'Romige witte saus • crème fraîche',nameEn:'Creamy white sauce • crème fraîche',perPizza:65,tomato:false,cooked:false,
+    desc:'Romige, minder traditionele witte pizzabasis met crème fraîche. Dun aanbrengen; vooral geschikt voor aardappel, kip, kaas en groenten.',
+    descEn:'Creamy, less traditional white pizza base with crème fraîche. Spread thinly; especially good with potato, chicken, cheese and vegetables.',
+    ingredients:(batch,p)=>[
+      ['Crème fraîche',`${fmt(batch*0.88,0)} g`],
+      ['Parmigiano Reggiano',`${fmt(batch*0.10,0)} g`],
+      ['Knoflook',`${Math.max(1,Math.ceil(batch/300))} ${L('teen/tenen','clove(s)')}`],
+      ['Fijn zout',L('heel licht, naar smaak','very light, to taste')],
+      ['Zwarte peper',L('naar smaak','to taste')]
+    ]
+  },
+  bbq:{
+    name:'BBQ-saus',nameEn:'BBQ sauce',perPizza:55,tomato:false,cooked:false,
+    desc:'Dunne laag BBQ-saus; gebruik wat minder dan tomatensaus omdat deze zoeter en geconcentreerder is.',
+    descEn:'Thin layer of BBQ sauce; use a little less than tomato sauce because it is sweeter and more concentrated.',
+    ingredients:(batch,p)=>[
+      ['BBQ-saus',`${fmt(batch,0)} g`]
+    ]
+  },
+  pesto:{
+    name:'Pesto-basis',nameEn:'Pesto base',perPizza:30,tomato:false,cooked:false,
+    desc:'Dunne pestolaag; voeg bij zeer hete pizzaovens liever een deel na het bakken toe.',
+    descEn:'Thin layer of pesto; with very hot pizza ovens, add part of it after baking.',
+    ingredients:(batch,p)=>[
+      ['Pesto',`${fmt(batch,0)} g`]
+    ]
+  }
+};
+
+const pizzaRecipes=[
+  {id:'margherita',name:'Margherita',tag:'Traditioneel',sauce:'sanMarzano',sauceG:80,
+   items:[['Fior di latte (mozzarella)',85,'g'],['Parmigiano Reggiano (optioneel)',6,'g'],['Basilicum',3,'blaadjes'],['EVOO',5,'g']],
+   note:'Tomaat, fior di latte (mozzarella), basilicum en olijfolie. Een klein beetje geraspte Parmigiano is optioneel en kan in de ingrediëntenpicker worden uitgevinkt.'},
+  {id:'marinara',name:'Marinara',tag:'Traditioneel',sauce:'marinara',sauceG:80,
+   items:[['Knoflook',1,'teen'],['Oregano',0.5,'g'],['EVOO',5,'g']],
+   note:'Zonder kaas. Simpel, uitgesproken en klassiek.'},
+  {id:'margheritaExtra',name:'Margherita Extra / Bufalina',tag:'Traditioneel',sauce:'sanMarzano',sauceG:80,
+   items:[['Mozzarella di bufala',95,'g'],['Parmigiano Reggiano (optioneel)',6,'g'],['Basilicum',3,'blaadjes'],['EVOO',5,'g']],
+   note:'Variant met mozzarella di bufala. Laat de buffelmozzarella zeer goed uitlekken; Parmigiano is optioneel.'},
+  {id:'napoletana',name:'Napoletana met ansjovis & kappertjes',nameEn:'Napoletana with anchovies & capers',tag:'Klassiek Italiaans',tagEn:'Classic Italian',sauce:'sanMarzano',sauceG:80,
+   items:[['Fior di latte (mozzarella)',75,'g'],['Ansjovis',15,'g'],['Kappertjes',8,'g'],['Oregano',0.4,'g'],['EVOO',4,'g']],
+   note:'Zout beleg, dus wees terughoudend met extra zout.'},
+  {id:'diavola',name:'Diavola',tag:'Klassiek',sauce:'sanMarzano',sauceG:80,
+   items:[['Fior di latte (mozzarella)',80,'g'],['Pittige salami',50,'g'],['EVOO',3,'g']],
+   note:'Gebruik dun gesneden pittige salami.'},
+  {id:'prosciuttoFunghi',name:'Prosciutto e Funghi',tag:'Klassiek',sauce:'sanMarzano',sauceG:80,
+   items:[['Fior di latte (mozzarella)',80,'g'],['Gekookte ham',50,'g'],['Champignons',50,'g'],['EVOO',3,'g']],
+   note:'Snijd champignons dun zodat ze snel garen.'},
+  {id:'quattroFormaggi',name:'Quattro Formaggi',tag:'Klassiek',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Gorgonzola',30,'g'],['Provolone',25,'g'],['Parmigiano Reggiano',15,'g']],
+   note:'Witte pizza; kazen variëren per streek en pizzeria.'},
+  {id:'capricciosa',name:'Capricciosa',tag:'Klassiek',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Gekookte ham',35,'g'],['Champignons',35,'g'],['Artisjok',35,'g'],['Olijven',20,'g'],['EVOO',3,'g']],
+   note:'Klassieke combinatie; regionale uitvoeringen verschillen.'},
+  {id:'quattroStagioni',name:'Quattro Stagioni',tag:'Klassiek',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Ham',30,'g'],['Champignons',30,'g'],['Artisjok',30,'g'],['Olijven',15,'g']],
+   note:'Verdeel de toppings in vier duidelijke kwarten.'},
+  {id:'ortolana',name:'Ortolana',tag:'Klassiek',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Aubergine',35,'g'],['Courgette',35,'g'],['Paprika',35,'g'],['EVOO',4,'g']],
+   note:'Groenten vooraf licht grillen helpt tegen overtollig vocht.'},
+  {id:'salsicciaFriarielli',name:'Salsiccia e Friarielli',tag:'Napolitaanse klassieker',sauce:'bianca',sauceG:5,
+   items:[['Provola of fior di latte',75,'g'],['Italiaanse worst',70,'g'],['Friarielli',60,'g'],['EVOO',3,'g']],
+   note:'Geen tomaat. Een echte Campania-combinatie. Gebruik bij een zeer korte bak bij voorkeur voorgegaarde worst of heel kleine stukjes.'},
+  {id:'tonnoCipolla',name:'Tonno e Cipolla (Tonijn & Ui)',tag:'Italiaanse klassieker',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Tonijn, uitgelekt',60,'g'],['Rode ui',30,'g'],['EVOO',3,'g']],
+   note:'Snijd de ui zeer dun.'},
+  {id:'parmigiana',name:'Parmigiana',tag:'Klassiek',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Aubergine, gegrild/gebakken',60,'g'],['Parmigiano Reggiano',15,'g'],['Basilicum',3,'blaadjes'],['EVOO',3,'g']],
+   note:'Geïnspireerd op melanzane alla parmigiana.'},
+  {id:'mortadella',name:'Mortadella, Pistacchio & Stracciatella',tag:'Modern Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Mortadella',60,'g'],['Stracciatella',50,'g'],['Pistache',10,'g']],
+   after:['Mortadella','Stracciatella','Pistache'],
+   note:'Mortadella, stracciatella en pistache pas na het bakken.'},
+  {id:'nduja',name:"'Nduja & Burrata",tag:'Modern Italiaans',tagEn:'Modern Italian',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',60,'g'],["'Nduja",30,'g'],['Burrata',60,'g'],['Basilicum',2,'blaadjes']],
+   after:['Burrata','Basilicum'],
+   note:"Burrata pas na het bakken; 'nduja in kleine dotjes verdelen.",noteEn:"Add the burrata after baking; distribute the 'nduja in small dollops."},
+
+  {id:'prosciuttoCrudo',name:'Prosciutto Crudo e Rucola',tag:'Italiaanse klassieker',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',75,'g'],['Prosciutto crudo / Parmaham',55,'g'],['Rucola',20,'g'],['Parmigiano Reggiano',12,'g'],['EVOO',3,'g']],
+   after:['Prosciutto crudo / Parmaham','Rucola','Parmigiano Reggiano'],
+   note:'Tomatensaus + kaas als basis; Parmaham, rucola en Parmezaan pas na het bakken.'},
+
+  {id:'prosciuttoCrudoSimple',name:'Prosciutto Crudo',tag:'Klassiek',sauce:'sanMarzano',sauceG:80,
+   items:[['Fior di latte (mozzarella)',80,'g'],['Prosciutto crudo / Parmaham',60,'g'],['Basilicum',2,'blaadjes'],['EVOO',3,'g']],
+   after:['Prosciutto crudo / Parmaham','Basilicum'],
+   note:'Eenvoudig: tomaat, mozzarella en Parmaham. Ham na het bakken voor de beste textuur.'},
+
+  {id:'burrataPomodoro',name:'Burrata & Pomodoro',tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',50,'g'],['Burrata',70,'g'],['Basilicum',3,'blaadjes'],['Parmigiano Reggiano',10,'g'],['EVOO',4,'g']],
+   after:['Burrata','Basilicum'],
+   note:'Burrata na het bakken toevoegen zodat hij romig blijft.'},
+
+  {id:'speckGorgonzola',name:'Speck & Gorgonzola',tag:'Noord-Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',60,'g'],['Gorgonzola',35,'g'],['Speck',50,'g'],['Walnoot',10,'g']],
+   after:['Speck','Walnoot'],
+   note:'Witte pizza. Speck en walnoot liefst na het bakken toevoegen.'},
+
+  {id:'salameFunghi',name:'Salame e Funghi',tag:'Klassiek',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',75,'g'],['Salami',45,'g'],['Champignons',45,'g'],['EVOO',3,'g']],
+   note:'Een eenvoudige klassieke combinatie met tomaat, kaas, salami en champignons.'},
+
+  {id:'carbonara',name:'Carbonara',tag:'Modern Romeins',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Guanciale',45,'g'],['Pecorino Romano',22,'g'],['Eidooier',1,'stuk'],['Zwarte peper',0.5,'g']],
+   after:['Eidooier','Pecorino Romano','Zwarte peper'],
+   note:'Witte pizza geïnspireerd op carbonara. Eidooier, Pecorino en peper na het bakken toevoegen.'},
+
+  {id:'amatriciana',name:'Amatriciana',tag:'Modern Romeins',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Guanciale',50,'g'],['Pecorino Romano',18,'g'],['Chilivlokken',0.3,'g']],
+   after:['Pecorino Romano'],
+   note:'Tomaat, guanciale en Pecorino; geïnspireerd op pasta all’amatriciana.'},
+
+  {id:'gricia',name:'Gricia',tag:'Modern Romeins',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Guanciale',50,'g'],['Pecorino Romano',22,'g'],['Zwarte peper',0.5,'g']],
+   after:['Pecorino Romano','Zwarte peper'],
+   note:'Witte pizza met guanciale, Pecorino en zwarte peper.'},
+
+  {id:'cacioPepe',name:'Cacio e Pepe',tag:'Modern Romeins',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Pecorino Romano',35,'g'],['Parmigiano Reggiano',12,'g'],['Zwarte peper',0.8,'g']],
+   after:['Pecorino Romano','Parmigiano Reggiano','Zwarte peper'],
+   note:'Zeer kaasgericht; een deel van de harde kaas na het bakken houdt hem romiger.'},
+
+  {id:'salsicciaGorgonzola',name:'Salsiccia & Gorgonzola',tag:'Rijk Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Italiaanse worst',65,'g'],['Gorgonzola',35,'g'],['Parmigiano Reggiano',10,'g']],
+   note:'Rijke witte pizza met worst en blauwe kaas.'},
+
+  {id:'diavolaGorgonzola',name:'Diavola & Gorgonzola',tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',60,'g'],['Pittige salami',45,'g'],['Gorgonzola',30,'g']],
+   note:'Pittige salami en Gorgonzola; zwaar genoeg om iets rustiger te bakken.'},
+
+  {id:'parmaBurrata',name:'Parmaham & Burrata',tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',50,'g'],['Prosciutto crudo / Parmaham',60,'g'],['Burrata',70,'g'],['Parmigiano Reggiano',10,'g']],
+   after:['Prosciutto crudo / Parmaham','Burrata','Parmigiano Reggiano'],
+   note:'Tomaat en lichte mozzarella-basis; Parmaham en burrata na het bakken.'},
+
+  {id:'bresaolaRucola',name:'Bresaola, Rucola & Parmigiano',tag:'Noord-Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',60,'g'],['Bresaola',55,'g'],['Rucola',20,'g'],['Parmigiano Reggiano',15,'g'],['EVOO',3,'g']],
+   after:['Bresaola','Rucola','Parmigiano Reggiano'],
+   note:'Lichte witte basis; bresaola, rucola en Parmezaan na het bakken.'},
+
+  {id:'pancettaScamorza',name:'Pancetta & Scamorza',tag:'Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Scamorza',75,'g'],['Pancetta',55,'g'],['Parmigiano Reggiano',10,'g']],
+   note:'Rokerig en kaasrijk; scamorza geeft veel karakter.'},
+
+  {id:'cottoProvola',name:'Prosciutto Cotto & Provola',tag:'Italiaans',sauce:'sanMarzano',sauceG:75,
+   items:[['Provola',80,'g'],['Gekookte ham',55,'g'],['Parmigiano Reggiano',10,'g']],
+   note:'Tomaat, gerookte/volle provola en gekookte ham.'},
+
+  {id:'salameProvola',name:'Salame & Provola',tag:'Italiaans',sauce:'sanMarzano',sauceG:75,
+   items:[['Provola',80,'g'],['Salami',50,'g'],['Parmigiano Reggiano',8,'g']],
+   note:'Eenvoudig en stevig: tomaat, provola en salami.'},
+
+  {id:'salsicciaCipolla',name:'Salsiccia e Cipolla',tag:'Italiaanse klassieker',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Italiaanse worst',65,'g'],['Rode ui',30,'g']],
+   note:'Worst en zeer dun gesneden ui. Gebruik bij zeer korte bak kleine of voorgegaarde stukjes worst.'},
+
+  {id:'porchettaProvola',name:'Porchetta & Provola',tag:'Modern Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Provola',75,'g'],['Porchetta',70,'g'],['Parmigiano Reggiano',10,'g']],
+   after:['Porchetta'],
+   note:'Porchetta liefst pas na het bakken of alleen heel kort mee verwarmen.'},
+
+  {id:'polpette',name:'Polpette & Parmigiano',tag:'Italiaans-Amerikaans',sauce:'ny',sauceG:85,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Kleine gehaktballetjes',70,'g'],['Parmigiano Reggiano',15,'g'],['Basilicum',2,'blaadjes']],
+   note:'Gebruik volledig gegaarde kleine gehaktballetjes.'},
+
+  {id:'raguParmigiano',name:'Ragù & Parmigiano',tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:50,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Dik vleesragù',70,'g'],['Parmigiano Reggiano',18,'g']],
+   after:['Parmigiano Reggiano'],
+   note:'Gebruik een dikke, niet-waterige ragù zodat de bodem niet zompig wordt.'},
+
+  {id:'salsicciaPatate',name:'Salsiccia e Patate',tag:'Italiaans',sauce:'white',sauceG:60,
+   items:[['Fior di latte (mozzarella)',60,'g'],['Italiaanse worst',60,'g'],['Aardappel, dun voorgegaard',60,'g'],['Rozemarijn',0.5,'g']],
+   note:'Aardappel dun snijden en vooraf garen; worst klein of voorgegaard.'},
+
+  {id:'patateRosmarino',name:'Patate e Rosmarino',tag:'Italiaans',sauce:'white',sauceG:60,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Aardappel, dun voorgegaard',70,'g'],['Parmigiano Reggiano',12,'g'],['Rozemarijn',0.5,'g']],
+   note:'Witte pizza met dunne voorgegaarde aardappel en rozemarijn.'},
+
+  {id:'taleggioSpeck',name:'Taleggio & Speck',tag:'Noord-Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Taleggio',45,'g'],['Speck',55,'g']],
+   after:['Speck'],
+   note:'Taleggio smelt zeer rijk; speck na het bakken voor betere textuur.'},
+
+  {id:'taleggioSalsiccia',name:'Taleggio & Salsiccia',tag:'Noord-Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Taleggio',45,'g'],['Italiaanse worst',60,'g']],
+   note:'Volle kaas en worst; bak iets rustiger dan een Margherita.'},
+
+  {id:'gorgonzolaNduja',name:"Gorgonzola & 'Nduja",tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:65,
+   items:[['Fior di latte (mozzarella)',50,'g'],['Gorgonzola',35,'g'],["'Nduja",30,'g']],
+   note:'Pittig, vet en kaasrijk. Kleine dotjes ’nduja zijn genoeg.'},
+
+  {id:'cottoBurrata',name:'Prosciutto Cotto & Burrata',tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',50,'g'],['Gekookte ham',55,'g'],['Burrata',65,'g']],
+   after:['Burrata'],
+   note:'Gekookte ham kan mee bakken; burrata pas erna.'},
+
+  {id:'pancettaPecorino',name:'Pancetta & Pecorino',tag:'Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Pancetta',55,'g'],['Pecorino Romano',20,'g'],['Zwarte peper',0.4,'g']],
+   after:['Pecorino Romano','Zwarte peper'],
+   note:'Zout en krachtig; voeg harde kaas na het bakken toe.'},
+
+  {id:'caprese',name:'Caprese',tag:'Italiaans',sauce:'sanMarzano',sauceG:65,
+   items:[['Fior di latte (mozzarella)',75,'g'],['Cherrytomaat',45,'g'],['Basilicum',4,'blaadjes'],['EVOO',4,'g']],
+   after:['Basilicum'],
+   note:'Fris en eenvoudig. Gebruik niet te veel verse tomaat vanwege vocht.'},
+
+  {id:'biancaProsciutto',name:'Pizza Bianca con Prosciutto',tag:'Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',75,'g'],['Prosciutto crudo / Parmaham',60,'g'],['Parmigiano Reggiano',12,'g']],
+   after:['Prosciutto crudo / Parmaham','Parmigiano Reggiano'],
+   note:'Witte kaasbasis met Parmaham en Parmezaan na het bakken.'},
+
+  {id:'calabrese',name:'Calabrese',tag:'Zuid-Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Pittige salami',40,'g'],["'Nduja",20,'g'],['Olijven',15,'g']],
+   note:'Pittige Zuid-Italiaanse stijl met salami en ’nduja.'},
+
+  {id:'siciliana',name:'Siciliana',tag:'Zuid-Italiaans',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Ansjovis',15,'g'],['Kappertjes',8,'g'],['Olijven',20,'g'],['Oregano',0.4,'g']],
+   note:'Zout, hartig en aromatisch; wees zuinig met extra zout.'},
+
+  {id:'romana',name:'Romana',tag:'Klassiek Italiaans',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Ansjovis',15,'g'],['Kappertjes',8,'g'],['Oregano',0.4,'g']],
+   note:'Een veelvoorkomende klassieke combinatie van tomaat, mozzarella, ansjovis en kappertjes.'},
+
+  {id:'pestoMortadella',name:'Pesto, Mortadella & Stracciatella',tag:'Modern Italiaans',sauce:'pesto',sauceG:25,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Mortadella',60,'g'],['Stracciatella',50,'g'],['Pistache',10,'g']],
+   after:['Mortadella','Stracciatella','Pistache'],
+   note:'Pesto dun gebruiken; rijke toppings na het bakken.'},
+
+  {id:'pestoParmaBurrata',name:'Pesto, Parmaham & Burrata',tag:'Modern Italiaans',sauce:'pesto',sauceG:25,
+   items:[['Fior di latte (mozzarella)',40,'g'],['Prosciutto crudo / Parmaham',55,'g'],['Burrata',65,'g'],['Parmigiano Reggiano',10,'g']],
+   after:['Prosciutto crudo / Parmaham','Burrata','Parmigiano Reggiano'],
+   note:'Pesto als dunne basis, Parmaham en burrata na het bakken.'},
+
+  {id:'ricottaSalame',name:'Ricotta & Salame',tag:'Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',50,'g'],['Ricotta',45,'g'],['Salami',45,'g'],['Parmigiano Reggiano',8,'g']],
+   note:'Romige ricotta met salami; ricotta in kleine dotjes verdelen.'},
+
+  {id:'ricottaNduja',name:"Ricotta & 'Nduja",tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:65,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Ricotta',50,'g'],["'Nduja",30,'g'],['Parmigiano Reggiano',8,'g']],
+   note:'Ricotta tempert de pittigheid van ’nduja.'},
+
+  {id:'gorgonzolaPera',name:'Gorgonzola & Pera',tag:'Kaasgericht',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Gorgonzola',45,'g'],['Peer, dun gesneden',35,'g'],['Walnoot',10,'g']],
+   after:['Walnoot'],
+   note:'Zoet-hartig en kaasgericht. Gebruik peer zeer dun zodat hij niet te nat wordt.'},
+
+  {id:'quattroFormaggiRosso',name:'Quattro Formaggi Rosso',tag:'Kaasgericht',sauce:'sanMarzano',sauceG:60,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Gorgonzola',25,'g'],['Provolone',20,'g'],['Parmigiano Reggiano',12,'g']],
+   note:'Vier kazen met een lichte tomatenbasis.'},
+
+  {id:'cinqueFormaggi',name:'Cinque Formaggi',tag:'Kaasgericht',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',40,'g'],['Gorgonzola',22,'g'],['Taleggio',22,'g'],['Provolone',18,'g'],['Parmigiano Reggiano',12,'g']],
+   note:'Zeer kaasrijk. Houd de totale hoeveelheid beheerst zodat hij goed bakt.'},
+
+  {id:'tartufoProsciutto',name:'Tartufo & Prosciutto Crudo',tag:'Modern Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Prosciutto crudo / Parmaham',55,'g'],['Parmigiano Reggiano',12,'g'],['Truffelcrème',12,'g']],
+   after:['Prosciutto crudo / Parmaham','Parmigiano Reggiano','Truffelcrème'],
+   note:'Truffelcrème en Parmaham na het bakken voor het meeste aroma.'},
+
+  {id:'tartufoSalsiccia',name:'Tartufo & Salsiccia',tag:'Modern Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',60,'g'],['Italiaanse worst',60,'g'],['Parmigiano Reggiano',12,'g'],['Truffelcrème',10,'g']],
+   after:['Parmigiano Reggiano','Truffelcrème'],
+   note:'Worst en truffel; truffelcrème pas na het bakken toevoegen.'},
+
+  {id:'funghi',name:'Funghi',tag:'Klassiek',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',80,'g'],['Champignons',60,'g'],['Parmigiano Reggiano',8,'g'],['EVOO',3,'g']],
+   note:'Eenvoudige klassieke pizza met tomaat, mozzarella en champignons.'},
+
+  {id:'boscaiola',name:'Boscaiola',tag:'Klassiek Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Italiaanse worst',55,'g'],['Champignons',55,'g'],['Parmigiano Reggiano',10,'g']],
+   note:'Witte pizza met worst en champignons; een bekende hartige combinatie.'},
+
+  {id:'salsicciaFunghi',name:'Salsiccia e Funghi',tag:'Klassiek Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Italiaanse worst',60,'g'],['Champignons',50,'g'],['Parmigiano Reggiano',8,'g']],
+   note:'Tomaat, mozzarella, worst en champignons.'},
+
+  {id:'speckFunghi',name:'Speck e Funghi',tag:'Noord-Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Speck',50,'g'],['Champignons',50,'g'],['Parmigiano Reggiano',10,'g']],
+   after:['Speck'],
+   note:'Champignons bakken mee; speck pas na het bakken voor betere textuur.'},
+
+  {id:'parmaFunghi',name:'Prosciutto Crudo e Funghi',tag:'Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Champignons',45,'g'],['Prosciutto crudo / Parmaham',55,'g'],['Parmigiano Reggiano',10,'g']],
+   after:['Prosciutto crudo / Parmaham','Parmigiano Reggiano'],
+   note:'Champignons bakken mee; Parmaham en Parmezaan pas na het bakken.'},
+
+  {id:'gorgonzolaFunghi',name:'Gorgonzola e Funghi',tag:'Kaasgericht',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Gorgonzola',35,'g'],['Champignons',50,'g'],['Parmigiano Reggiano',8,'g']],
+   note:'Romige witte pizza met Gorgonzola en champignons.'},
+
+  {id:'porciniTaleggio',name:'Porcini & Taleggio',tag:'Noord-Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Taleggio',45,'g'],['Porcini / eekhoorntjesbrood',45,'g'],['Parmigiano Reggiano',10,'g']],
+   note:'Aardse porcini met volle Taleggio; gebruik goed uitgelekte paddenstoelen.'},
+
+  {id:'porciniSalsiccia',name:'Porcini & Salsiccia',tag:'Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Porcini / eekhoorntjesbrood',45,'g'],['Italiaanse worst',60,'g'],['Parmigiano Reggiano',10,'g']],
+   note:'Rijke witte pizza met porcini en worst.'},
+
+  {id:'quattroFormaggiFunghi',name:'Quattro Formaggi e Funghi',tag:'Kaasgericht',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',40,'g'],['Gorgonzola',25,'g'],['Provolone',20,'g'],['Parmigiano Reggiano',12,'g'],['Champignons',40,'g']],
+   note:'Vier kazen plus champignons; bak iets rustiger vanwege de totale toppingmassa.'},
+
+  {id:'tartufoFunghi',name:'Tartufo e Funghi',tag:'Modern Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Champignons',50,'g'],['Parmigiano Reggiano',12,'g'],['Truffelcrème',12,'g']],
+   after:['Parmigiano Reggiano','Truffelcrème'],
+   note:'Champignons bakken mee; truffelcrème en Parmezaan pas na het bakken.'},
+
+  {id:'polloFunghiWhite',name:'Pollo & Funghi • romige witte saus',nameEn:'Chicken & Mushrooms • creamy white sauce',tag:'Modern Italiaans',tagEn:'Modern Italian',sauce:'white',sauceG:60,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Kip, voorgegaard',60,'g'],['Champignons',45,'g'],['Parmigiano Reggiano',10,'g']],
+   note:'Niet traditioneel Napolitaans, maar een logische romige witte combinatie. Gebruik voorgegaarde kip en dun gesneden champignons.',noteEn:'Not traditional Neapolitan, but a logical creamy white combination. Use pre-cooked chicken and thinly sliced mushrooms.'},
+
+  {id:'bbqChicken',name:'BBQ Chicken & Rode Ui',nameEn:'BBQ Chicken & Red Onion',tag:'NL / afhaal',tagEn:'Dutch / takeaway',sauce:'bbq',sauceG:55,
+   items:[['Geraspte mozzarella / pizzakaas',75,'g'],['Kip, voorgegaard',65,'g'],['Rode ui',20,'g']],
+   note:'Niet traditioneel Italiaans. Gebruik een dunne laag BBQ-saus en volledig voorgegaarde kip.',noteEn:'Not traditional Italian. Use a thin layer of BBQ sauce and fully pre-cooked chicken.'},
+
+  {id:'bbqChickenPancetta',name:'BBQ Chicken & Pancetta',nameEn:'BBQ Chicken & Pancetta',tag:'NL / afhaal',tagEn:'Dutch / takeaway',sauce:'bbq',sauceG:50,
+   items:[['Geraspte mozzarella / pizzakaas',70,'g'],['Kip, voorgegaard',55,'g'],['Pancetta',30,'g'],['Rode ui',15,'g']],
+   note:'Rijk en niet-traditioneel; gebruik BBQ-saus dun omdat saus en pancetta snel kleuren.',noteEn:'Rich and non-traditional; use BBQ sauce sparingly because the sauce and pancetta brown quickly.'},
+
+  {id:'salami',name:'Salami',tag:'Klassiek',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',80,'g'],['Salami',50,'g'],['EVOO',3,'g']],
+   note:'Eenvoudige publieksfavoriet met tomaat, mozzarella en salami.'},
+
+  {id:'pepperoni',name:'Pepperoni',tag:'Italiaans-Amerikaans',sauce:'ny',sauceG:85,
+   items:[['Fior di latte (mozzarella)',80,'g'],['Pepperoni',50,'g']],
+   note:'Klassieke Italiaans-Amerikaanse combinatie met pittige pepperoni.'},
+
+  {id:'hawaii',name:'Hawaii',tag:'Populair',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',75,'g'],['Gekookte ham',50,'g'],['Ananas, goed uitgelekt',45,'g']],
+   note:'Bekende combinatie met ham en ananas. Laat ananas zeer goed uitlekken vanwege vocht.'},
+
+  {id:'prosciuttoCotto',name:'Prosciutto Cotto',tag:'Klassiek',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',80,'g'],['Gekookte ham',55,'g'],['EVOO',3,'g']],
+   note:'Klassieke pizza met tomaat, mozzarella en gekookte ham.'},
+
+  {id:'quattroFormaggiPiccante',name:'Quattro Formaggi Piccante',tag:'Kaasgericht',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',40,'g'],['Gorgonzola',25,'g'],['Provolone',22,'g'],['Parmigiano Reggiano',12,'g'],["'Nduja",20,'g']],
+   note:'Vier kazen met kleine dotjes pittige ’nduja.'},
+
+  {id:'quattroFormaggiSalame',name:'Quattro Formaggi e Salame',tag:'Kaas & vlees',sauce:'sanMarzano',sauceG:55,
+   items:[['Fior di latte (mozzarella)',38,'g'],['Gorgonzola',22,'g'],['Provolone',20,'g'],['Parmigiano Reggiano',10,'g'],['Salami',40,'g']],
+   note:'Vier kazen met salami en een lichte tomatenbasis.'},
+
+  {id:'quattroFormaggiProsciutto',name:'Quattro Formaggi e Prosciutto',tag:'Kaas & vlees',sauce:'sanMarzano',sauceG:55,
+   items:[['Fior di latte (mozzarella)',38,'g'],['Gorgonzola',22,'g'],['Provolone',20,'g'],['Parmigiano Reggiano',10,'g'],['Prosciutto crudo / Parmaham',50,'g']],
+   after:['Prosciutto crudo / Parmaham'],
+   note:'Vier kazen met Parmaham; ham pas na het bakken toevoegen.'},
+
+  {id:'quattroFormaggiSalsiccia',name:'Quattro Formaggi e Salsiccia',tag:'Kaas & vlees',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',38,'g'],['Gorgonzola',22,'g'],['Provolone',20,'g'],['Parmigiano Reggiano',10,'g'],['Italiaanse worst',50,'g']],
+   note:'Rijke witte vierkazenpizza met Italiaanse worst.'},
+
+  {id:'quattroFormaggiNduja',name:"Quattro Formaggi e 'Nduja",tag:'Kaas & pittig',sauce:'sanMarzano',sauceG:50,
+   items:[['Fior di latte (mozzarella)',38,'g'],['Gorgonzola',22,'g'],['Provolone',20,'g'],['Parmigiano Reggiano',10,'g'],["'Nduja",22,'g']],
+   note:'Vier kazen met pittige ’nduja; gebruik kleine dotjes.'},
+
+  {id:'quattroFormaggiAffumicata',name:'Quattro Formaggi Affumicata',tag:'Kaasgericht',sauce:'bianca',sauceG:5,
+   items:[['Scamorza Affumicata',35,'g'],['Fior di latte (mozzarella)',32,'g'],['Gorgonzola',22,'g'],['Parmigiano Reggiano',12,'g']],
+   note:'Rokerige vierkazenvariant met gerookte scamorza.'},
+
+  {id:'quattroFormaggiTaleggio',name:'Quattro Formaggi al Taleggio',tag:'Kaasgericht',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',35,'g'],['Taleggio',28,'g'],['Gorgonzola',20,'g'],['Parmigiano Reggiano',12,'g']],
+   note:'Romige vierkazenvariant waarin Taleggio de hoofdrol krijgt.'},
+
+  {id:'quattroFormaggiPecorino',name:'Quattro Formaggi con Pecorino',tag:'Kaasgericht',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',38,'g'],['Gorgonzola',22,'g'],['Provolone',20,'g'],['Pecorino Romano',14,'g']],
+   note:'Zout-krachtige vierkazenvariant met Pecorino Romano.'},
+
+  {id:'tonno',name:'Tonno / Tonijn',nameEn:'Tonno / Tuna',tag:'Populair',tagEn:'Popular',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Tonijn, uitgelekt',65,'g'],['EVOO',3,'g']],
+   note:'Eenvoudige tonijnpizza met tomaat, mozzarella en goed uitgelekte tonijn.'},
+
+  {id:'tonnoOlive',name:'Tonno e Olive',tag:'Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Tonijn, uitgelekt',60,'g'],['Olijven',20,'g'],['EVOO',3,'g']],
+   note:'Tonijn met olijven; zout en hartig, dus rustig met extra zout.'},
+
+  {id:'tonnoCapperi',name:'Tonno e Capperi',tag:'Italiaans',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Tonijn, uitgelekt',60,'g'],['Kappertjes',8,'g'],['EVOO',3,'g']],
+   note:'Tonijn met kappertjes; fris-zout en eenvoudig.'},
+
+  {id:'tonnoPiccante',name:'Tonno Piccante',tag:'Pittig',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',65,'g'],['Tonijn, uitgelekt',60,'g'],['Rode ui',20,'g'],['Chilivlokken',0.4,'g'],['EVOO',3,'g']],
+   note:'Pittige tonijnpizza met dunne rode ui en chilivlokken.'},
+
+  {id:'tonnoGorgonzola',name:'Tonno & Gorgonzola',tag:'Kaas & vis',sauce:'sanMarzano',sauceG:60,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Tonijn, uitgelekt',55,'g'],['Gorgonzola',30,'g'],['Rode ui',15,'g']],
+   note:'Krachtige combinatie van tonijn en Gorgonzola; gebruik een lichte tomatenbasis.'},
+
+  {id:'tonnoMais',name:'Tonijn & Mais',tag:'NL / afhaal',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',70,'g'],['Tonijn, uitgelekt',60,'g'],['Mais, uitgelekt',30,'g'],['Rode ui',20,'g']],
+   note:'Bekende afhaalstijl-combinatie; laat tonijn en mais goed uitlekken.'},
+
+  {id:'salmoneRucola',name:'Salmone Affumicato & Rucola',tag:'Modern Italiaans',sauce:'bianca',sauceG:5,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Gerookte zalm',55,'g'],['Rucola',20,'g'],['Parmigiano Reggiano',10,'g'],['EVOO',3,'g']],
+   after:['Gerookte zalm','Rucola','Parmigiano Reggiano'],
+   note:'Gerookte zalm en rucola pas na het bakken toevoegen.'},
+
+  {id:'gamberiAglio',name:'Gamberi e Aglio',tag:'Vis',sauce:'sanMarzano',sauceG:65,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Garnalen, voorgegaard',65,'g'],['Knoflook',1,'teen'],['Peterselie',2,'g'],['EVOO',3,'g']],
+   after:['Peterselie'],
+   note:'Gebruik voorgegaarde, goed droge garnalen; voeg peterselie na het bakken toe.'},
+
+  {id:'fruttiMare',name:'Frutti di Mare',tag:'Vis',sauce:'sanMarzano',sauceG:65,
+   items:[['Fior di latte (mozzarella)',45,'g'],['Zeevruchtenmix, voorgegaard en droog',90,'g'],['Knoflook',1,'teen'],['Peterselie',2,'g'],['EVOO',3,'g']],
+   after:['Peterselie'],
+   note:'Gebruik voorgegaarde en goed uitgelekte zeevruchten om een natte bodem te voorkomen.'},
+
+  {id:'sardineCipolla',name:'Sardine e Cipolla',tag:'Vis',sauce:'sanMarzano',sauceG:70,
+   items:[['Fior di latte (mozzarella)',55,'g'],['Sardines, uitgelekt',45,'g'],['Rode ui',25,'g'],['Kappertjes',6,'g']],
+   note:'Krachtige, zoute vispizza; ui zeer dun snijden.'},
+
+  {id:'acciugheOlive',name:'Acciughe e Olive',tag:'Klassiek Italiaans',sauce:'sanMarzano',sauceG:75,
+   items:[['Fior di latte (mozzarella)',60,'g'],['Ansjovis',15,'g'],['Olijven',20,'g'],['Kappertjes',6,'g'],['Oregano',0.3,'g']],
+   note:'Klassieke zoute combinatie van ansjovis, olijven en kappertjes.'}
+];
+
+// Ingrediëntnamen en telbare eenheden worden meteen in de juiste taal
+// gegenereerd. De MutationObserver kon ze niet vertalen omdat ze vaak midden
+// in een langere zin staan en dus geen eigen tekstnode vormen.
+const ITEM_EN={
+  "Aardappel, dun voorgegaard":"Potato, thinly pre-cooked",
+  "Ananas, goed uitgelekt":"Pineapple, well drained",
+  "Ansjovis":"Anchovies",
+  "Artisjok":"Artichoke",
+  "Aubergine":"Aubergine",
+  "Aubergine, gegrild/gebakken":"Aubergine, grilled/fried",
+  "BBQ-saus":"BBQ sauce",
+  "Basilicum":"Basil",
+  "Bresaola":"Bresaola",
+  "Burrata":"Burrata",
+  "Champignons":"Mushrooms",
+  "Cherrytomaat":"Cherry tomato",
+  "Chilivlokken":"Chilli flakes",
+  "Courgette":"Courgette",
+  "Crème fraîche":"Crème fraîche",
+  "Dik vleesragù":"Thick meat ragù",
+  "EVOO":"EVOO",
+  "Eidooier":"Egg yolk",
+  "Extra vierge olijfolie":"Extra virgin olive oil",
+  "Fijn zeezout":"Fine sea salt",
+  "Fijn zout":"Fine salt",
+  "Fior di latte (mozzarella)":"Fior di latte (mozzarella)",
+  "Friarielli":"Friarielli",
+  "Garnalen, voorgegaard":"Prawns, pre-cooked",
+  "Gedroogde oregano":"Dried oregano",
+  "Gekookte ham":"Cooked ham",
+  "Geraspte mozzarella / pizzakaas":"Grated mozzarella / pizza cheese",
+  "Gerookte zalm":"Smoked salmon",
+  "Gorgonzola":"Gorgonzola",
+  "Guanciale":"Guanciale",
+  "Ham":"Ham",
+  "Italiaanse worst":"Italian sausage",
+  "Kappertjes":"Capers",
+  "Kip, voorgegaard":"Chicken, pre-cooked",
+  "Kleine gehaktballetjes":"Small meatballs",
+  "Knoflook":"Garlic",
+  "Mais, uitgelekt":"Sweetcorn, drained",
+  "Mortadella":"Mortadella",
+  "Mozzarella di bufala":"Mozzarella di bufala",
+  "Olijven":"Olives",
+  "Oregano":"Oregano",
+  "Pancetta":"Pancetta",
+  "Paprika":"Bell pepper",
+  "Parmigiano Reggiano":"Parmigiano Reggiano",
+  "Parmigiano Reggiano (optioneel)":"Parmigiano Reggiano (optional)",
+  "Pecorino Romano":"Pecorino Romano",
+  "Peer, dun gesneden":"Pear, thinly sliced",
+  "Pepperoni":"Pepperoni",
+  "Pesto":"Pesto",
+  "Peterselie":"Parsley",
+  "Pistache":"Pistachio",
+  "Pittige salami":"Spicy salami",
+  "Porchetta":"Porchetta",
+  "Porcini / eekhoorntjesbrood":"Porcini",
+  "Prosciutto crudo / Parmaham":"Prosciutto crudo / Parma ham",
+  "Provola":"Provola",
+  "Provola of fior di latte":"Provola or fior di latte",
+  "Provolone":"Provolone",
+  "Ricotta":"Ricotta",
+  "Rode ui":"Red onion",
+  "Rozemarijn":"Rosemary",
+  "Rucola":"Rocket",
+  "Salami":"Salami",
+  "San Marzano gepelde tomaten":"San Marzano peeled tomatoes",
+  "San Marzano tomaten":"San Marzano tomatoes",
+  "Sardines, uitgelekt":"Sardines, drained",
+  "Scamorza":"Scamorza",
+  "Scamorza Affumicata":"Scamorza Affumicata",
+  "Speck":"Speck",
+  "Stracciatella":"Stracciatella",
+  "Suiker":"Sugar",
+  "Taleggio":"Taleggio",
+  "Tomaten":"Tomatoes",
+  "Tonijn, uitgelekt":"Tuna, drained",
+  "Truffelcrème":"Truffle cream",
+  "Walnoot":"Walnut",
+  "Zeevruchtenmix, voorgegaard en droog":"Seafood mix, pre-cooked and dry",
+  "Zout":"Salt",
+  "Zwarte peper":"Black pepper"
+};
+function tItem(name){ return currentLang==='en' ? (ITEM_EN[name]||name) : name; }
+// Tekst die in een langere zin terechtkomt wordt meteen in de juiste taal
+// gegenereerd; achteraf vertalen per tekstnode knipt zinnen in stukken.
+function L(nl,en){ return currentLang==='en' ? en : nl; }
+function tUnit(unit,qty){
+  if(currentLang!=='en') return unit;
+  const one=Number(qty)===1;
+  if(unit==='blaadjes') return one?'leaf':'leaves';
+  if(unit==='teen') return one?'clove':'cloves';
+  if(unit==='stuk') return one?'piece':'pieces';
+  return unit;
+}
+
+function recipeById(id){return pizzaRecipes.find(r=>r.id===id)||pizzaRecipes[0];}
+
+// Alle saustypes zijn nu ook per bol te kiezen. Witte saus, BBQ en NY-saus
+// bestonden wel als object maar waren nergens bereikbaar.
+const SAUCE_CHOICES=[
+  {id:'sanMarzano',label:'🔴 Rood / San Marzano',labelEn:'🔴 Red / San Marzano',short:'🔴 Rood',shortEn:'🔴 Red'},
+  {id:'marinara',  label:'🍅 Marinara',labelEn:'🍅 Marinara',short:'🍅 Marinara',shortEn:'🍅 Marinara'},
+  {id:'ny',        label:'🗽 New York-saus',labelEn:'🗽 New York sauce',short:'🗽 NY',shortEn:'🗽 NY'},
+  {id:'bianca',    label:'⚪ Bianca • olijfolie',labelEn:'⚪ Bianca • olive oil',short:'⚪ Bianca',shortEn:'⚪ Bianca'},
+  {id:'white',     label:'🥛 Romige witte saus • crème fraîche',labelEn:'🥛 Creamy white sauce • crème fraîche',short:'🥛 Romig wit',shortEn:'🥛 Creamy white'},
+  {id:'pesto',     label:'🌿 Pesto',labelEn:'🌿 Pesto',short:'🌿 Pesto',shortEn:'🌿 Pesto'},
+  {id:'bbq',       label:'🍖 BBQ',labelEn:'🍖 BBQ',short:'🍖 BBQ',shortEn:'🍖 BBQ'}
+];
+
+let pizzaSelections=[];
+let pizzaCustomizations=[];
+
+const cheeseWords=[
+  'fior di latte','mozzarella','provola','provolone','gorgonzola',
+  'parmigiano','parmezaan','burrata','stracciatella','kaas','pecorino','taleggio','scamorza','ricotta'
+];
+
+function isCheeseItem(name){
+  const n=String(name).toLowerCase();
+  return cheeseWords.some(w=>n.includes(w));
+}
+
+function pizzaStyleLabel(style){
+  return style==='nl' ? L('NL / afhaalstijl','Dutch takeaway style') : L('Traditioneel','Traditional');
+}
+function itemKey(x){return x[3] || x[0];}
+function styleItem(x,style){
+  const originalName=x[0],qty=Number(x[1]),unit=x[2];
+  if(style==='nl' && unit==='g' && /fior di latte|mozzarella di bufala/i.test(originalName)){
+    return ['Geraspte mozzarella / pizzakaas',scaleQty(qty*1.15,unit),unit,originalName];
+  }
+  return [originalName,scaleQty(qty,unit),unit,originalName];
+}
+function effectiveItemsForRecipe(r,style='traditional'){
+  return r.items.map(x=>styleItem(x,style));
+}
+
+function ensurePizzaCustomizations(){
+  ensurePizzaSelections();
+  while(pizzaCustomizations.length<pizzaSelections.length) pizzaCustomizations.push(null);
+  if(pizzaCustomizations.length>pizzaSelections.length) pizzaCustomizations=pizzaCustomizations.slice(0,pizzaSelections.length);
+
+  pizzaSelections.forEach((id,i)=>{
+    const old=pizzaCustomizations[i];
+    if(!old || old.recipeId!==id){
+      pizzaCustomizations[i]={recipeId:id,excluded:{},noSauce:false,extraCheese:false,pizzaStyle:'traditional',sauceOverride:null};
+    }else{
+      old.excluded=old.excluded||{};
+      old.noSauce=!!old.noSauce;
+      old.extraCheese=!!old.extraCheese;
+      old.pizzaStyle=old.pizzaStyle==='nl'?'nl':'traditional';
+      old.sauceOverride=old.sauceOverride||null;
+    }
+  });
+}
+
+function includedItemsForBall(index){
+  ensurePizzaCustomizations();
+  const r=recipeById(pizzaSelections[index]);
+  const custom=pizzaCustomizations[index];
+  return effectiveItemsForRecipe(r,custom.pizzaStyle).filter(x=>!custom.excluded[itemKey(x)]);
+}
+function setPizzaStyle(index,style){
+  ensurePizzaCustomizations();
+  pizzaCustomizations[index].pizzaStyle=style==='nl'?'nl':'traditional';
+  update();
+}
+
+// Kaasplafond. Hoe heter de steen, hoe minder kaas er in de korte baktijd
+// goed smelt zonder te gaan koken. Het plafond schaalt mee met het oppervlak
+// van de pizza, en de totale beleglast telt mee: 25 g extra op een kale
+// Margherita is iets anders dan op een volle Capricciosa.
+function cheeseCapFor(c){
+  let cap;
+  if(c.stoneTemp>=440) cap=105;
+  else if(c.stoneTemp>=420) cap=115;
+  else if(c.stoneTemp>=390) cap=125;
+  else if(c.stoneTemp>=350) cap=135;
+  else cap=145;
+  return roundTo(cap*toppingScale,5);
+}
+
+function cheeseAdviceFor(items,r,c,style){
+  const after=new Set(r.after||[]);
+  const baked=items.filter(x=>!after.has(itemKey(x)));
+  const bakedCheese=baked.filter(x=>isCheeseItem(x[0]));
+  const bakedCheeseG=bakedCheese.reduce((a,x)=>a+(x[2]==='g'?Number(x[1]):0),0);
+  const otherG=baked.filter(x=>!isCheeseItem(x[0])&&x[2]==='g').reduce((a,x)=>a+Number(x[1]),0);
+  const cap=cheeseCapFor(c);
+
+  // Geen schijnprecies totaalplafond meer. We delen de overige toppinglast
+  // bewust grof in drie categorieën, genormaliseerd naar het 32-cm-recept.
+  // Licht: normale ruimte voor extra kaas. Normaal: beperkte extra kaas.
+  // Zwaar: geen extra kaas adviseren; de pizza heeft al genoeg massa.
+  const normalizedOther=otherG/Math.max(0.01,toppingScale);
+  const loadClass=normalizedOther>=105?'heavy':(normalizedOther>=55?'normal':'light');
+  const loadLimit=loadClass==='heavy'?0:(loadClass==='normal'?15:25);
+  const maxExtra=Math.max(0,roundTo(loadLimit*toppingScale,5));
+
+  let targetName=style==='nl'?'Geraspte mozzarella / pizzakaas':'Fior di latte (mozzarella)';
+  const preferred=bakedCheese.find(x=>/fior di latte|mozzarella|pizzakaas|provola/i.test(x[0])) || bakedCheese[0];
+  if(preferred) targetName=preferred[0];
+
+  let amount,changesTradition=false;
+  if(bakedCheeseG===0){
+    amount=Math.max(5,roundTo((c.stoneTemp>=420?70:80)*toppingScale,5));
+    if(loadClass==='heavy') amount=roundTo(amount*0.7,5);
+    changesTradition=true;
+  }else{
+    amount=roundTo(Math.min(maxExtra,Math.max(0,cap-bakedCheeseG)),5);
+  }
+  if(amount<10 && bakedCheeseG>0) amount=0;
+
+  return {
+    name:targetName, amount, bakedCheeseG, otherG, cap, loadClass,
+    allowed:amount>0, changesTradition,
+    label:amount>0
+      ? (currentLang==='en'
+          ? `${changesTradition?'Add cheese':'Extra cheese'}: +${fmt(amount,0)} g ${tItem(targetName)}`
+          : `${changesTradition?'Kaas toevoegen':'Extra kaas'}: +${fmt(amount,0)} g ${targetName}`)
+      : (currentLang==='en'
+          ? `No extra cheese recommended at ${fmt(c.stoneTemp,0)} °C`
+          : `Geen extra kaas aangeraden bij ${fmt(c.stoneTemp,0)} °C`)
+  };
+}
+
+function extraCheeseAdvice(index,c){
+  ensurePizzaCustomizations();
+  const r=recipeById(pizzaSelections[index]);
+  return cheeseAdviceFor(includedItemsForBall(index),r,c,pizzaCustomizations[index].pizzaStyle);
+}
+
+function setIngredientIncluded(index,name,included){
+  ensurePizzaCustomizations();
+  pizzaCustomizations[index].excluded[name]=!included;
+  update();
+}
+function effectiveSauceTypeForBall(index){
+  ensurePizzaCustomizations();
+  const r=recipeById(pizzaSelections[index]);
+  return pizzaCustomizations[index].sauceOverride || r.sauce;
+}
+
+function sauceGramsForRecipe(r,type){
+  let base;
+  if(type===r.sauce) base=r.sauceG;
+  else if(r.sauce==='bianca' && type==='sanMarzano') base=60;
+  else base=(sauces[type]&&sauces[type].perPizza)||r.sauceG;
+  const scaled=base*toppingScale;
+  return scaled>=20?roundTo(scaled,5):Math.max(1,roundTo(scaled,1));
+}
+
+function effectiveSauceGramsForBall(index){
+  const r=recipeById(pizzaSelections[index]);
+  return sauceGramsForRecipe(r,effectiveSauceTypeForBall(index));
+}
+
+function setPizzaSauceType(index,type){
+  if(!sauces[type])return;
+  ensurePizzaCustomizations();
+  const r=recipeById(pizzaSelections[index]);
+  pizzaCustomizations[index].sauceOverride=(type===r.sauce)?null:type;
+  update();
+}
+
+function setSauceIncluded(index,included){
+  ensurePizzaCustomizations();
+  pizzaCustomizations[index].noSauce=!included;
+  update();
+}
+function setExtraCheese(index,enabled){
+  ensurePizzaCustomizations();
+  const advice=extraCheeseAdvice(index,calc());
+  pizzaCustomizations[index].extraCheese=!!enabled && advice.allowed;
+  update();
+}
+function resetPizzaCustomization(index){
+  ensurePizzaCustomizations();
+  const keepStyle=pizzaCustomizations[index].pizzaStyle||'traditional';
+  pizzaCustomizations[index]={recipeId:pizzaSelections[index],excluded:{},noSauce:false,extraCheese:false,pizzaStyle:keepStyle,sauceOverride:null};
+  update();
+}
+
+let pickerTarget='all';
+// Dit is de bewuste, aangeklikte keuze in het open venster. Hover en focus
+// zijn uitsluitend CSS/browsergedrag en mogen deze state nooit wijzigen.
+let pickerSelectedId='margherita';
+let recipeAllSelection='margherita';
+let pickerPendingExtraCheese=false;
+let pickerPendingExcluded={};
+let pickerPendingNoSauce=false;
+let pickerPendingRecipeId=null;
+let pickerPendingStyle='traditional';
+let pickerPendingSauceType=null;
+
+function initRecipeOptions(){
+  // Custom picker; no native select needed.
+}
+
+function ensurePizzaSelections(){
+  // Zelfstandig begrenzen: tijdens typen blijft het veld bewust ongemoeid en
+  // een tijdelijke/plakte waarde van 999 mag geen 999 receptkaarten bouwen.
+  const count=clamp(Math.round(num('pizzas'))||1,1,MAX_PIZZAS);
+  while(pizzaSelections.length<count) pizzaSelections.push('margherita');
+  if(!_deferDependentStatePrune && pizzaSelections.length>count) pizzaSelections=pizzaSelections.slice(0,count);
+}
+
+function buildPizzaBallSelectors(){
+  ensurePizzaCustomizations();
+  $('pizzaBallSelectors').innerHTML=pizzaSelections.map((id,idx)=>{
+    const r=recipeById(id),custom=pizzaCustomizations[idx];
+    return `<div class="ball-card">
+      <div class="ball-title"><b>${L('Bol','Dough ball')} ${idx+1}</b><span>${recipeTagText(r)}</span></div>
+      <button class="pick-button" type="button" onclick="openPizzaPicker(${idx})">
+        <span>
+          <span class="pick-main">${recipeNameText(r)}</span>
+          <span class="pick-sub">${pizzaStyleLabel(custom.pizzaStyle)} • ${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g ${L('saus','sauce')}</span>
+        </span>
+        <span class="chev">›</span>
+      </button>
+      <div class="hint" style="margin:8px 0 0">${recipeNoteText(r)}</div>
+    </div>`;
+  }).join('');
+
+  const allRecipe=recipeById(recipeAllSelection);
+  $('pizzaRecipeAllMain').textContent=recipeNameText(allRecipe);
+}
+
+
+// Zelfde logica, maar voor een recept dat nog niet aan een bol hangt (de picker).
+// Neemt nu ook de vinkjes mee die de gebruiker in de picker heeft uitgezet.
+function extraCheeseAdviceForRecipe(recipeId,c,style='traditional',excluded){
+  const r=recipeById(recipeId);
+  const ex=excluded||{};
+  const items=effectiveItemsForRecipe(r,style).filter(x=>!ex[itemKey(x)]);
+  return cheeseAdviceFor(items,r,c,style);
+}
+
+function loadPickerPendingCustomization(recipeId){
+  ensurePizzaCustomizations();
+  pickerPendingRecipeId=recipeId;
+  const previousStyle=pickerPendingStyle||'traditional';
+  const idx=Number(pickerTarget);
+  const sameSingle=pickerTarget!=='all' && pizzaSelections[idx]===recipeId && pizzaCustomizations[idx]?.recipeId===recipeId;
+  const allSame=pickerTarget==='all' && pizzaSelections.length>0 && pizzaSelections.every(id=>id===recipeId);
+  if(sameSingle){
+    const c=pizzaCustomizations[idx];
+    pickerPendingExcluded={...(c.excluded||{})};
+    pickerPendingNoSauce=!!c.noSauce;
+    pickerPendingExtraCheese=!!c.extraCheese;
+    pickerPendingStyle=c.pizzaStyle||'traditional';
+    pickerPendingSauceType=c.sauceOverride||recipeById(recipeId).sauce;
+  }else if(allSame && pizzaCustomizations.length && pizzaCustomizations.every(c=>c && c.recipeId===recipeId)){
+    const r=recipeById(recipeId); pickerPendingExcluded={};
+    r.items.forEach(x=>{if(pizzaCustomizations.every(c=>c.excluded?.[x[0]])) pickerPendingExcluded[x[0]]=true;});
+    pickerPendingNoSauce=pizzaCustomizations.every(c=>c.noSauce);
+    pickerPendingExtraCheese=pizzaCustomizations.every(c=>c.extraCheese);
+    const styles=[...new Set(pizzaCustomizations.map(c=>c.pizzaStyle||'traditional'))];
+    pickerPendingStyle=styles.length===1?styles[0]:previousStyle;
+    const sauceTypes=[...new Set(pizzaCustomizations.map(c=>c.sauceOverride||recipeById(recipeId).sauce))];
+    pickerPendingSauceType=sauceTypes.length===1?sauceTypes[0]:recipeById(recipeId).sauce;
+  }else{
+    pickerPendingExcluded={};pickerPendingNoSauce=false;pickerPendingExtraCheese=false;pickerPendingStyle=previousStyle;
+    pickerPendingSauceType=recipeById(recipeId).sauce;
+  }
+}
+function setPickerPizzaStyle(style){pickerPendingStyle=style==='nl'?'nl':'traditional';renderPickerPreview();}
+
+function setPickerIngredientIncluded(name,included){
+  pickerPendingExcluded[name]=!included;
+  renderPickerPreview();
+}
+
+function setPickerSauceType(type){
+  if(!sauces[type])return;
+  pickerPendingSauceType=type;
+  renderPickerPreview();
+}
+
+function setPickerSauceIncluded(included){
+  pickerPendingNoSauce=!included;
+  renderPickerPreview();
+}
+
+function setPickerExtraCheese(enabled){
+  pickerPendingExtraCheese=!!enabled;
+  renderPickerPreview();
+}
+
+// Toetsenbordgebruikers konden vroeger achter een open modal doortabben en
+// belandden na sluiten bovenaan de pagina. Focus wordt nu vastgehouden en
+// teruggegeven aan de knop die de modal opende.
+let _modalStack=[];
+let _lastFocus=null;
+function focusablesIn(root){
+  return [...root.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+    .filter(el=>el.offsetParent!==null||el===document.activeElement);
+}
+function trapFocus(e,root){
+  if(e.key!=='Tab')return;
+  const f=focusablesIn(root);
+  if(!f.length)return;
+  const first=f[0],last=f[f.length-1];
+  if(e.shiftKey && document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first.focus();}
+}
+function pushModal(id){
+  if(!_modalStack.length)_lastFocus=document.activeElement;
+  _modalStack.push(id);
+  document.body.style.overflow='hidden';
+}
+function popModal(id){
+  _modalStack=_modalStack.filter(x=>x!==id);
+  if(!_modalStack.length){
+    document.body.style.overflow='';
+    if(_lastFocus&&document.contains(_lastFocus)){try{_lastFocus.focus();}catch(e){}}
+    _lastFocus=null;
+  }
+}
+
+function openPizzaPicker(target){
+  pickerTarget=target;
+  activePizzaFilters.clear();
+  document.querySelectorAll('.filter-chip').forEach(btn=>btn.classList.toggle('active',btn.dataset.filter==='all'));
+  ensurePizzaCustomizations();
+  const currentId = target==='all' ? recipeAllSelection : (pizzaSelections[target] || 'margherita');
+
+  pickerPendingStyle='traditional';
+  loadPickerPendingCustomization(currentId);
+  pickerSelectedId=currentId;
+  $('pizzaPickerSearch').value='';
+  $('pickerTitle').textContent=target==='all' ? L('Kies pizza voor alle bollen','Choose pizza for all dough balls') : L(`Kies pizza voor bol ${Number(target)+1}`,`Choose pizza for dough ball ${Number(target)+1}`);
+  $('pizzaPickerOverlay').classList.add('open');
+  pushModal('picker');
+  renderPickerList();
+  renderPickerPreview();
+  setTimeout(()=>$('pizzaPickerSearch').focus(),50);
+}
+
+function closePizzaPicker(){
+  if(!$('pizzaPickerOverlay').classList.contains('open'))return;
+  $('pizzaPickerOverlay').classList.remove('open');
+  popModal('picker');
+}
+
+function overlayBackgroundClose(e){
+  if(e.target===$('pizzaPickerOverlay')) closePizzaPicker();
+}
+
+const topTenPizzaIds=[
+  'margherita',
+  'salami',
+  'prosciuttoFunghi',
+  'quattroFormaggi',
+  'diavola',
+  'hawaii',
+  'capricciosa',
+  'quattroStagioni',
+  'tonnoCipolla',
+  'funghi'
+];
+
+const preferredPizzaOrder=[
+  'margherita','salami','prosciuttoFunghi','quattroFormaggi','diavola','hawaii',
+  'capricciosa','quattroStagioni','tonnoCipolla','tonno','tonnoOlive','tonnoCapperi',
+  'tonnoPiccante','tonnoGorgonzola','tonnoMais','salmoneRucola','gamberiAglio','fruttiMare',
+  'sardineCipolla','acciugheOlive','funghi','pepperoni','prosciuttoCotto','marinara',
+  'napoletana','prosciuttoCrudo','margheritaExtra','parmigiana','ortolana','salsicciaFriarielli',
+  'salameFunghi','boscaiola','salsicciaFunghi','speckFunghi','parmaFunghi','gorgonzolaFunghi',
+  'porciniTaleggio','porciniSalsiccia','quattroFormaggiFunghi','tartufoFunghi','prosciuttoCrudoSimple','parmaBurrata',
+  'nduja','mortadella','burrataPomodoro','speckGorgonzola','salsicciaGorgonzola','diavolaGorgonzola',
+  'taleggioSpeck','taleggioSalsiccia','gorgonzolaNduja','pancettaScamorza','pancettaPecorino','bresaolaRucola',
+  'porchettaProvola','cottoProvola','salameProvola','salsicciaCipolla','salsicciaPatate','cottoBurrata',
+  'carbonara','amatriciana','gricia','cacioPepe','calabrese','siciliana',
+  'romana','pestoMortadella','pestoParmaBurrata','ricottaSalame','ricottaNduja','quattroFormaggiRosso',
+  'quattroFormaggiPiccante','quattroFormaggiSalame','quattroFormaggiProsciutto','quattroFormaggiSalsiccia','quattroFormaggiNduja','quattroFormaggiAffumicata',
+  'quattroFormaggiTaleggio','quattroFormaggiPecorino','cinqueFormaggi','tartufoProsciutto','tartufoSalsiccia','patateRosmarino',
+  'caprese','biancaProsciutto','polpette','raguParmigiano','gorgonzolaPera'
+];
+
+
+let activePizzaFilters=new Set();
+
+const meatTerms=[
+  'salami','pepperoni','ham','prosciutto','parmaham','mortadella','salsiccia','worst',
+  'speck','pancetta','guanciale','bresaola','porchetta','gehakt','ragù','ragu',
+  "'nduja",'nduja','polpette','vlees','kip','chicken'
+];
+const fishTerms=[
+  'tonno','tonijn','tuna','ansjovis','anchovy','acciughe',
+  'zalm','salmone','garnalen','garnaal','gamberi',
+  'sardine','sardines','zeevruchten','frutti di mare','seafood'
+];
+const spicyTerms=['pittige','pittig','pepperoni',"'nduja",'nduja','chili','chilli','calabrese','diavola'];
+
+function englishIngredientSearchTerms(name){
+  // ITEM_EN is de nette displayvertaling; de oudere vertaler bevat soms een
+  // nuttig alternatief (aubergine/eggplant, courgette/zucchini). Zoekdata mag
+  // beide bevatten, zodat een mooi label geen synoniem verwijdert.
+  return [ITEM_EN[name],englishDataText(name)].filter(Boolean);
+}
+
+// Tweetalige, genormaliseerde tekst per recept. Gecached omdat de vertaler
+// 130 regexregels doorloopt en dit anders per toetsaanslag opnieuw gebeurt.
+const _termTextCache=new Map();
+function recipeIngredientText(r){
+  const ck=currentLang+'|'+r.id;
+  if(_termTextCache.has(ck)) return _termTextCache.get(ck);
+  const source=[r.name,r.tag,r.note,...r.items.map(x=>x[0])];
+  const english=[
+    englishDataText(r.name,r.nameEn),englishDataText(r.tag,r.tagEn),englishDataText(r.note,r.noteEn),
+    ...r.items.flatMap(x=>englishIngredientSearchTerms(x[0]))
+  ];
+  const txt=normalizeSearchText([...source,...english].join(' '));
+  _termTextCache.set(ck,txt);
+  return txt;
+}
+
+// Substring-matching gaf valse treffers: 'ham' zit in 'champignons', waardoor
+// vier vegetarische paddenstoelpizza's als vlees werden aangemerkt.
+// Matchen gebeurt nu op hele woorden.
+function hasAnyTerm(r,terms){
+  const txt=' '+recipeIngredientText(r)+' ';
+  return terms.some(term=>{
+    const t=normalizeSearchText(term);
+    return t && txt.includes(' '+t+' ');
+  });
+}
+function hasMeatRecipe(r){ return hasAnyTerm(r,meatTerms); }
+function hasFishRecipe(r){ return hasAnyTerm(r,fishTerms); }
+function isVegetarianRecipe(r){ return !hasMeatRecipe(r) && !hasFishRecipe(r); }
+function isSpicyRecipe(r){ return hasAnyTerm(r,spicyTerms); }
+function hasCheeseRecipe(r){ return r.items.some(x=>isCheeseItem(x[0])); }
+function hasTomatoSauceRecipe(r){ return !!sauces[r.sauce]?.tomato; }
+function hasNonTomatoSauceRecipe(r){ return !!sauces[r.sauce] && !sauces[r.sauce].tomato; }
+
+function recipeMatchesSingleFilter(r,filter){
+  if(filter==='meat') return hasMeatRecipe(r);
+  if(filter==='fish') return hasFishRecipe(r);
+  if(filter==='vegetarian') return isVegetarianRecipe(r);
+  if(filter==='mushroom') return hasMushroomsRecipe(r);
+  if(filter==='cheese') return hasCheeseRecipe(r);
+  if(filter==='tomato') return hasTomatoSauceRecipe(r);
+  if(filter==='noTomato') return hasNonTomatoSauceRecipe(r);
+  if(filter==='spicy') return isSpicyRecipe(r);
+  return true;
+}
+
+function recipeMatchesFilter(r){
+  if(activePizzaFilters.size===0) return true;
+  return [...activePizzaFilters].every(filter=>recipeMatchesSingleFilter(r,filter));
+}
+
+function filterLabel(filter){
+  return {
+    all:L('Alles','All'),meat:L('Vlees','Meat'),fish:L('Vis','Fish'),vegetarian:L('Vega','Vegetarian'),mushroom:L('Paddenstoel','Mushroom'),
+    cheese:L('Kaas','Cheese'),tomato:L('Tomatenbasis','Tomato base'),noTomato:L('Zonder tomaat','No tomato'),spicy:L('Pittig','Spicy')
+  }[filter]||L('Alles','All');
+}
+
+function activeFilterLabel(){
+  return [...activePizzaFilters].map(filterLabel).join(' + ');
+}
+
+function setPizzaFilter(filter){
+  if(filter==='all'){
+    activePizzaFilters.clear();
+  }else if(activePizzaFilters.has(filter)){
+    activePizzaFilters.delete(filter);
+  }else{
+    activePizzaFilters.add(filter);
+  }
+
+  document.querySelectorAll('.filter-chip').forEach(btn=>{
+    if(btn.dataset.filter==='all'){
+      btn.classList.toggle('active',activePizzaFilters.size===0);
+    }else{
+      btn.classList.toggle('active',activePizzaFilters.has(btn.dataset.filter));
+    }
+  });
+  renderPickerList();
+}
+
+function recipeIcons(r){
+  const icons=[];
+  if(hasMeatRecipe(r)) icons.push('🥩');
+  else if(hasFishRecipe(r)) icons.push('🐟');
+  else icons.push('🌱');
+  if(hasMushroomsRecipe(r)) icons.push('🍄');
+  return `<span class="recipe-icons">${icons.join('')}</span>`;
+}
+
+function hasMushroomsRecipe(r){
+  return r.items.some(x=>{
+    const n=String(x[0]).toLowerCase();
+    return n.includes('champignon') || n.includes('porcini') || n.includes('paddenstoel') || n.includes('eekhoorntjesbrood');
+  });
+}
+function isMushroomClassic(r){
+  return ['capricciosa','quattroStagioni'].includes(r.id);
+}
+function preferredRank(r){
+  const i=preferredPizzaOrder.indexOf(r.id);
+  return i<0?999:i;
+}
+
+
+function normalizeSearchText(value){
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/[’']/g,'')
+    .replace(/[^a-z0-9]+/g,' ')
+    .trim();
+}
+
+// Gecached: zonder cache draaide dit per toetsaanslag over alle 89 recepten
+// met de volledige vertaaltabel erachteraan.
+const _haystackCache=new Map();
+function pizzaSearchHaystack(r){
+  const ck=currentLang+'|'+r.id;
+  if(_haystackCache.has(ck)) return _haystackCache.get(ck);
+  const sauce=sauces[r.sauce]||{};
+  const source=[
+    r.name,
+    r.tag,
+    r.note,
+    sauce.name || '',
+    ...r.items.map(x=>x[0]),
+    // 'pizzakaas' als los token maakte dat zoeken op "kaas" 86 van 89 recepten gaf.
+    r.items.some(x=>/fior di latte|mozzarella di bufala/i.test(x[0]))?'afhaalstijl geraspte':''
+  ];
+  const english=[
+    englishDataText(r.name,r.nameEn),englishDataText(r.tag,r.tagEn),englishDataText(r.note,r.noteEn),
+    englishDataText(sauce.name,sauce.nameEn),
+    ...r.items.flatMap(x=>englishIngredientSearchTerms(x[0])),
+    source[source.length-1]?englishDataText(source[source.length-1]):''
+  ];
+  const txt=normalizeSearchText([...source,...english].join(' '));
+  _haystackCache.set(ck,txt);
+  return txt;
+}
+function clearSearchCaches(){_haystackCache.clear();_termTextCache.clear();}
+
+function pizzaMatchesQuery(r,q){
+  const terms=normalizeSearchText(q).split(/\s+/).filter(Boolean);
+  if(!terms.length) return true;
+  const hay=pizzaSearchHaystack(r);
+  return terms.every(term=>hay.includes(term));
+}
+
+function clearPizzaSearch(){
+  const input=$('pizzaPickerSearch');
+  input.value='';
+  renderPickerList();
+  input.focus();
+}
+
+function pickerItemHtml(r,currentId){
+  const isCurrent=r.id===currentId;
+  const isSelected=r.id===pickerSelectedId;
+  return `<button type="button"
+      data-recipe-id="${r.id}"
+      aria-pressed="${isSelected?'true':'false'}"
+      class="picker-item ${isSelected?'active':''} ${isCurrent?'assigned':''} ${hasMushroomsRecipe(r)?'mushroom':''}"
+      onclick="selectPickerRecipe('${r.id}')">
+      <span>${recipeNameText(r)}${recipeIcons(r)}</span>
+      <span class="meta">
+        ${isSelected&&!isCurrent?`<span class="assigned-mark">${L('✓ gekozen','✓ selected')}</span> `:''}
+        ${isCurrent?`<span class="current-mark">${L('huidig','current')}</span> `:''}
+        ${recipeTagText(r)}
+      </span>
+    </button>`;
+}
+
+function renderPickerList(){
+  const rawQuery=$('pizzaPickerSearch').value;
+  const q=normalizeSearchText(rawQuery);
+  const currentId=pickerTarget==='all' ? recipeAllSelection : (pizzaSelections[pickerTarget] || 'margherita');
+  const clearBtn=$('pizzaPickerSearchClear');
+  clearBtn.classList.toggle('hidden',!q);
+  const help=$('pickerSelectionHelp');
+  if(help)help.innerHTML=L(
+    'Klik op een pizza om hem te selecteren en pas het recept daarna aan. De keuze wordt pas voor de bol opgeslagen wanneer je op <b>Kies pizza</b> drukt.',
+    'Click a pizza to select it, then customize the recipe. It is only saved to the dough ball when you click <b>Choose pizza</b>.');
+
+  const filterText=activePizzaFilters.size ? activeFilterLabel() : '';
+  let results=pizzaRecipes.filter(recipeMatchesFilter);
+
+  if(q){
+    results=results
+      .filter(r=>pizzaMatchesQuery(r,q))
+      .sort((a,b)=>{
+        const an=normalizeSearchText(recipeNameText(a));
+        const bn=normalizeSearchText(recipeNameText(b));
+        const qTerms=q.split(/\s+/).filter(Boolean);
+        const aNameHit=qTerms.every(t=>an.includes(t))?0:1;
+        const bNameHit=qTerms.every(t=>bn.includes(t))?0:1;
+        if(aNameHit!==bNameHit) return aNameHit-bNameHit;
+        return preferredRank(a)-preferredRank(b) || recipeNameText(a).localeCompare(recipeNameText(b),currentLang==='en'?'en':'nl');
+      });
+
+    $('pizzaPickerSearchStatus').textContent=L(
+      `${results.length} ${results.length===1?'pizza':'pizza’s'} gevonden voor “${rawQuery.trim()}”${filterText?` • ${filterText}`:''}`,
+      `${results.length} ${results.length===1?'pizza':'pizzas'} found for “${rawQuery.trim()}”${filterText?` • ${filterText}`:''}`);
+
+    $('pizzaPickerList').innerHTML=`
+      <div class="picker-section-title">${L("Zoekresultaten","Search results")}${filterText?` • ${filterText}`:''}</div>
+      ${results.length
+        ? results.map(r=>pickerItemHtml(r,currentId).replace('class="picker-item ','class="picker-item search-hit ')).join('')
+        : `<div class="hint" style="padding:12px">${L('Geen pizza gevonden. Wis een filter of probeer een andere zoekterm.','No pizza found. Clear a filter or try another search term.')}</div>`}`;
+
+    $('pizzaPickerList').scrollTop=0;
+    return;
+  }
+
+  if(activePizzaFilters.size){
+    results.sort((a,b)=>preferredRank(a)-preferredRank(b) || recipeNameText(a).localeCompare(recipeNameText(b),currentLang==='en'?'en':'nl'));
+    $('pizzaPickerSearchStatus').textContent=L(
+      `${results.length} ${results.length===1?'pizza':'pizza’s'} • ${filterText}`,
+      `${results.length} ${results.length===1?'pizza':'pizzas'} • ${filterText}`);
+
+    $('pizzaPickerList').innerHTML=`
+      <div class="picker-section-title">${filterText}</div>
+      ${results.length
+        ? results.map(r=>pickerItemHtml(r,currentId)).join('')
+        : `<div class="hint" style="padding:12px">${L('Geen recepten met deze combinatie van filters.','No recipes match this combination of filters.')}</div>`}`;
+
+    $('pizzaPickerList').scrollTop=0;
+    return;
+  }
+
+  const topTen=topTenPizzaIds.map(recipeById);
+  const all=[...pizzaRecipes].sort((a,b)=>preferredRank(a)-preferredRank(b) || recipeNameText(a).localeCompare(recipeNameText(b),currentLang==='en'?'en':'nl'));
+
+  $('pizzaPickerSearchStatus').textContent=L(`Top 10 populaire pizza’s + ${all.length} recepten`,`Top 10 popular pizzas + ${all.length} recipes`);
+  $('pizzaPickerList').innerHTML=`
+    <div class="picker-section-title">${L("Top 10 • populaire pizza’s","Top 10 • popular pizzas")}</div>
+    ${topTen.map(r=>pickerItemHtml(r,currentId)).join('')}
+    <hr class="picker-divider">
+    <div class="picker-section-title">
+      ${L("Alle recepten","All recipes")} <span class="all-recipes-count">${all.length} ${L("totaal","total")}</span>
+    </div>
+    <div class="all-recipes-scroll">
+      ${all.map(r=>pickerItemHtml(r,currentId)).join('')}
+    </div>`;
+
+  $('pizzaPickerList').scrollTop=0;
+}
+
+function selectPickerRecipe(id){
+  const selected=pizzaRecipes.find(r=>r.id===id);
+  if(!selected)return;
+  const selectionChanged=pickerSelectedId!==selected.id || pickerPendingRecipeId!==selected.id;
+  pickerSelectedId=selected.id;
+  // De tijdelijke instellingen horen bij precies één bewust aangeklikt recept.
+  // Bij een ander recept worden de opgeslagen instellingen geladen of veilige
+  // receptdefaults gebruikt, zodat saus/toppings nooit van een vorige keuze lekken.
+  if(selectionChanged)loadPickerPendingCustomization(pickerSelectedId);
+  renderPickerList();
+  renderPickerPreview();
+}
+
+function syncPickerPreviewHighlight(id){
+  document.querySelectorAll('#pizzaPickerList .picker-item').forEach(el=>{
+    el.classList.toggle('active',el.dataset.recipeId===id);
+    el.setAttribute('aria-pressed',el.dataset.recipeId===id?'true':'false');
+  });
+}
+
+function renderPickerPreview(){
+  const id=pickerSelectedId;
+  syncPickerPreviewHighlight(id);
+  const r=recipeById(id);
+
+  if(pickerPendingRecipeId!==id)loadPickerPendingCustomization(id);
+  if(!pickerPendingSauceType) pickerPendingSauceType=r.sauce;
+
+  const cheese=extraCheeseAdviceForRecipe(id,calc(),pickerPendingStyle,pickerPendingExcluded);
+  if(!cheese.allowed) pickerPendingExtraCheese=false;
+
+  const afterSet=new Set(r.after||[]);
+  const effective=effectiveItemsForRecipe(r,pickerPendingStyle);
+  const ingredientRows=effective.map(x=>{
+    const key=itemKey(x);
+    const checked=!pickerPendingExcluded[key];
+    return `<label class="picker-ingredient-check">
+      <input type="checkbox" ${checked?'checked':''}
+        onchange='setPickerIngredientIncluded(${JSON.stringify(key)},this.checked)'>
+      <span class="picker-ingredient-name">${tItem(x[0])}</span>
+      <span class="picker-ingredient-qty">${x[1]} ${tUnit(x[2],x[1])}</span>
+      ${afterSet.has(key)?`<span class="picker-after">${L('na bakken','after baking')}</span>`:''}
+    </label>`;
+  }).join('');
+
+  const sauceType=pickerPendingSauceType||r.sauce;
+  const sauceG=sauceGramsForRecipe(r,sauceType);
+
+  const sauceChanged=sauceType!==r.sauce;
+  const sauceChoice=`<div class="sauce-style-choice">
+        <div class="picker-section-title" style="padding-left:0">${L('Sauskeuze','Sauce choice')}</div>
+        <div class="style-segment">
+          ${SAUCE_CHOICES.map(sc=>`<button type="button" class="${sauceType===sc.id?'active':''}" onclick="setPickerSauceType('${sc.id}')">${sauceChoiceLabel(sc)}</button>`).join('')}
+        </div>
+        <div class="hint style-explain">${sauceChanged
+          ? L(`Aangepast van ${sauceName(r.sauce)} naar ${sauceName(sauceType)}. Hoeveelheid wordt automatisch aan het gekozen saustype aangepast.`,
+              `Changed from ${sauceName(r.sauce)} to ${sauceName(sauceType)}. Quantity is adjusted automatically for the selected sauce type.`)
+          : L(`Receptbasis: ${sauceName(r.sauce)}. Je kunt hier bewust een andere saus kiezen zonder het hele recept te vervangen.`,
+              `Recipe base: ${sauceName(r.sauce)}. You can deliberately choose another sauce here without replacing the whole recipe.`)}
+      </div>`;
+
+  $('pizzaPickerPreview').innerHTML=`
+    <h2>${recipeNameText(r)}</h2>
+    <span class="tag picker-tag">${recipeTagText(r)}</span>
+    ${hasMushroomsRecipe(r)?`<span class="tag picker-tag" style="margin-left:6px">${L('🍄 bevat paddenstoelen','🍄 contains mushrooms')}</span>`:''}
+    <div class="hint" style="margin:0 0 10px">${recipeNoteText(r)}</div>
+
+    <div class="pizza-style-choice">
+      <div class="picker-section-title" style="padding-left:0">${L('Pizzastijl / kaas','Pizza style / cheese')}</div>
+      <div class="style-segment">
+        <button type="button" class="${pickerPendingStyle==='traditional'?'active':''}" onclick="setPickerPizzaStyle('traditional')">🇮🇹 ${L('Traditioneel','Traditional')}</button>
+        <button type="button" class="${pickerPendingStyle==='nl'?'active':''}" onclick="setPickerPizzaStyle('nl')">🇳🇱 ${L('NL / afhaalstijl','Dutch takeaway style')}</button>
+      </div>
+      <div class="hint style-explain">
+        ${pickerPendingStyle==='nl'
+          ? L('Geraspte mozzarella / pizzakaas vervangt verse fior di latte of buffelmozzarella en wordt ongeveer 15% royaler gedoseerd. Speciale kazen blijven behouden.','Grated mozzarella / pizza cheese replaces fresh fior di latte or buffalo mozzarella and is portioned about 15% more generously. Special cheeses are retained.')
+          : L('Verse fior di latte / mozzarella volgens het recept. Speciale Italiaanse kazen blijven zoals bedoeld.','Fresh fior di latte / mozzarella according to the recipe. Special Italian cheeses remain as intended.')}
+      </div>
+    </div>
+
+    ${sauceChoice}
+
+    <h3>${L('Ingrediënten kiezen','Choose ingredients')}</h3>
+    <div class="picker-customize-box">
+      <label class="picker-ingredient-check sauce-check">
+        <input type="checkbox" ${!pickerPendingNoSauce?'checked':''}
+          onchange="setPickerSauceIncluded(this.checked)">
+        <span class="picker-ingredient-name">${sauceName(sauceType)}</span>
+        <span class="picker-ingredient-qty">${sauceG} g</span>
+      </label>
+      ${ingredientRows}
+    </div>
+
+    <div class="hint" style="margin:7px 0 0">
+      ${L('Je kunt hier toppings of saus uitvinken voordat je de pizza opslaat.','You can untick toppings or sauce here before saving the pizza.')}
+    </div>
+
+    <div class="picker-cheese-option ${cheese.allowed?'':'disabled'}">
+      <label>
+        <input type="checkbox"
+          ${pickerPendingExtraCheese&&cheese.allowed?'checked':''}
+          ${cheese.allowed?'':'disabled'}
+          onchange="setPickerExtraCheese(this.checked)">
+        <span>
+          <b>${cheese.label}</b>
+          <span class="cheese-detail">
+            ${cheese.allowed
+              ? L(`Advies op basis van ${fmt(calc().stoneTemp,0)} °C steentemperatuur; richtlimiet voor kaas vóór het bakken ±${fmt(cheese.cap,0)} g.`,`Guidance based on ${fmt(calc().stoneTemp,0)} °C stone temperature; guideline limit for cheese before baking ±${fmt(cheese.cap,0)} g.`)
+              : L(`Deze pizza zit bij ${fmt(calc().stoneTemp,0)} °C al rond de verstandige kaaslimiet.`,`At ${fmt(calc().stoneTemp,0)} °C, this pizza is already near the sensible cheese limit.`)}
+          </span>
+        </span>
+      </label>
+    </div>
+
+    <div class="btnrow" style="margin-top:16px">
+      <button class="btn primary" type="button" onclick="choosePickerRecipe()">${L('Kies','Choose')} ${recipeNameText(r)}</button>
+    </div>`;
+}
+
+function choosePickerRecipe(){
+  const id=pickerSelectedId;
+  if(pickerPendingRecipeId!==id)loadPickerPendingCustomization(id);
+  const cheese=extraCheeseAdviceForRecipe(id,calc(),pickerPendingStyle,pickerPendingExcluded);
+  const useExtra=pickerPendingExtraCheese && cheese.allowed;
+  const excluded={...pickerPendingExcluded};
+  const noSauce=!!pickerPendingNoSauce;
+
+  if(pickerTarget==='all'){
+    recipeAllSelection=id;
+    ensurePizzaSelections();
+    pizzaSelections=pizzaSelections.map(()=>id);
+    pizzaCustomizations=pizzaSelections.map(rid=>({
+      recipeId:rid,
+      excluded:{...excluded},
+      noSauce,
+      extraCheese:useExtra,
+      pizzaStyle:pickerPendingStyle,
+      sauceOverride:(pickerPendingSauceType===recipeById(rid).sauce)?null:pickerPendingSauceType
+    }));
+  }else{
+    const idx=Number(pickerTarget);
+    pizzaSelections[idx]=id;
+    pizzaCustomizations[idx]={
+      recipeId:id,
+      excluded:{...excluded},
+      noSauce,
+      extraCheese:useExtra,
+      pizzaStyle:pickerPendingStyle,
+      sauceOverride:(pickerPendingSauceType===recipeById(id).sauce)?null:pickerPendingSauceType
+    };
+  }
+
+  closePizzaPicker();
+  update();
+}
+
+function applyRecipeToAll(){
+  ensurePizzaSelections();
+  pizzaSelections=pizzaSelections.map(()=>recipeAllSelection);
+  pizzaCustomizations=pizzaSelections.map(id=>({recipeId:id,excluded:{},noSauce:false,extraCheese:false,pizzaStyle:'traditional',sauceOverride:null}));
+  update();
+}
+
+
+function roundedPct(x,step){return roundTo(x,step);}
+
+// exactOverride bewaart de onafgeronde presetwaarden. Vroeger werd het hele
+// object gewist zodra je EEN percentageveld aanraakte, waardoor de gist
+// terugviel op de afgeronde veldwaarde en ongemerkt kon verspringen.
+// Nu vervalt alleen de aangeraakte waarde.
+const EXACT_FIELDS={hydration:'h',saltPct:'s',yeastPct:'ySelected',oilPct:'o'};
+function exactVal(key,id){
+  const el=$(id);
+  const raw=(exactOverride && exactOverride[key]!=null && Number.isFinite(exactOverride[key]))
+    ? exactOverride[key] : boundedNum(id,0);
+  return clampToInputBounds(el,raw);
+}
+function selectedYeastPct(){return exactVal('ySelected','yeastPct');}
+function selectedHydration(){return exactVal('h','hydration');}
+function selectedSalt(){return exactVal('s','saltPct');}
+function selectedOil(){return exactVal('o','oilPct');}
+function applyYeastTypeConversion(oldKey,newKey){
+  const old=yeastTypes[oldKey]||yeastTypes.idy;
+  const neu=yeastTypes[newKey]||yeastTypes.idy;
+  const oldEffective=selectedYeastPct()/old.mult;
+  exactOverride=exactOverride||{h:selectedHydration(),s:selectedSalt(),o:selectedOil(),ySelected:selectedYeastPct()};
+  const converted=clampToInputBounds($('yeastPct'),oldEffective*neu.mult);
+  // Eén afronding is de bron voor zowel veld als berekening; daardoor kan de
+  // zichtbare waarde nooit submilligram afwijken van het gebruikte percentage.
+  const rounded=Number(fieldNum(converted,3));
+  exactOverride.ySelected=rounded;
+  $('yeastPct').value=fieldNum(rounded,3);
+  previousYeastType=newKey;
+  return rounded;
+}
+
+function recommendedBallWeight(diameter=num('diameter')){
+  const style=doughStyles[$('doughStyle').value]||doughStyles.neapolitan;
+  const d=clamp(Number(diameter)||REF_DIAMETER,MIN_DIAMETER,MAX_DIAMETER);
+  return Math.round(Math.PI*Math.pow(d/2,2)*style.factor/5)*5;
+}
+
+function estimatedDiameterFromWeight(weight=num('ballWeight')){
+  const style=doughStyles[$('doughStyle').value]||doughStyles.neapolitan;
+  if(!weight || !style.factor) return num('diameter');
+  return 2*Math.sqrt(weight/(Math.PI*style.factor));
+}
+
+
+function refreshAvpnPresetInfo(){
+  const box=$('avpnPresetInfo');
+  if(!box)return;
+  box.classList.toggle('hidden',$('preset').value!=='avpnMid');
+  // Dit lange informatieblok wordt bewust volledig taalafhankelijk opgebouwd.
+  // De generieke tekstnode-vertaler kan samengestelde HTML stil gedeeltelijk
+  // vertalen en gaf hier daardoor Nederlands én Engelse getalnotatie door elkaar.
+  box.innerHTML=L(
+    `<b>AVPN middenprofiel:</b> ${fmt(28.5,1)} cm • 240 g per bol • ${fmt(58.8,1)}% hydratatie • ${fmt(2.94,2)}% zout • W285 • 18 uur totale fermentatie • 19 °C rijsomgeving • 405 °C steen.
+      Verse gist: rekenkundig midden van de AVPN-range, <b>${fmt(1.55,2)} g per liter water</b>.
+      <span class="avpn-caveat">Let op: die officiële range (${fmt(.1,1)}–3 g/L) spant een factor 30 en dekt bewust heel verschillende tijden, temperaturen en seizoenen. Het rekenkundige midden daarvan is een rekensom, geen aanbeveling — de balk hieronder toont daarom ook wat het praktische model voor dit specifieke schema voorstelt.</span>
+      <span class="avpn-caveat">De 2 uur bulk + 16 uur bolrijs is een praktische verdeling binnen de 18 uur; AVPN schrijft die onderlinge verdeling niet exact voor. De combinatie 240 g + ${fmt(28.5,1)} cm zijn de afzonderlijke middelpunten van de toegestane gewicht- en diameterbereiken. Praktisch afronden wordt voor deze preset uitgeschakeld, zodat de middenwaarden niet door keukenafronding verschuiven.</span>`,
+    `<b>AVPN midpoint profile:</b> ${fmt(28.5,1)} cm • 240 g per dough ball • ${fmt(58.8,1)}% hydration • ${fmt(2.94,2)}% salt • W285 • 18 hours total fermentation • 19 °C proofing environment • 405 °C stone.
+      Fresh yeast: arithmetic midpoint of the AVPN range, <b>${fmt(1.55,2)} g per litre of water</b>.
+      <span class="avpn-caveat">Note: the official range (${fmt(.1,1)}–3 g/L) spans a factor of 30 and deliberately covers very different times, temperatures and seasons. Its arithmetic midpoint is a calculation, not a recommendation — the bar below therefore also shows what the practical model suggests for this specific schedule.</span>
+      <span class="avpn-caveat">The 2-hour bulk + 16-hour ball proof is a practical split within the 18 hours; AVPN does not prescribe that internal split exactly. The combination of 240 g + ${fmt(28.5,1)} cm uses the separate midpoints of the permitted weight and diameter ranges. Practical rounding is disabled for this preset so kitchen rounding does not shift the midpoint values.</span>`);
+}
+
+function refreshSizeModeUI(){
+  const byWeight=!$('sizeFromDiameter').checked;
+  const styleMaxBall=recommendedBallWeight(MAX_DIAMETER);
+  $('ballWeight').max=styleMaxBall;
+  $('diameterField').classList.toggle('hidden',byWeight);
+  $('ballWeightField').classList.toggle('hidden',!byWeight);
+  $('diameterModeLabel').classList.toggle('active',!byWeight);
+  $('weightModeLabel').classList.toggle('active',byWeight);
+  $('sizeModeHint').textContent=byWeight
+    ? L('Bolgewicht invoeren → de verwachte pizzadiameter wordt ter indicatie berekend.',
+        'Enter dough-ball weight → the expected pizza diameter is calculated as an indication.')
+    : L('Diameter invoeren → het benodigde bolgewicht wordt automatisch berekend.',
+        'Enter diameter → the required dough-ball weight is calculated automatically.');
+}
+
+function calc(){
+  refreshSizeModeUI();
+  const byWeight=!$('sizeFromDiameter').checked;
+  let targetBall, targetDiameter;
+
+  if(byWeight){
+    const maxBall=recommendedBallWeight(MAX_DIAMETER);
+    targetBall=clamp(num('ballWeight')||100,100,maxBall);
+    targetDiameter=clamp(estimatedDiameterFromWeight(targetBall),MIN_DIAMETER,MAX_DIAMETER);
+    // Alleen het afgeleide, verborgen tegenveld wordt live bijgewerkt. Het
+    // zichtbare bolgewichtveld waarin iemand typt blijft volledig ongemoeid.
+    if(Number($('diameter').value)!==roundTo(targetDiameter,0.5)) $('diameter').value=roundTo(targetDiameter,0.5);
+  }else{
+    targetDiameter=clamp(num('diameter')||REF_DIAMETER,MIN_DIAMETER,MAX_DIAMETER);
+    targetBall=recommendedBallWeight(targetDiameter);
+    // In diametermodus is bolgewicht afgeleid; diameter zelf wordt pas bij
+    // change/blur genormaliseerd en nooit tijdens een tussenliggende toets.
+    if(Number($('ballWeight').value)!==targetBall) $('ballWeight').value=targetBall;
+  }
+  // Receptgrammen zijn geschreven voor 32 cm; alles schaalt mee met het oppervlak.
+  setToppingScale(targetDiameter);
+
+  // Aantal pizza's én absolute diameter hebben een praktische appgrens.
+  // Binnen die 40 cm blijft de 12"-schep / 14"-Koda-waarschuwing bewust zacht.
+  const pizzasRaw=Math.round(num('pizzas'));
+  const pizzas=clamp(Number.isFinite(pizzasRaw)&&pizzasRaw>0?pizzasRaw:1,1,MAX_PIZZAS);
+  const h=selectedHydration(),s=selectedSalt(),y=selectedYeastPct(),o=selectedOil();
+  const totalTarget=pizzas*targetBall;
+  const factor=1+h/100+s/100+y/100+o/100;
+  const flourExact=totalTarget/factor;
+  const practical=$('practical').checked;
+  let flour,water,salt,yeast,oil;
+  if(practical){
+    flour=roundTo(flourExact,5);
+    water=roundTo(flour*h/100,5);
+    salt=roundTo(flour*s/100,1);
+    yeast=roundTo(flour*y/100,0.1);
+    oil=roundTo(flour*o/100,1);
+  }else{
+    flour=roundTo(flourExact,0.1);
+    water=roundTo(flour*h/100,0.1);
+    salt=roundTo(flour*s/100,0.1);
+    yeast=roundTo(flour*y/100,0.01);
+    oil=roundTo(flour*o/100,0.1);
+  }
+  const total=flour+water+salt+yeast+oil;
+  const actualBall=total/pizzas;
+  const actualH=water/flour*100,actualS=salt/flour*100,actualY=yeast/flour*100,actualO=oil/flour*100;
+  let reserve=roundTo(water*(20/380),practical?5:0.1);
+  reserve=clamp(reserve,practical?5:1,Math.max(practical?5:1,water*0.10));
+  const mainWater=water-reserve;
+  const ferm=$('fermentationMethod').value==='room'
+    ? 'room'
+    : ($('coldStorageMode').value==='balls'?'coldBalls':'hybrid');
+  const bulk=nonNegativeNum('bulkHours'),cold=ferm==='room'?0:nonNegativeNum('coldHours'),ball=nonNegativeNum('ballHours');
+  return {
+    pizzas,targetBall,targetDiameter,byWeight,h,s,y,o,flour,water,salt,yeast,oil,total,actualBall,actualH,actualS,actualY,actualO,
+    reserve,mainWater,bulk,cold,ball,
+    room:boundedNum('roomTemp',21),fridge:boundedNum('fridgeTemp',4),autolyse:$('autolyse').checked,ferm,
+    yeastType:$('yeastType').value,stoneTemp:boundedNum('stoneTemp',430),preheat:boundedNum('preheatMinutes',30),
+    doughTemp:boundedNumDefault('finalDoughTemp',FERMENT_DEFAULTS.finalDoughTemp),
+    flourW:(String($('flourW').value).trim()!==''?boundedNum('flourW',FERMENT_DEFAULTS.flourW):(currentFlourType().w??FERMENT_DEFAULTS.flourW)),
+    flourWKnown:(String($('flourW').value).trim()!=='' || currentFlourType().w!=null),
+    flourTypeKey:($('flourType')&&flourTypes[$('flourType').value])?$('flourType').value:'caputoPizzeria',
+    flourName:flourTypeName(currentFlourType()),
+    flourOfficial:currentFlourType().official,
+    flourStructure:currentFlourType().structure,
+    flourNote:flourTypeNote(currentFlourType()),
+    doughTempDefault:!$('finalDoughTemp').value.trim(),
+    flourWDefault:!$('flourW').value.trim() && currentFlourType().w!=null,
+    toppingScale
+  };
+}
+
+function fermentationHours(c){
+  if(c.ferm==='room') return c.bulk+c.ball;
+  return c.bulk+c.cold+c.ball;
+}
+
+// Praktische thuiskalibratie, geen natuurwet. Doorgetrokken boven 35 graden
+// zodat een warme rijskast of proofbox niet als "even snel als 35 graden"
+// wordt gemodelleerd; boven ~45 graden loopt gist snel dood.
+const YEAST_TEMP_CURVE=[
+  [0,0.01],[4,0.04],[8,0.09],[12,0.20],[16,0.42],[18,0.62],
+  [21,1.00],[24,1.55],[27,2.35],[30,3.35],[32,3.55],[35,3.00],
+  [38,2.20],[42,0.90],[46,0.10],[50,0.02]
+];
+
+function interpolateCurve(points,x){
+  if(x<=points[0][0])return points[0][1];
+  if(x>=points[points.length-1][0])return points[points.length-1][1];
+  for(let i=0;i<points.length-1;i++){
+    const [x1,y1]=points[i],[x2,y2]=points[i+1];
+    if(x>=x1&&x<=x2){const f=(x-x1)/(x2-x1);return y1+(y2-y1)*f;}
+  }
+  return 1;
+}
+
+function yeastTempActivity(t){
+  return interpolateCurve(YEAST_TEMP_CURVE,clamp(t,0,50));
+}
+
+// Een aparte, mildere klok voor enzymatische/rheologische rijping.
+// Dit is bewust een index en geen directe labmeting.
+function maturationActivity(t){
+  return clamp(Math.pow(2,(clamp(t,0,35)-21)/10),0.15,2.6);
+}
+
+function thermalTauHours(massKg,asBalls=false,ballWeight=250){
+  if(asBalls){
+    return clamp(1.10*Math.pow(Math.max(100,ballWeight)/250,1/3),0.7,2.0);
+  }
+  return clamp(2.40*Math.pow(Math.max(0.25,massKg),1/3),1.5,4.5);
+}
+
+function simulateThermalPhase(startTemp,envTemp,hours,tau,name,kind){
+  if(hours<=0)return {name,kind,hours:0,envTemp,startTemp,endTemp:startTemp,gas:0,maturity:0};
+  const step=Math.min(.10,Math.max(.025,hours/200));
+  const n=Math.max(1,Math.ceil(hours/step)),dt=hours/n;
+  let t=startTemp,gas=0,maturity=0;
+  for(let i=0;i<n;i++){
+    const next=envTemp+(t-envTemp)*Math.exp(-dt/tau);
+    const mid=(t+next)/2;
+    gas+=yeastTempActivity(mid)*dt;
+    maturity+=maturationActivity(mid)*dt;
+    t=next;
+  }
+  return {name,kind,hours,envTemp,startTemp,endTemp:t,gas,maturity,tau};
+}
+
+function simulateFermentation(c){
+  const massKg=Math.max(.25,c.total/1000);
+  const ballWeight=Math.max(100,c.actualBall);
+  const bulkTau=thermalTauHours(massKg,false,ballWeight);
+  const ballTau=thermalTauHours(ballWeight/1000,true,ballWeight);
+  let t=c.doughTemp,phases=[];
+
+  const add=(env,hours,tau,name,kind)=>{
+    const p=simulateThermalPhase(t,env,hours,tau,name,kind);phases.push(p);t=p.endTemp;
+  };
+
+  add(c.room,c.bulk,bulkTau,L('Bulk buiten','Bulk at room temp'),'bulk');
+  if(c.ferm==='hybrid'){
+    add(c.fridge,c.cold,bulkTau,L('Koelkast • bulk','Fridge • bulk'),'coldBulk');
+    add(c.room,c.ball,ballTau,L('Bolrijs / opwarming','Ball proof / warm-up'),'ballWarm');
+  }else if(c.ferm==='coldBalls'){
+    add(c.fridge,c.cold,ballTau,L('Koelkast • bollen','Fridge • balls'),'coldBalls');
+    add(c.room,c.ball,ballTau,L('Laatste opwarming','Final warm-up'),'ballWarm');
+  }else{
+    add(c.room,c.ball,ballTau,L('Bolrijs buiten','Ball proof at room temp'),'ballRoom');
+  }
+
+  return {
+    phases,
+    gas:phases.reduce((a,p)=>a+p.gas,0),
+    maturity:phases.reduce((a,p)=>a+p.maturity,0),
+    endTemp:t,
+    bulkTau,ballTau,massKg,ballWeight
+  };
+}
+
+function riseTarget(style){
+  const map={
+    neapolitan:{bulk:'+20–40%',final:L('ongeveer 1,5–1,8× het volume van een verse bol','roughly 1.5–1.8× the volume of a fresh ball')},
+    avpn:{bulk:'+20–40%',final:L('ongeveer 1,5–1,8× het volume van een verse bol','roughly 1.5–1.8× the volume of a fresh ball')},
+    canotto:{bulk:'+30–50%',final:L('ongeveer 1,7–2,1×; duidelijk luchtig maar nog sterk','roughly 1.7–2.1×; clearly airy but still strong')},
+    ny:{bulk:'+40–70%',final:L('ongeveer 1,7–2,1×; zacht en goed ontspannen','roughly 1.7–2.1×; soft and well relaxed')},
+    thin:{bulk:'+25–45%',final:L('ongeveer 1,4–1,7×; niet maximaal laten opblazen','roughly 1.4–1.7×; do not let it inflate fully')}
+  };
+  return map[style]||map.neapolitan;
+}
+
+function flourRisk(c,sim){
+  const hydrationLoad=1+Math.max(0,c.h-65)*0.025;
+  const load=sim.maturity*hydrationLoad;
+  if(!c.flourWKnown){
+    return {w:null,load,capacity:null,ratio:null,level:'unknown',label:L('W onbekend','W unknown'),cls:'warn'};
+  }
+  const w=clamp(c.flourW,90,450);
+  const capacity=clamp(20+(w-220)*0.16,5,48);
+  const ratio=load/capacity;
+  let level,label,cls;
+  if(ratio<.70){level='low';label=L('ruime marge','wide margin');cls='good';}
+  else if(ratio<1.0){level='normal';label=L('goed passend','good fit');cls='good';}
+  else if(ratio<1.25){level='elevated';label=L('opletten','watch closely');cls='warn';}
+  else{level='high';label=L('hoog risico','high risk');cls='hot';}
+  return {w,load,capacity,ratio,level,label,cls};
+}
+
+
+// Het empirische thuismodel, losgetrokken zodat de AVPN-tak er ook mee kan vergelijken.
+function genericYeastModel(c,sim){
+  const eq=Math.max(2,sim.gas);
+  const styleFactor={neapolitan:1,avpn:1,canotto:1.08,ny:.95,thin:.86}[ $('doughStyle').value ]||1;
+  const saltFactor=Math.exp((c.s-2.5)*0.09);
+  let idy=0.68/Math.pow(eq,0.80);
+  idy*=saltFactor*styleFactor;
+  idy=clamp(idy,0.015,0.55);
+  return {eq,idy,saltFactor,styleFactor};
+}
+
+function avpnMidpointYeastAdvice(c){
+  const sim=simulateFermentation(c);
+  const freshMidPct=(1.55/1700)*100;
+  const freshLowPct=(0.1/1700)*100;
+  const freshHighPct=(3/1700)*100;
+  const idyMidPct=freshMidPct/3;
+  const idyLowPct=freshLowPct/3;
+  const idyHighPct=freshHighPct/3;
+  const selected=c.yeastType==='fresh'?freshMidPct:idyMidPct;
+  const low=c.yeastType==='fresh'?freshLowPct:idyLowPct;
+  const high=c.yeastType==='fresh'?freshHighPct:idyHighPct;
+  const risk=flourRisk(c,sim),rise=riseTarget($('doughStyle').value);
+  const gen=genericYeastModel(c,sim);
+  const mult=yeastTypes[c.yeastType].mult;
+  const modelSelected=clamp(gen.idy*mult,low,high);      // modelvoorstel binnen de officiële range
+  const modelRaw=gen.idy*mult;                            // ongeclampt, om conflict te kunnen tonen
+  const ratio=gen.idy/idyMidPct;
+
+  const warnings=[{
+    cls:'good',
+    text:L(
+      'AVPN-preset: de balk is de officiële verse-gistrange (0,1–3 g per liter water), omgerekend naar de gekozen gistsoort en batch. Het rekenkundige midden is 1,55 g/L.',
+      'AVPN preset: the bar shows the official fresh-yeast range (0.1–3 g per litre of water), converted to the selected yeast type and batch. The arithmetic midpoint is 1.55 g/L.')
+  }];
+  if(ratio>=1.5||ratio<=1/1.5){
+    warnings.push({cls:'warn',text:L(
+      `Let op: het praktische fermentatiemodel van deze calculator komt voor dit schema uit op ongeveer <b>${fmt(c.flour*modelRaw/100,2)} g</b>, tegen <b>${fmt(c.flour*selected/100,2)} g</b> voor het rekenkundige AVPN-midden — een factor ${fmt(ratio,1)}. Die 0,1–3 g/L is een zeer brede range die AVPN bewust openlaat voor verschillende tijden, temperaturen en seizoenen; een rekenkundig midden daarvan is geen aanbeveling. Voor deze AVPN-preset laten we beide waarden zichtbaar staan; de officiële range blijft leidend.`,
+      `Note: for this schedule, the calculator's practical fermentation model gives about <b>${fmt(c.flour*modelRaw/100,2)} g</b>, versus <b>${fmt(c.flour*selected/100,2)} g</b> for the arithmetic AVPN midpoint — a factor of ${fmt(ratio,1)}. The 0.1–3 g/L range is deliberately broad to accommodate different times, temperatures and seasons; its arithmetic midpoint is not a recommendation. This AVPN preset shows both values; the official range remains leading.`)});
+  }
+  if(modelRaw>high){
+    warnings.push({cls:'warn',text:L(
+      'Het generieke thuismodel valt hier zelfs boven de officiële AVPN-bovengrens. Omdat 18 uur bij 19 °C juist midden in AVPN\'s eigen tijd- en temperatuurbereik ligt, behandelen we dit als een kalibratiebeperking van het generieke model. Voor de AVPN-preset heeft de officiële AVPN-range daarom voorrang.',
+      "The generic home model is even above the official AVPN upper limit here. Because 18 hours at 19 °C sits well within AVPN's own time and temperature range, this is treated as a calibration limitation of the generic model. The official AVPN range therefore takes precedence for this preset.")});
+  }
+
+  return {
+    eq:Math.max(2,sim.gas),
+    idy:idyMidPct,
+    selected,low,high,
+    lowIdy:idyLowPct,highIdy:idyHighPct,
+    modelSelected,modelRaw,modelIdy:gen.idy,ratio,
+    sim,risk,rise,
+    uncertainty:null,
+    warnings,
+    saltFactor:1,styleFactor:1,
+    avpnOfficial:true
+  };
+}
+
+function yeastRecommendation(c){
+  if($('preset').value==='avpnMid')return avpnMidpointYeastAdvice(c);
+  const sim=simulateFermentation(c);
+
+  // Empirisch gekalibreerde thuiscurve. Tijd/temperatuur zit in de geïntegreerde gas-klok;
+  // zout corrigeert bescheiden, hydratatie niet rechtstreeks.
+  const gen=genericYeastModel(c,sim);
+  const eq=gen.eq,idy=gen.idy,styleFactor=gen.styleFactor,saltFactor=gen.saltFactor;
+
+  const coldUncertainty=c.ferm==='room'?0:(c.cold>=48?.08:c.cold>=18?.05:.03);
+  const tempUncertainty=c.fridge<=4.5&&c.ferm!=='room'?.03:0;
+  const uncertainty=clamp(.20+coldUncertainty+tempUncertainty,.20,.34);
+
+  const mult=yeastTypes[c.yeastType].mult;
+  const selected=idy*mult;
+  const low=selected*(1-uncertainty),high=selected*(1+uncertainty);
+  const risk=flourRisk(c,sim),rise=riseTarget($('doughStyle').value);
+
+  const warnings=[];
+  if(c.fridge>=8&&c.ferm!=='room')warnings.push({cls:'warn',text:L(`Je koelkast staat op ${fmt(c.fridge,1)} °C. Dat is een actieve koude fermentatie, geen sterke retardatie; controleer het deeg eerder.`,`Your refrigerator is at ${fmt(c.fridge,1)} °C. That is active cold fermentation rather than strong retardation; check the dough earlier.`)});
+  if(c.fridge<=3&&c.ferm!=='room')warnings.push({cls:'good',text:L(`Bij ${fmt(c.fridge,1)} °C wordt gist zeer sterk afgeremd. De warme fasen en het langzaam afkoelen leveren relatief veel van de gasproductie.`,`At ${fmt(c.fridge,1)} °C yeast is strongly slowed. Warm phases and gradual cooling contribute a relatively large part of gas production.`)});
+  if(c.doughTemp>=28)warnings.push({cls:'warn',text:L(`Doel-einddeegtemperatuur ${fmt(c.doughTemp,1)} °C is hoog voor een lang schema: de eerste uren verlopen duidelijk sneller.`,`Target final dough temperature ${fmt(c.doughTemp,1)} °C is high for a long schedule: the first hours will progress noticeably faster.`)});
+  if(c.doughTemp<=19)warnings.push({cls:'warn',text:L(`Doel-einddeegtemperatuur ${fmt(c.doughTemp,1)} °C is laag: de start van de fermentatie is trager dan normaal.`,`Target final dough temperature ${fmt(c.doughTemp,1)} °C is low: fermentation starts more slowly than normal.`)});
+  if(risk.level==='elevated'||risk.level==='high')warnings.push({cls:risk.cls,text:L(`Rijpingsbelasting versus W${fmt(c.flourW,0)}: ${risk.label}. Kijk extra naar deegsterkte en volume in plaats van alleen naar de klok.`,`Maturation load versus W${fmt(c.flourW,0)}: ${risk.label}. Pay extra attention to dough strength and volume rather than only the clock.`)});
+  if(risk.level==='unknown')warnings.push({cls:'warn',text:L(`Bloemsoort <b>${esc(c.flourName)}</b>: W is onbekend, dus de calculator geeft bewust geen numerieke W-risicoscore. ${esc(c.flourNote)}`,`Flour type <b>${esc(c.flourName)}</b>: W is unknown, so the calculator deliberately does not show a numerical W-risk score. ${esc(c.flourNote)}`)});
+  if(c.flourWKnown && ['spelt','speltWhole','wholegrain'].includes(c.flourStructure))warnings.push({cls:'warn',text:L(`De ingevulde W-waarde wordt gebruikt, maar W alleen beschrijft <b>${esc(c.flourName)}</b> niet volledig. Controleer structuur en volume extra visueel.`,`The entered W value is used, but W alone does not fully describe <b>${esc(c.flourName)}</b>. Check structure and volume visually with extra care.`)});
+  if(c.yeastType==='ady')warnings.push({cls:'warn',text:L('ADY-conversie is merkafhankelijk. De calculator gebruikt 1,25× IDY als praktische default; fabrikantadvies gaat voor.','ADY conversion depends on the product. The calculator uses 1.25× IDY as a practical default; manufacturer guidance takes precedence.')});
+  if(c.cold>72)warnings.push({cls:'warn',text:L('Meer dan 72 uur koud is sterk afhankelijk van bloem, koelkast en deegtemperatuur; de onzekerheidsmarge wordt groter.','More than 72 hours cold depends strongly on flour, refrigerator and dough temperature; uncertainty increases.')});
+
+  return {eq,idy,selected,low,high,sim,risk,rise,uncertainty,warnings,saltFactor,styleFactor};
+}
+
+function update(){
+  refreshFermentationUI();
+  refreshAvpnPresetInfo();
+  applyAppModeUI();
+  const c=calc();
+  const advice=yeastRecommendation(c);
+  const yt=yeastTypes[c.yeastType];
+
+  $('targetSummary').textContent=c.byWeight
+    ? L(`${c.pizzas} pizza's • ${fmt(c.targetBall,0)} g per bol • geschat ±${fmt(c.targetDiameter,1)} cm`,`${c.pizzas} pizzas • ${fmt(c.targetBall,0)} g per dough ball • estimated ±${fmt(c.targetDiameter,1)} cm`)
+    : L(`${c.pizzas} pizza's • ${fmt(c.targetDiameter,1)} cm • berekend ±${fmt(c.targetBall,0)} g per bol`,`${c.pizzas} pizzas • ${fmt(c.targetDiameter,1)} cm • calculated ±${fmt(c.targetBall,0)} g per dough ball`);
+  $('flourOut').textContent=`${fmt(c.flour,1)} g`;
+  $('waterOut').textContent=`${fmt(c.water,1)} g`;
+  $('saltOut').textContent=`${fmt(c.salt,1)} g`;
+  $('yeastOut').textContent=`${fmt(c.yeast,2)} g`;
+  $('oilOut').textContent=`${fmt(c.oil,1)} g`;
+  $('yeastName').textContent=yeastName(c.yeastType);
+  $('oilCard').classList.toggle('hidden',c.o<=0);
+
+  $('hydOut').textContent=L(`werkelijk ${fmt(c.actualH,1)}%`,`actual ${fmt(c.actualH,1)}%`);
+  $('saltPOut').textContent=L(`werkelijk ${fmt(c.actualS,2)}%`,`actual ${fmt(c.actualS,2)}%`);
+  $('yeastPOut').textContent=L(`werkelijk ${fmt(c.actualY,3)}%`,`actual ${fmt(c.actualY,3)}%`);
+  $('oilPOut').textContent=L(`werkelijk ${fmt(c.actualO,2)}%`,`actual ${fmt(c.actualO,2)}%`);
+
+  // Onthoudregel en de hint bovenaan komen allebei uit dezelfde berekening,
+  // zodat het label nooit meer kan afwijken van wat de calculator uitrekent.
+  const memoryLine=`${fmt(c.flour,0)} – ${fmt(c.water,0)} – ${fmt(c.salt,0)} – ${fmtFixed(c.yeast,c.yeast<10?1:0)}${c.o>0?' – '+fmt(c.oil,0):''}`;
+  $('memoryOut').textContent=memoryLine;
+  if($('presetSummaryValue')) $('presetSummaryValue').textContent=`${memoryLine} g`;
+  if($('presetSummaryHint')) $('presetSummaryHint').innerHTML=L(
+    `Deze preset komt uit op <b id="presetSummaryValue">${memoryLine} g</b> (bloem – water – zout – gist).`,
+    `This preset works out to <b id="presetSummaryValue">${memoryLine} g</b> (flour – water – salt – yeast).`);
+  if($('flourSmall')) $('flourSmall').textContent=c.flourName+(c.flourWKnown?` • W${fmt(c.flourW,0)}`:L(' • W onbekend',' • W unknown'));
+  // Huidige hardware als zachte referentie: 12" schep en 14" Koda 2.
+  const peel=$('peelHint');
+  if(peel){
+    const notes=[];
+    if(c.targetDiameter>PEEL_DIAMETER+0.01) notes.push(L(
+      `<b>12″ schep:</b> ${fmt(c.targetDiameter,1)} cm is groter dan ${fmt(PEEL_DIAMETER,1)} cm. Dat kan bewust zijn, maar lanceren wordt duidelijk lastiger.`,
+      `<b>12″ peel:</b> ${fmt(c.targetDiameter,1)} cm is larger than ${fmt(PEEL_DIAMETER,1)} cm. This may be intentional, but launching becomes noticeably harder.`));
+    if(c.targetDiameter>OVEN_DIAMETER+0.01) notes.push(L(
+      `<b>14″ Koda 2:</b> ${fmt(c.targetDiameter,1)} cm ligt boven de huidige ovenreferentie van ${fmt(OVEN_DIAMETER,1)} cm. De calculator rekent door omdat dit een bewuste override kan zijn; controleer zelf of je andere oven/opstelling dit aankan.`,
+      `<b>14″ Koda 2:</b> ${fmt(c.targetDiameter,1)} cm exceeds the current oven reference of ${fmt(OVEN_DIAMETER,1)} cm. The calculator keeps calculating because this may be a deliberate override; verify that your actual oven/setup can handle it.`));
+    peel.classList.toggle('hidden',notes.length===0);
+    peel.innerHTML=notes.join('<br>');
+  }
+  $('totalOut').textContent=`${fmt(c.total,1)} g`;
+  $('actualBallOut').textContent=`${fmt(c.actualBall,1)} g`;
+  {const lp=liveFermentationPlan(c);$('fermentOut').textContent=`${fmt(fermentationHours(lp.effective),1)} ${L('u','h')}${lp.active?L(' • live',' • live'):''}`;}
+
+  const dh=Math.abs(c.actualH-c.h);
+  const yeastDev=c.y>0?Math.abs(c.actualY-c.y)/c.y:0;
+  $('roundingInfo').innerHTML=L(
+      `Praktisch afgerond. Doelhydratatie <b>${fmt(c.h,2)}%</b> → werkelijk <b>${fmt(c.actualH,2)}%</b> (${dh<0.01?'vrijwel exact':`${fmt(dh,2)} procentpunt verschil`}).`,
+      `Practically rounded. Target hydration <b>${fmt(c.h,2)}%</b> → actual <b>${fmt(c.actualH,2)}%</b> (${dh<0.01?'virtually exact':`${fmt(dh,2)} percentage-point difference`}).`)
+    +(yeastDev>0.08?L(
+      ` <b>Let op:</b> door het afronden op 0,1 g wijkt de gist ${fmt(yeastDev*100,0)}% van het doel af. Bij zulke kleine hoeveelheden helpt een 0,01 g-weegschaal, verse gist, of praktisch afronden uitzetten.`,
+      ` <b>Note:</b> rounding to 0.1 g makes the yeast differ by ${fmt(yeastDev*100,0)}% from target. At such small amounts, a 0.01 g scale, fresh yeast or disabling practical rounding helps.`):'');
+
+  const estFlour=c.flour||600;
+  const recGrams=estFlour*advice.selected/100;
+  const lowG=estFlour*advice.low/100, highG=estFlour*advice.high/100;
+  // De bandbreedte is nu het hoofdgetal. Een enkel getal suggereert een
+  // precisie die dit model niet heeft.
+  const nlAdv=currentLang!=='en';
+  $('yeastAdvice').textContent=`${fmt(lowG,2)} – ${fmt(highG,2)} g ${yt.short}`;
+  if(advice.avpnOfficial){
+    const modelG=estFlour*advice.modelRaw/100;
+    $('yeastAdviceDetail').textContent=nlAdv
+      ? `Officiële AVPN-range • rekenkundig midden ${fmt(recGrams,2)} g • dit model stelt ${fmt(modelG,2)} g voor bij 18 u @ 19 °C`
+      : `Official AVPN range • arithmetic midpoint ${fmt(recGrams,2)} g • this model suggests ${fmt(modelG,2)} g for 18 h @ 19 °C`;
+  }else{
+    $('yeastAdviceDetail').textContent=nlAdv
+      ? `Midden ${fmt(recGrams,2)} g • onzekerheid ±${fmt(advice.uncertainty*100,0)}% • ${fmt(advice.eq,1)} gistactiviteitsuren @ 21 °C`
+      : `Midpoint ${fmt(recGrams,2)} g • uncertainty ±${fmt(advice.uncertainty*100,0)}% • ${fmt(advice.eq,1)} yeast-activity hours @ 21 °C`;
+  }
+  renderYeastRangeBar(c,advice,estFlour,yt);
+  buildFermentationScience(c,advice);
+  buildDeadlineAdvice(c);
+
+  buildPizzaBallSelectors();
+  updateSauceSummary(c);
+  updateRecipeSummary(c);
+  buildPizzaCustomize(c);
+  buildSteps(c);
+  buildMixerCapacityNote(c);
+  buildTimeline(c);
+  renderBakeLog(c);
+  buildShopping(c);
+  buildStoneAdvice(c);
+  // De ingrediëntenmodal werd bij elke toetsaanslag herbouwd, ook dicht.
+  if(!$('ingredientsModal').classList.contains('hidden')) buildIngredientsModal(c);
+  scheduleSave();
+}
+
+// Visuele bandbreedte. Voor de AVPN-preset staat de officiële range op de
+// balk met daarin twee markeringen: het rekenkundige midden en wat het
+// praktische model voor dit schema voorstelt.
+function renderYeastRangeBar(c,advice,estFlour,yt){
+  const box=$('yeastRangeBar');
+  if(!box)return;
+  const nl=currentLang!=='en';
+  const g=pct=>estFlour*pct/100;
+  const lo=g(advice.low),hi=g(advice.high);
+  const mid=g(advice.selected);
+  const current=c.yeast;
+
+  if(advice.avpnOfficial){
+    const model=g(advice.modelRaw);
+    const axisMax=Math.max(hi,model,current)*1.08||1;
+    const pos=v=>clamp(v/axisMax*100,0,100);
+    box.innerHTML=`
+      <div class="bar">
+        <div class="span" style="left:${pos(lo)}%;width:${Math.max(1.5,pos(hi)-pos(lo))}%"></div>
+        <div class="mark" style="left:${pos(mid)}%"></div>
+        <div class="mark model" style="left:${pos(model)}%"></div>
+      </div>
+      <div class="scale"><span>0 g</span><span>${fmt(axisMax,2)} g ${yt.short}</span></div>
+      <div class="legend">
+        <span class="key" style="background:rgba(240,180,90,.5)"></span>${nl?'officiële AVPN-range':'official AVPN range'} ${fmt(lo,2)}–${fmt(hi,2)} g •
+        <span class="key" style="background:var(--text)"></span>${nl?'rekenkundig midden':'arithmetic midpoint'} ${fmt(mid,2)} g •
+        <span class="key" style="background:var(--accent)"></span>${nl?'wat dit model voorstelt':'what this model suggests'} ${fmt(model,2)} g
+      </div>`;
+    return;
+  }
+
+  const axisMax=Math.max(hi,current)*1.15||1;
+  const pos=v=>clamp(v/axisMax*100,0,100);
+  box.innerHTML=`
+    <div class="bar">
+      <div class="span" style="left:${pos(lo)}%;width:${Math.max(1.5,pos(hi)-pos(lo))}%"></div>
+      <div class="mark" style="left:${pos(mid)}%"></div>
+      <div class="mark model" style="left:${pos(current)}%"></div>
+    </div>
+    <div class="scale"><span>0 g</span><span>${fmt(axisMax,2)} g ${yt.short}</span></div>
+    <div class="legend">
+      <span class="key" style="background:rgba(240,180,90,.5)"></span>${nl?'adviesbereik':'guidance range'} ${fmt(lo,2)}–${fmt(hi,2)} g •
+      <span class="key" style="background:var(--text)"></span>${nl?'midden':'midpoint'} ${fmt(mid,2)} g •
+      <span class="key" style="background:var(--accent)"></span>${nl?'nu in je recept':'currently in your recipe'} ${fmt(current,2)} g
+    </div>`;
+}
+
+function buildFermentationScience(c,a){
+  const currentIdy=c.y/yeastTypes[c.yeastType].mult;
+  let currentStatus,currentCls;
+  const statusLowIdy=a.lowIdy!=null?a.lowIdy:a.idy*(1-a.uncertainty);
+  const statusHighIdy=a.highIdy!=null?a.highIdy:a.idy*(1+a.uncertainty);
+  if(currentIdy<statusLowIdy){currentStatus=L('onder advies','below guidance');currentCls='warn';}
+  else if(currentIdy>statusHighIdy){currentStatus=L('boven advies','above guidance');currentCls='warn';}
+  else{currentStatus=a.avpnOfficial?L('binnen AVPN-range','within AVPN range'):L('binnen bereik','within range');currentCls='good';}
+
+  const tempSourceText=currentLang==='en'
+    ? (c.doughTempDefault
+        ? 'starting dough: default 24 °C; temperature path estimated'
+        : `starting dough: measured ${fmt(c.doughTemp,1)} °C; subsequent path estimated`)
+    : (c.doughTempDefault
+        ? 'startdeeg: standaard 24 °C; temperatuurverloop geschat'
+        : `startdeeg: gemeten ${fmt(c.doughTemp,1)} °C; verloop daarna geschat`);
+  const flourSourceText=currentLang==='en'
+    ? (c.flourWKnown
+        ? `${esc(c.flourName)} • ${c.flourOfficial&&c.flourWDefault?'manufacturer specification':(c.flourWDefault?'known default':'entered W value')}`
+        : `${esc(c.flourName)} • W unknown; no numerical risk score`)
+    : (c.flourWKnown
+        ? `${esc(c.flourName)} • ${c.flourOfficial&&c.flourWDefault?'fabrieksspecificatie':(c.flourWDefault?'bekende standaard':'zelf ingevulde W-waarde')}`
+        : `${esc(c.flourName)} • W onbekend; geen numerieke risicoscore`);
+
+  $('fermentDashboard').innerHTML=`
+    <div class="ferment-metric"><span>${L('Gistactiviteit','Yeast activity')}</span><b>${fmt(a.eq,1)} ${L('u','h')} @ 21 °C</b><small>${tempSourceText}</small></div>
+    <div class="ferment-metric"><span>${L('Rijpingsindex','Maturation index')}</span><b>${fmt(a.sim.maturity,1)}</b><small>${L('modelindex voor tijd/temperatuur; geen labwaarde','model index for time/temperature; not a lab value')}</small></div>
+    <div class="ferment-metric"><span>${L('Bloemschatting','Flour estimate')}</span><b>${c.flourWKnown?`W${fmt(c.flourW,0)} • ${a.risk.label}`:a.risk.label}</b><small>${flourSourceText}</small></div>
+    <div class="ferment-metric"><span>${L('Huidige gist','Current yeast')}</span><b>${currentStatus}</b><small>${fmt(c.yeast,2)} g ${yeastShort(c.yeastType)} ${L('in recept','in recipe')}</small></div>`;
+
+  const base=[{cls:currentCls,text:L(
+    `Huidige gist: <b>${fmt(c.yeast,2)} g ${yeastShort(c.yeastType)}</b> is ${currentStatus} ten opzichte van de berekende bandbreedte.`,
+    `Current yeast: <b>${fmt(c.yeast,2)} g ${yeastShort(c.yeastType)}</b> is ${currentStatus} relative to the calculated range.`)}];
+  const target={cls:'good',text:L(
+    `Visuele eindcheck: bulk richtwaarde <b>${a.rise.bulk}</b>; voor bakken <span class="rise-target">${a.rise.final}</span>. De klok is een planning, niet het enige eindpunt.`,
+    `Visual final check: bulk target <b>${a.rise.bulk}</b>; before baking <span class="rise-target">${a.rise.final}</span>. The clock is a planning tool, not the only endpoint.`)};
+  $('fermentWarnings').innerHTML=[...base,...a.warnings,target].map(w=>`<div class="ferment-warning ${w.cls}">${w.text}</div>`).join('');
+
+  const phaseRows=a.sim.phases.filter(p=>p.hours>0).map(p=>`<div class="phase-row">
+    <span>${p.name}</span><span>${fmt(p.hours,1)} u</span><span>${fmt(p.startTemp,1)}→${fmt(p.endTemp,1)} °C</span><span>${fmt(p.gas,2)}</span><span>${fmt(p.maturity,2)}</span>
+  </div>`).join('');
+  const technicalModelText=currentLang==='en'
+    ? `<div class="tech-note">
+        <b>Model values:</b> starting dough ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'default':'measured'}); room ${fmt(c.room,1)} °C; refrigerator ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W unknown'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', manufacturer specification':', known default'):', entered manually'):', no numerical W-risk score'}).
+        Practical thermal model constant: bulk ${fmt(a.sim.bulkTau,2)} h, dough ball ${fmt(a.sim.ballTau,2)} h.
+        ${a.avpnOfficial
+          ? `AVPN midpoint yeast: IDY-equivalent ${fmt(a.idy,3)}% flour; based on the official 0.1–3 g fresh yeast per litre water range.`
+          : `IDY-equivalent guidance ${fmt(a.idy,3)}% flour; salt correction ×${fmt(a.saltFactor,2)}; style correction ×${fmt(a.styleFactor,2)}.`}
+        In this model hydration mainly affects the structural/maturation warning and does not directly change yeast activity.
+      </div>
+      <div class="tech-note"><b>Evidence & limits:</b> AVPN 2024/2026 is used for traditional dough, timing and yeast reference ranges; Covino et al. (2023) and Di Stasio et al. (2025) for time-dependent changes in pizza dough; general <i>S. cerevisiae</i> literature for the direction of temperature effects; and Caputo for the W260–280 specification of Pizzeria flour. The exact yeast curve, thermal model constants, maturation index and W-risk score are practical home calibrations and have not been validated together as one predictive laboratory model. Yeast conversion: ADY uses a practical 1.25 × IDY default, but manufacturer guidance varies from roughly 1:1 to 1.25:1; fresh yeast ≈ 3 × IDY.</div>`
+    : `<div class="tech-note">
+        <b>Modelwaarden:</b> startdeeg ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'standaard':'gemeten'}); kamer ${fmt(c.room,1)} °C; koelkast ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W onbekend'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', fabrieksspecificatie':', bekende standaard'):', zelf ingevuld'):', geen numerieke W-risicoscore'}).
+        Praktische thermische modelconstante: bulk ${fmt(a.sim.bulkTau,2)} u, bol ${fmt(a.sim.ballTau,2)} u.
+        ${a.avpnOfficial
+          ? `AVPN-middengist: IDY-equivalent ${fmt(a.idy,3)}% bloem; gebaseerd op de officiële range 0,1–3 g verse gist per liter water.`
+          : `IDY-equivalent advies ${fmt(a.idy,3)}% bloem; zoutcorrectie ×${fmt(a.saltFactor,2)}; stijlcorrectie ×${fmt(a.styleFactor,2)}.`}
+        Hydratatie beïnvloedt in dit model vooral de structurele/rijpingswaarschuwing en niet rechtstreeks de gistactiviteit.
+      </div>
+      <div class="tech-note"><b>Onderbouwing & grenzen:</b> AVPN 2024/2026 voor traditionele deeg-, tijd- en gistkaders; Covino et al. (2023) en Di Stasio et al. (2025) voor tijdsafhankelijke veranderingen in pizzadeeg; algemene <i>S. cerevisiae</i>-literatuur voor de richting van temperatuureffecten; Caputo voor W260–280 van Pizzeria. De exacte gistcurve, thermische modelconstanten, rijpingsindex en W-risicoscore zijn praktische thuis-kalibraties en niet als één voorspellend model laboratorium-gevalideerd. Gistconversie: ADY gebruikt praktisch 1,25 × IDY als standaard, maar fabrikantadvies varieert grofweg van 1:1 tot 1,25:1; verse gist ≈ 3 × IDY.</div>`;
+
+  $('fermentationTechnical').innerHTML=`
+    <div class="phase-grid">
+      <div class="phase-row head"><span>${currentLang==='en'?'Phase':'Fase'}</span><span>${currentLang==='en'?'Time':'Tijd'}</span><span>${currentLang==='en'?'Dough temp':'Deegtemp'}</span><span>${currentLang==='en'?'Yeast-h':'Gist-u'}</span><span>${currentLang==='en'?'Maturation':'Rijping'}</span></div>
+      ${phaseRows}
+    </div>
+    ${technicalModelText}`;
+}
+
+function applyYeastAdvice(){
+  const c=calc();
+  const a=yeastRecommendation(c);
+  exactOverride=exactOverride||{h:selectedHydration(),s:selectedSalt(),o:selectedOil(),ySelected:selectedYeastPct()};
+  exactOverride.ySelected=a.selected;
+  $('yeastPct').value=fieldNum(a.selected,3);
+  markCustom(false);
+  update();
+}
+
+function applyPreset(key){
+  if(key==='custom') return;
+  const p=presets[key]; if(!p)return;
+  liveMeasurements={doughTemp:null,fridgeTemp:null};
+  _livePlanCache={key:null,value:null};
+  suppressCustom=true;
+  $('preset').value=key;
+  $('pizzas').value=p.pizzas;
+  $('diameter').value=p.diameter;
+  $('doughStyle').value=p.style;
+  // Presetwaarden worden op volle precisie in de velden gezet. Vroeger werden
+  // ze op 0,1 afgerond, waardoor 0,17% gist als 0,2% in beeld kwam en bij de
+  // eerste bewerking ook echt 0,2% werd.
+  $('hydration').value=fieldNum(p.h,2);
+  $('saltPct').value=fieldNum(p.s,2);
+  const presetYeastType=p.yeastType||'idy';
+  $('yeastType').value=presetYeastType;
+  previousYeastType=presetYeastType;
+  const presetYeastSelected=p.ySelected!=null?p.ySelected:(p.yIdy*yeastTypes[presetYeastType].mult);
+  $('yeastPct').value=fieldNum(presetYeastSelected,3);
+  $('oilPct').value=fieldNum(p.o,1);
+  $('fermentationMethod').value=p.fermentation==='room'?'room':'hybrid';
+  $('coldStorageMode').value=p.fermentation==='coldBalls'?'balls':'bulk';
+  $('bulkHours').value=p.bulk;
+  $('coldHours').value=p.cold;
+  $('ballHours').value=p.ball;
+  $('roomTemp').value=p.room;
+  $('fridgeTemp').value=p.fridge;
+  $('flourType').value=p.flourType||'caputoPizzeria';
+  if(p.flourW!=null)$('flourW').value=p.flourW; else $('flourW').value='';
+  if(p.avpn)$('finalDoughTemp').value='';
+  if(p.stoneTemp!=null)$('stoneTemp').value=p.stoneTemp;
+  $('autolyse').checked=p.autolyse;
+  // Expliciete default: zonder deze regel bleef 'praktisch afronden' uit staan
+  // nadat de AVPN-preset hem had uitgezet.
+  $('practical').checked=p.practical!==false;
+  $('autoSauceFromPizzas').checked=true;
+  ensurePizzaSelections();
+  exactOverride={h:p.h,s:p.s,o:p.o,ySelected:presetYeastSelected};
+  $('ballWeight').value=recommendedBallWeight(p.diameter);
+  suppressCustom=false;
+  update();
+}
+
+function markCustom(clearExact=true){
+  if(suppressCustom)return;
+  $('preset').value='custom';
+  if(clearExact) exactOverride=null;
+}
+
+// Alleen het bewerkte percentageveld verliest zijn exacte presetwaarde.
+function markCustomField(id){
+  if(suppressCustom)return;
+  $('preset').value='custom';
+  const key=EXACT_FIELDS[id];
+  if(key && exactOverride) delete exactOverride[key];
+}
+
+function refreshFermentationUI(){
+  const base=$('fermentationMethod').value;
+  const coldMode=$('coldStorageMode').value||'bulk';
+  const usingCold=base!=='room';
+
+  $('coldStorageMode').disabled=!usingCold;
+  $('coldStorageModeWrap').classList.toggle('disabled-control',!usingCold);
+  $('coldStorageHint').classList.toggle('hidden',!usingCold);
+
+  $('bulkLabel').textContent=L('Bulk buiten (uur)','Bulk at room temp (hours)');
+  if(!usingCold){
+    $('coldLabel').textContent=L('Geen koelkast','No refrigerator');
+    $('ballLabel').textContent=L('Bolrijs buiten (uur)','Dough-ball proof at room temp (hours)');
+    $('coldHours').disabled=true;
+  }else if(coldMode==='balls'){
+    $('coldLabel').textContent=L('Koelkast als bollen (uur)','Refrigerator as dough balls (hours)');
+    $('ballLabel').textContent=L('Laatste opwarming buiten (uur)','Final warm-up at room temp (hours)');
+    $('coldHours').disabled=false;
+  }else{
+    $('coldLabel').textContent=L('Koelkast als één massa (uur)','Refrigerator as one mass (hours)');
+    $('ballLabel').textContent=L('Bolrijs buiten (uur)','Dough-ball proof at room temp (hours)');
+    $('coldHours').disabled=false;
+  }
+}
+
+
+function aggregatePizzaCounts(){
+  ensurePizzaSelections();
+  const counts={};
+  pizzaSelections.forEach(id=>counts[id]=(counts[id]||0)+1);
+  return counts;
+}
+
+// Hoeveel saus je MAAKT is iets anders dan hoeveel je KOOPT.
+// Vroeger werd de te maken batch afgerond op hele blikken van 400 g, waardoor
+// je voor een enkele Margherita een recept voor 400 g saus kreeg.
+// Nu wordt alleen de inkoop op blikken afgerond; de batch volgt de behoefte,
+// met een kleine praktische marge en correctie voor kookverlies.
+function sauceBatchFor(s,need){
+  const yieldFactor=(s.cooked && s.yield)?s.yield:1;
+  const raw=need/yieldFactor;                       // rauwe tomaat vóór inkoken
+  const batch=Math.max(s.tomato?120:need, roundTo(raw*1.06,5));
+  const tins=s.tomato?Math.max(1,Math.ceil(batch/400)):0;
+  return {batch,tins,buy:tins?tins*400:batch,yieldFactor};
+}
+
+function tomatoPurchaseFor(groups){
+  const tomatoGroups=groups.filter(g=>g.s?.tomato);
+  if(!tomatoGroups.length)return null;
+  // De afzonderlijke sauzen houden hun eigen maakbatch en recept. Alleen de
+  // gedeelde inkoop van tomaten wordt samengevoegd, zodat drie kleine sauzen
+  // niet automatisch drie vrijwel lege blikken veroorzaken.
+  const batch=tomatoGroups.reduce((sum,g)=>sum+g.batch,0);
+  const tins=Math.max(1,Math.ceil(batch/400));
+  return {batch,tins,buy:tins*400,groupCount:tomatoGroups.length,types:tomatoGroups.map(g=>g.type)};
+}
+function sauceAggregationResult(groups){
+  return {enabled:true,groups,tomatoPurchase:tomatoPurchaseFor(groups)};
+}
+function defaultSaucePerPizza(type){
+  const key=sauces[type]?type:'sanMarzano';
+  return Math.max(1,Math.round(sauces[key].perPizza*toppingScale));
+}
+function manualSaucePerPizza(){
+  const type=sauces[$('sauceType').value]?$('sauceType').value:'sanMarzano';
+  return boundedNum('saucePerPizza',defaultSaucePerPizza(type));
+}
+function refreshManualSaucePlaceholder(){
+  const el=$('saucePerPizza');
+  if(!el)return;
+  el.placeholder=String(defaultSaucePerPizza($('sauceType').value));
+}
+function usesCombinedTomatoPurchase(agg){
+  return !!(agg?.tomatoPurchase && agg.tomatoPurchase.groupCount>1);
+}
+function tomatoPurchaseRowHtml(agg){
+  if(!usesCombinedTomatoPurchase(agg))return '';
+  const p=agg.tomatoPurchase;
+  return `<div class="list-row"><span>${L('Tomaten totaal inkopen','Total tomatoes to buy')}</span><span>${fmt(p.batch,0)} g ${L('nodig','needed')} • ${p.tins}× 400 g</span></div>`;
+}
+function tomatoPurchaseCopyLine(agg){
+  if(!usesCombinedTomatoPurchase(agg))return '';
+  const p=agg.tomatoPurchase;
+  return `• ${copyLang('Tomaten totaal inkopen','Total tomatoes to buy')}: ${fmt(p.batch,0)} g ${copyLang('nodig','needed')} • ${p.tins}x 400 g`;
+}
+
+function aggregateSauceNeeds(c){
+  if(appMode==='dough' || !$('includeSauce').checked) return {enabled:false,groups:[],tomatoPurchase:null};
+
+  // In Deeg + saus is de saus bewust losgekoppeld van pizzarecepten.
+  if(appMode==='sauce' || !$('autoSauceFromPizzas').checked){
+    const type=sauces[$('sauceType').value]?$('sauceType').value:'sanMarzano';
+    const s=sauces[type];
+    const per=manualSaucePerPizza();
+    const count=Math.max(1,c.pizzas);
+    const need=per*count;
+    const b=sauceBatchFor(s,need);
+    return sauceAggregationResult([{
+      type,s,count,need,per,...b,
+      ingredients:s.ingredients(b.batch,count),
+      pizzas:Array.from({length:count},(_,i)=>i+1)
+    }]);
+  }
+
+  ensurePizzaCustomizations();
+  const temp={};
+  pizzaSelections.forEach((id,idx)=>{
+    if(pizzaCustomizations[idx].noSauce) return;
+    const r=recipeById(id), type=effectiveSauceTypeForBall(idx), per=effectiveSauceGramsForBall(idx), s=sauces[type];
+    if(!temp[type]) temp[type]={type,s,count:0,need:0,pizzas:[]};
+    temp[type].count++;
+    temp[type].need+=per;
+    temp[type].pizzas.push(idx+1);
+  });
+
+  const groups=Object.values(temp).map(g=>{
+    const b=sauceBatchFor(g.s,g.need);
+    return {...g,...b,per:null,ingredients:g.s.ingredients(b.batch,g.count)};
+  });
+  return sauceAggregationResult(groups);
+}
+
+function updateRecipeSummary(c){
+  ensurePizzaCustomizations();
+  $('pizzaSummary').innerHTML=pizzaSelections.map((id,idx)=>{
+    const r=recipeById(id),custom=pizzaCustomizations[idx],items=includedItemsForBall(idx);
+    return `<div class="recipebox"><div class="titleline"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeNoteText(r)}</div></div><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)}</span></div><div class="list"><div class="list-row"><span>${L('Aanbevolen saus','Recommended sauce')}</span><span>${custom.noSauce?L('uitgevinkt','unchecked'):`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`}</span></div>${items.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]} ${tUnit(x[2],x[1])}</span></div>`).join('')}</div></div>`;
+  }).join('');
+}
+
+function updateSauceSummary(c){
+  refreshManualSaucePlaceholder();
+  if(appMode==='sauce') $('manualSauceControls').classList.remove('hidden'); else $('manualSauceControls').classList.toggle('hidden',$('autoSauceFromPizzas').checked);
+  const agg=aggregateSauceNeeds(c);
+  if(!agg.enabled){
+    $('sauceSummary').innerHTML=`<div class="info">${L('Sausberekening staat uit.','Sauce calculation is turned off.')}</div>`;
+    return;
+  }
+
+  if(agg.groups.length===0){
+    $('sauceSummary').innerHTML=`<div class="info">${L("Alle saus is voor de gekozen pizza's uitgevinkt.",'Sauce is unticked for all selected pizzas.')}</div>`;
+    return;
+  }
+
+  const sauceGroups=agg.groups.map(g=>`
+    <div class="sauce-group">
+      <h4>${sauceName(g.type)}</h4>
+      <div class="hint" style="margin:0 0 8px">${sauceDesc(g.type)}</div>
+      <div class="list">
+        <div class="list-row"><span>${L("Voor pizza's","For pizzas")}</span><span>${g.pizzas.join(', ')}</span></div>
+        <div class="list-row"><span>${L("Op pizza's nodig","Needed on pizzas")}</span><span>${fmt(g.need,0)} g</span></div>
+        ${g.s.tomato?`<div class="list-row"><span>${L('Maken','Make')}</span><span>${fmt(g.batch,0)} g</span></div>${usesCombinedTomatoPurchase(agg)?'':`<div class="list-row"><span>${L('Kopen','Buy')}</span><span>${g.tins}× 400 g</span></div>`}`:''}
+        ${g.ingredients.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')}
+      </div>
+    </div>`).join('');
+  const combinedPurchase=usesCombinedTomatoPurchase(agg)
+    ? `<div class="sauce-group"><h4>${L('Gezamenlijke tomateninkoop','Combined tomato purchase')}</h4><div class="hint" style="margin:0 0 8px">${L('De sauzen blijven aparte recepten; alleen de inkoop wordt samengevoegd.','The sauces remain separate recipes; only the purchase is combined.')}</div><div class="list">${tomatoPurchaseRowHtml(agg)}</div></div>`
+    : '';
+  $('sauceSummary').innerHTML=sauceGroups+combinedPurchase;
+}
+function buildPizzaCustomize(c){
+  ensurePizzaCustomizations();
+  $('pizzaCustomize').innerHTML=pizzaSelections.map((id,idx)=>{
+    const r=recipeById(id),custom=pizzaCustomizations[idx],after=new Set(r.after||[]),cheese=extraCheeseAdvice(idx,c);
+    const effective=effectiveItemsForRecipe(r,custom.pizzaStyle);
+    const sauceType=effectiveSauceTypeForBall(idx);
+    const sauceG=effectiveSauceGramsForBall(idx);
+
+    const sauceLabel=$('autoSauceFromPizzas').checked
+      ? `${sauceName(sauceType)} • ${sauceG} g`
+      : `${sauceName($('sauceType').value)} • ${fmt(manualSaucePerPizza(),0)} g`;
+
+    const checks=effective.map(x=>{
+      const key=itemKey(x),checked=!custom.excluded[key];
+      return `<label class="ingredient-check"><input type="checkbox" ${checked?'checked':''}
+        onchange='setIngredientIncluded(${idx},${JSON.stringify(key)},this.checked)'>
+        <span>${tItem(x[0])} • ${x[1]} ${tUnit(x[2],x[1])}</span>${after.has(key)?`<span class="after">${currentLang==='en'?'after baking':'na bakken'}</span>`:''}</label>`;
+    }).join('');
+
+    const cheeseNote=cheese.allowed
+      ? (currentLang==='en'
+          ? `${cheese.label}. Roughly ${fmt(cheese.cap,0)} g of cheese before baking is the sensible ceiling at ${fmt(c.stoneTemp,0)} °C.`
+          : `${cheese.label}. Maximaal ongeveer ${fmt(cheese.cap,0)} g kaas vóór het bakken bij ${fmt(c.stoneTemp,0)} °C.`)
+      : L(`Deze pizza zit qua kaas al rond de verstandige bovengrens voor ${fmt(c.stoneTemp,0)} °C.`,`This pizza is already around the sensible upper cheese limit at ${fmt(c.stoneTemp,0)} °C.`);
+
+    const sauceChoice=`<div class="pizza-style-choice compact">
+          <div class="picker-section-title" style="padding-left:0">${L('Saus','Sauce')}</div>
+          <div class="style-segment">
+            ${SAUCE_CHOICES.map(sc=>`<button type="button" class="${sauceType===sc.id?'active':''}" onclick="setPizzaSauceType(${idx},'${sc.id}')">${sauceChoiceLabel(sc,true)}</button>`).join('')}
+          </div>
+        </div>`;
+
+    return `<div class="customize-card">
+      <div class="customize-head"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeTagText(r)}${hasMushroomsRecipe(r)?L(' • 🍄 bevat champignons',' • 🍄 contains mushrooms'):''}</div></div><button class="btn ghost" style="padding:7px 10px" onclick="resetPizzaCustomization(${idx})">${L('Reset toppings','Reset toppings')}</button></div>
+      <div class="pizza-style-choice compact"><div class="style-segment"><button type="button" class="${custom.pizzaStyle!=='nl'?'active':''}" onclick="setPizzaStyle(${idx},'traditional')">🇮🇹 ${L('Traditioneel','Traditional')}</button><button type="button" class="${custom.pizzaStyle==='nl'?'active':''}" onclick="setPizzaStyle(${idx},'nl')">🇳🇱 ${L('NL / afhaal','Dutch takeaway')}</button></div></div>
+      ${sauceChoice}
+      <div class="ingredient-checks"><label class="ingredient-check"><input type="checkbox" ${!custom.noSauce?'checked':''} onchange="setSauceIncluded(${idx},this.checked)"><span>${L('Saus','Sauce')} • ${sauceLabel}</span></label>${checks}</div>
+      <div class="extra-cheese-box ${cheese.allowed?'':'disabled'}"><label><input type="checkbox" ${custom.extraCheese&&cheese.allowed?'checked':''} ${cheese.allowed?'':'disabled'} onchange="setExtraCheese(${idx},this.checked)"><span><b>${cheese.label}</b><br><span class="hint" style="margin:0">${cheeseNote}</span></span></label></div>
+    </div>`;
+  }).join('');
+}
+
+function methodInstructions(c){
+  const f=fmt(c.flour,0),mw=fmt(c.mainWater,0),rw=fmt(c.reserve,0),y=fmt(c.yeast,2),s=fmt(c.salt,0),yn=yeastName(c.yeastType).toLowerCase();
+  const first=c.autolyse
+    ? L(`Meng <b>${f} g bloem</b> met <b>${mw} g water</b>. <b>Nog geen gist of zout.</b>`,
+        `Mix <b>${f} g flour</b> with <b>${mw} g water</b>. <b>No yeast or salt yet.</b>`)
+    : L(`Meng <b>${mw} g water</b> met <b>${y} g ${yn}</b> en voeg <b>${f} g bloem</b> toe.`,
+        `Mix <b>${mw} g water</b> with <b>${y} g ${yn}</b> and add <b>${f} g flour</b>.`);
+  const add=c.autolyse
+    ? L(`Voeg na de rust <b>${y} g ${yn}</b> toe met de gereserveerde <b>${rw} g water</b>. Voeg daarna <b>${s} g zout</b> toe.`,
+        `After the rest, add <b>${y} g ${yn}</b> together with the reserved <b>${rw} g water</b>. Then add <b>${s} g salt</b>.`)
+    : L(`Voeg na de rust <b>${s} g zout</b> en geleidelijk de gereserveerde <b>${rw} g water</b> toe.`,
+        `After the rest, add <b>${s} g salt</b> and gradually the reserved <b>${rw} g water</b>.`);
+
+  const coolTip=(brand)=>L(
+    `<b>${brand}-tip:</b> zet de kom met bloem + water tijdens deze 20 minuten gerust in de koelkast. Zo koelen deeg én metalen kom wat af vóór het kneden, wat helpt om de einddeegtemperatuur te beperken.`,
+    `<b>${brand} tip:</b> feel free to put the bowl with flour + water in the fridge during these 20 minutes. Both the dough and the metal bowl cool down before kneading, which helps keep the final dough temperature in check.`);
+
+  if(currentMethod==='hand') return {
+    mix:first+L(' Meng 2–3 min met de hand tot alle bloem bevochtigd is.',' Mix by hand for 2–3 min until all the flour is hydrated.'),
+    add,
+    knead:L('Kneed daarna ongeveer <b>8–12 min</b> tot het deeg glad en elastisch is.','Then knead for roughly <b>8–12 min</b> until the dough is smooth and elastic.'),
+    note:L('Bij veel weerstand: 5 min rust en daarna verder.','If it resists a lot: rest 5 min, then continue.'),
+    autolyseCooling:''};
+  if(currentMethod==='kenwood') return {
+    mix:first+L(' Meng <b>1½–2 min op MIN/laagste stand</b>.',' Mix for <b>1½–2 min on MIN/lowest speed</b>.'),
+    add,
+    knead:L('Kneed daarna ongeveer <b>4–6 min op lage deegstand</b>.','Then knead for roughly <b>4–6 min on a low dough speed</b>.'),
+    note:L('Kenwood-modellen verschillen; volg de modelspecifieke snelheidslimiet uit jouw handleiding.','Kenwood models differ; follow the model-specific speed limit in your manual.'),
+    autolyseCooling:coolTip('Kenwood')};
+  if(currentMethod==='pro') return {
+    mix:first+L(' Meng <b>1½–2 min op lage snelheid</b>.',' Mix for <b>1½–2 min on low speed</b>.'),
+    add,
+    knead:L('Meng kort laag en gebruik daarna, als jouw machine dat ondersteunt, de hogere kneedstand tot het deeg glad en elastisch is.','Mix briefly on low, then use the higher kneading speed if your machine supports it, until the dough is smooth and elastic.'),
+    note:L('Bij professionele spiraalkneders zijn snelheid en minimale deegmassa modelafhankelijk.','On professional spiral mixers, speed and minimum dough mass depend on the model.'),
+    autolyseCooling:''};
+  return {
+    mix:first+L(' Meng met de haak <b>1½–2 min op stand 1</b>.',' Mix with the hook for <b>1½–2 min on speed 1</b>.'),
+    add,
+    knead:L('Als alles is opgenomen: <b>2–4 min op stand 2</b>.','Once everything is incorporated: <b>2–4 min on speed 2</b>.'),
+    note:L('Voor KitchenAid: blijf bij gistdeeg op maximaal stand 2.','For KitchenAid: stay at speed 2 maximum for yeasted dough.'),
+    autolyseCooling:coolTip('KitchenAid')};
+}
+
+// DDT startwaarden. Dit zijn nadrukkelijk GEEN universele mixerconstanten.
+// Standmixers kunnen afhankelijk van model, snelheid, tijd en deegmassa veel
+// meer warmte inbrengen. Het logboek kan daarom een persoonlijke effectieve
+// correctie afleiden uit jouw werkelijke water- en einddeegtemperatuur.
+// Die effectieve correctie mag ook koeling uit jouw vaste autolyseroutine
+// absorberen: voor herhaalbaarheid is dat nuttiger dan doen alsof het pure
+// mechanische wrijving is.
+const DDT_START_CORRECTION={hand:3,kitchenaid:12,kenwood:12,pro:14};
+const METHOD_LABELS={
+  hand:{nl:'handmatig kneden',en:'hand kneading'},
+  kitchenaid:{nl:'KitchenAid',en:'KitchenAid'},
+  kenwood:{nl:'Kenwood',en:'Kenwood'},
+  pro:{nl:'spiraalkneder',en:'spiral mixer'}
+};
+function methodLabel(method=currentMethod){
+  const x=METHOD_LABELS[method]||METHOD_LABELS.kitchenaid;
+  return currentLang==='en'?x.en:x.nl;
+}
+let bakeLog=[];
+
+function median(values){
+  const a=values.filter(Number.isFinite).slice().sort((x,y)=>x-y);
+  if(!a.length)return null;
+  const m=Math.floor(a.length/2);
+  return a.length%2?a[m]:(a[m-1]+a[m])/2;
+}
+function ddtLogStats(method=currentMethod){
+  const samples=bakeLog
+    .filter(x=>x && x.method===method && x.ddtCorrection!=null && Number.isFinite(Number(x.ddtCorrection)))
+    .map(x=>Number(x.ddtCorrection))
+    .filter(x=>x>=-12&&x<=30)
+    .slice(-8);
+  return {count:samples.length,median:median(samples)};
+}
+function waterTempAdvice(c){
+  // v50: logboekdata verandert het advies bewust NIET automatisch.
+  // De gebruiker kan recept, proces en temperaturen zelf aanpassen; een vorige
+  // bake is daarom context, geen automatische modelparameter.
+  const correction=DDT_START_CORRECTION[currentMethod]??12;
+  const flourT=c.room;
+  const raw=3*c.doughTemp-flourT-c.room-correction;
+  const water=clamp(raw,1,45);
+  return {
+    water,raw,correction,correctionCount:0,calibrated:false,target:c.doughTemp,
+    clamped:Math.abs(raw-water)>0.05,
+    cold:raw<14,
+    hot:raw>32,
+    avpnRange:raw>=16&&raw<=22
+  };
+}
+
+const MIXER_FLOUR_GUIDE={
+  kitchenaid:{label:'KitchenAid 4,8 L',maxFlour:1000,sourceNote:'veelvoorkomende 4,8 L Artisan-referentie'},
+  kenwood:{label:'Kenwood Chef',maxFlour:1300,sourceNote:'gewone Chef-referentie'}
+};
+function mixerCapacityAdvice(c){
+  const g=MIXER_FLOUR_GUIDE[currentMethod];
+  if(!g)return null;
+  const ratio=c.flour/g.maxFlour;
+  return {g,ratio,over:ratio>1,near:ratio>=0.85};
+}
+function buildMixerCapacityNote(c){
+  const box=$('mixerCapacityNote');
+  if(!box)return;
+  const x=mixerCapacityAdvice(c);
+  if(!x){box.innerHTML='';return;}
+  if(!x.near && !x.over){box.innerHTML='';return;}
+  const cls=x.over?'warning':'info';
+  const msg=x.over
+    ? L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem ligt boven de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Verdeel dit deeg bij voorkeur over meerdere mixerbatches of controleer de handleiding van jouw exacte model.`,
+        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour exceeds the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Prefer splitting the dough into multiple mixer batches or check the manual for your exact model.`)
+    : L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem zit dicht bij de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Houd motorgeluid, kombeweging en deegtemperatuur extra in de gaten; exacte modellen verschillen.`,
+        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour is close to the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Watch motor load, bowl movement and dough temperature more closely; exact models differ.`);
+  box.innerHTML=`<div class="${cls}">${msg}</div>`;
+}
+
+// ---------------------------------------------------------------------
+// LIVE FERMENTATIE-AANPASSING (v50)
+// ---------------------------------------------------------------------
+// Vooraf worden gist en tijden gekozen op basis van de DOEL-einddeegtemperatuur
+// en de verwachte koelkasttemperatuur. Na het kneden staat de gist vast.
+// Een werkelijke temperatuurmeting hoort daarom NIET achteraf de gistdosering
+// te veranderen, maar alleen de nog toekomstige fermentatiefasen.
+//
+// Het doel van deze routine is bewust conservatief:
+// 1) neem de oorspronkelijke simulatie als doel voor gasontwikkeling + rijping;
+// 2) gebruik de werkelijk gemeten start-/koelkasttemperatuur;
+// 3) verschuif tijd tussen warme en koude fasen, bij voorkeur zonder de totale
+//    fermentatieduur (en dus een geplande baktijd) te veranderen;
+// 4) zodra de koelkasttemperatuur wordt gemeten, is de bulkfase verleden tijd
+//    en wordt die niet meer herschreven;
+// 5) toon richtbereiken en een visuele eindcheck, geen schijnexacte minuten.
+
+function validMeasured(x,min,max){
+  if(x==null||String(x).trim()==='')return null;
+  const n=Number(x);return Number.isFinite(n)&&n>=min&&n<=max?n:null;
+}
+function liveMeasurementValue(kind){
+  return kind==='doughTemp'?validMeasured(liveMeasurements.doughTemp,10,40):validMeasured(liveMeasurements.fridgeTemp,0,15);
+}
+function setLiveMeasurement(kind,value){
+  const raw=String(value??'').trim();
+  if(kind==='doughTemp') liveMeasurements.doughTemp=raw===''?null:validMeasured(parseFloat(raw),10,40);
+  if(kind==='fridgeTemp') liveMeasurements.fridgeTemp=raw===''?null:validMeasured(parseFloat(raw),0,15);
+  _livePlanCache={key:null,value:null};
+  update();
+  scheduleSave();
+}
+function liveMeasureDisplay(kind){
+  const v=liveMeasurementValue(kind);
+  return v==null?'':fieldNum(v,1);
+}
+function smartHours(h){
+  const x=Math.max(0,Number(h)||0);
+  if(x<2)return `${Math.max(0,Math.round(x*60/5)*5)} min`;
+  return `${fmt(x,2)} ${L('uur','h')}`;
+}
+function liveUncertaintyClass(c,live){
+  const d=live?.measuredDough==null?0:Math.abs(live.measuredDough-c.doughTemp);
+  const f=live?.measuredFridge==null?0:Math.abs(live.measuredFridge-c.fridge);
+  if(d<=1&&f<=.5)return 'small';
+  if(d<=3&&f<=1.5)return 'medium';
+  return 'large';
+}
+function phaseRange(h,c,live,key){
+  const x=Math.max(0,Number(h)||0);
+  const cls=liveUncertaintyClass(c,live);
+  // Coarse UX bands, not measurement precision. Temperature deviation is the
+  // leading factor; cold phases receive a wider window than warm phases.
+  const pads={
+    small:{bulk:.15,ball:.20,cold:.35},
+    medium:{bulk:.30,ball:.40,cold:.75},
+    large:{bulk:.50,ball:.60,cold:1.25}
+  };
+  const pad=(pads[cls]||pads.medium)[key]??.35;
+  return {low:Math.max(0,x-pad),high:x+pad,cls};
+}
+function phasePlanLabel(now,original,c,live,key){
+  if(Math.abs(now-original)<0.08)return `<b>${smartHours(now)}</b>`;
+  const r=phaseRange(now,c,live,key);
+  return `<b>${smartHours(r.low)}–${smartHours(r.high)}</b> <span class="hint" style="display:inline;margin:0">(${L('modelmidden','model midpoint')} ${smartHours(now)} • ${L('was','was')} ${smartHours(original)})</span>`;
+}
+function simulateWithSchedule(c,startTemp,fridgeTemp,b,cold,ball){
+  return simulateFermentation({...c,doughTemp:startTemp,fridge:fridgeTemp,bulk:b,cold,ball});
+}
+function _scheduleCost(sim,target,cand,orig){
+  const gasErr=Math.abs(Math.log(Math.max(.001,sim.gas)/Math.max(.001,target.gas)));
+  const matErr=Math.abs(Math.log(Math.max(.001,sim.maturity)/Math.max(.001,target.maturity)));
+  // Voorkeur: temperatuurafwijkingen eerst opvangen met de bulk/koelkast-overgang.
+  // De laatste bolrijs is culinair belangrijk voor ontspanning en openen en krijgt
+  // daarom een hogere wijzigingsstraf. Dit is een productkeuze, geen natuurwet.
+  const bulkPenalty=.015*Math.abs(cand.bulk-orig.bulk)/Math.max(.75,orig.bulk+.5);
+  const ballPenalty=.080*Math.abs(cand.ball-orig.ball)/Math.max(1,orig.ball);
+  const coldPenalty=.015*Math.abs(cand.cold-orig.cold)/Math.max(4,orig.cold||4);
+  return gasErr+.18*matErr+bulkPenalty+ballPenalty+coldPenalty;
+}
+function _optimizeLiveSchedule(c,startTemp,fridgeTemp,freezeBulk=null){
+  const target=simulateFermentation(c);
+  const orig={bulk:c.bulk,cold:c.ferm==='room'?0:c.cold,ball:c.ball};
+  const total=orig.bulk+orig.cold+orig.ball;
+  let best=null;
+
+  const evalCandidate=(bulk,cold,ball)=>{
+    if(bulk<0||cold<0||ball<0)return;
+    const sim=simulateWithSchedule(c,startTemp,fridgeTemp,bulk,cold,ball);
+    const cand={bulk,cold,ball};
+    const cost=_scheduleCost(sim,target,cand,orig);
+    if(!best||cost<best.cost)best={...cand,sim,cost};
+  };
+
+  if(c.ferm==='room'){
+    const b0=freezeBulk==null?Math.max(0,orig.bulk-3):freezeBulk;
+    const b1=freezeBulk==null?Math.min(total,orig.bulk+3):freezeBulk;
+    for(let b=b0;b<=b1+1e-8;b+=.25)evalCandidate(b,0,Math.max(0,total-b));
+  }else{
+    const b0=freezeBulk==null?Math.max(0,orig.bulk-2):freezeBulk;
+    const b1=freezeBulk==null?Math.min(total,orig.bulk+2):freezeBulk;
+    const ball0=Math.max(0,orig.ball-3),ball1=Math.min(total,orig.ball+3);
+    for(let b=b0;b<=b1+1e-8;b+=.25){
+      for(let ball=ball0;ball<=ball1+1e-8;ball+=.25){
+        const cold=total-b-ball;
+        if(cold>=0)evalCandidate(b,cold,ball);
+      }
+    }
+  }
+
+  return {best,target,total,orig};
+}
+
+const ROOM_TEMP_DEADBAND=1;     // sluit aan op de bestaande small-uncertaintyklasse
+const ROOM_PHASE_MAX_HOURS=48;  // dezelfde grens als de zichtbare bulk-/bolrijsvelden
+
+function solveRoomEquivalentTotal(c,startTemp){
+  const target=simulateFermentation(c);
+  const origTotal=c.bulk+c.ball;
+  const fallbackSim=simulateWithSchedule(c,startTemp,c.fridge,c.bulk,0,c.ball);
+  if(!Number.isFinite(target.gas)||target.gas<=0||!Number.isFinite(origTotal)||origTotal<=0){
+    return {converged:false,reason:'no-target',total:Math.max(0,origTotal||0),bulk:Math.max(0,c.bulk||0),ball:Math.max(0,c.ball||0),sim:fallbackSim,gasRatio:null};
+  }
+
+  const ratio=clamp(c.bulk/origTotal,0,1);
+  const candidate=(total)=>{
+    const bulk=Math.max(0,total*ratio);
+    const ball=Math.max(0,total-bulk);
+    const sim=simulateWithSchedule(c,startTemp,c.fridge,bulk,0,ball);
+    return {total,bulk,ball,sim,gasRatio:sim.gas/target.gas};
+  };
+
+  // Breid de bracket gecontroleerd uit zolang beide room-fasen binnen hun
+  // bestaande 48-uurs productgrens blijven. Een eindpunt is nooit automatisch
+  // een oplossing: convergentie wordt expliciet teruggegeven.
+  const maxByBulk=ratio>0?ROOM_PHASE_MAX_HOURS/ratio:Infinity;
+  const maxByBall=ratio<1?ROOM_PHASE_MAX_HOURS/(1-ratio):Infinity;
+  const maxTotal=Math.max(origTotal,Math.min(maxByBulk,maxByBall));
+  let low=0,high=Math.min(maxTotal,Math.max(origTotal*2.5,origTotal+6));
+  let lo=candidate(low),hi=candidate(high);
+  while(hi.gasRatio<1 && high<maxTotal-1e-8){
+    high=Math.min(maxTotal,Math.max(high*1.6,high+4));
+    hi=candidate(high);
+  }
+  if(lo.gasRatio>1)return {...lo,converged:false,reason:'below-lower-bound'};
+  if(hi.gasRatio<1)return {...hi,converged:false,reason:'above-upper-bound'};
+
+  for(let i=0;i<20;i++){
+    const mid=(low+high)/2;
+    const m=candidate(mid);
+    if(m.gasRatio<1)low=mid;else high=mid;
+  }
+  const solved=candidate((low+high)/2);
+  return {...solved,converged:Number.isFinite(solved.gasRatio)&&Math.abs(solved.gasRatio-1)<=.01,reason:'solved'};
+}
+
+function liveFermentationPlan(c){
+  const md=liveMeasurementValue('doughTemp');
+  const mf=c.ferm==='room'?null:liveMeasurementValue('fridgeTemp');
+  const deadlineKey=[String($('bakeDay')?.value||''),String($('bakeTime')?.value||'')].join('@');
+  const key=[c.ferm,c.bulk,c.cold,c.ball,c.room,c.fridge,c.doughTemp,c.total,c.actualBall,md,mf,currentLang,deadlineKey].join('|');
+  if(_livePlanCache.key===key)return _livePlanCache.value;
+
+  const none=md==null&&mf==null;
+  if(none){
+    const result={active:false,effective:{...c},orig:{bulk:c.bulk,cold:c.cold,ball:c.ball},measuredDough:null,measuredFridge:null,gasRatio:1,maturityRatio:1,gasError:0,changed:false,stage:'plan'};
+    _livePlanCache={key,value:result};return result;
+  }
+
+  const startTemp=md==null?c.doughTemp:md;
+  if(c.ferm==='room'){
+    const target=simulateFermentation(c);
+    const originalSim=simulateWithSchedule(c,startTemp,c.fridge,c.bulk,0,c.ball);
+    const roomDeadband=md!=null&&Math.abs(md-c.doughTemp)<=ROOM_TEMP_DEADBAND;
+    const roomAlternative=roomDeadband?null:solveRoomEquivalentTotal(c,startTemp);
+    const hasDeadline=hasValidBakeDeadline();
+    const useAlternative=!hasDeadline&&roomAlternative?.converged;
+    const b=useAlternative
+      ? {bulk:roomAlternative.bulk,cold:0,ball:roomAlternative.ball,sim:roomAlternative.sim}
+      : {bulk:c.bulk,cold:0,ball:c.ball,sim:originalSim};
+    const gasRatio=b.sim.gas/Math.max(.001,target.gas);
+    const maturityRatio=b.sim.maturity/Math.max(.001,target.maturity);
+    const effective={...c,bulk:Math.max(0,b.bulk),cold:0,ball:Math.max(0,b.ball),doughTemp:startTemp};
+    const changed=Math.abs(effective.bulk-c.bulk)>.08||Math.abs(effective.ball-c.ball)>.08;
+    const result={active:true,effective,orig:{bulk:c.bulk,cold:0,ball:c.ball},measuredDough:md,measuredFridge:null,gasRatio,maturityRatio,gasError:Math.abs(gasRatio-1),changed,stage:'postKnead',roomAlternative,roomDeadband};
+    _livePlanCache={key,value:result};return result;
+  }
+
+  // Alleen een koelkastmeting betekent dat de bulk al vaststaat; in dat geval
+  // is de eerste optimalisatiepass niet nodig. Met beide metingen gebruiken we
+  // die pass wel om de post-knead bulkcorrectie te bevriezen.
+  let first=(mf==null||md!=null)?_optimizeLiveSchedule(c,startTemp,c.fridge,null):null;
+  let freezeBulk=null;
+  // Een werkelijk gemeten koelkasttemperatuur wordt logisch pas gebruikt op het
+  // moment dat de koude fase begint. De bulk is dan al uitgevoerd en blijft staan.
+  if(mf!=null)freezeBulk=(md==null||!first?.best)?c.bulk:first.best.bulk;
+  const solved=mf!=null?_optimizeLiveSchedule(c,startTemp,mf,freezeBulk):first;
+  let b=solved.best||{bulk:c.bulk,cold:c.cold,ball:c.ball,sim:simulateWithSchedule(c,startTemp,mf??c.fridge,c.bulk,c.cold,c.ball)};
+  const target=solved.target;
+  let gasRatio=b.sim.gas/Math.max(.001,target.gas);
+  let maturityRatio=b.sim.maturity/Math.max(.001,target.maturity);
+
+  const effective={...c,bulk:Math.max(0,b.bulk),cold:Math.max(0,b.cold),ball:Math.max(0,b.ball),doughTemp:startTemp,fridge:mf??c.fridge};
+  const changed=Math.abs(effective.bulk-c.bulk)>.08||Math.abs(effective.cold-c.cold)>.08||Math.abs(effective.ball-c.ball)>.08||Math.abs((mf??c.fridge)-c.fridge)>.1;
+  const result={active:true,effective,orig:{bulk:c.bulk,cold:c.cold,ball:c.ball},measuredDough:md,measuredFridge:mf,gasRatio,maturityRatio,gasError:Math.abs(gasRatio-1),changed,stage:mf!=null?'fridge':'postKnead',roomAlternative:null,roomDeadband:false};
+  _livePlanCache={key,value:result};return result;
+}
+function livePlanClass(live,c){
+  const d=live.measuredDough==null?0:Math.abs(live.measuredDough-c.doughTemp);
+  const f=live.measuredFridge==null?0:Math.abs(live.measuredFridge-c.fridge);
+  if(d>4||f>3||live.gasError>.08)return 'hot';
+  if(d>1.5||f>1||live.changed)return 'warn';
+  return '';
+}
+function livePlanChangesHtml(c,live){
+  const e=live.effective,o=live.orig;
+  const chip=(label,n,old)=>`<span class="live-plan-chip${Math.abs(n-old)>.08?' changed':''}">${label}: ${smartHours(n)}${Math.abs(n-old)>.08?` • ${L('was','was')} ${smartHours(old)}`:''}</span>`;
+  let out=chip(L('bulk','bulk'),e.bulk,o.bulk);
+  if(c.ferm!=='room')out+=chip(L('koelkast','fridge'),e.cold,o.cold);
+  out+=chip(L('eindrijs','final proof'),e.ball,o.ball);
+  return `<div class="live-plan-changes">${out}</div>`;
+}
+function livePlanSummaryHtml(c,live,context='dough'){
+  if(!live.active)return '';
+  const cls=livePlanClass(live,c);
+  const d=live.measuredDough;
+  const f=live.measuredFridge;
+  let intro='';
+  if(context==='dough'&&d!=null){
+    const diff=d-c.doughTemp;
+    intro=Math.abs(diff)<=1
+      ? L(`Gemeten <b>${fmt(d,1)} °C</b>: dit ligt dicht bij het doel van ${fmt(c.doughTemp,1)} °C; er is weinig reden om het schema te verschuiven.`,
+          `Measured <b>${fmt(d,1)} °C</b>: this is close to the ${fmt(c.doughTemp,1)} °C target; there is little reason to shift the schedule.`)
+      : L(`Gemeten <b>${fmt(d,1)} °C</b> versus doel <b>${fmt(c.doughTemp,1)} °C</b>. De gist zit al in het deeg en blijft dus onveranderd; alleen de resterende tijden worden herschikt.`,
+          `Measured <b>${fmt(d,1)} °C</b> versus a <b>${fmt(c.doughTemp,1)} °C</b> target. The yeast is already in the dough and therefore stays unchanged; only the remaining times are rearranged.`);
+  }else if(context==='fridge'&&f!=null){
+    intro=L(`Werkelijk gemiddeld <b>${fmt(f,1)} °C</b> versus gepland <b>${fmt(c.fridge,1)} °C</b>. De bulk ligt nu achter je; alleen de nog resterende koude fase en eindrijs worden aangepast.`,
+            `Actual average <b>${fmt(f,1)} °C</b> versus planned <b>${fmt(c.fridge,1)} °C</b>. The bulk phase is now in the past; only the remaining cold phase and final proof are adjusted.`);
+  }else intro=L('Live fermentatiecorrectie actief.','Live fermentation correction is active.');
+  const mat=Math.abs(live.maturityRatio-1)>.10
+    ? L(` <b>Let op:</b> de geschatte rijpingsindex wijkt ondanks de tijdcorrectie ongeveer ${fmt(Math.abs(live.maturityRatio-1)*100,0)}% af; kijk extra naar deegsterkte en volume.`,
+        ` <b>Note:</b> the estimated maturation index still differs by about ${fmt(Math.abs(live.maturityRatio-1)*100,0)}%; pay extra attention to dough strength and volume.`)
+    : '';
+  let residual='';
+  if(c.ferm==='room'&&live.roomDeadband){
+    residual=L(
+      ` De afwijking valt binnen de praktische meetmarge van ${fmt(ROOM_TEMP_DEADBAND,0)} °C. Het oorspronkelijke bulk- en bolrijsschema blijft daarom bewust ongewijzigd.`,
+      ` The difference is within the practical ${fmt(ROOM_TEMP_DEADBAND,0)} °C measurement margin. The original bulk and final-proof schedule therefore deliberately remains unchanged.`);
+  }else if(c.ferm==='room'&&live.roomAlternative&&!live.roomAlternative.converged){
+    residual=L(
+      ` <b>Geen betrouwbare tijdoplossing:</b> het oorspronkelijke gasdoel kan binnen de toegestane room-fasetijden niet worden bereikt. Verander de omgevingstemperatuur en gebruik tijd alleen als brede richtlijn; deegvolume, spanning en uiterlijk blijven leidend.`,
+      ` <b>No reliable timing solution:</b> the original gas target cannot be reached within the allowed room-phase durations. Change the ambient temperature and use time only as a broad guide; dough volume, tension and appearance remain decisive.`);
+  }else if(c.ferm==='room'&&live.roomAlternative){
+    const alt=live.roomAlternative,origTotal=live.orig.bulk+live.orig.ball;
+    const delta=alt.total-origTotal;
+    const hasDeadline=hasValidBakeDeadline();
+    if(hasDeadline){
+      residual=L(
+        ` Binnen volledig kamertemperatuurschema kun je de afwijking niet zinvol alleen tussen bulk en eindrijs verschuiven. Hetzelfde gasdoel ligt met deze gemeten starttemperatuur rond <b>${smartHours(alt.total)}</b> totaal (${delta<0?`ongeveer ${smartHours(Math.abs(delta))} eerder`:`ongeveer ${smartHours(delta)} later`}). Omdat je een baktijd hebt gekozen verandert de calculator die deadline niet stilzwijgend; fermenteer koeler of beoordeel het deeg eerder.`,
+        ` In an all-room-temperature schedule, the deviation cannot be usefully corrected just by shifting time between bulk and final proof. With this measured starting temperature, the same gas target is around <b>${smartHours(alt.total)}</b> total (${delta<0?`about ${smartHours(Math.abs(delta))} earlier`:`about ${smartHours(delta)} later`}). Because you set a bake time, the calculator does not silently move that deadline; ferment cooler or inspect the dough earlier.`);
+    }else{
+      residual=L(
+        ` Bij volledig kamertemperatuurfermenteren is totale tijd de sterke knop. Het schema is daarom naar ongeveer <b>${smartHours(alt.total)}</b> totale fermentatie verschoven; de oorspronkelijke bulk/eindrijs-verhouding blijft zoveel mogelijk behouden.`,
+        ` With all-room-temperature fermentation, total time is the strong control. The schedule is therefore shifted to roughly <b>${smartHours(alt.total)}</b> total fermentation while preserving the original bulk/final-proof ratio as much as possible.`);
+    }
+  }else if(live.gasError>.06){
+    residual=L(' De oorspronkelijke gasontwikkelingsdoelstelling kan binnen dezelfde totale fermentatietijd niet netjes worden gematcht; gebruik de tijden als brede richtlijn en beoordeel het deeg eerder.',' The original gas-development target cannot be matched cleanly within the same total fermentation time; use the timings as a broad guide and inspect the dough earlier.');
+  }else{
+    residual=L(' De totale fermentatieduur blijft zoveel mogelijk gelijk; tijd wordt vooral tussen warme en koude fasen verschoven.',' Total fermentation duration is kept the same as much as possible; time is mainly shifted between warm and cold phases.');
+  }
+  return `<div class="live-plan-summary ${cls}">${intro}${residual}${mat}${livePlanChangesHtml(c,live)}</div>`;
+}
+function doughMeasurementControl(c,live){
+  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemeten direct na kneden (°C)','Actually measured directly after kneading (°C)')}<input class="field" type="number" min="10" max="40" step="0.5" value="${liveMeasureDisplay('doughTemp')}" placeholder="${fmt(c.doughTemp,1)}" onchange="setLiveMeasurement('doughTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Doel: ${fmt(c.doughTemp,1)} °C • leeg = oorspronkelijk plan.`,`Target: ${fmt(c.doughTemp,1)} °C • blank = original plan.`)}</div></div>${live.measuredDough!=null?livePlanSummaryHtml(c,live,'dough'):''}</div>`;
+}
+function fridgeMeasurementControl(c,live){
+  if(c.ferm==='room')return '';
+  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemiddelde koelkasttemp. bij het deeg (°C)','Actual average refrigerator temp. where the dough sits (°C)')}<input class="field" type="number" min="0" max="15" step="0.5" value="${liveMeasureDisplay('fridgeTemp')}" placeholder="${fmt(c.fridge,1)}" onchange="setLiveMeasurement('fridgeTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Gepland: ${fmt(c.fridge,1)} °C • weet je het niet, laat leeg.`,`Planned: ${fmt(c.fridge,1)} °C • leave blank if unknown.`)}</div></div>${live.measuredFridge!=null?livePlanSummaryHtml(c,live,'fridge'):''}</div>`;
+}
+function phaseAdjustmentDetail(c,live,key){
+  if(!live.active)return '';
+  const now=live.effective[key],old=live.orig[key];
+  if(Math.abs(now-old)<.08)return '';
+  const labels={bulk:L('Aangepaste bulk','Adjusted bulk'),cold:L('Aangepaste koude fase','Adjusted cold phase'),ball:L('Aangepaste eindrijs','Adjusted final proof')};
+  return `${labels[key]}: ${phasePlanLabel(now,old,c,live,key)}. ${L('De bandbreedte wordt ruimer naarmate de gemeten temperaturen verder van het plan liggen; het uiterlijk en de spanning van het deeg blijven leidend.','The range widens as measured temperatures move further from plan; dough appearance and tension remain the final guide.')}`;
+}
+
+function stepStorageKey(title){
+  return encodeURIComponent(
+    String(title)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9]+/g,'-')
+      .replace(/^-+|-+$/g,'')
+  );
+}
+
+// Vinkjes hingen aan de titel van een stap. "Beleggen • bol 1" bleef daardoor
+// aangevinkt als je bol 1 een ander recept gaf. Stappen hebben nu een stabiel
+// semantisch id waarin het recept of saustype verwerkt zit.
+let _stepKeys=[];
+function step(n,title,text,detail='',id=null){
+  const key=id?('s-'+id):stepStorageKey(title);
+  _stepKeys.push(key);
+  const checked=!!completedSteps[key];
+  return `<div class="step-card${checked?' completed':''}" data-step-key="${key}">
+    <label class="step-check" title="${currentLang==='en'?'Mark step complete':'Stap afvinken'}">
+      <input type="checkbox" data-step-key="${key}" ${checked?'checked':''} onchange="toggleStepComplete(this)">
+      <span class="step-check-mark"></span>
+    </label>
+    <div class="num">${n}</div>
+    <div class="step-content"><h3>${title}</h3><p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
+  </div>`;
+}
+
+function toggleStepComplete(input){
+  const key=input?.dataset?.stepKey;
+  if(!key)return;
+  if(input.checked)completedSteps[key]=true;
+  else delete completedSteps[key];
+  input.closest('.step-card')?.classList.toggle('completed',input.checked);
+  updateStepProgress();
+  saveState();
+}
+
+function updateStepProgress(){
+  const cards=[...document.querySelectorAll('#stepsList .step-card')];
+  const total=cards.length;
+  const done=cards.filter(card=>card.querySelector('.step-check input:checked')).length;
+  const text=$('stepsProgressText'),bar=$('stepsProgressBar');
+  if(text)text.textContent=currentLang==='en'
+    ? `${done} of ${total} steps completed`
+    : `${done} van ${total} stappen afgerond`;
+  if(bar)bar.style.width=total?`${done/total*100}%`:'0%';
+}
+
+function clearStepProgress(){
+  completedSteps={};
+  document.querySelectorAll('#stepsList .step-check input').forEach(input=>input.checked=false);
+  document.querySelectorAll('#stepsList .step-card').forEach(card=>card.classList.remove('completed'));
+  updateStepProgress();
+  saveState();
+}
+
+function pruneCompletedStepState(){
+  if(_deferDependentStatePrune)return false;
+  const liveKeys=new Set(_stepKeys);
+  let prunedAny=false;
+  Object.keys(completedSteps).forEach(key=>{
+    if(!liveKeys.has(key)){
+      delete completedSteps[key];
+      prunedAny=true;
+    }
+  });
+  if(prunedAny)saveState();
+  return prunedAny;
+}
+
+function fermentationSteps(c,startIndex,live){
+  let i=startIndex,arr=[];
+  const p=live.effective;
+  const skipBulk=p.bulk<0.10;
+  const skipBulkReason=(live.active&&live.orig.bulk>=0.10&&live.effective.bulk<0.10)
+    ? L('De warme bulk is door de live temperatuurcorrectie praktisch vervallen. ','The warm bulk has effectively disappeared because of the live temperature correction. ')
+    : L('In dit schema is geen aparte warme bulk gepland. ','No separate warm bulk is planned in this schedule. ');
+  const bulkTxt=L(`Laat de hele deegmassa ongeveer <b>${smartHours(p.bulk)}</b> bij ongeveer ${fmt(c.room,1)} °C afgedekt staan.`,
+                  `Leave the whole dough mass covered for about <b>${smartHours(p.bulk)}</b> at roughly ${fmt(c.room,1)} °C.`);
+  const coldBulkTxt=L(`Zet de deegmassa ongeveer <b>${smartHours(p.cold)}</b> bij gemiddeld ${fmt(p.fridge,1)} °C in de koelkast.`,
+                      `Put the dough mass in the refrigerator for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`);
+  const shapeTxt=L(`Verdeel in <b>${c.pizzas} bollen van ongeveer ${fmt(c.actualBall,1)} g</b> en bol strak maar voorzichtig op.`,
+                   `Divide into <b>${c.pizzas} balls of about ${fmt(c.actualBall,1)} g</b> and shape them tightly but gently.`);
+  const shapeShort=L(`Verdeel in <b>${c.pizzas} bollen van ongeveer ${fmt(c.actualBall,1)} g</b>.`,
+                     `Divide into <b>${c.pizzas} balls of about ${fmt(c.actualBall,1)} g</b>.`);
+  const fridgeControl=fridgeMeasurementControl(c,live);
+
+  if(c.ferm==='hybrid'){
+    if(!skipBulk)arr.push(step(i++,L('Bulkrijs op kamertemperatuur','Bulk proof at room temperature'),bulkTxt,phaseAdjustmentDetail(c,live,'bulk'),'bulk'));
+    arr.push(step(i++,skipBulk?L('Direct koud zetten','Refrigerate immediately'):L('Koude fermentatie als één massa','Cold fermentation as one mass'),
+      skipBulk
+        ? L(`Sla de warme bulk over en zet de deegmassa direct ongeveer <b>${smartHours(p.cold)}</b> bij gemiddeld ${fmt(p.fridge,1)} °C in de koelkast.`,
+            `Skip the warm bulk and refrigerate the dough mass immediately for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`)
+        : coldBulkTxt,
+      `${skipBulk?skipBulkReason:''}${phaseAdjustmentDetail(c,live,'cold')}${fridgeControl}`,'cold'));
+    arr.push(step(i++,L('Verdelen en opbollen','Divide and shape'),shapeTxt,'','shape'));
+    arr.push(step(i++,L('Bolrijs','Ball proof'),L(`Laat de bollen ongeveer <b>${smartHours(p.ball)}</b> bij ongeveer ${fmt(c.room,1)} °C verder rijzen.`,`Let the balls continue proofing for about <b>${smartHours(p.ball)}</b> at roughly ${fmt(c.room,1)} °C.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
+  }else if(c.ferm==='room'){
+    if(!skipBulk)arr.push(step(i++,L('Bulkrijs op kamertemperatuur','Bulk proof at room temperature'),bulkTxt,phaseAdjustmentDetail(c,live,'bulk'),'bulk'));
+    arr.push(step(i++,skipBulk?L('Direct verdelen en opbollen','Divide and shape immediately'):L('Verdelen en opbollen','Divide and shape'),
+      skipBulk
+        ? L(`Sla de warme bulk over en verdeel het deeg direct in <b>${c.pizzas} bollen van ongeveer ${fmt(c.actualBall,1)} g</b>.`,
+            `Skip the warm bulk and immediately divide the dough into <b>${c.pizzas} balls of about ${fmt(c.actualBall,1)} g</b>.`)
+        : shapeShort,
+      skipBulk?skipBulkReason.trim():'','shape'));
+    arr.push(step(i++,L('Bolrijs op kamertemperatuur','Ball proof at room temperature'),L(`Laat de bollen nog ongeveer <b>${smartHours(p.ball)}</b> bij ongeveer ${fmt(c.room,1)} °C rijzen.`,`Let the balls proof for roughly another <b>${smartHours(p.ball)}</b> at about ${fmt(c.room,1)} °C.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
+  }else{
+    if(!skipBulk)arr.push(step(i++,L('Korte bulkrijs','Short bulk proof'),bulkTxt,phaseAdjustmentDetail(c,live,'bulk'),'bulk'));
+    arr.push(step(i++,skipBulk?L('Direct verdelen en opbollen','Divide and shape immediately'):L('Verdelen en opbollen','Divide and shape'),
+      skipBulk
+        ? L(`Sla de warme bulk over en verdeel direct in <b>${c.pizzas} bollen van ongeveer ${fmt(c.actualBall,1)} g</b>.`,
+            `Skip the warm bulk and immediately divide into <b>${c.pizzas} balls of about ${fmt(c.actualBall,1)} g</b>.`)
+        : shapeShort,
+      skipBulk?skipBulkReason.trim():'','shape'));
+    arr.push(step(i++,L('Koude fermentatie als bollen','Cold fermentation as balls'),L(`Zet de afgedekte bollen ongeveer <b>${smartHours(p.cold)}</b> bij gemiddeld ${fmt(p.fridge,1)} °C in de koelkast.`,`Put the covered balls in the refrigerator for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`),`${phaseAdjustmentDetail(c,live,'cold')}${fridgeControl}`,'cold'));
+    arr.push(step(i++,L('Laatste opwarming / eindrijs','Final warm-up / final proof'),L(`Haal de bollen ongeveer <b>${smartHours(p.ball)}</b> voor het bakken uit de koelkast.`,`Take the balls out of the refrigerator about <b>${smartHours(p.ball)}</b> before baking.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
+  }
+  return {html:arr,next:i};
+}
+
+function buildSteps(c){
+  ensurePizzaCustomizations();
+  const m=methodInstructions(c),aggSauce=aggregateSauceNeeds(c),bake=stoneProfile(c.stoneTemp),live=liveFermentationPlan(c);
+  const oilText=c.o>0?L(` Voeg <b>${fmt(c.oil,0)} g olijfolie</b> pas tegen het einde van het kneden toe.`,` Add <b>${fmt(c.oil,0)} g olive oil</b> only towards the end of the kneading.`):'';
+  let i=1,steps=[];
+  _stepKeys=[];
+  const wt=waterTempAdvice(c);
+  const waterTempExtra=wt.cold
+    ? L(' Dit advies gebruikt relatief koud water. Een korte koude autolyse kan de einddeegtemperatuur nog verder drukken; meet daarom na het kneden en stuur daarna op tijd, niet op extra gist.',
+        ' This guidance uses relatively cold water. A short refrigerated autolyse can lower final dough temperature further; measure after kneading and then adjust time, not yeast.')
+    : (wt.hot
+        ? L(' Dit advies gebruikt relatief warm water. Meet de einddeegtemperatuur extra zorgvuldig en gebruik nooit heet water om een afwijking blind te compenseren.',
+            ' This guidance uses relatively warm water. Measure final dough temperature carefully and never use hot water to blindly compensate for a deviation.')
+        : '');
+  const waterLine=L(
+      `Streef naar <b>${fmt(c.doughTemp,1)} °C</b> einddeegtemperatuur. De DDT-berekening gebruikt voor ${methodLabel()} een vaste praktische startcorrectie van <b>${fmt(wt.correction,1)} °C</b> en komt uit op ongeveer <b>${fmt(wt.water,0)} °C water</b>`,
+      `Aim for a final dough temperature of <b>${fmt(c.doughTemp,1)} °C</b>. The DDT calculation uses a fixed practical starting correction of <b>${fmt(wt.correction,1)} °C</b> for ${methodLabel()} and estimates roughly <b>${fmt(wt.water,0)} °C water</b>`)
+    +(wt.clamped?L(' (praktisch begrensd)',' (practically capped)'):'')+'.'
+    +L(' Logboekmetingen worden bewaard als referentie maar veranderen dit advies in v50 bewust niet automatisch.',
+       ' Log measurements are kept as reference but deliberately do not automatically change this guidance in v50.')
+    +waterTempExtra
+    +(wt.water>=40?L(' Gebruik geen water ≥40 °C voor gistdeeg; koel het eerst terug.',' Do not use water ≥40 °C for yeasted dough; cool it first.'):'')
+    +(($('preset').value==='avpnMid'&&!wt.avpnRange)?L(` Voor de AVPN-preset blijft de officiële 16–22 °C waterrange de primaire referentie.`,
+      ` For the AVPN preset, the official 16–22 °C water range remains the primary reference.`):'');
+  steps.push(step(i++,L('Weeg de ingrediënten','Weigh the ingredients'),
+    L(`Bloem <b>${fmt(c.flour,0)} g</b> • water <b>${fmt(c.water,0)} g</b> • zout <b>${fmt(c.salt,0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,2)} g</b>${c.o>0?` • olie <b>${fmt(c.oil,0)} g</b>`:''}.`,
+      `Flour <b>${fmt(c.flour,0)} g</b> • water <b>${fmt(c.water,0)} g</b> • salt <b>${fmt(c.salt,0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,2)} g</b>${c.o>0?` • oil <b>${fmt(c.oil,0)} g</b>`:''}.`),
+    L(`Houd ongeveer <b>${fmt(c.reserve,0)} g water</b> apart voor na de rust. ${waterLine}`,
+      `Hold back about <b>${fmt(c.reserve,0)} g water</b> for after the rest. ${waterLine}`),'weigh'));
+  steps.push(step(i++,L('Eerste menging','First mix'),m.mix,'','mix'));
+  steps.push(step(
+    i++,
+    c.autolyse?L('Autolyse (bloem + water) • 20 min','Autolyse (flour + water) • 20 min'):L('Hydratatierust • 20 min','Hydration rest • 20 min'),
+    c.autolyse
+      ? L(`Dek de kom af en laat <b>20 minuten</b> rusten.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`,
+          `Cover the bowl and rest for <b>20 minutes</b>.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`)
+      : L('Dek de kom af en laat <b>20 minuten</b> staan.','Cover the bowl and leave it for <b>20 minutes</b>.'),
+    c.autolyse
+      ? L('Alleen bloem + water tijdens deze rust. Een koude autolyse van 20 minuten is geen probleem; hydratatie en glutenontwikkeling gaan gewoon door, alleen iets rustiger.',
+          'Flour + water only during this rest. A cold 20-minute autolyse is fine; hydration and gluten development continue, just a little slower.')
+      : L('De gist zit al in het deeg; dit is dus geen klassieke autolyse.','The yeast is already in the dough, so this is not a classic autolyse.'),
+    'rest'
+  ));
+  steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+' '+m.knead+oilText,m.note,'knead'));
+  steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
+    L('Stop wanneer het deeg gladder, soepel en elastisch is en redelijk dun kan uitrekken voordat het scheurt.','Stop when the dough is smoother, supple and elastic, and can stretch reasonably thin before tearing.'),
+    L('Een perfecte windowpane is niet nodig.','A perfect windowpane is not required.'),'devcheck'));
+  const sci=yeastRecommendation(c);
+  steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
+    L(`Doel vóór het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden in het midden van de deegmassa.`,
+      `Target before kneading: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (default target)':''}. Now measure directly after kneading in the centre of the dough mass.`),
+    `${L('De gist zit nu al in het deeg. Een afwijkende meting verandert daarom <b>niet</b> achteraf de gistdosering; de calculator past alleen de nog toekomstige fermentatietijden aan.','The yeast is already in the dough. A different measurement therefore does <b>not</b> retroactively change the yeast dose; the calculator only adjusts the future fermentation timings.')}${doughMeasurementControl(c,live)}`,'doughtemp'));
+  const fs=fermentationSteps(c,i,live);steps.push(...fs.html);i=fs.next;
+  steps.push(step(i++,L('Kijk naar het deeg, niet alleen naar de klok','Watch the dough, not just the clock'),
+    L(`Richtwaarde bulk: <b>${sci.rise.bulk}</b>. Voor het bakken: <b>${sci.rise.final}</b>.`,
+      `Target for bulk: <b>${sci.rise.bulk}</b>. Before baking: <b>${sci.rise.final}</b>.`),
+    L(`Bij duidelijk sneller of trager rijzen mag je de tijd aanpassen; temperatuur, bloem en gistpartij verschillen in de praktijk.`,
+      `If it rises clearly faster or slower, adjust the timing; temperature, flour and yeast batch all vary in practice.`),'visual'));
+
+  if(aggSauce.enabled){
+    if(usesCombinedTomatoPurchase(aggSauce)){
+      const p=aggSauce.tomatoPurchase;
+      steps.push(step(i++,L('Koop tomaten voor de sauzen','Buy tomatoes for the sauces'),
+        L(`Voor de afzonderlijke sausrecepten is samen <b>${fmt(p.batch,0)} g</b> tomaat nodig. Koop <b>${p.tins}× 400 g</b>; de sausrecepten en maakbatches blijven apart.`,
+          `The separate sauce recipes need <b>${fmt(p.batch,0)} g</b> of tomatoes in total. Buy <b>${p.tins}× 400 g</b>; the recipes and batches remain separate.`),
+        '', 'sauce-tomato-purchase'));
+    }
+    aggSauce.groups.forEach(g=>{
+      const buyPart=g.s.tomato && !usesCombinedTomatoPurchase(aggSauce)?` ${L('en koop','and buy')} <b>${g.tins}× 400 g</b>`:'';
+      steps.push(step(i++,`${L('Maak','Make')} ${sauceName(g.type)}`,`${sauceDesc(g.type)} ${L("Nodig voor pizza's",'Needed for pizzas')} <b>${g.pizzas.join(', ')}</b>: ${L('ongeveer','roughly')} <b>${fmt(g.need,0)} g</b>${g.s.tomato?` • ${L('maak','make')} <b>${fmt(g.batch,0)} g</b>${buyPart}`:''}.`,g.ingredients.map(x=>`${tItem(x[0])}: ${x[1]}`).join(' • '),`sauce-${g.type}`));
+    });
+  }
+
+  steps.push(step(i++,L('Breng de steen op temperatuur','Bring the stone up to temperature'),
+    L(`Mik op een <b>steentemperatuur van ${fmt(c.stoneTemp,0)} °C</b>.`,`Aim for a <b>stone temperature of ${fmt(c.stoneTemp,0)} °C</b>.`),bake.note,'stone'));
+  const openNotes=[];
+  if(c.targetDiameter>PEEL_DIAMETER+0.01)openNotes.push(L(
+    `Op je 12"-schep (${fmt(PEEL_DIAMETER,1)} cm) is ${fmt(c.targetDiameter,1)} cm krap; bestuif goed en lanceer in één vloeiende beweging.`,
+    `On your 12" peel (${fmt(PEEL_DIAMETER,1)} cm), ${fmt(c.targetDiameter,1)} cm is tight; dust well and launch in one smooth motion.`));
+  if(c.targetDiameter>OVEN_DIAMETER+0.01)openNotes.push(L(
+    `${fmt(c.targetDiameter,1)} cm is groter dan het huidige 14"-Koda-2-profiel (${fmt(OVEN_DIAMETER,1)} cm). Dit is een bewuste override, geen blokkade: controleer fysiek je oven/opstelling.`,
+    `${fmt(c.targetDiameter,1)} cm is larger than the current 14" Koda 2 profile (${fmt(OVEN_DIAMETER,1)} cm). This is a deliberate override, not a block: physically verify your oven/setup.`));
+  const peelNote=openNotes.length?' '+openNotes.join(' '):'';
+  steps.push(step(i++,L('Open de deegbol','Open the dough ball'),
+    L(`Bestuif licht met bloem of semola. Druk vanuit het midden naar buiten en laat de buitenste <b>${fmt(1.5*Math.sqrt(toppingScale),1)}–${fmt(2*Math.sqrt(toppingScale),1)} cm</b> zoveel mogelijk met rust. ${c.byWeight ? `Met dit bolgewicht en deze deegstijl kom je als richtwaarde op ongeveer <b>${fmt(c.targetDiameter,1)} cm</b>.` : `Rek uit tot ongeveer <b>${fmt(c.targetDiameter,1)} cm</b>.`}`,
+      `Dust lightly with flour or semola. Press outwards from the centre and leave the outer <b>${fmt(1.5*Math.sqrt(toppingScale),1)}–${fmt(2*Math.sqrt(toppingScale),1)} cm</b> alone as much as possible. ${c.byWeight ? `With this ball weight and dough style you should land at roughly <b>${fmt(c.targetDiameter,1)} cm</b>.` : `Stretch to roughly <b>${fmt(c.targetDiameter,1)} cm</b>.`}`)+peelNote,'','open'));
+
+  if(appMode==='sauce' && aggSauce.enabled && aggSauce.groups.length){
+    const g=aggSauce.groups[0];
+    steps.push(step(i++,L('Saus aanbrengen','Apply the sauce'),`${L('Verdeel ongeveer','Spread roughly')} <b>${fmt(g.per??manualSaucePerPizza(),0)} g ${sauceName(g.type)}</b> ${L('per pizza. Laat de buitenste rand vrij.','per pizza. Leave the outer rim clear.')}`,L('Gebruik liever iets te weinig dan te veel; overtollige saus maakt de bodem sneller zacht.','Use slightly too little rather than too much; excess sauce softens the base.'),`sauceapply-${g.type}`));
+  }
+
+  if(appMode==='full') pizzaSelections.forEach((rid,idx)=>{
+    const r=recipeById(rid);
+    const custom=pizzaCustomizations[idx];
+    const items=includedItemsForBall(idx);
+    const before=items.filter(x=>!(r.after||[]).includes(itemKey(x)));
+    const after=items.filter(x=>(r.after||[]).includes(itemKey(x)));
+    const cheese=extraCheeseAdvice(idx,c);
+
+    let parts=[];
+    if(!custom.noSauce){
+      const sauceText=$('autoSauceFromPizzas').checked
+        ? `${sauceName(effectiveSauceTypeForBall(idx))} ${effectiveSauceGramsForBall(idx)} g`
+        : `${sauceName($('sauceType').value)} ${fmt(manualSaucePerPizza(),0)} g`;
+      parts.push(sauceText);
+    }
+    parts.push(...before.map(x=>`${tItem(x[0])} ${x[1]} ${tUnit(x[2],x[1])}`));
+    if(custom.extraCheese && cheese.allowed) parts.push(`${cheese.name} +${fmt(cheese.amount,0)} g extra`);
+
+    let topping=`<b>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)} • ${pizzaStyleLabel(custom.pizzaStyle)}</b>: ${parts.length?parts.join(' • '):L('geen toppings vóór het bakken','no toppings before baking')}.`;
+    if(after.length)topping+=` <b>${L('Na het bakken:','After baking:')}</b> ${after.map(x=>`${tItem(x[0])} ${x[1]} ${tUnit(x[2],x[1])}`).join(' • ')}.`;
+    // Het recept-id zit in de sleutel, zodat een ander recept ook een vers vinkje krijgt.
+    steps.push(step(i++,`${L('Beleggen • bol','Top • ball')} ${idx+1}`,topping,`${recipeNoteText(r)} • ${L('Temperatuuradvies','Temperature guidance')}: ${recipeTempFor(rid).low}–${recipeTempFor(rid).high} °C ${L('steen','stone')}.`,`top-${idx}-${rid}-${custom.pizzaStyle}`));
+  });
+  steps.push(step(i++,L('Bakken','Bake'),
+    L(`Bak bij deze steentemperatuur als startpunt ongeveer <b>${bake.time}</b> en draai <b>${bake.turn}</b>.`,
+      `At this stone temperature, bake for roughly <b>${bake.time}</b> as a starting point and turn <b>${bake.turn}</b>.`),
+    L(`Steentemperatuur is de basis; vlam/bovenwarmte en hoeveelheid beleg blijven mede bepalend. Voor ${c.pizzas} ${c.pizzas===1?'pizza':"pizza's"} achter elkaar: reken op ongeveer <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minuten</b> totale baksessie.`,
+      `Stone temperature is the basis; flame/top heat and the amount of topping matter too. For ${c.pizzas} ${c.pizzas===1?'pizza':'pizzas'} in a row, allow roughly <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minutes</b> for the full baking session.`),'bake'));
+  $('stepsList').innerHTML=steps.join('');
+  // Vinkjes van stappen die niet meer bestaan opruimen, zodat ze niet
+  // eeuwig in localStorage blijven staan en later verkeerd terugkomen.
+  pruneCompletedStepState();
+  updateStepProgress();
+
+  $('recipeBadges').innerHTML=[
+    `<span class="badge">🌾 ${fmt(c.flour,0)} g ${L('bloem','flour')}</span>`,
+    `<span class="badge">💧 ${fmt(c.water,0)} g ${L('water','water')}</span>`,
+    `<span class="badge">🧂 ${fmt(c.salt,0)} g ${L('zout','salt')}</span>`,
+    `<span class="badge">🫧 ${fmtFixed(c.yeast,2)} g ${yeastShort(c.yeastType)}</span>`,
+    `<span class="badge">${c.autolyse?L('✅ autolyse','✅ autolyse'):L('↪️ hydratatierust','↪️ hydration rest')}</span>`,
+    `<span class="badge">🍕 ${c.pizzas} × ${fmt(c.actualBall,0)} g</span>`
+  ].join('');
+}
+
+function niceDate(d){
+  // Maandnaam in plaats van cijfers: 20/08 is voor een Engelstalige lezer
+  // dubbelzinnig, zeker naast getallen die in en-US worden opgemaakt.
+  return new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'nl-NL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(d);
+}
+
+// Op de nacht van de zomertijd bestaat 02:30 niet; setHours schuift dan
+// stilzwijgend een uur op. Dat signaleren we in plaats van te verbergen.
+let _bakeTimeShifted=false;
+function selectedBakeDate(){
+  const dayRaw=$('bakeDay')?.value||'';
+  const timeRaw=$('bakeTime')?.value||'';
+  if(!dayRaw||!timeRaw)return null;
+
+  const offset=Number(dayRaw);
+  if(!Number.isFinite(offset)||offset<0||offset>3)return null;
+
+  _bakeTimeShifted=false;
+  const parts=timeRaw.split(':').map(Number);
+  if(parts.length<2||!Number.isFinite(parts[0])||!Number.isFinite(parts[1]))return null;
+
+  const now=new Date();
+  const bake=new Date(now);
+  bake.setDate(now.getDate()+offset);
+  bake.setHours(parts[0],parts[1],0,0);
+  if(bake.getHours()!==parts[0]) _bakeTimeShifted=true;
+  return bake;
+}
+
+function hasValidBakeDeadline(){
+  const bake=selectedBakeDate();
+  return bake instanceof Date && Number.isFinite(bake.getTime());
+}
+
+
+function floorQuarter(h){
+  return Math.max(0,Math.floor(Number(h)*4+1e-9)/4);
+}
+function durationLabel(hours){
+  const totalMin=Math.max(0,Math.round(Number(hours)*60));
+  const h=Math.floor(totalMin/60),m=totalMin%60;
+  if(currentLang==='en'){
+    if(h&&m)return `${h} h ${m} min`;
+    if(h)return `${h} h`;
+    return `${m} min`;
+  }
+  if(h&&m)return `${h} u ${m} min`;
+  if(h)return `${h} u`;
+  return `${m} min`;
+}
+function deadlineScheduleStart(c,bake){
+  return new Date(bake.getTime()-(fermentationHours(c)+prepHours())*3600000);
+}
+function deadlineRecommendation(c,bake){
+  const now=new Date();
+  const until=(bake.getTime()-now.getTime())/3600000;
+  const currentStart=deadlineScheduleStart(c,bake);
+
+  if(until<=0)return {status:'past',until,currentStart};
+
+  // Een schema dat past, past — ook binnen vier uur. Vroeger stuurde de
+  // 4-uursvloer je naar de supermarkt terwijl je eigen korte schema haalbaar was.
+  if(currentStart.getTime()>=now.getTime())return {status:'fits',until,currentStart};
+
+  // Praktische kwaliteitsvloer van deze calculator.
+  // Onder 4 uur vanaf nu adviseren we geen vers pizzadeeg.
+  // Dit is geen biologische absolute grens: gist kan sneller gas maken,
+  // maar gasproductie is niet hetzelfde als een goed gerijpt pizzadeeg.
+  if(until<4)return {status:'tooShort',until,currentStart,usable:Math.max(0,until-0.75)};
+
+  // Voorbereiding volgens kneedmethode + 15 min praktische startbuffer.
+  const usable=floorQuarter(until-(prepHours()+0.25));
+
+  let plan;
+  if(until<6){
+    plan={ferm:'room',bulk:1,ball:Math.max(2,usable-1),cold:0,room:27,
+      labelNl:'nood-same-day rijs',labelEn:'emergency same-day proof'};
+  }else if(until<8){
+    plan={ferm:'room',bulk:1.5,ball:Math.max(3.5,usable-1.5),cold:0,room:25,
+      labelNl:'korte same-day rijs',labelEn:'short same-day proof'};
+  }else if(until<12){
+    plan={ferm:'room',bulk:2,ball:Math.max(5,usable-2),cold:0,room:23,
+      labelNl:'same-day rijs',labelEn:'same-day proof'};
+  }else if(until<18){
+    plan={ferm:'room',bulk:3,ball:Math.max(7,usable-3),cold:0,room:21,
+      labelNl:'lange kamertemperatuurrijs',labelEn:'long room-temperature proof'};
+  }else{
+    plan={ferm:'hybrid',bulk:1,cold:Math.max(0,usable-5),ball:4,room:21,
+      labelNl:'koude fermentatie',labelEn:'cold fermentation'};
+  }
+
+  plan.bulk=floorQuarter(plan.bulk);
+  plan.cold=floorQuarter(plan.cold);
+  plan.ball=floorQuarter(plan.ball);
+
+  const planC={...c,ferm:plan.ferm,bulk:plan.bulk,cold:plan.cold,ball:plan.ball,room:plan.room};
+  const advice=yeastRecommendation(planC);
+  const yeastGrams=(c.flour||600)*advice.selected/100;
+  const planStart=deadlineScheduleStart(planC,bake);
+
+  let level='good';
+  if(until<6)level='hot';
+  else if(until<8)level='warn';
+
+  return {status:'adjust',until,currentStart,usable,plan,planC,advice,yeastGrams,planStart,level};
+}
+
+function buildDeadlineAdvice(c){
+  const box=$('deadlineAdvice');
+  const bake=selectedBakeDate();
+  if(!box)return;
+
+  if(!bake){
+    box.className='deadline-advice hidden';
+    box.innerHTML='';
+    return;
+  }
+
+  const r=deadlineRecommendation(c,bake);
+  box.classList.remove('hidden','good','warn','hot');
+  const nl=currentLang!=='en';
+  const target=niceDate(bake);
+
+  if(r.status==='past'){
+    box.classList.add('hot');
+    box.innerHTML=`
+      <div class="deadline-title"><b>${nl?'⛔ Gekozen baktijd is al voorbij':'⛔ Selected bake time has already passed'}</b></div>
+      <div class="deadline-plan">${nl?'Kies vandaag een later tijdstip, of kies morgen.':'Choose a later time today, or select tomorrow.'}</div>`;
+    return;
+  }
+
+  if(r.status==='fits'){
+    box.classList.add('good');
+    box.innerHTML=`
+      <div class="deadline-title"><b>${nl?'✅ Huidige planning past':'✅ Current schedule fits'}</b><span class="tag">${target}</span></div>
+      <div class="deadline-metrics">
+        <div class="deadline-mini"><span>${nl?'Beschikbaar':'Available'}</span><b>${durationLabel(r.until)}</b></div>
+        <div class="deadline-mini"><span>${nl?'Schema vraagt':'Schedule needs'}</span><b>${durationLabel(fermentationHours(c)+0.5)}</b></div>
+        <div class="deadline-mini"><span>${nl?'Uiterlijk starten':'Latest start'}</span><b>${niceDate(r.currentStart)}</b></div>
+      </div>
+      <div class="deadline-plan">${nl?'Je huidige fermentatiemethode, tijden en gistadvies kunnen zo blijven.':'Your current fermentation method, timings and yeast guidance can remain unchanged.'}</div>`;
+    return;
+  }
+
+  if(r.status==='tooShort'){
+    box.classList.add('hot');
+    box.innerHTML=`
+      <div class="deadline-title"><b>${nl?'⚠️ Zeer weinig tijd':'⚠️ Very little time'}</b><span class="tag">${target}</span></div>
+      <div class="deadline-metrics">
+        <div class="deadline-mini"><span>${nl?'Beschikbaar':'Available'}</span><b>${durationLabel(r.until)}</b></div>
+        <div class="deadline-mini"><span>${nl?'Na mengen nog over':'After mixing'}</span><b>${durationLabel(Math.max(0,r.usable))}</b></div>
+        <div class="deadline-mini"><span>${nl?'Huidig schema':'Current schedule'}</span><b>${durationLabel(fermentationHours(c)+0.5)}</b></div>
+      </div>
+      <div class="deadline-plan">${nl
+        ? '<b>Plan B:</b> dit is korter dan de 4-uurs kwaliteitsvloer van deze calculator. Gist kan biologisch sneller gas maken, maar voor pizzadeeg willen we niet doen alsof “meer gist” hetzelfde is als rijping. 🏃 Tijd om naar de supermarkt te lopen voor vers pizzadeeg of een goede bodem — óf de baktijd later te zetten.'
+        : '<b>Plan B:</b> this is shorter than this calculator’s 4-hour quality floor. Yeast can biologically produce gas faster, but for pizza dough we do not pretend that “more yeast” is the same as maturation. 🏃 Time for supermarket fresh dough or a good ready-made base — or move the bake time later.'}</div>`;
+    return;
+  }
+
+  const p=r.plan;
+  box.classList.add(r.level||'warn');
+  const methodLabel=nl?p.labelNl:p.labelEn;
+  const phaseText=p.ferm==='room'
+    ? `${nl?'bulk':'bulk'} ${fmt(p.bulk,2)} ${nl?'u':'h'} + ${nl?'bolrijs':'ball proof'} ${fmt(p.ball,2)} ${nl?'u':'h'} @ ${fmt(p.room,0)} °C`
+    : `${nl?'bulk':'bulk'} ${fmt(p.bulk,2)} ${nl?'u':'h'} + ${nl?'koelkast':'refrigerator'} ${fmt(p.cold,2)} ${nl?'u':'h'} + ${nl?'bolrijs':'ball proof'} ${fmt(p.ball,2)} ${nl?'u':'h'}`;
+
+  box.innerHTML=`
+    <div class="deadline-title"><b>${nl?'🛠️ Huidig schema past niet, maar dit kan wel':'🛠️ Current schedule does not fit, but this can work'}</b><span class="tag">${target}</span></div>
+    <div class="deadline-metrics">
+      <div class="deadline-mini"><span>${nl?'Beschikbaar':'Available'}</span><b>${durationLabel(r.until)}</b></div>
+      <div class="deadline-mini"><span>${nl?'Aanpak':'Approach'}</span><b>${methodLabel}</b></div>
+      <div class="deadline-mini"><span>${nl?'Gistadvies':'Yeast guidance'}</span><b>± ${fmt(r.yeastGrams,2)} g ${yeastShort(c.yeastType)}</b></div>
+    </div>
+    <div class="deadline-plan">
+      <b>${nl?'Voorgesteld schema':'Suggested schedule'}:</b> ${phaseText}.<br>
+      ${nl?'Start rond':'Start around'} <b>${niceDate(r.planStart)}</b>.
+      ${p.ferm==='room' && p.room>c.room ? `<br>${nl?'Gebruik voor de rijs een warme plek rond':'Use a warm proofing spot around'} <b>${fmt(p.room,0)} °C</b>.` : ''}
+      ${r.until<8 ? `<br><b>${nl?'Let op':'Note'}:</b> ${nl
+        ? 'dit is een korte same-day variant en dus een kwaliteitscompromis. Vanaf ongeveer 8 uur sluit de planning beter aan bij gangbare room-temperature pizzarijping; lange koude fermentatie ontwikkelt anders.'
+        : 'this is a short same-day version and therefore a quality compromise. From roughly 8 hours onward, the schedule aligns better with common room-temperature pizza proofing; long cold fermentation develops differently.'}` : ''}
+    </div>
+    <div class="deadline-apply">
+      <button class="btn secondary" type="button" onclick="applyDeadlinePlan()">${nl?'Planning toepassen':'Apply schedule'}</button>
+    </div>`;
+}
+
+function applyDeadlinePlan(){
+  const bake=selectedBakeDate();
+  if(!bake)return;
+  const c=calc();
+  const r=deadlineRecommendation(c,bake);
+  if(r.status!=='adjust'||!r.plan)return;
+
+  const p=r.plan;
+  suppressCustom=true;
+  $('fermentationMethod').value=p.ferm==='room'?'room':'hybrid';
+  $('coldStorageMode').value='bulk';
+  $('bulkHours').value=p.bulk;
+  $('coldHours').value=p.cold;
+  $('ballHours').value=p.ball;
+  $('roomTemp').value=p.room;
+  suppressCustom=false;
+
+  exactOverride=exactOverride||{h:selectedHydration(),s:selectedSalt(),o:selectedOil(),ySelected:selectedYeastPct()};
+  exactOverride.ySelected=r.advice.selected;
+  $('yeastPct').value=fieldNum(r.advice.selected,3);
+  markCustom(false);
+  update();
+}
+
+// Kritieke voorbereiding vóór de fermentatie: elapsed time, niet actieve arbeid.
+function prepHours(){
+  return currentMethod==='hand' ? 0.75 : 0.6;
+}
+
+// Actieve voorbereiding is iets anders dan doorlooptijd: wegen, mengen/kneden,
+// opbollen, saus en mise-en-place. Dit blijft bewust een praktische RANGE.
+function activePrepMinutes(c){
+  let low=currentMethod==='hand'?18:10;
+  let high=currentMethod==='hand'?28:18;
+  low+=Math.max(3,c.pizzas*0.7);
+  high+=Math.max(5,c.pizzas*1.4);
+  if(appMode!=='dough' && $('includeSauce').checked){
+    const agg=aggregateSauceNeeds(c);
+    const groups=agg.enabled?agg.groups:[];
+    low+=groups.length*4;
+    high+=groups.length*8+groups.filter(g=>g.s&&g.s.cooked).length*5;
+  }
+  if(appMode==='full'){
+    low+=c.pizzas*2;
+    high+=c.pizzas*4;
+  }
+  return {low:Math.round(low),high:Math.round(high)};
+}
+
+// Baksessie = echte tijd om alle pizza's achter elkaar te beleggen/lanceren,
+// bakken en tussendoor de steen wat te laten herstellen. Geen enkel vast
+// herstelgetal past iedere oven, daarom tonen we een bereik.
+function bakeSessionRange(c){
+  const b=stoneProfile(c.stoneTemp);
+  const lowSec=c.pizzas*(b.secLow+60);
+  const highSec=c.pizzas*(b.secHigh+90);
+  return {
+    low:Math.max(1,Math.round(lowSec/60)),
+    high:Math.max(1,Math.round(highSec/60)),
+    mid:Math.max(1,Math.round((lowSec+highSec)/120))
+  };
+}
+
+function timelineTotalHours(c){
+  // Voorbereiding + de ingestelde fermentatiefasen.
+  // Voorverwarmen loopt normaal parallel met de laatste rijs en telt dus
+  // niet nogmaals bovenop de kritieke doorlooptijd.
+  return prepHours() + fermentationHours(c);
+}
+
+function buildTimeline(c){
+  const live=liveFermentationPlan(c);
+  const plannedC=c;
+  c=live.effective;
+  const bake=selectedBakeDate();
+  const totalHours=timelineTotalHours(c);
+  const totalLabel=durationLabel(totalHours);
+
+  if(!bake){
+    const ifStartNow=new Date(Date.now()+totalHours*3600000);
+    let rows=[
+      [L('Wegen, mengen, rust & kneden','Weighing, mixing, rest & kneading'),`±${Math.round(prepHours()*60)} min`],
+      [L('Bulk buiten','Bulk at room temp'),`${fmt(c.bulk,2)} ${L('u','h')} @ ${fmt(c.room,1)} °C`]
+    ];
+    if(c.ferm!=='room'){
+      rows.push([
+        c.ferm==='coldBalls'?L('Koelkast als bollen','Fridge as balls'):L('Koelkast als één massa','Fridge as one mass'),
+        `${fmt(c.cold,1)} ${L('u','h')} @ ${fmt(c.fridge,1)} °C`
+      ]);
+    }
+    rows.push([
+      c.ferm==='coldBalls'?L('Laatste opwarming','Final warm-up'):L('Bolrijs buiten','Ball proof at room temp'),
+      `${fmt(c.ball,2)} ${L('u','h')} @ ${fmt(c.room,1)} °C`
+    ]);
+    rows.push([L('Voorverwarmen','Preheat'),L(`${fmt(c.preheat,0)} min • loopt normaal parallel met de laatste rijs`,`${fmt(c.preheat,0)} min • normally overlaps the final proof`)]);
+    const bakeRange=bakeSessionRange(c),active=activePrepMinutes(c);
+    rows.push([L('Baksessie','Baking session'),L(`± ${bakeRange.low}–${bakeRange.high} min voor ${c.pizzas} ${c.pizzas===1?'pizza':"pizza's"} • komt ná de deegdoorlooptijd`,`± ${bakeRange.low}–${bakeRange.high} min for ${c.pizzas} ${c.pizzas===1?'pizza':'pizzas'} • comes after the dough lead time`)]);
+
+    const summary=`
+      <div class="timeline-summary">
+        <div class="timeline-summary-item primary">
+          <span>${currentLang==='en'?'Total lead time':'Totale doorlooptijd'}</span>
+          <b>± ${totalLabel}</b>
+        </div>
+        <div class="timeline-summary-item">
+          <span>${currentLang==='en'?'If you start now':'Als je nu begint'}</span>
+          <b>${niceDate(ifStartNow)}</b>
+        </div>
+        <div class="timeline-summary-item">
+          <span>${currentLang==='en'?'Active preparation':'Actieve voorbereiding'}</span>
+          <b>± ${active.low}–${active.high} min</b>
+        </div>
+        <div class="timeline-summary-item">
+          <span>${currentLang==='en'?'Baking session':'Baksessie'}</span>
+          <b>± ${bakeRange.low}–${bakeRange.high} min</b>
+        </div>
+      </div>
+      <div class="timeline-explain">${currentLang==='en'
+        ? `This is the elapsed time from starting the dough until it is ready to bake. The ${fmt(c.preheat,0)} minute preheat normally overlaps the final proof, so it is shown but not added twice.`
+        : `Dit is de verstreken tijd van starten met het deeg tot klaar om te bakken. De ${fmt(c.preheat,0)} minuten voorverwarmen vallen normaal binnen de laatste rijs en worden daarom niet dubbel bij de totale tijd opgeteld.`}</div>`;
+
+    const liveNote=live.active?`<div class="${livePlanClass(live,plannedC)==='hot'?'warning':'info'} timeline-deadline-warning">${L('Tijdlijn gebruikt de live gemeten temperatuurcorrectie. De gistdosering blijft die van het oorspronkelijke recept.','Timeline uses the live measured-temperature correction. The yeast dose remains the one from the original recipe.')}</div>`:'';
+    $('timeline').innerHTML=liveNote+summary+rows.map(x=>`<div class="timeitem"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+    return;
+  }
+
+  const preheat=new Date(bake.getTime()-c.preheat*60000);
+  const prepMs=prepHours()*3600000;
+  const bakeRange=bakeSessionRange(c);
+  const active=activePrepMinutes(c);
+  const bakeMin=bakeRange.mid;
+  const bakeDoneLow=new Date(bake.getTime()+bakeRange.low*60000);
+  const bakeDoneHigh=new Date(bake.getTime()+bakeRange.high*60000);
+  let events=[],startTime;
+
+  if(c.ferm==='hybrid'){
+    const ballStart=new Date(bake.getTime()-c.ball*3600000);
+    const fridgeIn=new Date(ballStart.getTime()-c.cold*3600000);
+    startTime=new Date(fridgeIn.getTime()-c.bulk*3600000-prepMs);
+    events=[
+      [L('Begin met deeg','Start the dough'),startTime],
+      [L('Koelkast in • één massa','Into the fridge • one mass'),fridgeIn],
+      [L('Verdelen/opbollen','Divide/shape'),ballStart]
+    ];
+  }else if(c.ferm==='room'){
+    const ballStart=new Date(bake.getTime()-c.ball*3600000);
+    startTime=new Date(ballStart.getTime()-c.bulk*3600000-prepMs);
+    events=[
+      [L('Begin met deeg','Start the dough'),startTime],
+      [L('Verdelen/opbollen','Divide/shape'),ballStart]
+    ];
+  }else{
+    const fridgeOut=new Date(bake.getTime()-c.ball*3600000);
+    const fridgeIn=new Date(fridgeOut.getTime()-c.cold*3600000);
+    startTime=new Date(fridgeIn.getTime()-c.bulk*3600000-prepMs);
+    events=[
+      [L('Begin met deeg','Start the dough'),startTime],
+      [L('Opbollen + koelkast','Shape + fridge'),fridgeIn],
+      [L('Koelkast uit','Out of the fridge'),fridgeOut]
+    ];
+  }
+  events.push([L('Start voorverwarmen','Start preheating'),preheat]);
+  events.push([L('Eerste pizza in de oven','First pizza in the oven'),bake]);
+  // Chronologisch sorteren: bij een lange voorverwarmtijd en een korte bolrijs
+  // stond 'start voorverwarmen' anders ná een later moment in de lijst.
+  events.sort((a,b)=>a[1]-b[1]);
+  const rows=events.map(e=>[e[0],niceDate(e[1])]);
+  if(c.pizzas>1) rows.push([
+    L(`Laatste van ${c.pizzas} pizza's klaar • schatting`,`Last of ${c.pizzas} pizzas done • estimate`),
+    `${niceDate(bakeDoneLow)} – ${niceDate(bakeDoneHigh)}`
+  ]);
+
+  const now=new Date();
+  const dstWarning=_bakeTimeShifted
+    ? `<div class="warning timeline-deadline-warning">${currentLang==='en'
+        ? 'The chosen clock time does not exist on that night (daylight saving change); it has been moved forward by one hour.'
+        : 'Het gekozen tijdstip bestaat die nacht niet (overgang naar zomertijd); het is een uur naar voren geschoven.'}</div>`
+    : '';
+  const warning=(bake>now && startTime<now)
+    ? `<div class="warning timeline-deadline-warning">${currentLang==='en'
+        ? 'This timeline would already have had to start. Use the planning advice in the dough step to generate a feasible alternative.'
+        : 'Deze tijdlijn had al moeten beginnen. Gebruik bij de deegstap het planningsadvies om een haalbaar alternatief te maken.'}</div>`
+    : (bake<=now
+        ? `<div class="warning timeline-deadline-warning">${currentLang==='en'?'The selected bake time has already passed.':'De gekozen baktijd is al voorbij.'}</div>`
+        : '');
+
+  const summary=`
+    <div class="timeline-summary">
+      <div class="timeline-summary-item primary">
+        <span>${currentLang==='en'?'Start the dough':'Begin met deeg'}</span>
+        <b>${niceDate(startTime)}</b>
+      </div>
+      <div class="timeline-summary-item">
+        <span>${currentLang==='en'?'Bake':'Bakken'}</span>
+        <b>${niceDate(bake)}</b>
+      </div>
+      <div class="timeline-summary-item">
+        <span>${currentLang==='en'?'Total lead time':'Totale doorlooptijd'}</span>
+        <b>± ${totalLabel}</b>
+      </div>
+      <div class="timeline-summary-item">
+        <span>${currentLang==='en'?'Fermentation':'Fermentatie'}</span>
+        <b>${durationLabel(fermentationHours(c))}</b>
+      </div>
+      <div class="timeline-summary-item">
+        <span>${currentLang==='en'?'Active preparation':'Actieve voorbereiding'}</span>
+        <b>± ${active.low}–${active.high} min</b>
+      </div>
+      <div class="timeline-summary-item">
+        <span>${currentLang==='en'?'Baking session':'Baksessie'}</span>
+        <b>± ${bakeRange.low}–${bakeRange.high} min</b>
+      </div>
+    </div>`;
+
+  const liveNote=live.active?`<div class="${livePlanClass(live,plannedC)==='hot'?'warning':'info'} timeline-deadline-warning">${L('Deze planning is herberekend met de werkelijk gemeten temperatuurdata; de gistdosering blijft onveranderd.','This plan has been recalculated using the actual measured temperature data; the yeast dose remains unchanged.')}</div>`:'';
+  $('timeline').innerHTML=dstWarning+warning+liveNote+summary+rows.map(x=>`<div class="timeitem"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+}
+
+// Eén label voor sausbedragen, zodat boodschappenlijst, modal en kopieertekst
+// niet drie verschillende antwoorden geven op dezelfde vraag.
+function sauceAmountLabel(g,agg=null){
+  const nl=currentLang!=='en';
+  const base=`${fmt(g.need,0)} g ${nl?"op pizza's":'on pizzas'}`;
+  if(!g.s.tomato) return base;
+  const cook=g.yieldFactor&&g.yieldFactor<1?` ${nl?'(incl. inkoken)':'(incl. reduction)'}`:'';
+  const buy=usesCombinedTomatoPurchase(agg)?'':` • ${nl?'kopen':'buy'} ${g.tins}× 400 g`;
+  return `${base} • ${nl?'maken':'make'} ${fmt(g.batch,0)} g${cook}${buy}`;
+}
+
+function buildShopping(c){
+  const aggSauce=aggregateSauceNeeds(c);
+
+  if(appMode==='sauce'){
+    const groups=aggSauce.enabled ? aggSauce.groups : [];
+    if(!groups.length){
+      $('shoppingList').innerHTML=`<div class="hint">${L('Saus meerekenen staat uit.','Include sauce is turned off.')}</div>`;
+      return;
+    }
+    $('shoppingList').innerHTML=groups.map(g=>`<div class="recipebox">
+      <div class="titleline"><h3>${sauceName(g.type)}</h3><span class="tag">${c.pizzas} ${L("pizza's",'pizzas')}</span></div>
+      <div class="list">
+        <div class="list-row"><span>${L("Nodig op pizza's",'Needed on pizzas')}</span><span>${fmt(g.need,0)} g</span></div>
+        ${g.s.tomato?`<div class="list-row"><span>${L('Maken','Make')}</span><span>${fmt(g.batch,0)} g${g.yieldFactor&&g.yieldFactor<1?L(' rauw (incl. inkoken)',' raw (incl. reduction)'):''}</span></div>${usesCombinedTomatoPurchase(aggSauce)?'':`<div class="list-row"><span>${L('Kopen','Buy')}</span><span>${g.tins}× 400 g</span></div>`}`:''}
+        ${g.ingredients.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')}
+      </div>
+    </div>`).join('')+(usesCombinedTomatoPurchase(aggSauce)?`<div class="recipebox"><div class="titleline"><h3>${L('Gezamenlijke tomateninkoop','Combined tomato purchase')}</h3></div><div class="list">${tomatoPurchaseRowHtml(aggSauce)}</div></div>`:'');
+    return;
+  }
+
+  ensurePizzaSelections();
+  const totals={};
+  ensurePizzaCustomizations();
+  pizzaSelections.forEach((id,idx)=>{
+    includedItemsForBall(idx).forEach(x=>{
+      const key=`${x[0]}|${x[2]}`;
+      if(!totals[key]) totals[key]={name:x[0],unit:x[2],qty:0};
+      totals[key].qty+=x[1];
+    });
+    const cheese=extraCheeseAdvice(idx,c);
+    if(pizzaCustomizations[idx].extraCheese && cheese.allowed){
+      const key=`${cheese.name}|g`;
+      if(!totals[key]) totals[key]={name:cheese.name,unit:'g',qty:0};
+      totals[key].qty+=cheese.amount;
+    }
+  });
+
+  const pizzaCounts=aggregatePizzaCounts();
+  const pizzaRows=Object.entries(pizzaCounts).map(([id,count])=>{
+    const r=recipeById(id);
+    return `<div class="list-row"><span>${recipeNameText(r)}</span><span>${count}×</span></div>`;
+  }).join('');
+  const ingredientRows=Object.values(totals).map(x=>`<div class="list-row"><span>${tItem(x.name)}</span><span>${fmt(x.qty,x.qty<2?1:0)} ${tUnit(x.unit,x.qty)}</span></div>`).join('');
+  const sauceRows=aggSauce.enabled?aggSauce.groups.map(g=>`<div class="list-row"><span>${sauceName(g.type)}</span><span>${sauceAmountLabel(g,aggSauce)}</span></div>`).join(''):'';
+  const tomatoPurchaseRow=tomatoPurchaseRowHtml(aggSauce);
+  // De sub-ingrediënten van de saus (knoflook, oregano, zout, olie) stonden
+  // alleen in het stappenplan en ontbraken volledig op de boodschappenlijst.
+  const sauceIngredientRows=aggSauce.enabled?aggSauce.groups.map(g=>
+    g.ingredients.map(x=>`<div class="list-row sub"><span>↳ ${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')
+  ).join(''):'';
+
+  $('shoppingList').innerHTML=`<div class="recipebox">
+    <div class="titleline"><h3>${c.pizzas} ${L("pizza's",'pizzas')}</h3><span class="tag">${L('gemengd','mixed')}</span></div>
+    <div class="list">${pizzaRows}</div><hr><div class="list">${sauceRows}${tomatoPurchaseRow}${sauceIngredientRows}${ingredientRows}</div>
+  </div>`;
+}
+
+function buildStoneAdvice(c){
+  const b=stoneProfile(c.stoneTemp),rt=selectedRecipeTempAdvice();
+  $('stoneBakeAdvice').textContent=`${fmt(c.stoneTemp,0)} °C ${L('steen','stone')} • ${b.time}`;
+  $('stoneBakeDetail').textContent=`${L('Draaien','Turning')}: ${b.turn}. ${b.note}`;
+
+  const oilRange=b.oilLow===b.oilHigh ? `${fmt(b.oilLow,1)}%` : `${fmt(b.oilLow,1)}–${fmt(b.oilHigh,1)}%`;
+  const current=c.o;
+  let verdict='';
+  if(current<b.oilLow-.01) verdict=L(`Je huidige ${fmt(current,1)}% olie ligt onder het richtbereik.`,`Your current ${fmt(current,1)}% oil is below the guideline range.`);
+  else if(current>b.oilHigh+.01) verdict=L(`Je huidige ${fmt(current,1)}% olie ligt boven het richtbereik.`,`Your current ${fmt(current,1)}% oil is above the guideline range.`);
+  else verdict=L(`Je huidige ${fmt(current,1)}% olie past bij dit temperatuurbereik.`,`Your current ${fmt(current,1)}% oil fits this temperature range.`);
+  $('oilAdviceBox').innerHTML=`<b>${L('Olijfolieadvies','Olive oil guidance')}:</b> ${oilRange} ${L('van de bloem bij ongeveer','of the flour at about')} ${fmt(c.stoneTemp,0)} °C. ${verdict}`;
+
+  const common=rt.hasCommon
+    ? L(`Voor alle gekozen pizza's is <b>${rt.commonLow}–${rt.commonHigh} °C</b> een gezamenlijk goed bereik. Adviesknop kiest ${rt.suggested} °C.`,
+        `For all selected pizzas, <b>${rt.commonLow}–${rt.commonHigh} °C</b> is a shared good range. The advice button picks ${rt.suggested} °C.`)
+    : L(`De gekozen pizza's hebben geen volledig overlappend ideaal bereik. Een praktisch compromis is <b>±${rt.suggested} °C</b>.`,
+        `The selected pizzas have no fully overlapping ideal range. A practical compromise is <b>±${rt.suggested} °C</b>.`);
+  const rows=rt.rows.map(x=>{
+    let cls='status-good',status=L('✓ binnen bereik','✓ within range');
+    if(c.stoneTemp<x.low){cls='status-warn';status=L(`↑ liever ${x.low}–${x.high} °C`,`↑ prefers ${x.low}–${x.high} °C`);}
+    else if(c.stoneTemp>x.high){cls='status-hot';status=L(`↓ liever ${x.low}–${x.high} °C`,`↓ prefers ${x.low}–${x.high} °C`);}
+    return `<div class="list-row"><span>${L('Bol','Ball')} ${x.i} • ${recipeNameText(x.r)}</span><span class="${cls}">${status}</span></div>`;
+  }).join('');
+  $('recipeTempAdvice').innerHTML=`<div class="titleline"><div><h3>${L("Temperatuuradvies voor je pizza's",'Temperature guidance for your pizzas')}</h3><div class="hint" style="margin:0">${common}</div></div><span class="tag">${L('steen','stone')}</span></div><div class="list">${rows}</div>`;
+
+  const sizeOverride=c.targetDiameter>OVEN_DIAMETER+0.01
+    ? L(` <b>Diameteroverride:</b> ${fmt(c.targetDiameter,1)} cm ligt boven het huidige 14″ Koda-2-profiel van ${fmt(OVEN_DIAMETER,1)} cm; dit blokkeert de berekening bewust niet.`,
+        ` <b>Diameter override:</b> ${fmt(c.targetDiameter,1)} cm exceeds the current 14″ Koda 2 profile of ${fmt(OVEN_DIAMETER,1)} cm; the calculator deliberately does not block it.`)
+    : '';
+  $('ovenCard').innerHTML=`<div class="stats"><div class="stat"><span>${L('Steentemperatuur','Stone temperature')}</span><b>${fmt(c.stoneTemp,0)} °C</b></div><div class="stat"><span>${L('Baktijd startpunt','Bake time starting point')}</span><b>${b.time}</b></div><div class="stat"><span>${L('Draaien','Turning')}</span><b>${b.turn}</b></div></div><div class="info">${b.note} <b>${L('Olijfolie','Olive oil')}:</b> ${L('richtwaarde','guideline')} ${oilRange}. ${L('Hardwareprofiel: Ooni Koda 2 • 14″ oven • 12″ schep. Steentemperatuur is leidend; bovenwarmte/vlam blijft wel invloed houden.','Hardware profile: Ooni Koda 2 • 14″ oven • 12″ peel. Stone temperature is the lead variable; top heat/flame still matters.')}${sizeOverride}</div>`;
+}
+
+function applyOilAdvice(){
+  const c=calc(),b=stoneProfile(c.stoneTemp);
+  exactOverride=exactOverride||{h:selectedHydration(),s:selectedSalt(),o:selectedOil(),ySelected:selectedYeastPct()};
+  exactOverride.o=b.targetOil;
+  $('oilPct').value=roundTo(b.targetOil,.5).toFixed(1);
+  markCustom(false);
+  update();
+}
+
+function applyRecipeTempAdvice(){
+  const a=selectedRecipeTempAdvice();
+  $('stoneTemp').value=a.suggested;
+  update();
+}
+
+function ingredientsCombinedHTML(c){
+  ensurePizzaSelections();
+  const aggSauce=aggregateSauceNeeds(c),totals={};
+  ensurePizzaCustomizations();
+  pizzaSelections.forEach((id,idx)=>{
+    includedItemsForBall(idx).forEach(x=>{
+      const key=`${x[0]}|${x[2]}`;
+      if(!totals[key])totals[key]={name:x[0],unit:x[2],qty:0};
+      totals[key].qty+=x[1];
+    });
+    const cheese=extraCheeseAdvice(idx,c);
+    if(pizzaCustomizations[idx].extraCheese && cheese.allowed){
+      const key=`${cheese.name}|g`;
+      if(!totals[key])totals[key]={name:cheese.name,unit:'g',qty:0};
+      totals[key].qty+=cheese.amount;
+    }
+  });
+  const toppingRows=Object.values(totals).map(x=>`<div class="list-row"><span>${tItem(x.name)}</span><span>${fmt(x.qty,x.qty<2?1:0)} ${tUnit(x.unit,x.qty)}</span></div>`).join('');
+  const sauceRows=aggSauce.enabled?aggSauce.groups.map(g=>`<div class="list-row"><span>${sauceName(g.type)}</span><span>${sauceAmountLabel(g,aggSauce)}</span></div>`).join(''):'';
+  return `<div class="list">${sauceRows}${tomatoPurchaseRowHtml(aggSauce)}${toppingRows}</div>`;
+}
+
+
+function copyLang(nl,en){return currentLang==='en'?en:nl;}
+function copyIngredientName(name){return currentLang==='en'?(ITEM_EN[name]||uiText(name)):name;}
+function copyUnit(unit,qty){
+  if(currentLang!=='en')return unit;
+  const u=String(unit);
+  if(u==='blaadjes')return Number(qty)===1?'leaf':'leaves';
+  if(u==='teen')return Number(qty)===1?'clove':'cloves';
+  if(u==='stuk'||u==='stuks')return Number(qty)===1?'piece':'pieces';
+  return u;
+}
+function copySauceValue(value){
+  let v=String(value);
+  if(currentLang!=='en')return v;
+  return v
+    .replace(/\bblaadjes\b/g,'leaves')
+    .replace(/\bteen\/tenen\b/g,'clove(s)')
+    .replace(/optioneel, klein scheutje/g,'optional, small drizzle')
+    .replace(/optioneel, alleen indien de tomaten zuur zijn/g,'optional, only if the tomatoes are acidic')
+    .replace(/heel licht, naar smaak/g,'very lightly, to taste');
+}
+
+function ingredientsCopyText(c){
+  ensurePizzaSelections();
+  ensurePizzaCustomizations();
+  const aggSauce=aggregateSauceNeeds(c);
+  const lines=[];
+
+  lines.push(`🍕 *${copyLang('Ingrediënten','Ingredients')}* — ${c.pizzas} ${copyLang("pizza's",'pizzas')}`);
+  lines.push('');
+
+  lines.push(`🌾 *${copyLang('Deeg • hele batch','Dough • full batch')}*`);
+  lines.push(`• ${copyLang('Bloem','Flour')}: ${fmt(c.flour,0)} g`);
+  lines.push(`• ${copyLang('Water','Water')}: ${fmt(c.water,0)} g`);
+  lines.push(`• ${copyLang('Zout','Salt')}: ${fmt(c.salt,0)} g`);
+  lines.push(`• ${copyIngredientName(yeastName(c.yeastType))}: ${fmt(c.yeast,1)} g`);
+  if(c.o>0)lines.push(`• ${copyLang('Olijfolie in deeg','Olive oil in dough')}: ${fmt(c.oil,0)} g`);
+
+  if(appMode!=='dough' && aggSauce.enabled && aggSauce.groups.length){
+    lines.push('');
+    lines.push(`🍅 *${copyLang('Saus','Sauce')}*`);
+    aggSauce.groups.forEach(g=>{
+      lines.push(`*${sauceName(g.type)}*`);
+      lines.push(`• ${copyLang("Op pizza's nodig",'Required on pizzas')}: ${fmt(g.need,0)} g`);
+      if(g.s.tomato){
+        lines.push(`• ${copyLang('Maken','Make')}: ${fmt(g.batch,0)} g`);
+        if(!usesCombinedTomatoPurchase(aggSauce))lines.push(`• ${copyLang('Kopen','Buy')}: ${g.tins}x 400 g`);
+      }
+      g.ingredients.forEach(x=>{
+        lines.push(`• ${copyIngredientName(x[0])}: ${copySauceValue(x[1])}`);
+      });
+    });
+  }
+
+  if(appMode==='full'){
+    lines.push('');
+    lines.push(`🍕 *${copyLang('Per pizza','Per pizza')}*`);
+    pizzaSelections.forEach((id,idx)=>{
+      const r=recipeById(id),custom=pizzaCustomizations[idx],cheese=extraCheeseAdvice(idx,c);
+      const sauceLine=custom.noSauce
+        ? copyLang('uitgevinkt','unchecked')
+        : ($('autoSauceFromPizzas').checked
+            ? `${sauceName(effectiveSauceTypeForBall(idx))} — ${effectiveSauceGramsForBall(idx)} g`
+            : `${sauceName($('sauceType').value)} — ${fmt(manualSaucePerPizza(),0)} g`);
+
+      lines.push(`*${copyLang('Bol','Dough ball')} ${idx+1} — ${recipeNameText(r)}*`);
+      lines.push(`• ${copyLang('Saus','Sauce')}: ${sauceLine}`);
+      includedItemsForBall(idx).forEach(x=>{
+        lines.push(`• ${copyIngredientName(x[0])}: ${fmt(x[1],x[1]<2?1:0)} ${copyUnit(x[2],x[1])}`);
+      });
+      if(custom.extraCheese&&cheese.allowed){
+        lines.push(`• ${copyIngredientName(cheese.name)} (${copyLang('extra kaas','extra cheese')}): +${fmt(cheese.amount,0)} g`);
+      }
+    });
+
+    const totals={};
+    pizzaSelections.forEach((id,idx)=>{
+      includedItemsForBall(idx).forEach(x=>{
+        const key=`${x[0]}|${x[2]}`;
+        if(!totals[key])totals[key]={name:x[0],unit:x[2],qty:0};
+        totals[key].qty+=x[1];
+      });
+      const cheese=extraCheeseAdvice(idx,c);
+      if(pizzaCustomizations[idx].extraCheese && cheese.allowed){
+        const key=`${cheese.name}|g`;
+        if(!totals[key])totals[key]={name:cheese.name,unit:'g',qty:0};
+        totals[key].qty+=cheese.amount;
+      }
+    });
+
+    lines.push('');
+    lines.push(`🛒 *${copyLang('Gecombineerd • toppings & saus','Combined • toppings & sauce')}*`);
+    if(aggSauce.enabled){
+      aggSauce.groups.forEach(g=>{
+        const suffix=g.s.tomato
+          ? ` — ${copyLang('maken','make')} ${fmt(g.batch,0)} g${usesCombinedTomatoPurchase(aggSauce)?'':` / ${copyLang('kopen','buy')} ${g.tins}x 400 g`}`
+          : '';
+        lines.push(`• ${sauceName(g.type)}: ${fmt(g.need,0)} g${suffix}`);
+      });
+      const purchaseLine=tomatoPurchaseCopyLine(aggSauce);
+      if(purchaseLine)lines.push(purchaseLine);
+    }
+    Object.values(totals).forEach(x=>{
+      lines.push(`• ${copyIngredientName(x.name)}: ${fmt(x.qty,x.qty<2?1:0)} ${copyUnit(x.unit,x.qty)}`);
+    });
+  }
+
+  return lines.join('\n');
+}
+
+async function writeTextRobust(text){
+  if(navigator.clipboard && window.isSecureContext){
+    try{
+      await navigator.clipboard.writeText(text);
+      return true;
+    }catch(e){}
+  }
+
+  // Fallback for local HTML files and mobile browsers where Clipboard API
+  // may be unavailable. This remains triggered directly by the user's tap.
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.setAttribute('readonly','');
+  ta.style.position='fixed';
+  ta.style.left='-9999px';
+  ta.style.top='0';
+  ta.style.opacity='0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0,ta.value.length);
+  let ok=false;
+  try{ok=document.execCommand('copy');}catch(e){ok=false;}
+  document.body.removeChild(ta);
+  return ok;
+}
+
+async function copyIngredients(){
+  const btn=$('copyIngredientsBtn');
+  const label=$('copyIngredientsLabel');
+  const original=currentLang==='en'?'Copy':'Kopiëren';
+  const text=ingredientsCopyText(calc());
+  const ok=await writeTextRobust(text);
+
+  if(label)label.textContent=ok?(currentLang==='en'?'Copied!':'Gekopieerd!'):(currentLang==='en'?'Copy failed':'Kopiëren mislukt');
+  if(btn)btn.classList.toggle('copied',ok);
+
+  window.setTimeout(()=>{
+    if(label)label.textContent=original;
+    if(btn)btn.classList.remove('copied');
+  },1800);
+}
+
+function buildIngredientsModal(c){
+  ensurePizzaCustomizations();
+  const aggSauce=aggregateSauceNeeds(c);
+  const dough=`<div class="modal-section"><h3>Deeg • hele batch</h3><div class="list">
+    <div class="list-row"><span>Bloem</span><span>${fmt(c.flour,0)} g</span></div>
+    <div class="list-row"><span>Water</span><span>${fmt(c.water,0)} g</span></div>
+    <div class="list-row"><span>Zout</span><span>${fmt(c.salt,0)} g</span></div>
+    <div class="list-row"><span>${yeastName(c.yeastType)}</span><span>${fmt(c.yeast,1)} g</span></div>
+    ${c.o>0?`<div class="list-row"><span>Olijfolie in deeg</span><span>${fmt(c.oil,0)} g</span></div>`:''}
+  </div></div>`;
+
+  const saucesHtml=aggSauce.enabled?`<div class="modal-section"><h3>${L('Saus','Sauce')}</h3>${aggSauce.groups.map(g=>`<div class="sauce-group"><h4>${sauceName(g.type)}</h4><div class="list"><div class="list-row"><span>${L("Op pizza's nodig","Needed on pizzas")}</span><span>${fmt(g.need,0)} g</span></div>${g.s.tomato?`<div class="list-row"><span>${L('Maken','Make')}</span><span>${fmt(g.batch,0)} g</span></div>${usesCombinedTomatoPurchase(aggSauce)?'':`<div class="list-row"><span>${L('Kopen','Buy')}</span><span>${g.tins}× 400 g</span></div>`}`:''}${g.ingredients.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')}</div></div>`).join('')}</div>`:'';
+
+  const perPizza=`<div class="modal-section"><h3>Per pizza</h3>${pizzaSelections.map((id,idx)=>{
+    const r=recipeById(id),custom=pizzaCustomizations[idx],cheese=extraCheeseAdvice(idx,c);
+    const sauceLine=custom.noSauce?'uitgevinkt':($('autoSauceFromPizzas').checked?`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`:`${sauceName($('sauceType').value)} • ${fmt(manualSaucePerPizza(),0)} g`);
+    const rows=includedItemsForBall(idx).map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]} ${tUnit(x[2],x[1])}</span></div>`).join('');
+    const extra=custom.extraCheese&&cheese.allowed?`<div class="list-row"><span>${cheese.name} • extra kaas</span><span>+${fmt(cheese.amount,0)} g</span></div>`:'';
+    return `<div class="recipebox"><div class="titleline"><h3>Bol ${idx+1} • ${recipeNameText(r)}</h3><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)} • ${recipeTempFor(id).low}–${recipeTempFor(id).high} °C</span></div><div class="list"><div class="list-row"><span>Saus</span><span>${sauceLine}</span></div>${rows}${extra}</div></div>`;
+  }).join('')}</div>`;
+
+  const combined=`<div class="modal-section"><h3>Gecombineerd toppings & saus</h3>${ingredientsCombinedHTML(c)}</div>`;
+  if(appMode==='dough') $('ingredientsModalBody').innerHTML=dough;
+  else if(appMode==='sauce') $('ingredientsModalBody').innerHTML=dough+saucesHtml;
+  else $('ingredientsModalBody').innerHTML=dough+saucesHtml+perPizza+combined;
+}
+
+function openIngredientsModal(){
+  buildIngredientsModal(calc());
+  $('ingredientsModal').classList.remove('hidden');
+  pushModal('ingredients');
+  setTimeout(()=>{const f=focusablesIn($('ingredientsModal'));if(f.length)f[0].focus();},50);
+}
+function closeIngredientsModal(){
+  if($('ingredientsModal').classList.contains('hidden'))return;
+  $('ingredientsModal').classList.add('hidden');
+  popModal('ingredients');
+}
+function modalBackdropClose(e){if(e.target===$('ingredientsModal'))closeIngredientsModal();}
+document.addEventListener('keydown',e=>{
+  if(!_modalStack.length)return;
+  const top=_modalStack[_modalStack.length-1];
+  const root=top==='picker'?$('pizzaPickerOverlay'):$('ingredientsModal');
+  if(e.key==='Escape'){ e.preventDefault(); if(top==='picker')closePizzaPicker(); else closeIngredientsModal(); return; }
+  trapFocus(e,root);
+});
+
+function setMethod(m){
+  currentMethod=m;
+  document.querySelectorAll('.method').forEach(b=>b.classList.toggle('active',b.dataset.method===m));
+  update();
+}
+
+function scrollWizardNav(direction){
+  const nav=$('stepsNav');
+  if(!nav)return;
+  const distance=Math.max(180,nav.clientWidth*0.68);
+  nav.scrollBy({left:direction*distance,behavior:'smooth'});
+}
+
+function refreshWizardNav(centerActive=false){
+  const nav=$('stepsNav'),shell=$('wizardNavShell');
+  if(!nav||!shell||shell.classList.contains('hidden'))return;
+
+  const updateEdges=()=>{
+    const max=Math.max(0,nav.scrollWidth-nav.clientWidth);
+    const left=nav.scrollLeft>3;
+    const right=nav.scrollLeft<max-3;
+    shell.classList.toggle('can-scroll-left',left);
+    shell.classList.toggle('can-scroll-right',right);
+    $('navScrollPrev')?.classList.toggle('is-disabled',!left);
+    $('navScrollNext')?.classList.toggle('is-disabled',!right);
+  };
+
+  requestAnimationFrame(()=>{
+    if(centerActive){
+      const active=nav.querySelector('.navpill.active:not(.hidden)');
+      if(active){
+        const target=active.offsetLeft-(nav.clientWidth-active.offsetWidth)/2;
+        const max=Math.max(0,nav.scrollWidth-nav.clientWidth);
+        nav.scrollTo({left:Math.max(0,Math.min(max,target)),behavior:'smooth'});
+      }
+    }
+    updateEdges();
+    window.setTimeout(updateEdges,220);
+  });
+}
+
+function wizardPages(){
+  if(appMode==='dough')return [1,4];
+  if(appMode==='sauce')return [1,2,4];
+  return [1,3,2,4];
+}
+
+function wizardPageName(page){
+  const nl=currentLang!=='en';
+  const names=nl
+    ? {1:'Deeg',2:'Sauzen',3:'Bollen & recepten',4:'Stappenplan'}
+    : {1:'Dough',2:'Sauces',3:'Dough balls & recipes',4:'Workflow'};
+  return names[page]||'';
+}
+
+function updateWizardNav(activePage=currentWizardPage){
+  const pages=wizardPages();
+  const nav=$('stepsNav');
+
+  [1,2,3,4].forEach(page=>{
+    const btn=$(`nav${page}`);
+    if(!btn)return;
+    const idx=pages.indexOf(page);
+    btn.classList.toggle('hidden',idx<0);
+    btn.classList.toggle('active',page===activePage);
+    if(idx>=0)btn.textContent=`${idx+1}. ${wizardPageName(page)}`;
+  });
+
+  // Zet de zichtbare knoppen ook fysiek in workflowvolgorde.
+  // '← Keuze' blijft altijd als eerste staan.
+  if(nav){
+    pages.forEach(page=>{
+      const btn=$(`nav${page}`);
+      if(btn)nav.appendChild(btn);
+    });
+  }
+
+  const finalIndex=pages.indexOf(4);
+  const page2Index=pages.indexOf(2);
+  const page3Index=pages.indexOf(3);
+
+  if($('page2Kicker') && page2Index>=0){
+    $('page2Kicker').textContent=currentLang==='en'
+      ? `Step ${page2Index+1}`
+      : `Stap ${page2Index+1}`;
+  }
+  if($('page3Kicker') && page3Index>=0){
+    $('page3Kicker').textContent=currentLang==='en'
+      ? `Step ${page3Index+1}`
+      : `Stap ${page3Index+1}`;
+  }
+  if($('finalStepKicker')){
+    $('finalStepKicker').textContent=currentLang==='en'
+      ? `Step ${finalIndex+1} • final`
+      : `Stap ${finalIndex+1} • laatste`;
+  }
+
+  const next=pages[pages.indexOf(activePage)+1];
+  if($('floatNext')){
+    $('floatNext').classList.toggle('hidden',!next);
+    if(next)$('floatNext').textContent=currentLang==='en'
+      ? `Next: ${wizardPageName(next)} →`
+      : `Volgende: ${wizardPageName(next).toLowerCase()} →`;
+  }
+  if($('page1NextBtn')){
+    const firstNext=pages[1];
+    $('page1NextBtn').textContent=currentLang==='en'
+      ? `Next: ${wizardPageName(firstNext)} →`
+      : `Volgende: ${wizardPageName(firstNext).toLowerCase()} →`;
+  }
+  refreshWizardNav(true);
+}
+
+function nextWizardPage(page=currentWizardPage){
+  const pages=wizardPages(),idx=pages.indexOf(page);
+  if(idx>=0&&idx<pages.length-1)showPage(pages[idx+1]);
+}
+
+function previousWizardPage(page=currentWizardPage){
+  const pages=wizardPages(),idx=pages.indexOf(page);
+  if(idx>0)showPage(pages[idx-1]);
+  else showModeChooser();
+}
+
+function renderModeChooser(){
+  document.querySelectorAll('[data-mode-card]').forEach(card=>card.classList.remove('last-used'));
+  const count=$('fullRecipeCount');if(count)count.textContent=pizzaRecipes.length;
+}
+
+function applyAppModeUI(){
+  document.body.dataset.appMode=appMode;
+
+  $('pizzaSauceHeading').textContent=currentLang==='en'?'Sauce(s)':'Saus(en)';
+  $('pizzaSauceHint').innerHTML=appMode==='sauce'
+    ? (currentLang==='en'
+        ? 'Choose a sauce type and amount per pizza. No recipes or toppings are needed.'
+        : 'Kies een saustype en hoeveelheid per pizza. Geen recepten of toppings nodig.')
+    : (currentLang==='en'
+        ? 'Your dough-ball recipes are already selected. Keep automatic sauce enabled to calculate the required sauces from those recipes, or disable it to use one sauce for all pizzas.'
+        : 'Je recepten per bol zijn al gekozen. Laat automatische saus aan om de benodigde sauzen daaruit te berekenen, of zet hem uit om één saus voor alle pizza’s te gebruiken.');
+
+  $('shoppingHeading').textContent=appMode==='sauce'
+    ? (currentLang==='en'?'Ingredients for the sauce':'Ingrediënten voor de saus')
+    : (currentLang==='en'?'Ingredients for the pizzas':"Ingrediënten voor de pizza's");
+
+  $('brandSubtitle').textContent=appMode==='dough'
+    ? (currentLang==='en'?'Dough • fermentation • workflow':'Deeg • fermentatie • stappenplan')
+    : appMode==='sauce'
+      ? (currentLang==='en'?'Dough • sauce • workflow':'Deeg • saus • stappenplan')
+      : (currentLang==='en'?'Dough • sauces • dough-ball recipes • complete workflow':'Deeg • sauzen • recepten per bol • compleet stappenplan');
+
+  if(appMode==='sauce'){
+    $('manualSauceControls').classList.remove('hidden');
+  }else if(appMode==='full'){
+    $('manualSauceControls').classList.toggle('hidden',$('autoSauceFromPizzas').checked);
+  }
+
+  if($('sauceStepNote')){
+    $('sauceStepNote').textContent=appMode==='full'
+      ? (currentLang==='en'
+          ? 'The sauce calculation below is based on the recipes you selected in the previous step. Change a dough-ball recipe later and these quantities update automatically.'
+          : 'De sausberekening hieronder is gebaseerd op de recepten die je in de vorige stap hebt gekozen. Verander je later een recept per bol, dan worden deze hoeveelheden automatisch bijgewerkt.')
+      : '';
+    $('sauceStepNote').classList.toggle('hidden',appMode!=='full');
+  }
+
+  updateWizardNav(currentWizardPage);
+  renderModeChooser();
+}
+
+function selectAppMode(mode){
+  appMode=['dough','sauce','full'].includes(mode)?mode:'full';
+  applyAppModeUI();
+  showPage(1);
+}
+
+function showModeChooser(){
+  currentWizardPage=0;
+  ['page1','page2','page3','page4'].forEach(id=>$(id)?.classList.remove('active'));
+  $('page0').classList.add('active');
+  $('stepsNav').classList.add('hidden');
+  $('wizardNavShell').classList.add('hidden');
+  $('floatingActions').classList.add('hidden');
+  renderModeChooser();
+  $('brandSubtitle').textContent=currentLang==='en'
+    ? 'From dough only to complete pizzas • choose what you need'
+    : "Van alleen deeg tot complete pizza's • kies wat je nodig hebt";
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showPage(n){
+  const available=wizardPages();
+  if(!available.includes(n))n=available[0];
+
+  currentWizardPage=n;
+  $('page0').classList.remove('active');
+  [1,2,3,4].forEach(page=>$(`page${page}`)?.classList.toggle('active',page===n));
+
+  $('stepsNav').classList.remove('hidden');
+  $('wizardNavShell').classList.remove('hidden');
+  $('floatingActions').classList.remove('hidden');
+  applyAppModeUI();
+  updateWizardNav(n);
+  window.scrollTo({top:0,behavior:'smooth'});
+  update();
+}
+
+function copyRecipe(){
+  const c=calc();
+  const live=liveFermentationPlan(c),effective=live.effective;
+  const sauceInfo=aggregateSauceNeeds(c);
+  const lines=[];
+  lines.push(L(`Pizzadeeg — ${c.pizzas} pizza's van ±${fmt(c.actualBall,0)} g`,`Pizza dough — ${c.pizzas} pizzas of ±${fmt(c.actualBall,0)} g`));
+  lines.push(`${fmt(c.flour,0)} g ${L('bloem','flour')}`);
+  lines.push(`${fmt(c.water,0)} g ${L('water','water')}`);
+  lines.push(`${fmt(c.salt,0)} g ${L('zout','salt')}`);
+  lines.push(`${fmt(c.yeast,1)} g ${yeastName(c.yeastType)}`);
+  if(c.o>0)lines.push(`${fmt(c.oil,0)} g ${L('olijfolie','olive oil')}`);
+  lines.push('');
+  lines.push(L(`Hydratatie werkelijk: ${fmt(c.actualH,1)}%`,`Actual hydration: ${fmt(c.actualH,1)}%`));
+  lines.push(live.active&&live.changed
+    ? L(`Fermentatie live aangepast: ${fmt(fermentationHours(effective),1)} uur (oorspronkelijk ${fmt(fermentationHours(c),1)} uur)`,
+        `Fermentation adjusted live: ${fmt(fermentationHours(effective),1)} hours (originally ${fmt(fermentationHours(c),1)} hours)`)
+    : L(`Fermentatie: ${fmt(fermentationHours(c),1)} uur`,`Fermentation: ${fmt(fermentationHours(c),1)} hours`));
+  lines.push(L(`Steentemperatuur: ${fmt(c.stoneTemp,0)} °C`,`Stone temperature: ${fmt(c.stoneTemp,0)} °C`));
+
+  if(appMode==='sauce' && sauceInfo.enabled && sauceInfo.groups.length){
+    const g=sauceInfo.groups[0];
+    lines.push('');
+    lines.push(`${L('Saus','Sauce')}: ${sauceName(g.type)}`);
+    lines.push(L(`${fmt(g.per??manualSaucePerPizza(),0)} g per pizza • ${fmt(g.need,0)} g totaal`,
+                 `${fmt(g.per??manualSaucePerPizza(),0)} g per pizza • ${fmt(g.need,0)} g total`));
+  }else if(appMode==='full'){
+    ensurePizzaSelections();
+    lines.push('');
+    pizzaSelections.forEach((id,i)=>lines.push(`${L('Bol','Dough ball')} ${i+1}: ${recipeNameText(recipeById(id))}`));
+  }
+  navigator.clipboard?.writeText(lines.join('\n')).then(()=>alert(currentLang==='en'?'Recipe copied.':'Recept gekopieerd.'));
+}
+
+
+function ratingLabel(v){
+  if(currentLang==='en')return v==='slow'?'too slow / underproofed':(v==='fast'?'too fast / overproofed':'good / as intended');
+  return v==='slow'?'te traag / onderrijs':(v==='fast'?'te snel / overrijs':'goed / zoals bedoeld');
+}
+function saveBakeLogEntry(){
+  const c=calc();
+  const waterRaw=String($('logWaterTemp').value).trim();
+  const water=waterRaw===''?NaN:boundedNum('logWaterTemp',NaN);
+  const finalT=liveMeasurementValue('doughTemp');
+  const actualFridge=liveMeasurementValue('fridgeTemp');
+  const rating=$('logRiseRating').value||'good';
+  const notes=String($('logNotes').value||'').trim().slice(0,500);
+  let ddtCorrection=null;
+  if(Number.isFinite(water)&&Number.isFinite(finalT)){
+    // Effectieve correctie voor DEZE routine. Omdat bloemtemp voorlopig op
+    // kamertemp wordt aangenomen, kan de waarde naast mixerwarmte ook vaste
+    // koeling (bijv. koelkast-autolyse) bevatten. Dat is bewust: reproduceerbaarheid.
+    const corr=3*finalT-c.room-c.room-water;
+    if(corr>=-12&&corr<=30)ddtCorrection=corr;
+  }
+  bakeLog.push({
+    ts:Date.now(),method:currentMethod,preset:$('preset').value,
+    flour:c.flour,hydration:c.h,yeastType:c.yeastType,yeastPct:c.y,
+    room:c.room,fridgePlanned:c.fridge,fridgeTempActual:actualFridge,bulk:c.bulk,cold:c.cold,ball:c.ball,
+    waterTemp:Number.isFinite(water)?water:null,finalDoughTemp:Number.isFinite(finalT)?finalT:null,
+    ddtCorrection,rating,notes
+  });
+  if(bakeLog.length>30)bakeLog=bakeLog.slice(-30);
+  saveState();
+  renderBakeLog(c);
+  $('logNotes').value='';
+}
+function clearBakeLog(){
+  if(!window.confirm(currentLang==='en'?'Clear the complete dough log?':'Hele deeglogboek wissen?'))return;
+  bakeLog=[];
+  saveState();
+  renderBakeLog(calc());
+}
+function renderBakeLog(c){
+  const box=$('bakeLogSummary');
+  if(!box)return;
+  if($('logFinalDoughTemp')) $('logFinalDoughTemp').value=liveMeasurementValue('doughTemp')==null?'':`${fmt(liveMeasurementValue('doughTemp'),1)} °C`;
+  if($('logFridgeTemp')) $('logFridgeTemp').value=liveMeasurementValue('fridgeTemp')==null?'':`${fmt(liveMeasurementValue('fridgeTemp'),1)} °C`;
+  const stats=ddtLogStats(currentMethod);
+  const rows=bakeLog.slice(-4).reverse();
+  const calText=stats.count
+    ? L(`<div class="info"><b>DDT-log:</b> ${stats.count} bruikbare ${stats.count===1?'meting':'metingen'} voor ${methodLabel()} opgeslagen${stats.median==null?'':` • mediaan effectieve correctie ${fmt(stats.median,1)} °C`}. Deze waarde wordt <b>niet automatisch toegepast</b>; het wateradvies blijft op de vaste startaanname zodat recept- en proceswijzigingen niet onbedoeld als “leren” worden geïnterpreteerd.</div>`,
+        `<div class="info"><b>DDT log:</b> ${stats.count} usable ${stats.count===1?'measurement':'measurements'} stored for ${methodLabel()}${stats.median==null?'':` • median effective correction ${fmt(stats.median,1)} °C`}. This value is <b>not applied automatically</b>; water guidance stays on the fixed starting assumption so recipe and process changes are not accidentally interpreted as “learning”.</div>`)
+    : L(`<div class="info">Nog geen bruikbare DDT-metingen in het logboek. v50 gebruikt bewust alleen de vaste startaanname en leert niets automatisch uit vorige bakes.</div>`,
+        `<div class="info">No usable DDT measurements in the log yet. v50 deliberately uses only the fixed starting assumption and learns nothing automatically from previous bakes.</div>`);
+  const modelText=L(
+    `<div class="info"><b>Fermentatiemodel:</b> beoordelingen zoals “te traag” of “te snel” worden alleen als logboekcontext opgeslagen. v50 verandert gist, tijdcurves of DDT bewust niet automatisch op basis van vorige bakes.</div>`,
+    `<div class="info"><b>Fermentation model:</b> ratings such as “too slow” or “too fast” are stored only as log context. v50 deliberately does not automatically change yeast, timing curves or DDT based on previous bakes.</div>`);
+  const list=rows.length?`<div class="list">${rows.map(x=>{
+    const dt=new Date(x.ts);
+    const d=dt.toLocaleDateString(currentLang==='en'?'en-GB':'nl-NL',{day:'2-digit',month:'short'});
+    const temp=(x.waterTemp!=null&&x.finalDoughTemp!=null)?` • ${fmt(x.waterTemp,1)}→${fmt(x.finalDoughTemp,1)} °C`:'';
+    const fridge=x.fridgeTempActual!=null?` • koelkast ${fmt(x.fridgeTempActual,1)} °C`:'';
+    const corr=x.ddtCorrection!=null?` • DDT ${fmt(x.ddtCorrection,1)} °C`:'';
+    return `<div class="list-row"><span>${d} • ${ratingLabel(x.rating)}${temp}${fridge}${corr}</span><span>${x.notes?esc(x.notes):'—'}</span></div>`;
+  }).join('')}</div>`:L('<div class="hint" style="margin-top:10px">Nog geen bakresultaten opgeslagen.</div>','<div class="hint" style="margin-top:10px">No bake results saved yet.</div>');
+  box.innerHTML=calText+modelText+list;
+}
+
+const SAVE_KEY='pizzaCalcV50';
+const SAVE_VERSION=50;
+const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${49-i}`);
+const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
+  'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
+
+let _saveTimer=null;
+let _storageWarningShown=false;
+function storageWarningText(){
+  return L('⚠️ Lokale opslag is niet beschikbaar. De calculator blijft werken, maar wijzigingen en het deeglogboek gaan verloren zodra je deze pagina sluit.',
+           '⚠️ Local storage is unavailable. The calculator keeps working, but changes and the dough log will be lost when you close this page.');
+}
+function showStorageWarningOnce(){
+  let box=$('storageWarning');
+  if(!box){
+    box=document.createElement('div');
+    box.id='storageWarning';
+    box.className='warning';
+    box.style.margin='0 0 14px';
+    document.querySelector('.app')?.prepend(box);
+  }
+  box.textContent=storageWarningText();
+  _storageWarningShown=true;
+}
+// update() draait bij elke toetsaanslag; zonder debounce betekende dat een
+// volledige JSON.stringify plus synchrone schrijfactie per ingetypt teken.
+function scheduleSave(){
+  if(_saveTimer)clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{_saveTimer=null;saveState();},300);
+}
+
+function saveState(){
+  const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,currentLang,completedSteps,bakeLog,liveMeasurements,
+    currentWizardPage,
+    practical:$('practical').checked,autolyse:$('autolyse').checked,
+    sizeFromDiameter:$('sizeFromDiameter').checked,includeSauce:$('includeSauce').checked,
+    autoSauceFromPizzas:$('autoSauceFromPizzas').checked,pizzaSelections,pizzaCustomizations,recipeAllSelection,preset:$('preset').value};
+  SAVE_IDS.forEach(id=>{ if($(id)) data[id]=$(id).value; });
+  const ok=SAFE.set(SAVE_KEY,JSON.stringify(data));
+  if(!ok)showStorageWarningOnce();
+  return ok;
+}
+
+// Een opgeslagen blob is niet te vertrouwen: hij kan uit een oudere versie
+// komen, half leeg zijn of met de hand aangepast. Alles wat de berekening
+// kan laten ontsporen wordt daarom gecontroleerd voordat het wordt gebruikt.
+function sanitizeExactOverride(v){
+  if(!v||typeof v!=='object'||Array.isArray(v))return null;
+  const bounds={h:[45,85],s:[0,5],o:[0,10],ySelected:[0,3]};
+  const out={};
+  ['h','s','o','ySelected'].forEach(k=>{ if(Number.isFinite(v[k])) out[k]=clamp(v[k],bounds[k][0],bounds[k][1]); });
+  return Object.keys(out).length?out:null;
+}
+
+
+function sanitizeBakeLog(v){
+  if(!Array.isArray(v))return [];
+  return v.slice(-30).map(x=>{
+    if(!x||typeof x!=='object'||Array.isArray(x))return null;
+    const method=['hand','kitchenaid','kenwood','pro'].includes(x.method)?x.method:'kitchenaid';
+    const numOrNull=(n,min,max)=>{
+      if(n==null||(typeof n==='string'&&n.trim()===''))return null;
+      const v=Number(n);
+      return Number.isFinite(v)&&v>=min&&v<=max?v:null;
+    };
+    const tsRaw=Number(x.ts),tsDate=new Date(tsRaw);
+    const ts=Number.isFinite(tsRaw)&&Number.isFinite(tsDate.getTime())&&tsRaw>=0&&tsRaw<=Date.now()+86400000?tsRaw:Date.now();
+    return {
+      ts,
+      method,
+      preset:typeof x.preset==='string'&&presets[x.preset]?x.preset:'custom',
+      flour:numOrNull(x.flour,0,20000),
+      hydration:numOrNull(x.hydration,30,100),
+      yeastType:yeastTypes[x.yeastType]?x.yeastType:'idy',
+      yeastPct:numOrNull(x.yeastPct,0,5),
+      room:numOrNull(x.room,0,45),
+      fridgePlanned:numOrNull(x.fridgePlanned??x.fridge,0,15),
+      bulk:numOrNull(x.bulk,0,240),
+      cold:numOrNull(x.cold,0,240),
+      ball:numOrNull(x.ball,0,240),
+      waterTemp:numOrNull(x.waterTemp,0,50),
+      finalDoughTemp:numOrNull(x.finalDoughTemp,10,40),
+      fridgeTempActual:numOrNull(x.fridgeTempActual,0,15),
+      ddtCorrection:numOrNull(x.ddtCorrection,-12,30),
+      rating:['good','slow','fast'].includes(x.rating)?x.rating:'good',
+      notes:typeof x.notes==='string'?x.notes.slice(0,500):''
+    };
+  }).filter(Boolean);
+}
+
+let _restoredWizardPage=0;
+function loadState(){
+  try{
+    let raw=SAFE.get(SAVE_KEY);
+    if(!raw){ for(const k of LEGACY_KEYS){ raw=SAFE.get(k); if(raw) break; } }
+    const d=JSON.parse(raw||'null');
+    if(!d||typeof d!=='object'||Array.isArray(d))return false;
+    suppressCustom=true;
+    Object.entries(d).forEach(([k,v])=>{
+      if(k==='version')return;
+      else if(k==='currentMethod')currentMethod=['hand','kitchenaid','kenwood','pro'].includes(v)?v:'kitchenaid';
+      else if(k==='currentLang')currentLang=v==='en'?'en':'nl';
+      else if(k==='appMode')appMode=['dough','sauce','full'].includes(v)?v:'full';
+      else if(k==='exactOverride')exactOverride=sanitizeExactOverride(v);
+      else if(k==='previousYeastType')previousYeastType=yeastTypes[v]?v:'idy';
+      else if(k==='currentWizardPage')_restoredWizardPage=Number.isFinite(Number(v))?Math.max(0,Math.round(Number(v))):0;
+      else if(k==='completedSteps')completedSteps=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+      else if(k==='bakeLog')bakeLog=sanitizeBakeLog(v);
+      else if(k==='liveMeasurements')liveMeasurements=(v&&typeof v==='object')?{doughTemp:validMeasured(v.doughTemp,10,40),fridgeTemp:validMeasured(v.fridgeTemp,0,15)}:{doughTemp:null,fridgeTemp:null};
+      else if(k==='pizzaSelections')pizzaSelections=Array.isArray(v)?v.filter(x=>typeof x==='string').map(x=>recipeById(x).id):[];
+      else if(k==='pizzaCustomizations')pizzaCustomizations=Array.isArray(v)?v:[];
+      else if(k==='recipeAllSelection')recipeAllSelection=recipeById(v).id;
+      else if(['practical','autolyse','sizeFromDiameter','includeSauce','autoSauceFromPizzas'].includes(k)){ if($(k))$(k).checked=!!v; }
+      else if($(k))$(k).value=v;
+    });
+
+    // Migratie van vóór v39: koude fermentatie stond als eigen methode opgeslagen.
+    if($('fermentationMethod').value==='coldBalls'){
+      $('fermentationMethod').value='hybrid';
+      $('coldStorageMode').value='balls';
+    }
+    if(!$('coldStorageMode').value)$('coldStorageMode').value='bulk';
+
+    // Onbekende keuzelijstwaarden terugzetten op een geldige optie.
+    if(!sauces[$('sauceType').value])$('sauceType').value='sanMarzano';
+    if(!flourTypes[$('flourType').value])$('flourType').value='caputoPizzeria';
+    if(!doughStyles[$('doughStyle').value])$('doughStyle').value='neapolitan';
+    if(!yeastTypes[$('yeastType').value])$('yeastType').value='idy';
+
+    // v44 schreef voor generieke bloem automatisch een geschatte W in het veld.
+    // In v45 zijn die schattingen bewust verwijderd. Als een oude v44-state
+    // exact zo'n automatische waarde bevat, maken we het veld weer leeg.
+    const oldAutoW={tipo00:260,manitoba:350,tarwebloem:180,speltWit:130,speltVolkoren:110,volkorenTarwe:190};
+    if(Number(d.version)<=44){
+      const fk=$('flourType').value;
+      const oldW=oldAutoW[fk];
+      if(oldW!=null && Number($('flourW').value)===oldW) $('flourW').value='';
+    }
+
+    // Opgeslagen waarden mogen uit een oudere, ruimere of handmatig bewerkte
+    // state komen. Eénmalig normaliseren is veilig; tijdens typen gebeurt dit
+    // juist nooit.
+    normalizeStoredNumberInputs();
+
+    pizzaCustomizations.forEach(cu=>{
+      if(cu&&typeof cu==='object'&&cu.sauceOverride&&!sauces[cu.sauceOverride])cu.sauceOverride=null;
+    });
+
+    suppressCustom=false;
+    document.querySelectorAll('.method').forEach(b=>b.classList.toggle('active',b.dataset.method===currentMethod));
+    // Oude versiesleutels opruimen zodat ze niet jaren later terugkomen.
+    LEGACY_KEYS.forEach(k=>SAFE.del(k));
+    saveState();
+    return true;
+  }catch(e){return false}
+}
+
+function wireEvents(){
+  document.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('focus',()=>rememberNumericEditStart(el));
+    el.addEventListener('input',()=>{
+      if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
+      if(el.classList.contains('pct')) markCustomField(el.id);
+      else if(!['preset','bakeDay','bakeTime','sauceType','saucePerPizza','includeSauce','autoSauceFromPizzas','stoneTemp','preheatMinutes','flourType','flourW'].includes(el.id)) markCustom(false);
+      _deferDependentStatePrune=el.id==='pizzas';
+      try{update();}finally{_deferDependentStatePrune=false;}
+    });
+    el.addEventListener('change',()=>{
+      // Een getal wordt pas zichtbaar begrensd wanneer de gebruiker klaar is
+      // met typen. De input-handler en calc() schrijven nooit terug.
+      normalizeNumericInput(el);
+      if(el.id==='preset'){ if(el.value!=='custom')applyPreset(el.value); return; }
+      if(el.id==='sauceType'){
+        // Bianca is 5 g/pizza en BBQ 55 g: zonder dit bleef 80 g tomatensaus staan.
+        const st=sauces[el.value];
+        if(st) $('saucePerPizza').value=defaultSaucePerPizza(el.value);
+        update(); return;
+      }
+      if(el.id==='yeastType'){
+        applyYeastTypeConversion(previousYeastType,el.value);
+        markCustom(false);
+      }else if(el.id==='doughStyle'){
+        // De actieve bron (diameter óf bolgewicht) blijft exact zoals de
+        // gebruiker hem invoerde. calc() werkt alleen het verborgen tegenveld bij.
+        markCustom(false);
+      }else if(el.id==='diameter'){
+        if(!$('sizeFromDiameter').checked)$('ballWeight').value=recommendedBallWeight();
+        markCustom(false);
+      }else if(el.id==='ballWeight'){
+        if($('sizeFromDiameter').checked)$('diameter').value=roundTo(estimatedDiameterFromWeight(),0.5);
+        markCustom(false);
+      }else if(el.id==='fermentationMethod'){
+        markCustom(false);
+      }else if(el.id==='pizzaPickerSearch'){
+        return;
+      }else if(el.id==='flourType'){
+        const ft=flourTypes[el.value];
+        $('flourW').value=(ft && ft.w!=null)?ft.w:'';
+      }else if(el.id==='flourW'){
+        // W handmatig aanpassen is toegestaan bij ieder gekozen bloemtype:
+        // het type blijft staan zodat we kwalitatieve spelt/volkorenwaarschuwingen behouden.
+      }else if(el.classList.contains('pct')){
+        markCustomField(el.id);
+      }
+      update();
+    });
+    el.addEventListener('blur',()=>{
+      if(el.type!=='number')return;
+      const normalized=normalizeNumericInput(el);
+      try{
+        if(el.id==='pizzas'){
+          // blur is het echte commitmoment: een browser vuurt geen change af
+          // wanneer 4 → 8 → 4 uiteindelijk weer op de focus-startwaarde eindigt.
+          _deferDependentStatePrune=false;
+          ensurePizzaSelections();
+          update();
+          pruneCompletedStepState();
+        }else if(normalized){
+          update();
+        }
+      }finally{
+        _numericEditStartValues.delete(el);
+      }
+    });
+  });
+  $('includeSauce').addEventListener('change',update);
+  $('autoSauceFromPizzas').addEventListener('change',update);
+  $('sizeFromDiameter').addEventListener('change',()=>{
+    if($('sizeFromDiameter').checked){
+      // AAN = diameter is leidend; behoud equivalente pizzagrootte.
+      $('diameter').value=roundTo(estimatedDiameterFromWeight(num('ballWeight')),0.5);
+      $('ballWeight').value=recommendedBallWeight(num('diameter'));
+    }else{
+      // UIT = bolgewicht is leidend; neem het huidige berekende gewicht over.
+      $('ballWeight').value=recommendedBallWeight(num('diameter'));
+      $('diameter').value=roundTo(estimatedDiameterFromWeight(num('ballWeight')),0.5);
+    }
+    markCustom(false);
+    update();
+  });
+  $('autolyse').addEventListener('change',()=>{markCustom(false);update();});
+  $('practical').addEventListener('change',update);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const search=$('pizzaPickerSearch');
+  if(search){
+    // Zonder debounce werd de hele lijst van 89 recepten per toetsaanslag opnieuw
+    // opgebouwd, inclusief het opnieuw afleiden van alle zoekteksten.
+    let searchTimer=null;
+    const debouncedRender=()=>{ if(searchTimer)clearTimeout(searchTimer); searchTimer=setTimeout(()=>{searchTimer=null;renderPickerList();},140); };
+    search.addEventListener('input',debouncedRender);
+    search.addEventListener('search',renderPickerList);
+  }
+  initRecipeOptions();
+  wireEvents();
+
+  const wizardNav=$('stepsNav');
+  if(wizardNav){
+    wizardNav.addEventListener('scroll',()=>refreshWizardNav(false),{passive:true});
+  }
+  window.addEventListener('resize',()=>refreshWizardNav(true),{passive:true});
+
+  let restored=false;
+  if(!loadState()){
+    $('sizeFromDiameter').checked=true;    // standaard AAN: diameter invoeren -> bolgewicht berekenen
+    $('practical').checked=true;           // standaard: praktisch afronden
+    $('autolyse').checked=true;            // standaard: traditionele autolyse
+    applyPreset('kodaNight');
+  }else{ update(); restored=true; }
+  applyAppModeUI();
+  // Herladen tijdens het bakken bracht je altijd terug naar het keuzescherm.
+  if(restored && _restoredWizardPage>0 && wizardPages().includes(_restoredWizardPage)) showPage(_restoredWizardPage);
+  else showModeChooser();
+  initI18n();
+});
