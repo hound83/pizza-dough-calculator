@@ -11,6 +11,7 @@
     "test:source": "node tests/test_v50.js src/index.html",
     "test:fast": "npm run check:bundle && npm run test:structure && npm run test:bundle && npm run test:source",
     "test:browser": "playwright test",
+    "test:browser:headed": "playwright test --headed",
     "test": "npm run test:fast && npm run test:browser"
   },
   "engines": {
