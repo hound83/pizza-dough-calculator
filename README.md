@@ -9,11 +9,11 @@
 
 A comprehensive Dutch and English calculator for pizza dough, fermentation, sauce, toppings, and a complete practical workflow.
 
-The official v1.0.0 release remains one self-contained `index.html`. This refactor branch keeps the maintainable HTML, CSS, and JavaScript sources under `src/` and generates the same standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
+The downloadable v1.0.0 application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the same standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.0.0 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
-> **v1.0.0** is the first golden release and remains unchanged on `main`. This branch changes only the source structure. The recombined CSS and JavaScript are byte-for-byte identical to the release; storage and migration schema 50 are unchanged as well.
+> Tag **v1.0.0** is the immutable golden behavior baseline. The maintainable source structure changes how developers work, not what users receive: recombined CSS and JavaScript remain byte-for-byte identical to the release, and storage/migration schema 50 is unchanged.
 
 ## Features
 
@@ -124,10 +124,10 @@ npm test
 Current result:
 
 ```text
-11 refactor-structure tests passed
+12 refactor-structure tests passed
 64 bundle regression tests passed
 64 source regression tests passed
-18 Chromium browser/layout tests passed
+19 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:
@@ -179,6 +179,7 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromium loading, responsive layout, and picker interaction tests |
 | [`playwright.config.js`](playwright.config.js) | Reproducible local and CI browser-test configuration |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module boundaries, dependencies, and change rules |
+| [`docs/PRODUCT_GUARDRAILS.md`](docs/PRODUCT_GUARDRAILS.md) | Non-negotiable product behavior and change protocol |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quality rules and review checklist |
 | [`README.nl.md`](README.nl.md) | Complete Dutch project documentation |
 | [`docs/`](docs/) | Audit handoffs, rationale, and test instructions |
@@ -187,8 +188,9 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Release:** golden v1.0.0 remains frozen on `main` and tag `v1.0.0`.
-- **This branch:** behavior-neutral refactor to static HTML, CSS, and eleven JavaScript modules, ready for independent comparison with `main`.
+- **Release:** tag v1.0.0 remains the immutable golden functional baseline.
+- **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the byte-identical standalone publication used by GitHub Pages.
+- **Audit:** the behavior-neutral refactor and final test-infrastructure follow-up passed independent Claude crosschecks.
 - **Small follow-up:** the remaining non-blocking accessibility improvement for seven extended field labels stays outside this behavior-neutral refactor.
 - **v1.1.0:** a clear **Basic/Full** toggle without creating two separate calculation models.
 
