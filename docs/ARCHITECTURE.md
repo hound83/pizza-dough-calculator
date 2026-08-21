@@ -6,8 +6,8 @@ Deze branch maakt de golden v1.0.0 beter onderhoudbaar zonder productgedrag te w
 
 1. `main` en tag `v1.0.0` blijven de bevroren referentie.
 2. Er is geen framework, package dependency, transpiler of productiebuild nodig.
-3. GitHub Pages serveert de rootmap rechtstreeks.
-4. De elf scripts worden als klassieke browserscripts in een vaste volgorde geladen.
+3. GitHub Pages serveert de gegenereerde standalone root-`index.html` rechtstreeks.
+4. De onderhoudbare bron staat onder `src/`; de elf scripts worden daar als klassieke browserscripts in een vaste volgorde geladen.
 5. Samengevoegde CSS en JavaScript moeten byte-voor-byte gelijk blijven aan v1.0.0 zolang deze gedrag-neutrale refactor wordt beoordeeld.
 
 Klassieke scripts zijn hier een bewuste tussenarchitectuur. Ze behouden ondersteuning voor de bestaande inline HTML-handlers en de wereldwijde lexicale runtime zonder honderden functieaanroepen tegelijk te herschrijven. De vaste volgorde en eigenaarschapstests maken die gedeelde runtime expliciet in plaats van impliciet.
@@ -35,13 +35,13 @@ De volgorde is een contract: latere modules mogen functies en state uit eerdere 
 - Alleen `persistence-bootstrap.js` bezit `SAVE_KEY`, `SAVE_VERSION`, migratie en `DOMContentLoaded`.
 - Alleen `foundation.js` bezit `APP_VERSION`, taalstate en de generieke DOM-/getalhelpers; woordenboekdata en vertaalengine hebben afzonderlijke eigenaren.
 - Recept- en ingrediëntdata horen in `catalog.js`; pickerinteractie hoort in `pizza-picker.js`.
-- Pure deeg- en fermentatieberekeningen horen in `dough-fermentation.js`; live correcties horen in `fermentation-live.js`.
-- `index.html` bepaalt uitsluitend structuur en scriptvolgorde; presentatie hoort in `app.css`.
+- `dough-fermentation.js` bevat de deeg- en fermentatieberekeningen én de bijbehorende formulierbediening. DOM-ontkoppeling is een aparte architectuurstap; deze refactor verplaatst uitsluitend bestaande code.
+- `src/index.html` bepaalt uitsluitend structuur en scriptvolgorde; presentatie hoort in `src/assets/css/app.css`.
 - De resterende inline handlers zijn de bestaande publieke browser-API. Nieuwe interacties gebruiken bij voorkeur `addEventListener` in de bezittende module.
 
 ## Gedragsequivalentie
 
-`tests/test_refactor_structure.js` bewaakt drie golden hashes:
+`tools/bundle.js` bouwt zonder dependencies de standalone root-`index.html` uit `src/`. `npm run check:bundle` faalt wanneer die gecommitteerde publicatie achterloopt. `tests/test_refactor_structure.js` bewaakt daarnaast drie golden hashes:
 
 | Artefact | SHA-256 |
 |---|---|
@@ -51,7 +51,7 @@ De volgorde is een contract: latere modules mogen functies en state uit eerdere 
 
 De test voegt de elf modules zonder scheidingstekens samen, plaatst CSS en JavaScript terug in `index.html` en eist daarna exact de single-filehash van de release. Ook valideert hij parseerbaarheid, modulevolgorde, unieke HTML-id's, alle inline-handlerfuncties en het exclusieve opslag-/bootstrap-eigenaarschap.
 
-De bestaande `tests/test_v50.js` draait daarnaast alle 64 functionele regressies tegen de refactorroot.
+De bestaande `tests/test_v50.js` draait alle 64 functionele regressies zowel tegen de modulaire bron als tegen de standalone bundle.
 
 ## Wijzigingsworkflow
 

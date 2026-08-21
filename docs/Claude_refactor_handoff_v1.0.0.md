@@ -9,9 +9,9 @@
 
 ## Wat is veranderd?
 
-De ene inline stylesheet is naar `assets/css/app.css` verplaatst. Het ene inline script is, in oorspronkelijke volgorde, opgesplitst in elf bestanden met één herkenbare verantwoordelijkheid. Woordenboekdata en de vertaalengine zijn daarbij ook van het algemene fundament gescheiden. `index.html` laadt deze statische bestanden rechtstreeks; er is geen bundler, transpiler, framework, package dependency of backend toegevoegd.
+De ene inline stylesheet is naar `src/assets/css/app.css` verplaatst. Het ene inline script is, in oorspronkelijke volgorde, opgesplitst in elf bestanden met één herkenbare verantwoordelijkheid. Woordenboekdata en de vertaalengine zijn daarbij ook van het algemene fundament gescheiden. `src/index.html` laadt deze statische bronbestanden rechtstreeks; `tools/bundle.js` reconstrueert zonder dependencies de standalone root-`index.html` die Pages serveert.
 
-De vroegere gegenereerde `split-preview/` en het tijdelijke `assets/js/app.js` zijn niet langer onderdeel van de branchroot. De rootstructuur zelf is nu de refactor.
+De vroegere gegenereerde `split-preview/` en het tijdelijke `assets/js/app.js` zijn niet langer onderdeel van de branch. `src/` is de onderhoudbare bron; de root-`index.html` is de gecommitteerde standalone publicatie.
 
 ## Sterkste equivalentiebewijs
 
@@ -38,8 +38,9 @@ Dit controleert `tests/test_refactor_structure.js` automatisch.
 ## Lokale testuitslag vóór push
 
 ```text
-9 refactor-structure tests passed
-64 regression tests passed
+11 refactor-structure tests passed
+64 bundle regression tests passed
+64 source regression tests passed
 ```
 
 Dezelfde suites slagen ook wanneer ze vanuit `/tmp` worden gestart. Via een lokale HTTP-server zijn `index.html`, de stylesheet en alle elf scripts afzonderlijk met HTTP 200 opgehaald en byte-voor-byte met de bronbestanden vergeleken: 13/13 groen.

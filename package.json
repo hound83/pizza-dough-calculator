@@ -4,9 +4,12 @@
   "private": true,
   "description": "Pizza dough, fermentation, sauce and topping calculator",
   "scripts": {
+    "bundle": "node tools/bundle.js",
+    "check:bundle": "node tools/bundle.js --check",
     "test:structure": "node tests/test_refactor_structure.js",
-    "test:app": "node tests/test_v50.js index.html",
-    "test": "npm run test:structure && npm run test:app"
+    "test:bundle": "node tests/test_v50.js index.html",
+    "test:source": "node tests/test_v50.js src/index.html",
+    "test": "npm run check:bundle && npm run test:structure && npm run test:bundle && npm run test:source"
   },
   "engines": {
     "node": ">=18"

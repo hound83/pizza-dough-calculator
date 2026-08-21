@@ -7,7 +7,7 @@
 
 Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fermentatie, saus, toppings en een compleet praktisch stappenplan.
 
-De officiële v1.0.0-release op `main` blijft één zelfvoorzienend `index.html`-bestand. Deze refactorbranch gebruikt dezelfde applicatie als overzichtelijke statische HTML-, CSS- en JavaScriptbestanden: nog steeds zonder backend, dependencies of buildstap en rechtstreeks geschikt voor GitHub Pages.
+De officiële v1.0.0-release blijft één zelfvoorzienend `index.html`-bestand. Deze refactorbranch bewaart de overzichtelijke HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies dezelfde standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
@@ -113,8 +113,9 @@ npm test
 Huidige uitslag:
 
 ```text
-9 refactor-structure tests passed
-64 regression tests passed
+11 refactor-structure tests passed
+64 bundle regression tests passed
+64 source regression tests passed
 ```
 
 De suite controleert onder meer:
@@ -149,16 +150,18 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 
 | Pad | Doel |
 |---|---|
-| [`index.html`](index.html) | Semantische HTML en de vaste laadvolgorde van de statische assets |
-| [`assets/css/app.css`](assets/css/app.css) | Volledige presentatie en responsive layout |
-| [`assets/js/`](assets/js/) | Elf geordende modules per verantwoordelijkheid |
+| [`index.html`](index.html) | Gegenereerde standalone publicatie voor Pages en lokaal gebruik |
+| [`src/index.html`](src/index.html) | Semantische bron-HTML en de vaste laadvolgorde van de statische assets |
+| [`src/assets/css/app.css`](src/assets/css/app.css) | Volledige presentatie en responsive layout |
+| [`src/assets/js/`](src/assets/js/) | Elf geordende modules per verantwoordelijkheid |
+| [`tools/bundle.js`](tools/bundle.js) | Dependencyvrije standalone bundler en driftcontrole |
 | [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architectuur-, integriteits- en golden-equivalentietests |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Modulegrenzen, afhankelijkheden en wijzigingsregels |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Kwaliteitsregels en reviewchecklist voor vervolgwerk |
 | [`docs/`](docs/) | Audit-handoffs, wijzigingsonderbouwing en testinstructies |
 
-De single-file-opzet blijft de officiële v1.0.0-download op `main`. De refactorbranch behoudt dezelfde eenvoudige publicatie-ervaring, maar geeft ontwikkelaars kleinere bestanden, expliciete verantwoordelijkheden en automatische bescherming tegen onbedoelde gedragswijzigingen.
+De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepubliceerde calculator. De modulaire `src/` geeft ontwikkelaars kleinere bestanden, expliciete verantwoordelijkheden en automatische bescherming tegen een achterlopende bundle of onbedoelde gedragswijzigingen.
 
 ## Status en roadmap
 

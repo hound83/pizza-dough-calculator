@@ -2,7 +2,7 @@
 
 ## Doel
 
-De uitgebrachte v1.0.0 blijft op `main` één zelfvoorzienend `index.html`-bestand. Deze branch voert de gedrag-neutrale opsplitsing daadwerkelijk in de rootstructuur door, zonder functies, formules, opslag of gebruikersgedrag te veranderen.
+De uitgebrachte v1.0.0 blijft één zelfvoorzienend `index.html`-bestand. Deze branch bewaart de onderhoudbare opsplitsing onder `src/` en genereert daaruit dezelfde standalone rootpublicatie, zonder functies, formules, opslag of gebruikersgedrag te veranderen.
 
 De publieke productversie is na een groene audit **v1.0.0** geworden. De historische naam v50 blijft alleen bestaan waar die technisch nodig is voor audits, tests en backwards-compatible `localStorage`-migratie.
 
@@ -13,9 +13,11 @@ De functionele release en de architectuurwijziging zijn bewust niet vermengd. Da
 ## Gerealiseerde structuur
 
 ```text
-index.html                         semantische HTML en vaste scriptvolgorde
-assets/css/app.css                 exact geëxtraheerde stylesheet
-assets/js/                         elf scripts per verantwoordelijkheid
+src/index.html                     semantische HTML en vaste scriptvolgorde
+src/assets/css/app.css             exact geëxtraheerde stylesheet
+src/assets/js/                     elf scripts per verantwoordelijkheid
+index.html                         gegenereerde standalone publicatie voor Pages en lokaal gebruik
+tools/bundle.js                    dependencyvrije bundler en driftcontrole
 tests/test_refactor_structure.js   architectuur- en golden-equivalentietest
 tests/test_v50.js                  64 functionele regressietests
 docs/ARCHITECTURE.md               eigenaarschap en wijzigingsregels
@@ -23,6 +25,13 @@ package.json                       reproduceerbaar npm test zonder dependencies
 ```
 
 ## Commando's
+
+Standalone publicatie bouwen of controleren:
+
+```bash
+npm run bundle
+npm run check:bundle
+```
 
 Alle architectuur- en functionele tests uitvoeren:
 
@@ -32,7 +41,7 @@ npm test
 
 ## Status
 
-De rootpromotie en inhoudelijke modulesplit zijn uitgevoerd. Samengevoegde CSS en JavaScript blijven byte-voor-byte gelijk aan v1.0.0 en de refactor kan de volledige golden single-filebron exact reconstrueren. `split-preview/` is daardoor niet langer nodig.
+Variant A uit de onafhankelijke audit is gekozen: modulaire bronnen onder `src/`, een gecommitteerde standalone root-`index.html` en automatische driftcontrole. Samengevoegde CSS en JavaScript blijven byte-voor-byte gelijk aan v1.0.0; de rootbundle is exact de golden single-filebron. `split-preview/` is daardoor niet langer nodig en de oorspronkelijke één-bestand-publicatieregel blijft intact.
 
 ## Nieuwe feedback verwerken
 
