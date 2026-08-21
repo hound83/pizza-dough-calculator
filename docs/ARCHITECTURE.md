@@ -2,13 +2,13 @@
 
 ## Design goals
 
-This branch makes golden v1.0.0 easier to maintain without changing product behavior. The architecture therefore has five hard constraints:
+This architecture makes golden v1.0.0 easier to maintain without changing product behavior. It therefore has five hard constraints:
 
-1. `main` and tag `v1.0.0` remain the frozen reference.
+1. Tag `v1.0.0` remains the immutable functional reference; `main` may advance through behavior-equivalent architecture and documentation changes.
 2. The shipped application requires no framework, package dependency, transpiler, or production build at runtime.
 3. GitHub Pages serves the generated standalone root `index.html` directly.
 4. Maintainable sources live under `src/`; eleven classic browser scripts load there in a fixed order.
-5. Recombined CSS and JavaScript must remain byte-for-byte identical to v1.0.0 while this behavior-neutral refactor is under review.
+5. Recombined CSS and JavaScript remain byte-for-byte identical to v1.0.0 until an explicitly approved functional change establishes a new baseline.
 
 Classic scripts are a deliberate intermediate architecture. They preserve the existing inline HTML handlers and shared global lexical runtime without rewriting hundreds of calls at once. Fixed load order and ownership tests make this shared runtime explicit instead of merely implicit.
 
@@ -68,7 +68,7 @@ The test concatenates the eleven modules without separators, restores CSS and Ja
 
 `tests/test_v50.js` runs all 64 functional regressions against both the modular source and the standalone bundle.
 
-`tests/browser/refactor.spec.js` runs 18 Chromium checks across the standalone bundle and modular source. Six viewport widths (320, 390, 430, 760, 1024, and 1280 px) cover initialization, page/console/request failures, and horizontal fit. The three mobile sizes additionally protect usable recipe-list height, the horizontally scrollable filter row, modal fit, and explicit click selection that cannot be changed by hover.
+`tests/browser/refactor.spec.js` runs 19 Chromium checks. One infrastructure contract protects the implicit `/favicon.ico` request made by full Chromium. The other eighteen checks cover the standalone bundle and modular source: six viewport widths (320, 390, 430, 760, 1024, and 1280 px) verify initialization, page/console/request failures, and horizontal fit. The three mobile sizes additionally protect usable recipe-list height, the horizontally scrollable filter row, modal fit, and explicit click selection that cannot be changed by hover.
 
 Playwright is a development-only dependency. It is not bundled into `index.html`, loaded by the application, or required by GitHub Pages and offline users.
 
