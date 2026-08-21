@@ -1,56 +1,38 @@
-# Voorbereiding gedrag-neutrale opsplitsing na v1.0.0
+# Uitvoering gedrag-neutrale refactor na v1.0.0
 
 ## Doel
 
-De uitgebrachte v1.0.0 blijft één zelfvoorzienend `index.html`-bestand. Deze branch bereidt parallel een mechanische opsplitsing voor zonder functies, formules, opslag of gebruikersgedrag te veranderen.
+De uitgebrachte v1.0.0 blijft op `main` één zelfvoorzienend `index.html`-bestand. Deze branch voert de gedrag-neutrale opsplitsing daadwerkelijk in de rootstructuur door, zonder functies, formules, opslag of gebruikersgedrag te veranderen.
 
 De publieke productversie is na een groene audit **v1.0.0** geworden. De historische naam v50 blijft alleen bestaan waar die technisch nodig is voor audits, tests en backwards-compatible `localStorage`-migratie.
 
-## Waarom deze tussenstap?
+## Waarom deze afzonderlijke branch?
 
-Een directe handmatige opsplitsing tijdens de audit zou iedere nieuwe v50-fix op twee sterk verschillende codevormen laten landen. Dat vergroot het risico op dubbele reparaties en mergeconflicten.
+De functionele release en de architectuurwijziging zijn bewust niet vermengd. Daardoor blijft bij iedere vergelijking duidelijk of een verschil uit productlogica of alleen uit de bestandsstructuur komt. De v1.0.0-single-filebron en zijn drie golden hashes vormen de vaste referentie voor deze branch.
 
-Daarom gold tijdens de v1.0.0-promotie, en blijft voor de voorbereidende refactor gelden:
-
-1. de monolithische root-`index.html` is de canonieke bron;
-2. `split-preview/` wordt daar deterministisch uit gegenereerd;
-3. een check faalt zodra de preview achterloopt op de bron;
-4. dezelfde 64 regressietests draaien tegen beide varianten;
-5. de split wordt pas in een afzonderlijke, volledig geteste refactorstap de rootstructuur.
-
-## Voorbereide structuur
+## Gerealiseerde structuur
 
 ```text
-index.html                         canonieke auditbron
-split-preview/
-  index.html                       gegenereerde HTML
-  assets/css/app.css               exact geëxtraheerde stylesheet
-  assets/js/app.js                 exact geëxtraheerde JavaScript
-tools/split-single-file.js         deterministische generator en driftcheck
-tests/test_split_equivalence.js    lossless roundtrip- en structuurtest
-tests/test_v50.js                  draait op monolithische én splitvariant
-package.json                       reproduceerbare commando's zonder dependencies
+index.html                         semantische HTML en vaste scriptvolgorde
+assets/css/app.css                 exact geëxtraheerde stylesheet
+assets/js/                         elf scripts per verantwoordelijkheid
+tests/test_refactor_structure.js   architectuur- en golden-equivalentietest
+tests/test_v50.js                  64 functionele regressietests
+docs/ARCHITECTURE.md               eigenaarschap en wijzigingsregels
+package.json                       reproduceerbaar npm test zonder dependencies
 ```
 
 ## Commando's
 
-Preview opnieuw genereren:
-
-```bash
-npm run prepare:split
-```
-
-Controleren dat de preview exact bij de monolithische bron hoort:
-
-```bash
-npm run check:split
-```
-
-Alle tests tegen beide varianten uitvoeren:
+Alle architectuur- en functionele tests uitvoeren:
 
 ```bash
 npm test
 ```
+
+## Status
+
+De rootpromotie en inhoudelijke modulesplit zijn uitgevoerd. Samengevoegde CSS en JavaScript blijven byte-voor-byte gelijk aan v1.0.0 en de refactor kan de volledige golden single-filebron exact reconstrueren. `split-preview/` is daardoor niet langer nodig.
 
 ## Nieuwe feedback verwerken
 
@@ -58,21 +40,18 @@ Wanneer na v1.0.0 nog een bevinding komt:
 
 1. analyseer en repareer die eerst op een aparte bugfixbranch vanaf `main`;
 2. test de ongesplitste versie en commit de fix daar;
-3. merge die commit in `refactor/post-v1.0-prep`;
-4. voer `npm run prepare:split` uit;
-5. voer `npm test` uit;
-6. herhaal de gerichte browsertest op de split-preview.
+3. merge of cherry-pick de fix in `refactor/post-v1.0-prep` binnen de bezittende module;
+4. voer `npm test` uit;
+5. herhaal de gerichte browsertest op de refactorroot.
 
-Omdat de refactorbranch de canonieke `index.html` nog niet uiteen heeft getrokken, hoort een inhoudelijke auditfix normaal zonder HTML/CSS/JS-splitconflict te mergen. Alleen de gegenereerde preview wordt daarna vernieuwd.
+Een inhoudelijke fix op `main` moet in de refactor over de relevante modules worden verdeeld. De golden-hashtest faalt dan bewust totdat de nieuwe functionele baseline en reden zijn vastgelegd.
 
-## Na v1.0.0
+## Volgende architectuurstappen
 
-De uiteindelijke refactor volgt in afzonderlijke, controleerbare stappen:
+1. laat Claude de refactor in een echte Chromium-browser vergelijken met `main`;
+2. sluit eventuele laadvolgorde-, hosting- of onderhoudbaarheidsbevindingen op deze branch;
+3. behoud productversie 1.0.0 zolang gedrag volledig equivalent blijft;
+4. overweeg ES-modules en het verwijderen van inline handlers pas in een aparte, opnieuw geaudite architectuurstap;
+5. bouw Basis/Uitgebreid vervolgens als nieuwe functionaliteit in **v1.1.0**.
 
-1. de al gescheiden productversie en opslag-/migratieversie intact houden;
-2. de gegenereerde HTML/CSS/JS-structuur naar de root promoveren;
-3. browser- en VM-regressies opnieuw uitvoeren;
-4. pas daarna JavaScript per verantwoordelijkheid opdelen, bijvoorbeeld data, pure berekeningen, state/opslag, internationalisatie en UI;
-5. Basis/Uitgebreid vervolgens als nieuwe functionaliteit in **v1.1.0** bouwen.
-
-De mechanische extractie en de latere modulaire herstructurering blijven bewust aparte commits. Daardoor is bij een regressie exact zichtbaar in welke stap die is ontstaan.
+De moduleverantwoordelijkheden en wijzigingsregels staan in `docs/ARCHITECTURE.md`; de gerichte onafhankelijke auditopdracht staat in `docs/Claude_refactor_handoff_v1.0.0.md`.

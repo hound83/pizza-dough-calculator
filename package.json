@@ -4,12 +4,9 @@
   "private": true,
   "description": "Pizza dough, fermentation, sauce and topping calculator",
   "scripts": {
-    "prepare:split": "node tools/split-single-file.js index.html split-preview",
-    "check:split": "node tools/split-single-file.js index.html split-preview --check",
-    "test:monolith": "node tests/test_v50.js",
-    "test:split-structure": "node tests/test_split_equivalence.js",
-    "test:split-app": "node tests/test_v50.js split-preview/index.html",
-    "test": "npm run test:monolith && npm run check:split && npm run test:split-structure && npm run test:split-app"
+    "test:structure": "node tests/test_refactor_structure.js",
+    "test:app": "node tests/test_v50.js index.html",
+    "test": "npm run test:structure && npm run test:app"
   },
   "engines": {
     "node": ">=18"

@@ -2,16 +2,16 @@
 
 [![Version](https://img.shields.io/badge/version-v1.0.0_release-76c990)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 [![Tests](https://img.shields.io/badge/regression_tests-64%2F64_passing-76c990)](tests/test_v50.js)
-[![App](https://img.shields.io/badge/app-single_file_HTML-f0b45a)](index.html)
+[![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
 Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fermentatie, saus, toppings en een compleet praktisch stappenplan.
 
-De calculator werkt als één zelfvoorzienend `index.html`-bestand: geen installatie, geen backend en geen buildstap. Daardoor is hij direct lokaal te openen en eenvoudig via GitHub Pages te publiceren.
+De officiële v1.0.0-release op `main` blijft één zelfvoorzienend `index.html`-bestand. Deze refactorbranch gebruikt dezelfde applicatie als overzichtelijke statische HTML-, CSS- en JavaScriptbestanden: nog steeds zonder backend, dependencies of buildstap en rechtstreeks geschikt voor GitHub Pages.
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
-> **v1.0.0** is de eerste golden release en staat op `main`. De historische auditbranch blijft `v50-golden-candidate` heten; opslag- en testnamen met v50 blijven bewust bestaan voor backwards compatibility en traceerbaarheid.
+> **v1.0.0** is de eerste golden release en staat ongewijzigd op `main`. Deze branch verandert uitsluitend de bronstructuur. De samengevoegde CSS en JavaScript zijn byte-voor-byte gelijk aan de release; opslag- en migratieschema 50 blijven eveneens ongewijzigd.
 
 ## Wat kan de calculator?
 
@@ -79,7 +79,7 @@ git clone https://github.com/hound83/pizza-dough-calculator.git
 cd pizza-dough-calculator
 ```
 
-Open daarna `index.html`, of start eventueel een eenvoudige lokale webserver:
+Open daarna `index.html`, of start bij voorkeur een eenvoudige lokale webserver:
 
 ```bash
 python -m http.server 8000
@@ -104,15 +104,16 @@ https://<gebruikersnaam>.github.io/<repositorynaam>/
 
 ## Tests
 
-De snelle regressiesuite gebruikt alleen Node.js en heeft geen extra packages nodig:
+De volledige refactorcontrole gebruikt alleen Node.js en heeft geen extra packages nodig:
 
 ```bash
-node tests/test_v50.js
+npm test
 ```
 
 Huidige uitslag:
 
 ```text
+9 refactor-structure tests passed
 64 regression tests passed
 ```
 
@@ -129,7 +130,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-Naast deze snelle suite is v1.0.0 onafhankelijk in een echte Chromium-browser gecontroleerd op toetsenbordbediening, native events, herladen en mobiele viewports van 320 tot 1280 px.
+De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap en exacte reconstructie van de golden single-filebron. v1.0.0 zelf is onafhankelijk in Chromium gecontroleerd; deze refactorbranch is voorbereid voor een nieuwe browservergelijking tegen `main`.
 
 ## Versienummering
 
@@ -148,17 +149,22 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 
 | Pad | Doel |
 |---|---|
-| [`index.html`](index.html) | Complete applicatie: HTML, CSS, JavaScript, data en recepten |
+| [`index.html`](index.html) | Semantische HTML en de vaste laadvolgorde van de statische assets |
+| [`assets/css/app.css`](assets/css/app.css) | Volledige presentatie en responsive layout |
+| [`assets/js/`](assets/js/) | Elf geordende modules per verantwoordelijkheid |
 | [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
+| [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architectuur-, integriteits- en golden-equivalentietests |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Modulegrenzen, afhankelijkheden en wijzigingsregels |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Kwaliteitsregels en reviewchecklist voor vervolgwerk |
 | [`docs/`](docs/) | Audit-handoffs, wijzigingsonderbouwing en testinstructies |
 
-De single-file-opzet is voor v1.0.0 bewust behouden. Dat maakt downloaden, delen, lokaal openen en hosten via GitHub Pages uitzonderlijk eenvoudig. Een toekomstige gedrag-neutrale refactor mag de interne code opsplitsen, maar moet die eenvoudige publicatie-ervaring behouden.
+De single-file-opzet blijft de officiële v1.0.0-download op `main`. De refactorbranch behoudt dezelfde eenvoudige publicatie-ervaring, maar geeft ontwikkelaars kleinere bestanden, expliciete verantwoordelijkheden en automatische bescherming tegen onbedoelde gedragswijzigingen.
 
 ## Status en roadmap
 
-- **Nu:** v1.0.0 golden release op `main`, met de onafhankelijk geaudite kandidaat bewaard op `v50-golden-candidate`.
-- **Kleine follow-up:** de resterende niet-blokkerende toegankelijkheidsverbetering voor zeven uitgebreide veldlabels, beoogd voor v1.0.1 of de refactor.
-- **Parallel voorbereid:** gedrag-neutrale opsplitsing van HTML, CSS en JavaScript op `refactor/post-v1.0-prep`.
+- **Release:** v1.0.0 golden blijft bevroren op `main` en tag `v1.0.0`.
+- **Deze branch:** gedrag-neutrale refactor naar statische HTML, CSS en elf JavaScriptmodules, klaar voor onafhankelijke vergelijking met `main`.
+- **Kleine follow-up:** de resterende niet-blokkerende toegankelijkheidsverbetering voor zeven uitgebreide veldlabels blijft buiten deze gedrag-neutrale refactor.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
 
 ## Achtergrond
