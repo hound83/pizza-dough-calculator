@@ -1,7 +1,8 @@
 const fs=require('fs');
 const vm=require('vm');
 
-const html=fs.readFileSync('pizzadeeg_calculator_v50.html','utf8');
+const calculatorPath=fs.existsSync('index.html')?'index.html':'pizzadeeg_calculator_v50.html';
+const html=fs.readFileSync(calculatorPath,'utf8');
 const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).join('\n');
 
 class DummyClassList{
