@@ -2,6 +2,8 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
+> `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
+
 [![Versie](https://img.shields.io/badge/versie-v1.0.0_release-76c990)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 [![Tests](https://img.shields.io/badge/regressietests-64%2F64_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
@@ -9,11 +11,11 @@
 
 Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fermentatie, saus, toppings en een compleet praktisch stappenplan.
 
-De officiële v1.0.0-release blijft één zelfvoorzienend `index.html`-bestand. Deze refactorbranch bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies dezelfde standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
+De downloadbare v1.0.0-applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies dezelfde standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
-> **v1.0.0** is de eerste golden release en staat ongewijzigd op `main`. Deze branch verandert uitsluitend de bronstructuur. De samengevoegde CSS en JavaScript zijn byte-voor-byte gelijk aan de release; opslag- en migratieschema 50 blijven eveneens ongewijzigd.
+> Tag **v1.0.0** is de onveranderlijke golden gedragsbaseline. De onderhoudbare bronstructuur verandert hoe ontwikkelaars werken, niet wat gebruikers ontvangen: samengevoegde CSS en JavaScript blijven byte-voor-byte gelijk aan de release en opslag-/migratieschema 50 blijft ongewijzigd.
 
 ## Wat kan de calculator?
 
@@ -124,10 +126,10 @@ npm test
 Huidige uitslag:
 
 ```text
-11 refactor-structure tests passed
+12 refactor-structure tests passed
 64 bundle regression tests passed
 64 source regression tests passed
-18 Chromium browser/layout tests passed
+19 Chromium browser/layout tests passed
 ```
 
 De suite controleert onder meer:
@@ -179,6 +181,7 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 | [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromiumtests voor laden, responsive layout en pickerinteractie |
 | [`playwright.config.js`](playwright.config.js) | Reproduceerbare browsertestconfiguratie voor lokaal gebruik en CI |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Modulegrenzen, afhankelijkheden en wijzigingsregels |
+| [`docs/PRODUCT_GUARDRAILS.md`](docs/PRODUCT_GUARDRAILS.md) | Harde productafspraken die niet stilzwijgend mogen wijzigen |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Kwaliteitsregels en reviewchecklist voor vervolgwerk |
 | [`README.md`](README.md) | Canonieke Engelse projectdocumentatie |
 | [`docs/`](docs/) | Audit-handoffs, wijzigingsonderbouwing en testinstructies |
@@ -187,8 +190,9 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Release:** v1.0.0 golden blijft bevroren op `main` en tag `v1.0.0`.
-- **Deze branch:** gedrag-neutrale refactor naar statische HTML, CSS en elf JavaScriptmodules, klaar voor onafhankelijke vergelijking met `main`.
+- **Release:** tag v1.0.0 blijft de onveranderlijke golden functionele baseline.
+- **Huidige architectuur:** statische bron-HTML, CSS en elf JavaScriptmodules genereren de byte-identieke standalone publicatie voor GitHub Pages.
+- **Audit:** de gedrag-neutrale refactor en de laatste verbetering van de testinfrastructuur zijn onafhankelijk door Claude gecrosscheckt.
 - **Kleine follow-up:** de resterende niet-blokkerende toegankelijkheidsverbetering voor zeven uitgebreide veldlabels blijft buiten deze gedrag-neutrale refactor.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
 
