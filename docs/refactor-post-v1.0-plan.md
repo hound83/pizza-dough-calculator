@@ -15,7 +15,7 @@ Daarom geldt tot de v1.0.0-promotie:
 1. de monolithische root-`index.html` is de canonieke bron;
 2. `split-preview/` wordt daar deterministisch uit gegenereerd;
 3. een check faalt zodra de preview achterloopt op de bron;
-4. dezelfde 60 regressietests draaien tegen beide varianten;
+4. dezelfde 64 regressietests draaien tegen beide varianten;
 5. de split wordt pas na de browseraudit de rootstructuur.
 
 ## Voorbereide structuur

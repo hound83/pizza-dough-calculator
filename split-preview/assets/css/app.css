@@ -596,6 +596,13 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
   line-height:1.35;
 }
 
+/* Houd de temperatuurvelden op één lijn zonder de langere koelkastuitleg
+   mee te tellen bij de verticale uitlijning van beide invoervelden. */
+.fridge-temp-help{
+  grid-column:2;
+  margin-top:-7px;
+}
+
 /* v34 responsive alignment / mobile hardening */
 .grid > *,
 .card,
@@ -623,6 +630,9 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 }
 
 @media(max-width:560px){
+  .fridge-temp-help{
+    grid-column:1;
+  }
   .card{
     padding:17px;
     border-radius:19px;

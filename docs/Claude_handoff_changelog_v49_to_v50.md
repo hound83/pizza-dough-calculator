@@ -7,7 +7,7 @@
 
 ## 0. Samenvatting
 
-v50 verwerkt alle vijf aanbevelingsgroepen uit `Crosscheck_v49_door_Claude.md`, één aanvullend door Michael gevonden pickerprobleem en alle zeven bevindingen uit de echte Chromium-audit `Crosscheck_v50_door_Claude.md`. De distributievorm blijft bewust één zelfvoorzienend HTML-bestand voor GitHub Pages. De grotere HTML/CSS/JS-refactor is niet met deze functionele ronde vermengd.
+v50 verwerkt alle vijf aanbevelingsgroepen uit `Crosscheck_v49_door_Claude.md`, één aanvullend door Michael gevonden pickerprobleem, alle zeven bevindingen uit de echte Chromium-audit `Crosscheck_v50_door_Claude.md` en de gerichte follow-up uit `Crosscheck_v50b_door_Claude.md`. De distributievorm blijft bewust één zelfvoorzienend HTML-bestand voor GitHub Pages. De grotere HTML/CSS/JS-refactor is niet met deze functionele ronde vermengd.
 
 De zes wijzigingsgroepen zijn:
 
@@ -18,7 +18,7 @@ De zes wijzigingsgroepen zijn:
 5. gistsoortconversie gebruikt één afgeronde waarde voor veld én berekening;
 6. de pizzapicker selecteert uitsluitend door een bewuste klik/toetsenbordactivatie; hover, focus, zoeken en filteren wijzigen selectie, rechterpaneel en commitdoel niet.
 
-Lokale uitslag na de browseraudit-fixes: **60/60 regressietests groen**. Daarbinnen zitten onder meer 1.512 room-solvergevallen, 30 gecombineerde render-smokes en alle 92 recepten in beide talen (184 picker-renders).
+Lokale uitslag na de follow-upfixes: **64/64 regressietests groen**. Daarbinnen zitten onder meer 1.512 room-solvergevallen, 30 gecombineerde render-smokes en alle 92 recepten in beide talen (184 picker-renders).
 
 ### 0.1 Sluiting van `Crosscheck_v50_door_Claude.md`
 
@@ -31,6 +31,17 @@ Lokale uitslag na de browseraudit-fixes: **60/60 regressietests groen**. Daarbin
 | L-2 dubbel `gekozen` + `huidig` | dezelfde pizzaregel toont nog maar één statusmarkering |
 | L-3 links/rechts-uitleg op mobiel | instructie is positie-onafhankelijk gemaakt |
 | L-4 werkmapafhankelijk testpad | testbestand resolveert vanaf `__dirname` en werkt ook vanuit een andere current working directory |
+
+### 0.2 Sluiting van `Crosscheck_v50b_door_Claude.md`
+
+| Follow-upbevinding | Sluiting in de golden candidate |
+|---|---|
+| M-2 half vertaalde hulpregel bij taalwissel met open picker | een geopende picker wordt na `update()` volledig opnieuw opgebouwd voordat de algemene tekstnodevertaler draait |
+| Achtergebleven `drukt. → on the right.`-fragment | het verouderde fragment wordt expliciet uit `EN_TEXT` verwijderd en kan de nieuwe positie-onafhankelijke zin niet meer raken |
+| L-5 verouderde focuswaarde na programmatisch preset laden | `applyPreset()` synchroniseert na alle veldwrites de edit-startwaarde van het actieve numerieke veld |
+| L-6 AVPN-steentemperatuur | productregel expliciet getest: alleen AVPN schrijft 405 °C; alle overige presets behouden de gekozen steentemperatuur |
+| Door Michael gevonden uitlijningsbug bij temperatuurvelden | koelkasthelp staat buiten het label in een eigen gridcel; `aria-describedby` houdt de semantische koppeling intact |
+| L-7 CSS-test versus echte layout | bewust geen schijnzekerheid toegevoegd; werkelijke geometrie blijft onderdeel van de gerichte browsertest |
 
 ## 1. Functionele wijzigingen
 
@@ -159,13 +170,13 @@ Onder 760 px gebruikt de linkerkolom geen vaste hoogte van 46vh meer. De recepte
 Commando:
 
 ```bash
-node test_v50.js
+node tests/test_v50.js
 ```
 
 Resultaat:
 
 ```text
-60 regression tests passed
+64 regression tests passed
 ```
 
 Belangrijkste nieuwe dekking:
@@ -181,6 +192,10 @@ Belangrijkste nieuwe dekking:
 | AVPN | waarschuwingen én volledig informatieblok gecontroleerd op taalresten en juiste decimaalscheiders |
 | Pickerinteractie | klik, zoek/filter zonder selectie-effect, dezelfde keuze opnieuw, matching commitstate, afwezigheid hover/focushandlers |
 | Picker-UX | exclusieve `huidig`/`gekozen`-markering, positie-onafhankelijke hulptekst en statische mobiele CSS-contracten |
+| Taalwissel met open picker | NL → EN → NL bouwt lijst en preview opnieuw op zonder verlies van selectie, pending customizations, zoektekst, filters of modalstate |
+| Preset/focus-hardening | programmatisch geladen preset wordt de nieuwe herstelwaarde van een actief numeriek veld |
+| AVPN-temperatuurbeleid | AVPN zet 405 °C; niet-AVPN-presets behouden 447/412 °C testwaarden ongewijzigd |
+| Temperatuur-layout | koelkasthelp staat buiten de veldlabels, is semantisch gekoppeld en heeft afzonderlijke desktop-/mobiele gridplaatsing |
 | Pickerbibliotheek | alle 92 recepten × NL/EN = 184 renders met passend recept, saus en pending id |
 | Render-smoke | 3 appmodi × 2 talen × 5 deegstijlen = 30 configuraties met live metingen |
 | Bestaande matrices | 1.512 room-solvergevallen, 36 kernreceptberekeningen, 21 sausdefaults en alle eerdere v49-regressies |
@@ -209,13 +224,15 @@ Deze runtime bevat Playwright maar geen geïnstalleerde Chromium/Firefox/WebKit-
 8. zet gewichtmodus op 300 g en wissel stijlen; herhaal diametermodus op 35 cm;
 9. AVPN in EN: het volledige infoblok én de waarschuwingen zijn Engels en gebruiken puntdecimalen;
 10. desktop en 320/390/430 px: geen horizontale overflow; meerdere recepten zichtbaar, filterchips horizontaal scrollbaar en receptenlijst verticaal scrollbaar.
+11. laat de picker openstaan en wissel NL → EN → NL: hulpregel, lijst en preview moeten volledig in één taal staan en de tijdelijke selectie/aanpassingen moeten behouden blijven;
+12. controleer desktop en mobiel dat kamer- en koelkasttemperatuurvelden logisch bovenaan uitlijnen, de koelkasthelp eronder staat en niets overlapt met `Ik wil bakken`.
 
 ## 5. Omvang en integriteit
 
 | Bestand | Regels | Bytes | SHA-256 |
 |---|---:|---:|---|
-| `pizzadeeg_calculator_v50.html` | 6.477 | 402.590 | `5591a208f4b827ca21f7477b8d1289c0b38e5f6ecf9aea25ebb68f4ec72c1062` |
-| `test_v50.js` | 535 | 44.797 | `4624287f7df8e8676b471f6188b9984711d2ef740cc9de50508e0318d0dfc88a` |
+| `index.html` | 6.504 | 403.881 | `179a5b6176bb5343808630f7ef91f5b1196e49d97286027b10fc849bd3ad4af4` |
+| `tests/test_v50.js` | 587 | 49.569 | `5fea79288b0da7750150f808776e9051bb025f6ed335ac3ef79a20bbc98247ce` |
 
 ## 6. Scopegrens en advies
 

@@ -1,7 +1,7 @@
 # 🍕 Pizzadeegcalculator
 
 [![Version](https://img.shields.io/badge/version-v1.0.0_release_candidate-ee6b49)](https://github.com/hound83/pizza-dough-calculator/tree/v50-golden-candidate)
-[![Tests](https://img.shields.io/badge/regression_tests-60%2F60_passing-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regression_tests-64%2F64_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/app-single_file_HTML-f0b45a)](index.html)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
@@ -113,7 +113,7 @@ node tests/test_v50.js
 Huidige uitslag:
 
 ```text
-60 regression tests passed
+64 regression tests passed
 ```
 
 De suite controleert onder meer:

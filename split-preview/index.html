@@ -184,14 +184,14 @@
 <input class="field" id="ballHours" max="48" min="0" step="0.25" type="number" value="4"/>
 </label>
 </div>
-<div class="form-grid align-fields" style="margin-top:12px">
+<div class="form-grid align-fields fermentation-temperature-grid" style="margin-top:12px">
 <label>Kamertemperatuur (°C)
               <input class="field" id="roomTemp" max="35" min="10" step="0.5" type="number" value="21"/>
 </label>
 <label>Verwachte gemiddelde koelkasttemp. (°C)
-              <input class="field" id="fridgeTemp" max="15" min="0" step="0.5" type="number" value="4"/>
-<span class="input-help">Weet je hem niet? Laat 4 °C staan als praktische standaard. In het stappenplan kun je later de werkelijk gemeten gemiddelde temperatuur invullen.</span>
+              <input aria-describedby="fridgeTempHelp" class="field" id="fridgeTemp" max="15" min="0" step="0.5" type="number" value="4"/>
 </label>
+<span class="input-help fridge-temp-help" id="fridgeTempHelp">Weet je hem niet? Laat 4 °C staan als praktische standaard. In het stappenplan kun je later de werkelijk gemeten gemiddelde temperatuur invullen.</span>
 <div class="wide">
 <div class="field-group-label">Ik wil bakken (optioneel)</div>
 <div class="bake-plan-grid">
