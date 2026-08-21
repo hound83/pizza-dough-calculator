@@ -2,7 +2,7 @@
 
 ## Before you start
 
-- Read `docs/ARCHITECTURE.md` and identify the module that owns the behavior.
+- Read `docs/PRODUCT_GUARDRAILS.md` and `docs/ARCHITECTURE.md`, then identify the module that owns the behavior.
 - Keep functional changes, architecture changes, and data changes in separate commits.
 - Change the storage key or schema only with an explicit migration path and regression test.
 - Use `addEventListener` for new interactions; do not add new inline handlers.
@@ -12,6 +12,7 @@
 - Use English for identifiers, developer documentation, commit messages, tests, and new code comments.
 - Keep all user-facing interface text available in both Dutch and English through the existing i18n system.
 - `README.md` is the canonical English project guide; keep `README.nl.md` equivalent in scope and meaning.
+- Keep the heading-level sequence and language-navigation links aligned; `npm run test:structure` enforces this structural contract.
 - Historic Dutch audit and changelog files are preserved as project evidence and do not need translation.
 - Existing Dutch comments in the golden JavaScript remain untouched during the behavior-neutral refactor because changing them would break the verified JavaScript hash. Translate them only in a separately reviewed, deliberately non-golden cleanup.
 
