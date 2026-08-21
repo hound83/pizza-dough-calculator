@@ -24,6 +24,13 @@ function resolveRequestPath(requestUrl){
 }
 
 const server=http.createServer((request,response)=>{
+  // Full Chromium requests this path implicitly. Returning an empty success
+  // keeps browser diagnostics focused on application-owned resources.
+  if(request.url==='/favicon.ico'){
+    response.writeHead(204).end();
+    return;
+  }
+
   let filePath;
   try{
     filePath=resolveRequestPath(request.url);
