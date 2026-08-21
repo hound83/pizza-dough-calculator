@@ -64,7 +64,7 @@ Belangrijke UX-betekenis: tijdens een tussenstand kan het veld bijvoorbeeld `4` 
 Commando:
 
 ```bash
-node test_v49.js
+node tests/test_v49.js
 ```
 
 Resultaat: **40 regression tests passed**.
