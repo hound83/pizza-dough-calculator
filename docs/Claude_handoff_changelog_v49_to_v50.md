@@ -188,7 +188,7 @@ Deze runtime bevat Playwright maar geen geïnstalleerde Chromium/Firefox/WebKit-
 | Bestand | Regels | Bytes | SHA-256 |
 |---|---:|---:|---|
 | `pizzadeeg_calculator_v50.html` | 6.408 | 398.099 | `2521bf92e9bad889c493ac30ba41f6c49c6c2eae9941b5f7f9a5c4b02ac1db48` |
-| `test_v50.js` | 460 | 39.115 | `6434ab8fb51a1d6aafe2b42962ba87ac933ab15124aef0f3848d46afd4cec54d` |
+| `test_v50.js` | 461 | 39.193 | `2bec393eb991bb0a50ba82d59bb17b72e9f21ba61124666f219996a38e7495db` |
 
 ## 6. Scopegrens en advies
 
