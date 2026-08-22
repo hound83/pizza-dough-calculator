@@ -53,6 +53,16 @@ The behavior-neutral refactor protects these v1.0.0 hashes:
 
 When behavior is intentionally changed, do not silently replace these values. First document the approved product change, update or add focused tests, select the correct semantic version, and record the reviewed replacement baseline.
 
+## v1.1.0 Basic/Full display contract
+
+- Basic and Full are display modes independent of the Dough only, Dough + sauce, and Complete pizzas output modes.
+- New users start in Basic. Stored v1.0.0/schema-50 users migrate to Full.
+- Switching display mode never resets, recalculates, or replaces recipe values.
+- Basic shows the preset, pizza count and diameter, relevant temperatures, optional bake deadline, stone temperature, compact yeast guidance, ingredients, warnings, and practical workflow.
+- Presets continue to own hidden technical values: dough style, baker's percentages, yeast type and amount, oil, rounding, autolyse, fermentation method and phase times, flour/W settings, and technical explanations.
+- Values edited in Full remain intact after switching to Basic. If the preset has become Custom, Basic shows a localized “Custom settings active” badge.
+- The chosen display mode is stored in schema 51 under `pizzaCalcV51`; schema 50 is migrated once and then removed.
+
 ## Change checklist
 
 Before changing a rule above:

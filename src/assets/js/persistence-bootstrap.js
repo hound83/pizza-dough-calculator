@@ -1,6 +1,6 @@
-const SAVE_KEY='pizzaCalcV50';
-const SAVE_VERSION=50;
-const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${49-i}`);
+const SAVE_KEY='pizzaCalcV51';
+const SAVE_VERSION=51;
+const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${50-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
 
@@ -30,7 +30,7 @@ function scheduleSave(){
 }
 
 function saveState(){
-  const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,currentLang,completedSteps,bakeLog,liveMeasurements,
+  const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
     currentWizardPage,
     practical:$('practical').checked,autolyse:$('autolyse').checked,
     sizeFromDiameter:$('sizeFromDiameter').checked,includeSauce:$('includeSauce').checked,
@@ -95,12 +95,18 @@ function loadState(){
     if(!raw){ for(const k of LEGACY_KEYS){ raw=SAFE.get(k); if(raw) break; } }
     const d=JSON.parse(raw||'null');
     if(!d||typeof d!=='object'||Array.isArray(d))return false;
+    // v1.0.0 had no Basic/Full display mode. Existing users retain the full
+    // controls they were accustomed to; only genuinely new users start Basic.
+    experienceMode=Object.prototype.hasOwnProperty.call(d,'experienceMode')
+      ? (d.experienceMode==='full'?'full':'basic')
+      : 'full';
     suppressCustom=true;
     Object.entries(d).forEach(([k,v])=>{
       if(k==='version')return;
       else if(k==='currentMethod')currentMethod=['hand','kitchenaid','kenwood','pro'].includes(v)?v:'kitchenaid';
       else if(k==='currentLang')currentLang=v==='en'?'en':'nl';
       else if(k==='appMode')appMode=['dough','sauce','full'].includes(v)?v:'full';
+      else if(k==='experienceMode')experienceMode=v==='full'?'full':'basic';
       else if(k==='exactOverride')exactOverride=sanitizeExactOverride(v);
       else if(k==='previousYeastType')previousYeastType=yeastTypes[v]?v:'idy';
       else if(k==='currentWizardPage')_restoredWizardPage=Number.isFinite(Number(v))?Math.max(0,Math.round(Number(v))):0;
@@ -243,6 +249,7 @@ function wireEvents(){
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('[data-experience]').forEach(button=>button.addEventListener('click',()=>setExperienceMode(button.dataset.experience)));
   const search=$('pizzaPickerSearch');
   if(search){
     // Zonder debounce werd de hele lijst van 89 recepten per toetsaanslag opnieuw

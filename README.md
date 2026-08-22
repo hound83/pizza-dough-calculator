@@ -2,18 +2,18 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.0.0_release-76c990)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
-[![Tests](https://img.shields.io/badge/regression_tests-64%2F64_passing-76c990)](tests/test_v50.js)
+[![Version](https://img.shields.io/badge/version-v1.1.0_candidate-f0b45a)](https://github.com/hound83/pizza-dough-calculator)
+[![Tests](https://img.shields.io/badge/regression_tests-65%2F65_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
 A comprehensive Dutch and English calculator for pizza dough, fermentation, sauce, toppings, and a complete practical workflow.
 
-The downloadable v1.0.0 application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the same standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
+The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.0.0 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
-> Tag **v1.0.0** is the immutable golden behavior baseline. The maintainable source structure changes how developers work, not what users receive: recombined CSS and JavaScript remain byte-for-byte identical to the release, and storage/migration schema 50 is unchanged.
+> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.1.0 is the first approved feature change and introduces storage schema 51 with an explicit migration from schema 50.
 
 ## Features
 
@@ -24,6 +24,8 @@ The app currently offers three usage modes:
 | **Dough only** | Dough calculation, fermentation, yeast advice, kneading, and baking advice |
 | **Dough + sauce** | Everything in Dough only, plus a separate sauce calculator |
 | **Complete pizzas** | Dough, sauce, one recipe per dough ball, toppings, shopping list, and complete workflow |
+
+Independently of those output modes, the start screen offers **Basic** and **Full** display modes. Basic keeps the practical inputs and results visible while presets manage technical dough values. Full exposes every existing setting. Switching is lossless; existing v1.0 users migrate to Full and new users start in Basic.
 
 Highlights:
 
@@ -47,7 +49,7 @@ Highlights:
 
 ## Usage
 
-1. Choose how much of the calculator you need on the start screen.
+1. Choose Basic or Full, then choose how much of the calculator you need.
 2. Select a preset or enter your own dough values.
 3. Choose diameter or dough-ball weight as the leading measurement.
 4. Configure fermentation, temperatures, and optionally a target baking time.

@@ -45,9 +45,9 @@ const moduleSources=EXPECTED_SCRIPTS.map(src=>fs.readFileSync(path.join(SOURCE_R
 assert(!sourceHtml.includes('assets/js/app.js')&&!fs.existsSync(path.join(SOURCE_ROOT,'assets','js','app.js')),'Legacy app.js is still part of the source refactor.');
 pass('the legacy all-in-one app.js is absent from the modular source');
 
-assert(sha256(css)===GOLDEN.css,`CSS differs from v1.0.0: ${sha256(css)}`);
-assert(sha256(combinedJavaScript)===GOLDEN.javascript,`Combined JavaScript differs from v1.0.0: ${sha256(combinedJavaScript)}`);
-pass('CSS and recombined JavaScript are byte-for-byte equal to v1.0.0');
+const guardrails=fs.readFileSync(path.join(ROOT,'docs','PRODUCT_GUARDRAILS.md'),'utf8');
+for(const hash of Object.values(GOLDEN))assert(guardrails.includes(hash),`Historical v1.0.0 baseline hash is missing from product guardrails: ${hash}`);
+pass('historical v1.0.0 baseline hashes remain documented');
 
 new vm.Script(combinedJavaScript,{filename:'combined-refactor.js'});
 pass('recombined JavaScript parses successfully');
@@ -55,8 +55,8 @@ pass('recombined JavaScript parses successfully');
 const reconstructed=sourceHtml
   .replace(STYLE_LINK,`<style>${css}</style>`)
   .replace(SCRIPT_TAGS,`<script>${combinedJavaScript}</script>`);
-assert(sha256(reconstructed)===GOLDEN.singleFile,`Reconstructed single-file hash differs from v1.0.0: ${sha256(reconstructed)}`);
-pass('the complete refactor reconstructs the golden single file exactly');
+assert(reconstructed===built.html,'Source reconstruction differs from the generated feature bundle.');
+pass('the complete modular source reconstructs the current feature bundle exactly');
 
 const contracts=[
   ['foundation.js','const APP_VERSION'],

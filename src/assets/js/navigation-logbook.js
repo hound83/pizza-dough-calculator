@@ -125,10 +125,43 @@ function previousWizardPage(page=currentWizardPage){
 function renderModeChooser(){
   document.querySelectorAll('[data-mode-card]').forEach(card=>card.classList.remove('last-used'));
   const count=$('fullRecipeCount');if(count)count.textContent=pizzaRecipes.length;
+  renderExperienceMode();
+}
+
+function hasCustomDoughSettings(){
+  return $('preset')?.value==='custom';
+}
+
+function renderExperienceMode(){
+  document.body.dataset.experienceMode=experienceMode;
+  document.querySelectorAll('[data-experience]').forEach(button=>{
+    const active=button.dataset.experience===experienceMode;
+    button.classList.toggle('active',active);
+    button.setAttribute('aria-pressed',String(active));
+  });
+  const nl=currentLang!=='en';
+  const basic=$('experienceBasic'),full=$('experienceFull'),note=$('experienceNote'),badge=$('experienceCustomBadge');
+  if(basic){const title=basic.querySelector('b'),hint=basic.querySelector('span');if(title)title.textContent=nl?'Basis':'Basic';if(hint)hint.textContent=nl?'Alleen wat je nodig hebt':'Only what you need';}
+  if(full){const title=full.querySelector('b'),hint=full.querySelector('span');if(title)title.textContent=nl?'Volledig':'Full';if(hint)hint.textContent=nl?'Alle instellingen en uitleg':'All settings and explanations';}
+  if($('experienceSwitch'))$('experienceSwitch').setAttribute('aria-label',nl?'Weergavemodus':'Display mode');
+  if(note)note.textContent=nl
+    ? 'Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.'
+    : 'Basic uses reliable preset values and keeps technical settings out of view. Switching does not change your recipe.';
+  if(badge){
+    badge.textContent=nl?'Eigen instellingen actief':'Custom settings active';
+    badge.classList.toggle('hidden',experienceMode!=='basic'||!hasCustomDoughSettings());
+  }
+}
+
+function setExperienceMode(mode){
+  experienceMode=mode==='full'?'full':'basic';
+  renderExperienceMode();
+  scheduleSave();
 }
 
 function applyAppModeUI(){
   document.body.dataset.appMode=appMode;
+  renderExperienceMode();
 
   $('pizzaSauceHeading').textContent=currentLang==='en'?'Sauce(s)':'Saus(en)';
   $('pizzaSauceHint').innerHTML=appMode==='sauce'
@@ -302,4 +335,3 @@ function renderBakeLog(c){
   }).join('')}</div>`:L('<div class="hint" style="margin-top:10px">Nog geen bakresultaten opgeslagen.</div>','<div class="hint" style="margin-top:10px">No bake results saved yet.</div>');
   box.innerHTML=calText+modelText+list;
 }
-

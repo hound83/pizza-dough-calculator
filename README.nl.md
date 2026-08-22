@@ -4,18 +4,18 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v1.0.0_release-76c990)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
-[![Tests](https://img.shields.io/badge/regressietests-64%2F64_groen-76c990)](tests/test_v50.js)
+[![Versie](https://img.shields.io/badge/versie-v1.1.0_kandidaat-f0b45a)](https://github.com/hound83/pizza-dough-calculator)
+[![Tests](https://img.shields.io/badge/regressietests-65%2F65_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
 Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fermentatie, saus, toppings en een compleet praktisch stappenplan.
 
-De downloadbare v1.0.0-applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies dezelfde standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
+De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies de standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
-> Tag **v1.0.0** is de onveranderlijke golden gedragsbaseline. De onderhoudbare bronstructuur verandert hoe ontwikkelaars werken, niet wat gebruikers ontvangen: samengevoegde CSS en JavaScript blijven byte-voor-byte gelijk aan de release en opslag-/migratieschema 50 blijft ongewijzigd.
+> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.1.0 is de eerste goedgekeurde functionele uitbreiding en introduceert opslagschema 51 met een expliciete migratie vanaf schema 50.
 
 ## Wat kan de calculator?
 
@@ -26,6 +26,8 @@ De app heeft drie huidige gebruiksmodi:
 | **Alleen deeg** | Deegberekening, fermentatie, gistadvies, kneden en bakadvies |
 | **Deeg + saus** | Alles van Alleen deeg, plus een losse sausberekening |
 | **Volledige pizza’s** | Deeg, saus, recept per bol, toppings, boodschappenlijst en compleet stappenplan |
+
+Los van die uitvoermodi biedt het beginscherm de weergavemodi **Basis** en **Volledig**. Basis houdt de praktische invoer en resultaten zichtbaar, terwijl presets de technische deegwaarden beheren. Volledig toont alle bestaande instellingen. Wisselen is verliesvrij; bestaande v1.0-gebruikers migreren naar Volledig en nieuwe gebruikers starten in Basis.
 
 Belangrijkste mogelijkheden:
 
@@ -49,7 +51,7 @@ Belangrijkste mogelijkheden:
 
 ## Zo gebruik je hem
 
-1. Kies op het beginscherm hoeveel onderdelen je nodig hebt.
+1. Kies Basis of Volledig en daarna hoeveel onderdelen je nodig hebt.
 2. Selecteer een preset of vul je eigen deegwaarden in.
 3. Kies diameter of bolgewicht als leidende maat.
 4. Stel fermentatie, temperaturen en eventueel een gewenste baktijd in.

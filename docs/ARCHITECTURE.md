@@ -1,4 +1,4 @@
-# v1.0.0 refactor architecture
+# Application architecture
 
 ## Design goals
 
@@ -8,7 +8,7 @@ This architecture makes golden v1.0.0 easier to maintain without changing produc
 2. The shipped application requires no framework, package dependency, transpiler, or production build at runtime.
 3. GitHub Pages serves the generated standalone root `index.html` directly.
 4. Maintainable sources live under `src/`; eleven classic browser scripts load there in a fixed order.
-5. Recombined CSS and JavaScript remain byte-for-byte identical to v1.0.0 until an explicitly approved functional change establishes a new baseline.
+5. Historical v1.0.0 hashes remain immutable evidence. Approved feature versions may change the current bundle with focused regression coverage and an explicit migration path.
 
 Classic scripts are a deliberate intermediate architecture. They preserve the existing inline HTML handlers and shared global lexical runtime without rewriting hundreds of calls at once. Fixed load order and ownership tests make this shared runtime explicit instead of merely implicit.
 
@@ -52,11 +52,12 @@ The order is a contract: later modules may use functions and state from earlier 
 - Recipe and ingredient data belong in `catalog.js`; picker interaction belongs in `pizza-picker.js`.
 - `dough-fermentation.js` contains dough and fermentation calculations **and** their form orchestration. Extracting a DOM-independent calculation core is a separate architecture step; this refactor only relocates existing code.
 - `src/index.html` owns structure and script order only; presentation belongs in `src/assets/css/app.css`.
+- `navigation-logbook.js` owns the independent Basic/Full display state. This state controls visibility only and must never rewrite recipe values.
 - Remaining inline handlers form the existing public browser API. New interactions should use `addEventListener` in the owning module.
 
 ## Behavioral equivalence
 
-`tests/test_refactor_structure.js` protects three golden hashes:
+`tests/test_refactor_structure.js` keeps three historical golden hashes documented as immutable v1.0.0 release evidence:
 
 | Artefact | SHA-256 |
 |---|---|
@@ -64,7 +65,7 @@ The order is a contract: later modules may use functions and state from earlier 
 | v1.0.0 CSS | `262e12b5356f5a50c63aa7cd7249b3c5c8b101d8954f076de1360efbc222b896` |
 | v1.0.0 JavaScript | `2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7` |
 
-The test concatenates the eleven modules without separators, restores CSS and JavaScript to `src/index.html`, and requires the exact release single-file hash. It also validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the current committed bundle.
+The current feature bundle is no longer expected to equal those hashes. The test reconstructs the current standalone file exactly from `src/`, checks that the historical hashes remain documented, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
 
 `tests/test_v50.js` runs all 64 functional regressions against both the modular source and the standalone bundle.
 

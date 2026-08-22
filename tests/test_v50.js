@@ -164,12 +164,18 @@ function typeThroughCalc(id,text){
   return states;
 }
 
-test('public v1.0.0 metadata stays separate from storage schema 50',()=>{
+test('public v1.1.0 metadata uses storage schema 51 with v50 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='1.0.0'&&x.key==='pizzaCalcV50'&&x.version===50&&x.legacy==='pizzaCalcV49',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v1.0.0'&&x.titleEn==='Pizza dough calculator v1.0.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v1.0.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v1.0.0</title>'),'static document title is not v1.0.0');
+  assert(x.app==='1.1.0'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v1.1.0'&&x.titleEn==='Pizza dough calculator v1.1.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v1.1.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v1.1.0</title>'),'static document title is not v1.1.0');
+});
+
+test('Basic and Full switch display only and preserve calculator values',()=>{
+  const x=run(`(()=>{const before={h:$('hydration').value,y:$('yeastPct').value,bulk:$('bulkHours').value};setExperienceMode('full');const full=experienceMode;setExperienceMode('basic');return {full,basic:experienceMode,body:document.body.dataset.experienceMode,before,after:{h:$('hydration').value,y:$('yeastPct').value,bulk:$('bulkHours').value}};})()`);
+  assert(x.full==='full'&&x.basic==='basic'&&x.body==='basic',JSON.stringify(x));
+  assert(JSON.stringify(x.before)===JSON.stringify(x.after),JSON.stringify(x));
 });
 
 test('catalogue invariants remain 92 recipes and 7 valid sauces',()=>{
@@ -241,10 +247,10 @@ test('empty measurement fields remain null after sanitizing and reload logic',()
   assert(x.water===null&&x.dough===null&&x.fridge===null&&x.ddt===null&&x.stats.count===0&&x.stats.median===null,JSON.stringify(x));
 });
 
-test('v49 state migrates to v50 and keeps live/log data',()=>{
+test('v49 state migrates through the legacy chain to v51 and keeps live/log data',()=>{
   storage.data.clear();
   storage.data.set('pizzaCalcV49',JSON.stringify({version:49,pizzas:'999',hydration:'99',fridgeTemp:'14',currentMethod:'kenwood',liveMeasurements:{doughTemp:25,fridgeTemp:5},bakeLog:[{ts:123456,method:'kenwood',preset:'kodaNight',fridgePlanned:4,ddtCorrection:12}]}));
-  const x=run(`(()=>{const ok=loadState();return {ok,pizzas:$('pizzas').value,hydration:$('hydration').value,plannedFridge:$('fridgeTemp').value,method:currentMethod,dough:liveMeasurements.doughTemp,fridge:liveMeasurements.fridgeTemp,loggedFridge:bakeLog[0]?.fridgePlanned,old:SAFE.get('pizzaCalcV49'),fresh:!!SAFE.get('pizzaCalcV50')};})()`);
+  const x=run(`(()=>{const ok=loadState();return {ok,pizzas:$('pizzas').value,hydration:$('hydration').value,plannedFridge:$('fridgeTemp').value,method:currentMethod,dough:liveMeasurements.doughTemp,fridge:liveMeasurements.fridgeTemp,loggedFridge:bakeLog[0]?.fridgePlanned,old:SAFE.get('pizzaCalcV49'),fresh:!!SAFE.get('pizzaCalcV51')};})()`);
   assert(x.ok&&x.pizzas==='24'&&x.hydration==='85'&&x.plannedFridge==='14'&&x.method==='kenwood'&&x.dough===25&&x.fridge===5&&x.loggedFridge===4&&x.old===null&&x.fresh,JSON.stringify(x));
 });
 
@@ -366,7 +372,7 @@ test('stored blank required fields recover before they can be persisted again',(
   defaults();
   storage.data.clear();
   storage.data.set('pizzaCalcV49',JSON.stringify({version:49,hydration:'',saltPct:'',yeastPct:'',bulkHours:'',finalDoughTemp:'',flourW:'',saucePerPizza:''}));
-  const x=run(`(()=>{const ok=loadState();return {ok,hydration:$('hydration').value,salt:$('saltPct').value,yeast:$('yeastPct').value,bulk:$('bulkHours').value,dough:$('finalDoughTemp').value,w:$('flourW').value,sauce:$('saucePerPizza').value,saved:JSON.parse(SAFE.get('pizzaCalcV50'))};})()`);
+  const x=run(`(()=>{const ok=loadState();return {ok,hydration:$('hydration').value,salt:$('saltPct').value,yeast:$('yeastPct').value,bulk:$('bulkHours').value,dough:$('finalDoughTemp').value,w:$('flourW').value,sauce:$('saucePerPizza').value,saved:JSON.parse(SAFE.get('pizzaCalcV51'))};})()`);
   assert(x.ok&&x.hydration==='63'&&x.salt==='3'&&x.yeast==='0.17'&&x.bulk==='1',JSON.stringify(x));
   assert(x.dough===''&&x.w===''&&x.sauce===''&&x.saved.hydration==='63'&&x.saved.yeastPct==='0.17',JSON.stringify(x));
 });

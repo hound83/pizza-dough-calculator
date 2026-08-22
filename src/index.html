@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v1.0.0</title>
+<title>Pizzadeegcalculator v1.1.0</title>
 <link href="assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
@@ -35,6 +35,11 @@
 <h2>Wat wil je maken?</h2>
 <p>Kies hoe uitgebreid je wilt starten. Dezelfde deegcalculator zit onder alle drie de opties; extra onderdelen verschijnen alleen wanneer je ze nodig hebt.</p>
 </div>
+<div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
+<button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
+<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Volledig</b><span>Alle instellingen en uitleg</span></button>
+</div>
+<p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
 <div class="mode-grid">
 <button class="mode-card" data-mode-card="dough" onclick="selectAppMode('dough')" type="button">
 <div class="mode-icon">🌾</div>
@@ -66,6 +71,7 @@
 <div>
 <div class="card">
 <h2>Deeg</h2>
+<div class="experience-custom-badge hidden" id="experienceCustomBadge">Eigen instellingen actief</div>
 <p class="hint" id="presetSummaryHint">Deze preset komt uit op <b id="presetSummaryValue">–</b> (bloem – water – zout – gist).</p>
 <div class="form-grid align-fields">
 <label class="wide">Preset
@@ -89,7 +95,7 @@
 <label>Aantal pizza's
               <input class="field" id="pizzas" max="24" min="1" step="1" type="number" value="4"/>
 </label>
-<label>Deegstijl / dikte
+<label class="experience-full-only">Deegstijl / dikte
               <select class="field" id="doughStyle">
 <option value="neapolitan">Napolitaans</option>
 <option value="avpn">AVPN middenprofiel</option>
@@ -102,30 +108,30 @@
               <input class="field" id="diameter" max="40" min="20" step="0.5" type="number" value="32"/>
 </label>
 <div class="wide hint hidden" id="peelHint" style="margin:-4px 0 0"></div>
-<label class="wide hidden" id="ballWeightField">Bolgewicht per pizza (g)
+<label class="wide hidden experience-full-only" id="ballWeightField">Bolgewicht per pizza (g)
               <input class="field" id="ballWeight" max="500" min="100" step="5" type="number" value="250"/>
 </label>
-<label>Hydratatie (%)
+<label class="experience-full-only">Hydratatie (%)
               <input class="field pct" id="hydration" max="85" min="45" step="0.01" type="number" value="63"/>
 </label>
-<label>Zout (% bloem)
+<label class="experience-full-only">Zout (% bloem)
               <input class="field pct" id="saltPct" max="5" min="0" step="0.01" type="number" value="3"/>
 </label>
-<label>Gistsoort
+<label class="experience-full-only">Gistsoort
               <select class="field" id="yeastType">
 <option value="idy">Instant droge gist (IDY)</option>
 <option value="ady">Actieve droge gist (ADY)</option>
 <option value="fresh">Verse gist</option>
 </select>
 </label>
-<label>Gist (% bloem)
+<label class="experience-full-only">Gist (% bloem)
               <input class="field pct" id="yeastPct" max="3" min="0" step="0.001" type="number" value="0.17"/>
 </label>
-<label>Olijfolie (% bloem)
+<label class="experience-full-only">Olijfolie (% bloem)
               <input class="field pct" id="oilPct" max="10" min="0" step="0.1" type="number" value="0"/>
 </label>
 </div>
-<div class="toggle-row first">
+<div class="toggle-row first experience-full-only">
 <div>
 <b id="lblSizeFromDiameter">Bolgewicht uit diameter</b>
 <div class="hint" id="sizeModeHint" style="margin:2px 0 0">Aan = diameter invoeren → het benodigde bolgewicht wordt automatisch berekend.</div>
@@ -139,14 +145,14 @@
 <span class="size-mode" id="weightModeLabel">Gewicht</span>
 </div>
 </div>
-<div class="toggle-row">
+<div class="toggle-row experience-full-only">
 <div>
 <b id="lblPractical">Praktisch afronden</b>
 <div class="hint" id="practicalHint" style="margin:2px 0 0">Bloem 5 g • water 5 g • zout 1 g • gist 0,1 g • olie 1 g.</div>
 </div>
 <label class="switch"><input aria-labelledby="lblPractical" checked="" id="practical" type="checkbox"/><span class="slider"></span></label>
 </div>
-<div class="toggle-row">
+<div class="toggle-row experience-full-only">
 <div>
 <b id="lblAutolyse">Autolyse (bloem + water)</b>
 <div class="hint" style="margin:2px 0 0">Ja = eerst alleen bloem + water; gist en zout pas na de rust.</div>
@@ -157,23 +163,23 @@
 <div class="card">
 <h2>Fermentatie &amp; gistadvies</h2>
 <div class="form-grid align-fields">
-<label>Fermentatiemethode
+<label class="experience-full-only">Fermentatiemethode
               <select class="field" id="fermentationMethod">
 <option value="hybrid">Kamertemperatuur + koelkast</option>
 <option value="room">Volledig kamertemperatuur</option>
 </select>
 </label>
-<label id="coldStorageModeWrap">Koelkast in als
+<label class="experience-full-only" id="coldStorageModeWrap">Koelkast in als
               <select class="field" id="coldStorageMode">
 <option value="bulk">Eén deegmassa (standaard)</option>
 <option value="balls">Eerst opbollen, dan koelkast</option>
 </select>
 </label>
-<div class="wide hint" id="coldStorageHint" style="margin-top:-2px">
+<div class="wide hint experience-full-only" id="coldStorageHint" style="margin-top:-2px">
               Eén grote deegmassa koelt langzamer af dan losse pizzabollen. De calculator houdt daar met een praktische temperatuurschatting rekening mee.
             </div>
 </div>
-<div class="form-grid three align-fields" style="margin-top:12px">
+<div class="form-grid three align-fields experience-full-only" style="margin-top:12px">
 <label><span id="bulkLabel">Bulk buiten (uur)</span>
 <input class="field" id="bulkHours" max="48" min="0" step="0.25" type="number" value="1"/>
 </label>
@@ -218,10 +224,10 @@
 </div>
 <button class="btn secondary" onclick="applyYeastAdvice()">Advies toepassen</button>
 </div>
-<div class="yeast-range" id="yeastRangeBar"></div>
-<div class="ferment-dashboard" id="fermentDashboard"></div>
+<div class="yeast-range experience-full-only" id="yeastRangeBar"></div>
+<div class="ferment-dashboard experience-full-only" id="fermentDashboard"></div>
 <div id="fermentWarnings"></div>
-<details class="advanced-panel" id="advancedFermentation">
+<details class="advanced-panel experience-full-only" id="advancedFermentation">
 <summary>⚙️ Geavanceerde deeginstellingen <span>optioneel</span></summary>
 <div class="form-grid" style="margin-top:12px">
 <label>Doel einddeegtemperatuur (°C)
@@ -256,7 +262,7 @@
 <div id="fermentationTechnical"></div>
 </details>
 </details>
-<div class="info science-note"><b>Belangrijk:</b> dit is een wetenschappelijk geïnformeerde thuiscalculator, geen gevalideerd laboratoriummodel. De numerieke gistcurve, koel-/opwarmingsschatting en rijpingsindex zijn praktische modelaannames. Daarom toont de calculator bewust een bandbreedte en visuele rijpdoelen. <b>‘Napolitaans’ betekent hier een stijlprofiel, geen AVPN-certificering:</b> koude fermentatie, autolyse, sommige hydrataties en eventuele olie bij lagere oventemperaturen zijn praktische thuisvarianten.</div>
+<div class="info science-note experience-full-only"><b>Belangrijk:</b> dit is een wetenschappelijk geïnformeerde thuiscalculator, geen gevalideerd laboratoriummodel. De numerieke gistcurve, koel-/opwarmingsschatting en rijpingsindex zijn praktische modelaannames. Daarom toont de calculator bewust een bandbreedte en visuele rijpdoelen. <b>‘Napolitaans’ betekent hier een stijlprofiel, geen AVPN-certificering:</b> koude fermentatie, autolyse, sommige hydrataties en eventuele olie bij lagere oventemperaturen zijn praktische thuisvarianten.</div>
 </div>
 <div class="card">
 <h2>Steentemperatuur &amp; bakadvies</h2>
@@ -265,7 +271,7 @@
 <label>Doel steentemperatuur (°C)
               <input class="field" id="stoneTemp" max="520" min="180" step="5" type="number" value="430"/>
 </label>
-<label>Voorverwarmtijd voor tijdlijn (min)
+<label class="experience-full-only">Voorverwarmtijd voor tijdlijn (min)
               <input class="field" id="preheatMinutes" max="120" min="5" step="5" type="number" value="30"/>
 </label>
 </div>
@@ -274,11 +280,11 @@
 <b id="stoneBakeAdvice">Bakadvies</b>
 <span id="stoneBakeDetail"></span>
 </div>
-<button class="btn secondary" onclick="applyOilAdvice()">Olijfolieadvies toepassen</button>
+<button class="btn secondary experience-full-only" onclick="applyOilAdvice()">Olijfolieadvies toepassen</button>
 </div>
-<div class="info" id="oilAdviceBox"></div>
-<div class="recipebox mode-full" id="recipeTempAdvice"></div>
-<div class="btnrow mode-full">
+<div class="info experience-full-only" id="oilAdviceBox"></div>
+<div class="recipebox mode-full experience-full-only" id="recipeTempAdvice"></div>
+<div class="btnrow mode-full experience-full-only">
 <button class="btn ghost" onclick="applyRecipeTempAdvice()">Temperatuuradvies van pizza's toepassen</button>
 </div>
 </div>
@@ -445,7 +451,7 @@
 </div>
 <div class="card">
 <h2>Deeglogboek &amp; kalibratie</h2>
-<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.0.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
+<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.1.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
 <div class="form-grid align-fields">
 <label>Werkelijke watertemperatuur (°C)
   <input class="field" id="logWaterTemp" max="50" min="0" step="0.5" type="number" placeholder="bijv. 18"/>
