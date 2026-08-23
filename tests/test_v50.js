@@ -658,9 +658,9 @@ test('home-mixer guidance is staged, bilingual, and leaves recipe values unchang
     return {before:{flour:before.flour,water:before.water,salt:before.salt,yeast:before.yeast},after:{flour:after.flour,water:after.water,salt:after.salt,yeast:after.yeast},kaNl,kaEn,kaNoAutolyseNl,kaNoAutolyseEn,kwNl,kwEn};
   })()`);
   assert(JSON.stringify(x.before)===JSON.stringify(x.after),JSON.stringify({before:x.before,after:x.after}));
-  assert(x.kaNl.mix.includes('2 min op stand 1')&&x.kaNl.add.includes('3 min op stand 1')&&x.kaNl.knead.includes('2 min op stand 1')&&x.kaNl.knead.includes('2 min op stand 2')&&x.kaNl.finish.includes('5 min afgedekt')&&x.kaNl.finish.includes('6–10 keer'),JSON.stringify(x.kaNl));
+  assert(x.kaNl.mix.includes('2 min op stand 1')&&x.kaNl.add.includes('3 min op stand 1')&&x.kaNl.knead.includes('2 min op stand 1')&&x.kaNl.knead.includes('2 min op stand 2')&&!x.kaNl.knead.includes('2–4 min')&&x.kaNl.finish.includes('5 min afgedekt')&&x.kaNl.finish.includes('6–10 keer')&&x.kaNl.finish.includes('5–10 min')&&x.kaNl.finishNote.includes('geen extra machinetijd'),JSON.stringify(x.kaNl));
   assert(x.kaNl.note.includes('officieel stand 2')&&x.kaNl.note.includes('glanzend/plakkerig')&&x.kaNl.autolyseCooling.includes('koude rust')&&x.kaNl.autolyseCooling.includes('metalen kom'),JSON.stringify(x.kaNl));
-  assert(x.kaEn.add.includes('3 min on speed 1')&&x.kaEn.knead.includes('2 min on speed 1')&&x.kaEn.knead.includes('2 min on speed 2')&&x.kaEn.finish.includes('covered for 5 min')&&x.kaEn.finish.includes('6–10 times')&&x.kaEn.note.includes('officially specifies speed 2'),JSON.stringify(x.kaEn));
+  assert(x.kaEn.add.includes('3 min on speed 1')&&x.kaEn.knead.includes('2 min on speed 1')&&x.kaEn.knead.includes('2 min on speed 2')&&!x.kaEn.knead.includes('2–4 min')&&x.kaEn.finish.includes('covered for 5 min')&&x.kaEn.finish.includes('6–10 times')&&x.kaEn.finish.includes('5–10 min')&&x.kaEn.finishNote.includes('no extra machine time'),JSON.stringify(x.kaEn));
   assert(x.kaNoAutolyseNl.knead.includes('2 min op stand 1')&&x.kaNoAutolyseNl.knead.includes('2 min op stand 2'),JSON.stringify(x.kaNoAutolyseNl));
   assert(x.kaNoAutolyseEn.knead.includes('2 min on speed 1')&&x.kaNoAutolyseEn.knead.includes('2 min on speed 2'),JSON.stringify(x.kaNoAutolyseEn));
   assert(x.kwNl.add.includes('3–4 min op MIN/laag')&&x.kwNl.knead.includes('3 min op lage deegstand')&&x.kwNl.note.includes('modelspecifieke snelheidslimiet')&&x.kwNl.finish.includes('4 stretch-and-folds'),JSON.stringify(x.kwNl));
@@ -671,14 +671,33 @@ test('autolyse is refrigerated for 30 minutes while hydration rest remains 20 mi
   defaults();
   const x=run(`(()=>{
     currentLang='nl';currentMethod='kitchenaid';
-    $('autolyse').checked=true;buildSteps(calc());const autolyse=$('stepsList').innerHTML,autolysePrep=prepHours();
-    $('autolyse').checked=false;buildSteps(calc());const hydration=$('stepsList').innerHTML,hydrationPrep=prepHours();
+    $('autolyse').checked=true;buildSteps(calc());const autolyse=$('stepsList').innerHTML,machineAutolysePrep=prepHours();
+    $('autolyse').checked=false;buildSteps(calc());const hydration=$('stepsList').innerHTML,machineHydrationPrep=prepHours();
+    currentMethod='hand';
+    $('autolyse').checked=true;const handAutolysePrep=prepHours();
+    $('autolyse').checked=false;const handHydrationPrep=prepHours();
+    currentMethod='kitchenaid';
     $('autolyse').checked=true;
-    return {autolyse,hydration,autolysePrep,hydrationPrep};
+    return {autolyse,hydration,machineAutolysePrep,machineHydrationPrep,handAutolysePrep,handHydrationPrep};
   })()`);
   assert(x.autolyse.includes('Autolyse (bloem + water) • 30 min')&&x.autolyse.includes('30 minuten')&&x.autolyse.includes('koelkast'),x.autolyse.slice(0,1800));
   assert(x.hydration.includes('Hydratatierust • 20 min')&&x.hydration.includes('20 minuten'),x.hydration.slice(0,1800));
-  assert(x.autolysePrep===0.75&&x.hydrationPrep===0.6,JSON.stringify({autolysePrep:x.autolysePrep,hydrationPrep:x.hydrationPrep}));
+  assert(x.machineAutolysePrep===0.9&&x.machineHydrationPrep===0.6&&x.handAutolysePrep===0.9&&x.handHydrationPrep===0.75,JSON.stringify(x));
+});
+
+test('displayed reserve-water portions add up to the displayed total',()=>{
+  defaults();
+  const x=run(`(()=>{
+    const c=calc();c.reserve=5;
+    currentMethod='kitchenaid';currentLang='nl';const kaNl=methodInstructions(c);
+    currentLang='en';const kaEn=methodInstructions(c);
+    currentMethod='kenwood';currentLang='nl';const kwNl=methodInstructions(c);
+    currentLang='en';const kwEn=methodInstructions(c);
+    currentMethod='kitchenaid';currentLang='nl';
+    return {kaNl,kaEn,kwNl,kwEn};
+  })()`);
+  for(const instructions of [x.kaNl,x.kwNl])assert(instructions.add.includes('ongeveer <b>2 g</b>')&&instructions.add.includes('resterende ongeveer <b>3 g water</b>'),JSON.stringify(instructions));
+  for(const instructions of [x.kaEn,x.kwEn])assert(instructions.add.includes('about <b>2 g</b>')&&instructions.add.includes('remaining roughly <b>3 g water</b>'),JSON.stringify(instructions));
 });
 
 test('blocked local storage warns once without breaking save',()=>{

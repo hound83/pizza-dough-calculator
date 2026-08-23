@@ -19,9 +19,9 @@ const GOLDEN={
   javascript:'2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7'
 };
 const V1_1_0_CANDIDATE_BASELINE={
-  singleFile:'cc10f344875c0d6429bd48958c0b48272e0234bbf01ee398235bee7e5c48f00c',
+  singleFile:'68070de6d4e3fb1f6e154200d04cb4de731659fda676d27fe80f14e811946fff',
   css:'8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052',
-  javascript:'a49177562527a68437596785299c1482d6ecbf140f74921db90ce91221dc0f79'
+  javascript:'37851611903633e2baa3d4d6228b74f49c6fc851405ac159735a5a4a9e800761'
 };
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}

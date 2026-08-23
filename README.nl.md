@@ -5,7 +5,7 @@
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
 [![Versie](https://img.shields.io/badge/versie-v1.1.0_kandidaat-f0b45a)](https://github.com/hound83/pizza-dough-calculator)
-[![Tests](https://img.shields.io/badge/regressietests-70%2F70_groen-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regressietests-71%2F71_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
@@ -129,8 +129,8 @@ Huidige uitslag:
 
 ```text
 13 refactor-structure tests passed
-70 bundle regression tests passed
-70 source regression tests passed
+71 bundle regression tests passed
+71 source regression tests passed
 29 Chromium browser/layout tests passed
 ```
 

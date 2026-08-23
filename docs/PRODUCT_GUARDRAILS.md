@@ -59,9 +59,9 @@ These hashes cover the Basic/Full display modes, mobile recipe-picker repair, Cl
 
 | Artefact | SHA-256 |
 |---|---|
-| standalone `index.html` | `cc10f344875c0d6429bd48958c0b48272e0234bbf01ee398235bee7e5c48f00c` |
+| standalone `index.html` | `68070de6d4e3fb1f6e154200d04cb4de731659fda676d27fe80f14e811946fff` |
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
-| combined JavaScript | `a49177562527a68437596785299c1482d6ecbf140f74921db90ce91221dc0f79` |
+| combined JavaScript | `37851611903633e2baa3d4d6228b74f49c6fc851405ac159735a5a4a9e800761` |
 
 ## v1.1.0 Basic/Full display contract
 
@@ -86,13 +86,15 @@ These hashes cover the Basic/Full display modes, mobile recipe-picker repair, Cl
 
 ## v1.1.0 home-mixer guidance contract
 
-- The flour-and-water autolyse lasts 30 minutes in the refrigerator. The non-autolyse route retains its distinct 20-minute hydration rest with yeast already present.
+- The flour-and-water autolyse always lasts 30 minutes in the refrigerator; batch size does not trigger an automatic room-temperature fallback. The non-autolyse route retains its distinct 20-minute hydration rest with yeast already present.
 - Home-mixer times are staged guidance, not automatic targets. Time, dough temperature, mixer load, dough feel, and a rested windowpane check determine when mixing stops.
+- Schedule planning reserves 0.9 hours before fermentation whenever autolyse is enabled. Without autolyse it reserves 0.6 hours for a machine method and 0.75 hours for hand kneading.
 - With autolyse, the KitchenAid pizza method uses 2 minutes on speed 1 for incorporation, 3 minutes on speed 1 after adding yeast, 2 minutes on speed 1 after adding salt and reserved water, and a 2-minute speed-2 target for final development. Safety and dough-development stop criteria always take precedence.
 - Without autolyse, KitchenAid uses 2 minutes on speed 1 for incorporation, retains the 20-minute hydration rest, then uses 2 minutes on speed 1 after adding salt and reserved water and 2 minutes on speed 2 for final development.
 - The KitchenAid method never permits a speed above 2 and explicitly discloses that KitchenAid's official yeast-dough guidance specifies speed 2.
 - The KitchenAid method stops early when the dough is already developed, becomes glossy or sticky, approaches the selected final dough temperature, or the machine shows clear strain or strong warming.
-- A five-minute covered recovery and 6–10 gentle push-fold-turn movements follow the KitchenAid stages only when useful. The manual finish is skipped when the dough already has a sufficient windowpane or feels strong and tight.
+- After the KitchenAid stages, the dough rests covered for five minutes before a windowpane check. Only if it is still weak, the user performs 6–10 gentle push-fold-turn movements, rests it for another 5–10 minutes, and checks again. This recovery path adds no machine time and the folds are skipped when the dough already has a sufficient windowpane or feels strong and tight.
+- When displayed reserved water is divided between yeast and salt additions, the rounded portions must add up exactly to the rounded displayed total.
 - Kenwood timing remains model-dependent. The calculator stays within the range represented by Kenwood's own pizza-dough guidance, requires the model-specific manual to take precedence, and offers folds only as an optional correction after a short rest.
 - Mixer guidance never changes yeast quantity, baker's percentages, or fermentation calculations.
 
