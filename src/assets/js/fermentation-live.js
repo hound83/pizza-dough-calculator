@@ -515,21 +515,22 @@ function buildSteps(c){
   steps.push(step(i++,L('Eerste menging','First mix'),m.mix,'','mix'));
   steps.push(step(
     i++,
-    c.autolyse?L('Autolyse (bloem + water) • 20 min','Autolyse (flour + water) • 20 min'):L('Hydratatierust • 20 min','Hydration rest • 20 min'),
+    c.autolyse?L('Autolyse (bloem + water) • 30 min','Autolyse (flour + water) • 30 min'):L('Hydratatierust • 20 min','Hydration rest • 20 min'),
     c.autolyse
-      ? L(`Dek de kom af en laat <b>20 minuten</b> rusten.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`,
-          `Cover the bowl and rest for <b>20 minutes</b>.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`)
+      ? L(`Dek de kom af en laat <b>30 minuten</b> in de koelkast rusten.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`,
+          `Cover the bowl and rest it in the fridge for <b>30 minutes</b>.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`)
       : L('Dek de kom af en laat <b>20 minuten</b> staan.','Cover the bowl and leave it for <b>20 minutes</b>.'),
     c.autolyse
-      ? L('Alleen bloem + water tijdens deze rust. Een koude autolyse van 20 minuten is geen probleem; hydratatie en glutenontwikkeling gaan gewoon door, alleen iets rustiger.',
-          'Flour + water only during this rest. A cold 20-minute autolyse is fine; hydration and gluten development continue, just a little slower.')
+      ? L('Alleen bloem + water tijdens deze koude autolyse. Hydratatie en glutenontwikkeling gaan in de koelkast door, alleen rustiger.',
+          'Use flour + water only during this cold autolyse. Hydration and gluten development continue in the fridge, just more slowly.')
       : L('De gist zit al in het deeg; dit is dus geen klassieke autolyse.','The yeast is already in the dough, so this is not a classic autolyse.'),
     'rest'
   ));
   steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+' '+m.knead+oilText,m.note,'knead'));
+  if(m.finish)steps.push(step(i++,L('Korte handmatige finish','Short manual finish'),m.finish,m.finishNote,'manualfinish'));
   steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
-    L('Stop wanneer het deeg gladder, soepel en elastisch is en redelijk dun kan uitrekken voordat het scheurt.','Stop when the dough is smoother, supple and elastic, and can stretch reasonably thin before tearing.'),
-    L('Een perfecte windowpane is niet nodig.','A perfect windowpane is not required.'),'devcheck'));
+    L('Laat een klein stukje eerst 1–2 min ontspannen en rek het dan rustig uit. Stop wanneer het deeg glad, soepel en elastisch is en voldoende dun kan uitrekken zonder direct te scheuren.','Let a small piece relax for 1–2 min, then stretch it gently. Stop when the dough is smooth, supple and elastic, and can stretch sufficiently thin without tearing immediately.'),
+    L('Tijd, deegtemperatuur, gevoel en windowpane tellen samen. Een maximaal flinterdunne windowpane is niet verplicht; langer mengen is niet automatisch beter.','Time, dough temperature, feel, and windowpane work together. A maximally paper-thin windowpane is not mandatory; longer mixing is not automatically better.'),'devcheck'));
   const sci=yeastRecommendation(c);
   steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
     L(`Doel vóór het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden in het midden van de deegmassa.`,
@@ -618,4 +619,3 @@ function buildSteps(c){
     `<span class="badge">🍕 ${c.pizzas} × ${fmt(c.actualBall,0)} g</span>`
   ].join('');
 }
-

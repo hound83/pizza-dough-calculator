@@ -163,6 +163,12 @@ function typeThroughCalc(id,text){
   }
   return states;
 }
+let formEventsWired=false;
+function ensureFormEventsWired(){
+  if(formEventsWired)return;
+  run('wireEvents()');
+  formEventsWired=true;
+}
 
 test('public v1.1.0 metadata uses storage schema 51 with v50 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
@@ -176,6 +182,45 @@ test('Basic and Full switch display only and preserve calculator values',()=>{
   const x=run(`(()=>{const before={h:$('hydration').value,y:$('yeastPct').value,bulk:$('bulkHours').value};setExperienceMode('full');const full=experienceMode;setExperienceMode('basic');return {full,basic:experienceMode,body:document.body.dataset.experienceMode,before,after:{h:$('hydration').value,y:$('yeastPct').value,bulk:$('bulkHours').value}};})()`);
   assert(x.full==='full'&&x.basic==='basic'&&x.body==='basic',JSON.stringify(x));
   assert(JSON.stringify(x.before)===JSON.stringify(x.after),JSON.stringify(x));
+});
+
+test('routine Basic inputs keep the selected technical preset and badge hidden',()=>{
+  defaults();ensureFormEventsWired();
+  const rows=run(`(()=>{
+    const cases=[
+      ['pizzas','6'],['diameter','30'],['roomTemp','22'],['fridgeTemp','5'],
+      ['stoneTemp','450'],['bakeDay','1'],['bakeTime','19:30']
+    ];
+    return cases.map(([id,value])=>{
+      applyPreset('kodaNight');
+      setExperienceMode('basic');
+      const el=$(id);el.value=value;
+      el.dispatchEvent({type:'input'});el.dispatchEvent({type:'change'});
+      renderExperienceMode();
+      return {id,preset:$('preset').value,badgeHidden:$('experienceCustomBadge').classList.contains('hidden')};
+    });
+  })()`);
+  assert(rows.every(row=>row.preset==='kodaNight'&&row.badgeHidden),JSON.stringify(rows));
+});
+
+test('technical overrides and explicit yeast advice are visible as Custom in Basic',()=>{
+  defaults();ensureFormEventsWired();
+  const x=run(`(()=>{
+    applyPreset('kodaNight');setExperienceMode('full');
+    $('hydration').value='66';$('hydration').dispatchEvent({type:'input'});renderExperienceMode();
+    const manual={preset:$('preset').value};
+    applyPreset('kodaNight');setExperienceMode('basic');
+    const before={h:$('hydration').value,s:$('saltPct').value,o:$('oilPct').value};
+    applyYeastAdvice();renderExperienceMode();
+    const after={h:$('hydration').value,s:$('saltPct').value,o:$('oilPct').value};
+    const applied={preset:$('preset').value,badgeVisible:!$('experienceCustomBadge').classList.contains('hidden'),helperNl:$('yeastApplyHelp').textContent};
+    currentLang='en';renderExperienceMode();const helperEn=$('yeastApplyHelp').textContent;currentLang='nl';renderExperienceMode();
+    return {manual,before,after,applied,helperEn};
+  })()`);
+  assert(x.manual.preset==='custom',JSON.stringify(x));
+  assert(JSON.stringify(x.before)===JSON.stringify(x.after),JSON.stringify(x));
+  assert(x.applied.preset==='custom'&&x.applied.badgeVisible,JSON.stringify(x));
+  assert(x.applied.helperNl==='Past alleen de berekende hoeveelheid gist aan.'&&x.helperEn==='Only changes the calculated yeast amount.',JSON.stringify(x));
 });
 
 test('catalogue invariants remain 92 recipes and 7 valid sauces',()=>{
@@ -594,6 +639,65 @@ test('recipe copy reports live-adjusted fermentation time',()=>{
 test('method labels are user-facing and no automatic learning is applied',()=>{
   const x=run(`(()=>{currentLang='nl';const c=calc();bakeLog=[{method:'hand',ddtCorrection:25}];return {label:methodLabel('hand'),water:waterTempAdvice(c),source:waterTempAdvice.toString()};})()`);
   assert(x.label==='handmatig kneden'&&!x.water.calibrated&&x.water.correctionCount===0&&!x.source.includes('ddtLogStats('),JSON.stringify(x));
+});
+
+test('home-mixer guidance is staged, bilingual, and leaves recipe values unchanged',()=>{
+  defaults();
+  const x=run(`(()=>{
+    const before=calc();
+    currentLang='nl';currentMethod='kitchenaid';const kaNl=methodInstructions(before);
+    currentLang='en';const kaEn=methodInstructions(before);
+    $('autolyse').checked=false;const withoutAutolyse=calc();
+    currentLang='nl';const kaNoAutolyseNl=methodInstructions(withoutAutolyse);
+    currentLang='en';const kaNoAutolyseEn=methodInstructions(withoutAutolyse);
+    $('autolyse').checked=true;
+    currentLang='nl';currentMethod='kenwood';const kwNl=methodInstructions(before);
+    currentLang='en';const kwEn=methodInstructions(before);
+    const after=calc();
+    currentLang='nl';currentMethod='kitchenaid';
+    return {before:{flour:before.flour,water:before.water,salt:before.salt,yeast:before.yeast},after:{flour:after.flour,water:after.water,salt:after.salt,yeast:after.yeast},kaNl,kaEn,kaNoAutolyseNl,kaNoAutolyseEn,kwNl,kwEn};
+  })()`);
+  assert(JSON.stringify(x.before)===JSON.stringify(x.after),JSON.stringify({before:x.before,after:x.after}));
+  assert(x.kaNl.mix.includes('2 min op stand 1')&&x.kaNl.add.includes('3 min op stand 1')&&x.kaNl.knead.includes('2 min op stand 1')&&x.kaNl.knead.includes('2 min op stand 2')&&!x.kaNl.knead.includes('2–4 min')&&x.kaNl.finish.includes('5 min afgedekt')&&x.kaNl.finish.includes('6–10 keer')&&x.kaNl.finish.includes('5–10 min')&&x.kaNl.finishNote.includes('geen extra machinetijd'),JSON.stringify(x.kaNl));
+  assert(x.kaNl.note.includes('officieel stand 2')&&x.kaNl.note.includes('glanzend/plakkerig')&&x.kaNl.autolyseCooling.includes('koude rust')&&x.kaNl.autolyseCooling.includes('metalen kom'),JSON.stringify(x.kaNl));
+  assert(x.kaEn.add.includes('3 min on speed 1')&&x.kaEn.knead.includes('2 min on speed 1')&&x.kaEn.knead.includes('2 min on speed 2')&&!x.kaEn.knead.includes('2–4 min')&&x.kaEn.finish.includes('covered for 5 min')&&x.kaEn.finish.includes('6–10 times')&&x.kaEn.finish.includes('5–10 min')&&x.kaEn.finishNote.includes('no extra machine time'),JSON.stringify(x.kaEn));
+  assert(x.kaNoAutolyseNl.knead.includes('2 min op stand 1')&&x.kaNoAutolyseNl.knead.includes('2 min op stand 2'),JSON.stringify(x.kaNoAutolyseNl));
+  assert(x.kaNoAutolyseEn.knead.includes('2 min on speed 1')&&x.kaNoAutolyseEn.knead.includes('2 min on speed 2'),JSON.stringify(x.kaNoAutolyseEn));
+  assert(x.kwNl.add.includes('3–4 min op MIN/laag')&&x.kwNl.knead.includes('3 min op lage deegstand')&&x.kwNl.note.includes('modelspecifieke snelheidslimiet')&&x.kwNl.finish.includes('4 stretch-and-folds'),JSON.stringify(x.kwNl));
+  assert(x.kwEn.add.includes('3–4 min on MIN/low')&&x.kwEn.knead.includes('3 min on a low dough speed')&&x.kwEn.note.includes('model-specific speed limit')&&x.kwEn.finish.includes('4 stretch-and-folds'),JSON.stringify(x.kwEn));
+});
+
+test('autolyse is refrigerated for 30 minutes while hydration rest remains 20 minutes',()=>{
+  defaults();
+  const x=run(`(()=>{
+    currentLang='nl';currentMethod='kitchenaid';
+    $('autolyse').checked=true;buildSteps(calc());const autolyse=$('stepsList').innerHTML,machineAutolysePrep=prepHours();
+    $('autolyse').checked=false;buildSteps(calc());const hydration=$('stepsList').innerHTML,machineHydrationPrep=prepHours();
+    currentMethod='hand';
+    $('autolyse').checked=true;const handAutolysePrep=prepHours();
+    $('autolyse').checked=false;const handHydrationPrep=prepHours();
+    currentMethod='kitchenaid';
+    $('autolyse').checked=true;
+    return {autolyse,hydration,machineAutolysePrep,machineHydrationPrep,handAutolysePrep,handHydrationPrep};
+  })()`);
+  assert(x.autolyse.includes('Autolyse (bloem + water) • 30 min')&&x.autolyse.includes('30 minuten')&&x.autolyse.includes('koelkast'),x.autolyse.slice(0,1800));
+  assert(x.hydration.includes('Hydratatierust • 20 min')&&x.hydration.includes('20 minuten'),x.hydration.slice(0,1800));
+  assert(x.machineAutolysePrep===0.9&&x.machineHydrationPrep===0.6&&x.handAutolysePrep===0.9&&x.handHydrationPrep===0.75,JSON.stringify(x));
+});
+
+test('displayed reserve-water portions add up to the displayed total',()=>{
+  defaults();
+  const x=run(`(()=>{
+    const c=calc();c.reserve=5;
+    currentMethod='kitchenaid';currentLang='nl';const kaNl=methodInstructions(c);
+    currentLang='en';const kaEn=methodInstructions(c);
+    currentMethod='kenwood';currentLang='nl';const kwNl=methodInstructions(c);
+    currentLang='en';const kwEn=methodInstructions(c);
+    currentMethod='kitchenaid';currentLang='nl';
+    return {kaNl,kaEn,kwNl,kwEn};
+  })()`);
+  for(const instructions of [x.kaNl,x.kwNl])assert(instructions.add.includes('ongeveer <b>2 g</b>')&&instructions.add.includes('resterende ongeveer <b>3 g water</b>'),JSON.stringify(instructions));
+  for(const instructions of [x.kaEn,x.kwEn])assert(instructions.add.includes('about <b>2 g</b>')&&instructions.add.includes('remaining roughly <b>3 g water</b>'),JSON.stringify(instructions));
 });
 
 test('blocked local storage warns once without breaking save',()=>{

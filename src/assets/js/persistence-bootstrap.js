@@ -3,6 +3,15 @@ const SAVE_VERSION=51;
 const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${50-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
+// Only these controls override the technical dough profile owned by a preset.
+// Practical recipe inputs such as pizza count, diameter, room/refrigerator
+// temperature, stone temperature and bake deadline deliberately keep the
+// selected preset active.
+const PRESET_TECHNICAL_FIELDS=new Set([
+  'ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct',
+  'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours',
+  'finalDoughTemp','flourType','flourW','sizeFromDiameter','autolyse','practical'
+]);
 
 let _saveTimer=null;
 let _storageWarningShown=false;
@@ -167,7 +176,7 @@ function wireEvents(){
     el.addEventListener('input',()=>{
       if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
       if(el.classList.contains('pct')) markCustomField(el.id);
-      else if(!['preset','bakeDay','bakeTime','sauceType','saucePerPizza','includeSauce','autoSauceFromPizzas','stoneTemp','preheatMinutes','flourType','flourW'].includes(el.id)) markCustom(false);
+      else if(PRESET_TECHNICAL_FIELDS.has(el.id)) markCustom(false);
       _deferDependentStatePrune=el.id==='pizzas';
       try{update();}finally{_deferDependentStatePrune=false;}
     });
@@ -191,7 +200,6 @@ function wireEvents(){
         markCustom(false);
       }else if(el.id==='diameter'){
         if(!$('sizeFromDiameter').checked)$('ballWeight').value=recommendedBallWeight();
-        markCustom(false);
       }else if(el.id==='ballWeight'){
         if($('sizeFromDiameter').checked)$('diameter').value=roundTo(estimatedDiameterFromWeight(),0.5);
         markCustom(false);
@@ -202,9 +210,11 @@ function wireEvents(){
       }else if(el.id==='flourType'){
         const ft=flourTypes[el.value];
         $('flourW').value=(ft && ft.w!=null)?ft.w:'';
+        markCustom(false);
       }else if(el.id==='flourW'){
         // W handmatig aanpassen is toegestaan bij ieder gekozen bloemtype:
         // het type blijft staan zodat we kwalitatieve spelt/volkorenwaarschuwingen behouden.
+        markCustom(false);
       }else if(el.classList.contains('pct')){
         markCustomField(el.id);
       }
@@ -245,7 +255,7 @@ function wireEvents(){
     update();
   });
   $('autolyse').addEventListener('change',()=>{markCustom(false);update();});
-  $('practical').addEventListener('change',update);
+  $('practical').addEventListener('change',()=>{markCustom(false);update();});
 }
 
 document.addEventListener('DOMContentLoaded',()=>{

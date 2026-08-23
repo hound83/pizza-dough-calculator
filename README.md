@@ -3,7 +3,7 @@
 [English](README.md) | [Nederlands](README.nl.md)
 
 [![Version](https://img.shields.io/badge/version-v1.1.0_candidate-f0b45a)](https://github.com/hound83/pizza-dough-calculator)
-[![Tests](https://img.shields.io/badge/regression_tests-65%2F65_passing-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regression_tests-71%2F71_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -36,7 +36,7 @@ Highlights:
 - hydration, salt, oil, and IDY, ADY, or fresh yeast;
 - hybrid, cold, or all-room-temperature fermentation;
 - room, refrigerator, and final dough temperatures;
-- practical water-temperature and DDT guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers;
+- practical water-temperature, DDT, and staged kneading guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers;
 - flour selection with known or manually entered W value;
 - 92 pizza recipes, seven sauce variants, and search/filtering by name or ingredient;
 - an individual recipe, sauce, pizza style, and topping customization for every dough ball;
@@ -126,10 +126,10 @@ npm test
 Current result:
 
 ```text
-12 refactor-structure tests passed
-64 bundle regression tests passed
-64 source regression tests passed
-19 Chromium browser/layout tests passed
+13 refactor-structure tests passed
+71 bundle regression tests passed
+71 source regression tests passed
+29 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:
@@ -145,7 +145,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, and exact reconstruction of the golden single-file source. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical v1.0.0 hashes, and the current v1.1.0 release-candidate baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract.
 
 Use the following commands when working on the modular sources:
 

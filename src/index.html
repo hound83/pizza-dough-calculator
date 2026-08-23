@@ -37,7 +37,7 @@
 </div>
 <div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
 <button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
-<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Volledig</b><span>Alle instellingen en uitleg</span></button>
+<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Uitgebreid</b><span>Alle instellingen en uitleg</span></button>
 </div>
 <p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
 <div class="mode-grid">
@@ -222,7 +222,10 @@
 <b id="yeastAdvice">Gistadvies berekenen</b>
 <span id="yeastAdviceDetail">Wetenschappelijk geïnformeerd model met fermentatiefasen en geschatte afkoeling/opwarming.</span>
 </div>
-<button class="btn secondary" onclick="applyYeastAdvice()">Advies toepassen</button>
+<div class="advisor-action">
+<button class="btn secondary" id="applyYeastAdviceButton" onclick="applyYeastAdvice()">Advies toepassen</button>
+<span class="input-help" id="yeastApplyHelp">Past alleen de berekende hoeveelheid gist aan.</span>
+</div>
 </div>
 <div class="yeast-range experience-full-only" id="yeastRangeBar"></div>
 <div class="ferment-dashboard experience-full-only" id="fermentDashboard"></div>
