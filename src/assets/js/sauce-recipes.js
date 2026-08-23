@@ -188,8 +188,8 @@ function methodInstructions(c){
         `After the rest, add <b>${s} g salt</b> and gradually the reserved <b>${rw} g water</b>.`);
 
   const coolTip=(brand)=>L(
-    `<b>${brand}-tip:</b> zet de kom met bloem + water tijdens deze 20 minuten gerust in de koelkast. Zo koelen deeg én metalen kom wat af vóór het kneden, wat helpt om de einddeegtemperatuur te beperken.`,
-    `<b>${brand} tip:</b> feel free to put the bowl with flour + water in the fridge during these 20 minutes. Both the dough and the metal bowl cool down before kneading, which helps keep the final dough temperature in check.`);
+    `<b>${brand}-tip:</b> deze koude rust koelt zowel het deeg als de metalen kom vóór het kneden en helpt zo de einddeegtemperatuur te beperken.`,
+    `<b>${brand} tip:</b> this cold rest cools both the dough and the metal bowl before kneading, helping to keep the final dough temperature in check.`);
 
   if(currentMethod==='hand') return {
     mix:first+L(' Meng 2–3 min met de hand tot alle bloem bevochtigd is.',' Mix by hand for 2–3 min until all the flour is hydrated.'),
@@ -218,14 +218,14 @@ function methodInstructions(c){
     note:L('Bij professionele spiraalkneders zijn snelheid en minimale deegmassa modelafhankelijk.','On professional spiral mixers, speed and minimum dough mass depend on the model.'),
     autolyseCooling:'',finish:'',finishNote:''};
   return {
-    mix:first+L(' Meng met de haak <b>1½–2 min op stand 1</b>, alleen tot alle bloem bevochtigd en het deeg grof samengekomen is.',' Mix with the hook for <b>1½–2 min on speed 1</b>, only until all the flour is hydrated and the dough has roughly come together.'),
+    mix:first+L(' Meng met de haak <b>2 min op stand 1</b>, alleen tot alle bloem bevochtigd en het deeg grof samengekomen is.',' Mix with the hook for <b>2 min on speed 1</b>, only until all the flour is hydrated and the dough has roughly come together.'),
     add:c.autolyse
-      ? L(`Voeg na de rust <b>${y} g ${yn}</b> toe met ongeveer <b>${halfRw} g</b> van het gereserveerde water. Meng <b>4 min op stand 1</b>, haal het deeg van de haak en controleer temperatuur en windowpane. Verleng alleen bij onvoldoende ontwikkeling tot ongeveer <b>5 min</b>. Voeg daarna <b>${s} g zout</b> toe met de resterende ongeveer <b>${halfRw} g water</b>.`,
-          `After the rest, add <b>${y} g ${yn}</b> with about <b>${halfRw} g</b> of the reserved water. Mix for <b>4 min on speed 1</b>, remove the dough from the hook, and check temperature and windowpane. Extend only when development is insufficient, to roughly <b>5 min</b>. Then add <b>${s} g salt</b> with the remaining roughly <b>${halfRw} g water</b>.`)
+      ? L(`Voeg na de rust <b>${y} g ${yn}</b> toe met ongeveer <b>${halfRw} g</b> van het gereserveerde water en meng <b>3 min op stand 1</b>. Voeg daarna <b>${s} g zout</b> toe met de resterende ongeveer <b>${halfRw} g water</b>.`,
+          `After the rest, add <b>${y} g ${yn}</b> with about <b>${halfRw} g</b> of the reserved water and mix for <b>3 min on speed 1</b>. Then add <b>${s} g salt</b> with the remaining roughly <b>${halfRw} g water</b>.`)
       : add,
     knead:c.autolyse
-      ? L('Meng na het zout <b>3 min op stand 1</b>. Controleer opnieuw en verleng alleen indien nodig tot maximaal ongeveer <b>5 min</b>.','After adding the salt, mix for <b>3 min on speed 1</b>. Check again and extend only if needed to roughly <b>5 min maximum</b>.')
-      : L('Meng na de rust ongeveer <b>4–6 min op stand 1</b> en controleer tussendoor temperatuur en windowpane.','After the rest, mix for roughly <b>4–6 min on speed 1</b>, checking temperature and windowpane along the way.'),
+      ? L('Meng zout en water eerst <b>2 min op stand 1</b> door het deeg. Kneed daarna <b>2 min op stand 2</b> voor de eindontwikkeling.','First mix the salt and water into the dough for <b>2 min on speed 1</b>. Then knead for <b>2 min on speed 2</b> for final development.')
+      : L('Meng zout en water na de hydratatierust <b>2 min op stand 1</b> door het deeg. Kneed daarna <b>2 min op stand 2</b> voor de eindontwikkeling.','After the hydration rest, mix the salt and water into the dough for <b>2 min on speed 1</b>. Then knead for <b>2 min on speed 2</b> for final development.'),
     note:L(`Dit is een rustige, gefaseerde pizzamethode. KitchenAid schrijft voor gistdeeg officieel stand 2 voor; ga daarom nooit boven stand 2, blijf bij de machine en stop direct bij duidelijke belasting, sterke opwarming, glanzend/plakkerig deeg of zodra de deegtemperatuur richting ${fmt(c.doughTemp,1)} °C gaat.`,
       `This is a gentle, staged pizza method. KitchenAid officially specifies speed 2 for yeasted dough; therefore never exceed speed 2, stay with the machine, and stop immediately if it strains, heats strongly, the dough turns glossy/sticky, or dough temperature approaches ${fmt(c.doughTemp,1)} °C.`),
     autolyseCooling:coolTip('KitchenAid'),

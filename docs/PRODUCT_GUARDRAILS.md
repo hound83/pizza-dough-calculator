@@ -53,15 +53,15 @@ The behavior-neutral refactor protects these v1.0.0 hashes:
 
 When behavior is intentionally changed, do not silently replace these values. First document the approved product change, update or add focused tests, select the correct semantic version, and record the reviewed replacement baseline.
 
-## Reviewed v1.1.0 release baseline
+## Current v1.1.0 release-candidate baseline
 
-These hashes cover the reviewed Basic/Full display modes, mobile recipe-picker repair, staged home-mixer guidance, and Claude audit corrections. They are the replacement integrity baseline for the v1.1.0 release; the v1.0.0 hashes above remain immutable historical evidence.
+These hashes cover the Basic/Full display modes, mobile recipe-picker repair, Claude audit corrections, and the explicitly approved 30-minute cold-autolyse and revised KitchenAid mixing sequence. They pin the current v1.1.0 candidate for final audit; the v1.0.0 hashes above remain immutable historical evidence.
 
 | Artefact | SHA-256 |
 |---|---|
-| standalone `index.html` | `783692e762f3fbd907d9b90951caceb690532774a281e6dc605c628f85a80ebc` |
+| standalone `index.html` | `cc10f344875c0d6429bd48958c0b48272e0234bbf01ee398235bee7e5c48f00c` |
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
-| combined JavaScript | `0fdc541f42e149f746413e9680da5a381e01bfc8a08a9a59883afad095c678d7` |
+| combined JavaScript | `a49177562527a68437596785299c1482d6ecbf140f74921db90ce91221dc0f79` |
 
 ## v1.1.0 Basic/Full display contract
 
@@ -86,11 +86,13 @@ These hashes cover the reviewed Basic/Full display modes, mobile recipe-picker r
 
 ## v1.1.0 home-mixer guidance contract
 
-- The refrigerated 20-minute flour-and-water autolyse remains available and recommended as a practical way to limit final dough temperature.
+- The flour-and-water autolyse lasts 30 minutes in the refrigerator. The non-autolyse route retains its distinct 20-minute hydration rest with yeast already present.
 - Home-mixer times are staged guidance, not automatic targets. Time, dough temperature, mixer load, dough feel, and a rested windowpane check determine when mixing stops.
-- The KitchenAid pizza method uses speed 1 in monitored stages around yeast and salt, never permits a speed above 2, and explicitly discloses that KitchenAid's official yeast-dough guidance specifies speed 2.
+- With autolyse, the KitchenAid pizza method uses 2 minutes on speed 1 for incorporation, 3 minutes on speed 1 after adding yeast, 2 minutes on speed 1 after adding salt and reserved water, and a 2-minute speed-2 target for final development. Safety and dough-development stop criteria always take precedence.
+- Without autolyse, KitchenAid uses 2 minutes on speed 1 for incorporation, retains the 20-minute hydration rest, then uses 2 minutes on speed 1 after adding salt and reserved water and 2 minutes on speed 2 for final development.
+- The KitchenAid method never permits a speed above 2 and explicitly discloses that KitchenAid's official yeast-dough guidance specifies speed 2.
 - The KitchenAid method stops early when the dough is already developed, becomes glossy or sticky, approaches the selected final dough temperature, or the machine shows clear strain or strong warming.
-- A short manual push-fold-turn finish follows the KitchenAid stages only when useful. It is skipped when the dough already has a sufficient windowpane or feels strong and tight.
+- A five-minute covered recovery and 6–10 gentle push-fold-turn movements follow the KitchenAid stages only when useful. The manual finish is skipped when the dough already has a sufficient windowpane or feels strong and tight.
 - Kenwood timing remains model-dependent. The calculator stays within the range represented by Kenwood's own pizza-dough guidance, requires the model-specific manual to take precedence, and offers folds only as an optional correction after a short rest.
 - Mixer guidance never changes yeast quantity, baker's percentages, or fermentation calculations.
 

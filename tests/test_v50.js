@@ -647,18 +647,38 @@ test('home-mixer guidance is staged, bilingual, and leaves recipe values unchang
     const before=calc();
     currentLang='nl';currentMethod='kitchenaid';const kaNl=methodInstructions(before);
     currentLang='en';const kaEn=methodInstructions(before);
+    $('autolyse').checked=false;const withoutAutolyse=calc();
+    currentLang='nl';const kaNoAutolyseNl=methodInstructions(withoutAutolyse);
+    currentLang='en';const kaNoAutolyseEn=methodInstructions(withoutAutolyse);
+    $('autolyse').checked=true;
     currentLang='nl';currentMethod='kenwood';const kwNl=methodInstructions(before);
     currentLang='en';const kwEn=methodInstructions(before);
     const after=calc();
     currentLang='nl';currentMethod='kitchenaid';
-    return {before:{flour:before.flour,water:before.water,salt:before.salt,yeast:before.yeast},after:{flour:after.flour,water:after.water,salt:after.salt,yeast:after.yeast},kaNl,kaEn,kwNl,kwEn};
+    return {before:{flour:before.flour,water:before.water,salt:before.salt,yeast:before.yeast},after:{flour:after.flour,water:after.water,salt:after.salt,yeast:after.yeast},kaNl,kaEn,kaNoAutolyseNl,kaNoAutolyseEn,kwNl,kwEn};
   })()`);
   assert(JSON.stringify(x.before)===JSON.stringify(x.after),JSON.stringify({before:x.before,after:x.after}));
-  assert(x.kaNl.mix.includes('stand 1')&&x.kaNl.add.includes('4 min op stand 1')&&x.kaNl.knead.includes('3 min op stand 1')&&x.kaNl.finish.includes('6–10 keer'),JSON.stringify(x.kaNl));
-  assert(x.kaNl.note.includes('officieel stand 2')&&x.kaNl.note.includes('glanzend/plakkerig')&&x.kaNl.autolyseCooling.includes('koelkast'),JSON.stringify(x.kaNl));
-  assert(x.kaEn.add.includes('4 min on speed 1')&&x.kaEn.knead.includes('3 min on speed 1')&&x.kaEn.finish.includes('6–10 times')&&x.kaEn.note.includes('officially specifies speed 2'),JSON.stringify(x.kaEn));
+  assert(x.kaNl.mix.includes('2 min op stand 1')&&x.kaNl.add.includes('3 min op stand 1')&&x.kaNl.knead.includes('2 min op stand 1')&&x.kaNl.knead.includes('2 min op stand 2')&&x.kaNl.finish.includes('5 min afgedekt')&&x.kaNl.finish.includes('6–10 keer'),JSON.stringify(x.kaNl));
+  assert(x.kaNl.note.includes('officieel stand 2')&&x.kaNl.note.includes('glanzend/plakkerig')&&x.kaNl.autolyseCooling.includes('koude rust')&&x.kaNl.autolyseCooling.includes('metalen kom'),JSON.stringify(x.kaNl));
+  assert(x.kaEn.add.includes('3 min on speed 1')&&x.kaEn.knead.includes('2 min on speed 1')&&x.kaEn.knead.includes('2 min on speed 2')&&x.kaEn.finish.includes('covered for 5 min')&&x.kaEn.finish.includes('6–10 times')&&x.kaEn.note.includes('officially specifies speed 2'),JSON.stringify(x.kaEn));
+  assert(x.kaNoAutolyseNl.knead.includes('2 min op stand 1')&&x.kaNoAutolyseNl.knead.includes('2 min op stand 2'),JSON.stringify(x.kaNoAutolyseNl));
+  assert(x.kaNoAutolyseEn.knead.includes('2 min on speed 1')&&x.kaNoAutolyseEn.knead.includes('2 min on speed 2'),JSON.stringify(x.kaNoAutolyseEn));
   assert(x.kwNl.add.includes('3–4 min op MIN/laag')&&x.kwNl.knead.includes('3 min op lage deegstand')&&x.kwNl.note.includes('modelspecifieke snelheidslimiet')&&x.kwNl.finish.includes('4 stretch-and-folds'),JSON.stringify(x.kwNl));
   assert(x.kwEn.add.includes('3–4 min on MIN/low')&&x.kwEn.knead.includes('3 min on a low dough speed')&&x.kwEn.note.includes('model-specific speed limit')&&x.kwEn.finish.includes('4 stretch-and-folds'),JSON.stringify(x.kwEn));
+});
+
+test('autolyse is refrigerated for 30 minutes while hydration rest remains 20 minutes',()=>{
+  defaults();
+  const x=run(`(()=>{
+    currentLang='nl';currentMethod='kitchenaid';
+    $('autolyse').checked=true;buildSteps(calc());const autolyse=$('stepsList').innerHTML,autolysePrep=prepHours();
+    $('autolyse').checked=false;buildSteps(calc());const hydration=$('stepsList').innerHTML,hydrationPrep=prepHours();
+    $('autolyse').checked=true;
+    return {autolyse,hydration,autolysePrep,hydrationPrep};
+  })()`);
+  assert(x.autolyse.includes('Autolyse (bloem + water) • 30 min')&&x.autolyse.includes('30 minuten')&&x.autolyse.includes('koelkast'),x.autolyse.slice(0,1800));
+  assert(x.hydration.includes('Hydratatierust • 20 min')&&x.hydration.includes('20 minuten'),x.hydration.slice(0,1800));
+  assert(x.autolysePrep===0.75&&x.hydrationPrep===0.6,JSON.stringify({autolysePrep:x.autolysePrep,hydrationPrep:x.hydrationPrep}));
 });
 
 test('blocked local storage warns once without breaking save',()=>{

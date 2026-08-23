@@ -515,14 +515,14 @@ function buildSteps(c){
   steps.push(step(i++,L('Eerste menging','First mix'),m.mix,'','mix'));
   steps.push(step(
     i++,
-    c.autolyse?L('Autolyse (bloem + water) • 20 min','Autolyse (flour + water) • 20 min'):L('Hydratatierust • 20 min','Hydration rest • 20 min'),
+    c.autolyse?L('Autolyse (bloem + water) • 30 min','Autolyse (flour + water) • 30 min'):L('Hydratatierust • 20 min','Hydration rest • 20 min'),
     c.autolyse
-      ? L(`Dek de kom af en laat <b>20 minuten</b> rusten.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`,
-          `Cover the bowl and rest for <b>20 minutes</b>.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`)
+      ? L(`Dek de kom af en laat <b>30 minuten</b> in de koelkast rusten.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`,
+          `Cover the bowl and rest it in the fridge for <b>30 minutes</b>.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`)
       : L('Dek de kom af en laat <b>20 minuten</b> staan.','Cover the bowl and leave it for <b>20 minutes</b>.'),
     c.autolyse
-      ? L('Alleen bloem + water tijdens deze rust. Een koude autolyse van 20 minuten is geen probleem; hydratatie en glutenontwikkeling gaan gewoon door, alleen iets rustiger.',
-          'Flour + water only during this rest. A cold 20-minute autolyse is fine; hydration and gluten development continue, just a little slower.')
+      ? L('Alleen bloem + water tijdens deze koude autolyse. Hydratatie en glutenontwikkeling gaan in de koelkast door, alleen rustiger.',
+          'Use flour + water only during this cold autolyse. Hydration and gluten development continue in the fridge, just more slowly.')
       : L('De gist zit al in het deeg; dit is dus geen klassieke autolyse.','The yeast is already in the dough, so this is not a classic autolyse.'),
     'rest'
   ));
