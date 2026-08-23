@@ -281,7 +281,7 @@ function buildTimeline(c){
     ]);
     rows.push([L('Voorverwarmen','Preheat'),L(`${fmt(c.preheat,0)} min • loopt normaal parallel met de laatste rijs`,`${fmt(c.preheat,0)} min • normally overlaps the final proof`)]);
     const bakeRange=bakeSessionRange(c),active=activePrepMinutes(c);
-    rows.push([L('Baksessie','Baking session'),L(`± ${bakeRange.low}–${bakeRange.high} min voor ${c.pizzas} ${c.pizzas===1?'pizza':"pizza's"} • komt ná de deegdoorlooptijd`,`± ${bakeRange.low}–${bakeRange.high} min for ${c.pizzas} ${c.pizzas===1?'pizza':'pizzas'} • comes after the dough lead time`)]);
+    rows.push([L('Baksessie','Baking session'),L(`± ${bakeRange.low}–${bakeRange.high} min voor ${pizzaCountLabel(c.pizzas)} • komt ná de deegdoorlooptijd`,`± ${bakeRange.low}–${bakeRange.high} min for ${pizzaCountLabel(c.pizzas)} • comes after the dough lead time`)]);
 
     const summary=`
       <div class="timeline-summary">
@@ -353,7 +353,7 @@ function buildTimeline(c){
   events.sort((a,b)=>a[1]-b[1]);
   const rows=events.map(e=>[e[0],niceDate(e[1])]);
   if(c.pizzas>1) rows.push([
-    L(`Laatste van ${c.pizzas} pizza's klaar • schatting`,`Last of ${c.pizzas} pizzas done • estimate`),
+    L(`Laatste van ${pizzaCountLabel(c.pizzas)} klaar • schatting`,`Last of ${pizzaCountLabel(c.pizzas)} done • estimate`),
     `${niceDate(bakeDoneLow)} – ${niceDate(bakeDoneHigh)}`
   ]);
 
@@ -407,7 +407,7 @@ function buildTimeline(c){
 // niet drie verschillende antwoorden geven op dezelfde vraag.
 function sauceAmountLabel(g,agg=null){
   const nl=currentLang!=='en';
-  const base=`${fmt(g.need,0)} g ${nl?"op pizza's":'on pizzas'}`;
+  const base=`${fmt(g.need,0)} g ${nl?'op':'on'} ${pizzaNoun(g.pizzas.length)}`;
   if(!g.s.tomato) return base;
   const cook=g.yieldFactor&&g.yieldFactor<1?` ${nl?'(incl. inkoken)':'(incl. reduction)'}`:'';
   const buy=usesCombinedTomatoPurchase(agg)?'':` • ${nl?'kopen':'buy'} ${g.tins}× 400 g`;
@@ -424,9 +424,9 @@ function buildShopping(c){
       return;
     }
     $('shoppingList').innerHTML=groups.map(g=>`<div class="recipebox">
-      <div class="titleline"><h3>${sauceName(g.type)}</h3><span class="tag">${c.pizzas} ${L("pizza's",'pizzas')}</span></div>
+      <div class="titleline"><h3>${sauceName(g.type)}</h3><span class="tag">${pizzaCountLabel(c.pizzas)}</span></div>
       <div class="list">
-        <div class="list-row"><span>${L("Nodig op pizza's",'Needed on pizzas')}</span><span>${fmt(g.need,0)} g</span></div>
+        <div class="list-row"><span>${L(g.pizzas.length===1?'Nodig op pizza':"Nodig op pizza's",g.pizzas.length===1?'Needed on pizza':'Needed on pizzas')}</span><span>${fmt(g.need,0)} g</span></div>
         ${g.s.tomato?`<div class="list-row"><span>${L('Maken','Make')}</span><span>${fmt(g.batch,0)} g${g.yieldFactor&&g.yieldFactor<1?L(' rauw (incl. inkoken)',' raw (incl. reduction)'):''}</span></div>${usesCombinedTomatoPurchase(aggSauce)?'':`<div class="list-row"><span>${L('Kopen','Buy')}</span><span>${g.tins}× 400 g</span></div>`}`:''}
         ${g.ingredients.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')}
       </div>
@@ -466,7 +466,7 @@ function buildShopping(c){
   ).join(''):'';
 
   $('shoppingList').innerHTML=`<div class="recipebox">
-    <div class="titleline"><h3>${c.pizzas} ${L("pizza's",'pizzas')}</h3><span class="tag">${L('gemengd','mixed')}</span></div>
+    <div class="titleline"><h3>${pizzaCountLabel(c.pizzas)}</h3><span class="tag">${L('gemengd','mixed')}</span></div>
     <div class="list">${pizzaRows}</div><hr><div class="list">${sauceRows}${tomatoPurchaseRow}${sauceIngredientRows}${ingredientRows}</div>
   </div>`;
 }
@@ -485,8 +485,11 @@ function buildStoneAdvice(c){
   $('oilAdviceBox').innerHTML=`<b>${L('Olijfolieadvies','Olive oil guidance')}:</b> ${oilRange} ${L('van de bloem bij ongeveer','of the flour at about')} ${fmt(c.stoneTemp,0)} °C. ${verdict}`;
 
   const common=rt.hasCommon
-    ? L(`Voor alle gekozen pizza's is <b>${rt.commonLow}–${rt.commonHigh} °C</b> een gezamenlijk goed bereik. Adviesknop kiest ${rt.suggested} °C.`,
-        `For all selected pizzas, <b>${rt.commonLow}–${rt.commonHigh} °C</b> is a shared good range. The advice button picks ${rt.suggested} °C.`)
+    ? (c.pizzas===1
+        ? L(`Voor de gekozen pizza is <b>${rt.commonLow}–${rt.commonHigh} °C</b> een goed bereik. Adviesknop kiest ${rt.suggested} °C.`,
+            `For the selected pizza, <b>${rt.commonLow}–${rt.commonHigh} °C</b> is a good range. The advice button picks ${rt.suggested} °C.`)
+        : L(`Voor alle gekozen pizza's is <b>${rt.commonLow}–${rt.commonHigh} °C</b> een gezamenlijk goed bereik. Adviesknop kiest ${rt.suggested} °C.`,
+            `For all selected pizzas, <b>${rt.commonLow}–${rt.commonHigh} °C</b> is a shared good range. The advice button picks ${rt.suggested} °C.`))
     : L(`De gekozen pizza's hebben geen volledig overlappend ideaal bereik. Een praktisch compromis is <b>±${rt.suggested} °C</b>.`,
         `The selected pizzas have no fully overlapping ideal range. A practical compromise is <b>±${rt.suggested} °C</b>.`);
   const rows=rt.rows.map(x=>{
@@ -495,7 +498,7 @@ function buildStoneAdvice(c){
     else if(c.stoneTemp>x.high){cls='status-hot';status=L(`↓ liever ${x.low}–${x.high} °C`,`↓ prefers ${x.low}–${x.high} °C`);}
     return `<div class="list-row"><span>${L('Bol','Ball')} ${x.i} • ${recipeNameText(x.r)}</span><span class="${cls}">${status}</span></div>`;
   }).join('');
-  $('recipeTempAdvice').innerHTML=`<div class="titleline"><div><h3>${L("Temperatuuradvies voor je pizza's",'Temperature guidance for your pizzas')}</h3><div class="hint" style="margin:0">${common}</div></div><span class="tag">${L('steen','stone')}</span></div><div class="list">${rows}</div>`;
+  $('recipeTempAdvice').innerHTML=`<div class="titleline"><div><h3>${L(c.pizzas===1?'Temperatuuradvies voor je pizza':"Temperatuuradvies voor je pizza's",c.pizzas===1?'Temperature guidance for your pizza':'Temperature guidance for your pizzas')}</h3><div class="hint" style="margin:0">${common}</div></div><span class="tag">${L('steen','stone')}</span></div><div class="list">${rows}</div>`;
 
   const sizeOverride=c.targetDiameter>OVEN_DIAMETER+0.01
     ? L(` <b>Diameteroverride:</b> ${fmt(c.targetDiameter,1)} cm ligt boven het huidige 14″ Koda-2-profiel van ${fmt(OVEN_DIAMETER,1)} cm; dit blokkeert de berekening bewust niet.`,
@@ -569,7 +572,7 @@ function ingredientsCopyText(c){
   const aggSauce=aggregateSauceNeeds(c);
   const lines=[];
 
-  lines.push(`🍕 *${copyLang('Ingrediënten','Ingredients')}* — ${c.pizzas} ${copyLang("pizza's",'pizzas')}`);
+  lines.push(`🍕 *${copyLang('Ingrediënten','Ingredients')}* — ${pizzaCountLabel(c.pizzas)}`);
   lines.push('');
 
   lines.push(`🌾 *${copyLang('Deeg • hele batch','Dough • full batch')}*`);
@@ -584,7 +587,7 @@ function ingredientsCopyText(c){
     lines.push(`🍅 *${copyLang('Saus','Sauce')}*`);
     aggSauce.groups.forEach(g=>{
       lines.push(`*${sauceName(g.type)}*`);
-      lines.push(`• ${copyLang("Op pizza's nodig",'Required on pizzas')}: ${fmt(g.need,0)} g`);
+      lines.push(`• ${copyLang(g.pizzas.length===1?'Op pizza nodig':"Op pizza's nodig",g.pizzas.length===1?'Required on pizza':'Required on pizzas')}: ${fmt(g.need,0)} g`);
       if(g.s.tomato){
         lines.push(`• ${copyLang('Maken','Make')}: ${fmt(g.batch,0)} g`);
         if(!usesCombinedTomatoPurchase(aggSauce))lines.push(`• ${copyLang('Kopen','Buy')}: ${g.tins}x 400 g`);
@@ -705,7 +708,7 @@ function buildIngredientsModal(c){
     ${c.o>0?`<div class="list-row"><span>Olijfolie in deeg</span><span>${fmt(c.oil,0)} g</span></div>`:''}
   </div></div>`;
 
-  const saucesHtml=aggSauce.enabled?`<div class="modal-section"><h3>${L('Saus','Sauce')}</h3>${aggSauce.groups.map(g=>`<div class="sauce-group"><h4>${sauceName(g.type)}</h4><div class="list"><div class="list-row"><span>${L("Op pizza's nodig","Needed on pizzas")}</span><span>${fmt(g.need,0)} g</span></div>${g.s.tomato?`<div class="list-row"><span>${L('Maken','Make')}</span><span>${fmt(g.batch,0)} g</span></div>${usesCombinedTomatoPurchase(aggSauce)?'':`<div class="list-row"><span>${L('Kopen','Buy')}</span><span>${g.tins}× 400 g</span></div>`}`:''}${g.ingredients.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')}</div></div>`).join('')}</div>`:'';
+  const saucesHtml=aggSauce.enabled?`<div class="modal-section"><h3>${L('Saus','Sauce')}</h3>${aggSauce.groups.map(g=>`<div class="sauce-group"><h4>${sauceName(g.type)}</h4><div class="list"><div class="list-row"><span>${L(g.pizzas.length===1?'Op pizza nodig':"Op pizza's nodig",g.pizzas.length===1?'Needed on pizza':'Needed on pizzas')}</span><span>${fmt(g.need,0)} g</span></div>${g.s.tomato?`<div class="list-row"><span>${L('Maken','Make')}</span><span>${fmt(g.batch,0)} g</span></div>${usesCombinedTomatoPurchase(aggSauce)?'':`<div class="list-row"><span>${L('Kopen','Buy')}</span><span>${g.tins}× 400 g</span></div>`}`:''}${g.ingredients.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')}</div></div>`).join('')}</div>`:'';
 
   const perPizza=`<div class="modal-section"><h3>Per pizza</h3>${pizzaSelections.map((id,idx)=>{
     const r=recipeById(id),custom=pizzaCustomizations[idx],cheese=extraCheeseAdvice(idx,c);

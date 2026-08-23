@@ -114,8 +114,8 @@ function setField(id,value,{min='',max='',checked,type,defaultValue=value}={}){
 }
 function defaults(){
   setField('pizzas',4,{min:1,max:24});
-  setField('diameter',32,{min:20,max:40});
-  setField('ballWeight',270,{min:100,max:1000});
+  setField('diameter',30,{min:20,max:40});
+  setField('ballWeight',220,{min:100,max:1000});
   setField('doughStyle','neapolitan');
   setField('hydration',63,{min:45,max:85});
   setField('saltPct',3,{min:0,max:5});
@@ -170,12 +170,53 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('public v1.1.0 metadata uses storage schema 51 with v50 migration',()=>{
+test('public v1.1.1 metadata keeps storage schema 51 with v50 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='1.1.0'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v1.1.0'&&x.titleEn==='Pizza dough calculator v1.1.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v1.1.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v1.1.0</title>'),'static document title is not v1.1.0');
+  assert(x.app==='1.1.1'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v1.1.1'&&x.titleEn==='Pizza dough calculator v1.1.1',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v1.1.1')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v1.1.1</title>'),'static document title is not v1.1.1');
+});
+
+test('standard preset uses a 30 cm peel-friendly default and practical percentage steps',()=>{
+  const inputTag=id=>html.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`))?.[0]||'';
+  const step=id=>inputTag(id).match(/\bstep="([^"]+)"/)?.[1]||'';
+  const x=run(`(()=>{applyPreset('kodaNight');const c=calc();return {name:presets.kodaNight.name,presetDiameter:presets.kodaNight.diameter,field:$('diameter').value,target:c.targetDiameter,ball:c.targetBall};})()`);
+  assert(x.name==='Mijn standaardrecept • 30 cm • 63% • 25 uur',JSON.stringify(x));
+  assert(x.presetDiameter===30&&x.field==='30'&&x.target===30&&x.ball===220,JSON.stringify(x));
+  assert(inputTag('diameter').includes('value="30"'),inputTag('diameter'));
+  assert(html.includes('<option selected="" value="kodaNight">Mijn standaardrecept • 30 cm • 63% • 25 uur</option>'),'selected preset label is not 30 cm');
+  assert(step('hydration')==='0.5'&&step('saltPct')==='0.25'&&step('yeastPct')==='0.025'&&step('oilPct')==='0.25',JSON.stringify({hydration:step('hydration'),salt:step('saltPct'),yeast:step('yeastPct'),oil:step('oilPct')}));
+});
+
+test('30 cm default does not overwrite an existing saved 32 cm recipe',()=>{
+  defaults();
+  storage.data.clear();
+  storage.data.set('pizzaCalcV51',JSON.stringify({version:51,preset:'kodaNight',diameter:'32'}));
+  const x=run(`(()=>{const loaded=loadState();return {loaded,preset:$('preset').value,diameter:$('diameter').value,saved:JSON.parse(SAFE.get(SAVE_KEY))};})()`);
+  assert(x.loaded&&x.preset==='kodaNight'&&x.diameter==='32',JSON.stringify(x));
+  assert(x.saved.version===51&&x.saved.diameter==='32',JSON.stringify(x.saved));
+  storage.data.clear();
+  defaults();
+});
+
+test('pizza and dough-ball counts pluralize correctly and workflow rounding matches the dough output',()=>{
+  defaults();ensureFormEventsWired();
+  const snapshot=(count,lang)=>run(`(()=>{applyPreset('kodaNight');$('pizzas').value='${count}';currentLang='${lang}';update();const c=calc();return {summary:$('targetSummary').textContent,steps:$('stepsList').innerHTML,dough:$('actualBallOut').textContent,expected:displayDoughBallWeight(c),surface:[$('targetSummary').textContent,$('stepsList').innerHTML,$('shoppingList').innerHTML,$('sauceSummary').innerHTML,$('recipeTempAdvice').innerHTML,$('timeline').innerHTML,$('ingredientsModalBody').innerHTML].join(' ')};})()`);
+  const nlOne=snapshot(1,'nl'),nlMany=snapshot(2,'nl'),enOne=snapshot(1,'en'),enMany=snapshot(2,'en');
+  run("currentLang='nl'");
+  assert(nlOne.summary.startsWith('1 pizza •')&&!nlOne.summary.includes("1 pizza's"),JSON.stringify(nlOne));
+  assert(nlOne.steps.includes('1 deegbal van ongeveer')&&!nlOne.steps.includes('1 bollen'),nlOne.steps.slice(0,3000));
+  assert(nlMany.summary.startsWith("2 pizza's •")&&nlMany.steps.includes('2 deegballen van ongeveer'),JSON.stringify(nlMany));
+  assert(enOne.summary.startsWith('1 pizza •')&&!enOne.summary.includes('1 pizzas'),JSON.stringify(enOne));
+  assert(enOne.steps.includes('1 dough ball of about')&&!enOne.steps.includes('1 balls'),enOne.steps.slice(0,3000));
+  assert(enMany.summary.startsWith('2 pizzas •')&&enMany.steps.includes('2 dough balls of about'),JSON.stringify(enMany));
+  assert(!/1 (?:pizza's|deegballen|bollen)\b/.test(nlOne.surface),nlOne.surface.slice(0,5000));
+  assert(!/1 (?:pizzas|dough balls|balls)\b/.test(enOne.surface),enOne.surface.slice(0,5000));
+  for(const x of [nlOne,nlMany,enOne,enMany]){
+    assert(x.dough===`${x.expected} g`,JSON.stringify(x));
+    assert(x.steps.includes(`of about ${x.expected} g`)||x.steps.includes(`van ongeveer ${x.expected} g`),JSON.stringify(x));
+  }
 });
 
 test('Basic and Full switch display only and preserve calculator values',()=>{
@@ -543,8 +584,8 @@ test('fermentation temperature help cannot push the room field downward',()=>{
 });
 
 test('remaining audited static labels have exact English translations',()=>{
-  const x=run(`(()=>{currentLang='en';return ['← Vorige','Witte spelt','Volkoren spelt','Volkoren tarwe','Eigen bloem (W zelf invullen)','Alleen bekende productspecificaties krijgen automatisch een W-waarde; bij generieke bloem blijft W bewust onbekend.','Vul in als de W-waarde bekend is. Bij spelt is eiwitpercentage géén betrouwbare vervanger voor W.'].map(translateNlText);})()`);
-  assert(x[0]==='← Previous'&&x[1]==='White spelt flour'&&x[4].startsWith('Custom flour')&&x[5].startsWith('Only known')&&x[6].startsWith('Enter a value'),JSON.stringify(x));
+  const x=run(`(()=>{currentLang='en';return ['← Vorige','Witte spelt','Volkoren spelt','Volkoren tarwe','Eigen bloem (W zelf invullen)','Alleen bekende productspecificaties krijgen automatisch een W-waarde; bij generieke bloem blijft W bewust onbekend.','Vul in als de W-waarde bekend is. Bij spelt is eiwitpercentage géén betrouwbare vervanger voor W.','Mijn standaardrecept • 30 cm • 63% • 25 uur'].map(translateNlText);})()`);
+  assert(x[0]==='← Previous'&&x[1]==='White spelt flour'&&x[4].startsWith('Custom flour')&&x[5].startsWith('Only known')&&x[6].startsWith('Enter a value')&&x[7]==='My default recipe • 30 cm • 63% • 25 hours',JSON.stringify(x));
 });
 
 test('core recipe arithmetic stays finite across methods, sizes and hydration bounds',()=>{

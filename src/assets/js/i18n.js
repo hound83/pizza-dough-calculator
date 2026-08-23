@@ -2,6 +2,26 @@ const _i18nOriginalText=new WeakMap();
 const _i18nOriginalAttrs=new WeakMap();
 let _i18nObserver=null;
 
+function countNoun(count,nlSingular,nlPlural,enSingular,enPlural){
+  const n=Number(count);
+  const singular=n===1;
+  return currentLang==='en'
+    ? (singular?enSingular:enPlural)
+    : (singular?nlSingular:nlPlural);
+}
+function countLabel(count,nlSingular,nlPlural,enSingular,enPlural){
+  return `${fmt(Number(count),0)} ${countNoun(count,nlSingular,nlPlural,enSingular,enPlural)}`;
+}
+function pizzaNoun(count){return countNoun(count,'pizza',"pizza's",'pizza','pizzas');}
+function doughBallNoun(count){return countNoun(count,'deegbal','deegballen','dough ball','dough balls');}
+function pizzaCountLabel(count){return `${fmt(Number(count),0)} ${pizzaNoun(count)}`;}
+function doughBallCountLabel(count){return `${fmt(Number(count),0)} ${doughBallNoun(count)}`;}
+function hourCountLabel(hours,decimals=1){
+  const value=Number(hours);
+  const unit=currentLang==='en'?(value===1?'hour':'hours'):'uur';
+  return `${fmt(value,decimals)} ${unit}`;
+}
+
 function translateNlText(raw){
   const s=String(raw??'');
   const m=s.match(/^(\s*)([\s\S]*?)(\s*)$/);
@@ -15,6 +35,8 @@ function translateNlText(raw){
   const coreT=core+trail;
 
   const rules=[
+    [/^Mijn standaardrecept • 30 cm • 63% • 25 uur$/,'My default recipe • 30 cm • 63% • 25 hours'],
+    [/^De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen\. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe\. Het logboek bewaart de informatie als referentie, maar v([0-9.]+) past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan\.$/,'Final dough and refrigerator temperatures are taken directly from the workflow. After baking, add your actual water temperature and assessment. The log keeps the information as reference, but v$1 deliberately does not automatically adjust the DDT, yeast or timing model based on previous bakes.'],
     [/^Maak (.+)$/,'Make $1'],
     [/^Kies pizza voor alle bollen$/,'Choose pizza for all dough balls'],
     [/^(\d+(?:[.,]\d+)?) uur$/,'$1 hours'],
@@ -290,5 +312,3 @@ function sauceChoiceLabel(sc,short=false){
   if(currentLang==='en')return short?(sc.shortEn||sc.short):(sc.labelEn||sc.label);
   return short?sc.short:sc.label;
 }
-
-

@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v1.1.0</title>
+<title>Pizzadeegcalculator v1.1.1</title>
 <link href="assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
@@ -78,7 +78,7 @@
               <select class="field" id="preset">
 <option value="avpnMid">AVPN • 28,5 cm • 58,8% • 18 uur</option>
 <option value="sameDay">Napolitaans • 32 cm • 63% • 8 uur</option>
-<option selected="" value="kodaNight">Mijn standaardrecept • 32 cm • 63% • 25 uur</option>
+<option selected="" value="kodaNight">Mijn standaardrecept • 30 cm • 63% • 25 uur</option>
 <option value="cold48">Napolitaans • 32 cm • 65% • 48 uur</option>
 <option value="cold72">Napolitaans • 32 cm • 65% • 72 uur</option>
 <option value="canotto">Canotto • 32 cm • 68% • 25 uur</option>
@@ -105,17 +105,17 @@
 </select>
 </label>
 <label class="wide" id="diameterField">Diameter per pizza (cm)
-              <input class="field" id="diameter" max="40" min="20" step="0.5" type="number" value="32"/>
+              <input class="field" id="diameter" max="40" min="20" step="0.5" type="number" value="30"/>
 </label>
 <div class="wide hint hidden" id="peelHint" style="margin:-4px 0 0"></div>
 <label class="wide hidden experience-full-only" id="ballWeightField">Bolgewicht per pizza (g)
-              <input class="field" id="ballWeight" max="500" min="100" step="5" type="number" value="250"/>
+              <input class="field" id="ballWeight" max="500" min="100" step="5" type="number" value="220"/>
 </label>
 <label class="experience-full-only">Hydratatie (%)
-              <input class="field pct" id="hydration" max="85" min="45" step="0.01" type="number" value="63"/>
+              <input class="field pct" id="hydration" max="85" min="45" step="0.5" type="number" value="63"/>
 </label>
 <label class="experience-full-only">Zout (% bloem)
-              <input class="field pct" id="saltPct" max="5" min="0" step="0.01" type="number" value="3"/>
+              <input class="field pct" id="saltPct" max="5" min="0" step="0.25" type="number" value="3"/>
 </label>
 <label class="experience-full-only">Gistsoort
               <select class="field" id="yeastType">
@@ -125,10 +125,10 @@
 </select>
 </label>
 <label class="experience-full-only">Gist (% bloem)
-              <input class="field pct" id="yeastPct" max="3" min="0" step="0.001" type="number" value="0.17"/>
+              <input class="field pct" id="yeastPct" max="3" min="0" step="0.025" type="number" value="0.17"/>
 </label>
 <label class="experience-full-only">Olijfolie (% bloem)
-              <input class="field pct" id="oilPct" max="10" min="0" step="0.1" type="number" value="0"/>
+              <input class="field pct" id="oilPct" max="10" min="0" step="0.25" type="number" value="0"/>
 </label>
 </div>
 <div class="toggle-row first experience-full-only">
@@ -454,7 +454,7 @@
 </div>
 <div class="card">
 <h2>Deeglogboek &amp; kalibratie</h2>
-<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.1.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
+<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.1.1 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
 <div class="form-grid align-fields">
 <label>Werkelijke watertemperatuur (°C)
   <input class="field" id="logWaterTemp" max="50" min="0" step="0.5" type="number" placeholder="bijv. 18"/>

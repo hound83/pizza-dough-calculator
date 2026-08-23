@@ -112,7 +112,7 @@ function updateSauceSummary(c){
   }
 
   if(agg.groups.length===0){
-    $('sauceSummary').innerHTML=`<div class="info">${L("Alle saus is voor de gekozen pizza's uitgevinkt.",'Sauce is unticked for all selected pizzas.')}</div>`;
+    $('sauceSummary').innerHTML=`<div class="info">${L(c.pizzas===1?'De saus is voor de gekozen pizza uitgevinkt.':"Alle saus is voor de gekozen pizza's uitgevinkt.",c.pizzas===1?'Sauce is unticked for the selected pizza.':'Sauce is unticked for all selected pizzas.')}</div>`;
     return;
   }
 
@@ -121,8 +121,8 @@ function updateSauceSummary(c){
       <h4>${sauceName(g.type)}</h4>
       <div class="hint" style="margin:0 0 8px">${sauceDesc(g.type)}</div>
       <div class="list">
-        <div class="list-row"><span>${L("Voor pizza's","For pizzas")}</span><span>${g.pizzas.join(', ')}</span></div>
-        <div class="list-row"><span>${L("Op pizza's nodig","Needed on pizzas")}</span><span>${fmt(g.need,0)} g</span></div>
+        <div class="list-row"><span>${L(g.pizzas.length===1?'Voor pizza':"Voor pizza's",g.pizzas.length===1?'For pizza':'For pizzas')}</span><span>${g.pizzas.join(', ')}</span></div>
+        <div class="list-row"><span>${L(g.pizzas.length===1?'Op pizza nodig':"Op pizza's nodig",g.pizzas.length===1?'Needed on pizza':'Needed on pizzas')}</span><span>${fmt(g.need,0)} g</span></div>
         ${g.s.tomato?`<div class="list-row"><span>${L('Maken','Make')}</span><span>${fmt(g.batch,0)} g</span></div>${usesCombinedTomatoPurchase(agg)?'':`<div class="list-row"><span>${L('Kopen','Buy')}</span><span>${g.tins}× 400 g</span></div>`}`:''}
         ${g.ingredients.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')}
       </div>

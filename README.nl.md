@@ -5,7 +5,7 @@
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
 [![Versie](https://img.shields.io/badge/versie-v1.1.0-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.0)
-[![Tests](https://img.shields.io/badge/regressietests-71%2F71_groen-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regressietests-74%2F74_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
@@ -16,6 +16,8 @@ De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
 > Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.1.0 is de eerste goedgekeurde functionele uitbreiding en introduceert opslagschema 51 met een expliciete migratie vanaf schema 50.
+
+> Ontwikkelstatus: deze branch is de v1.1.1-kandidaat met gebruiksverbeteringen. De uitgebrachte v1.1.0 blijft de huidige publieke baseline totdat review en CI compleet zijn.
 
 ## Wat kan de calculator?
 
@@ -128,10 +130,10 @@ npm test
 Huidige uitslag:
 
 ```text
-13 refactor-structure tests passed
-71 bundle regression tests passed
-71 source regression tests passed
-29 Chromium browser/layout tests passed
+14 refactor-structure tests passed
+74 bundle regression tests passed
+74 source regression tests passed
+31 Chromium browser/layout tests passed
 ```
 
 De suite controleert onder meer:
@@ -147,7 +149,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische v1.0.0-hashes en de gereviewde v1.1.0-releasebaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. De telefoontests bewaken daarnaast de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract.
+De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische v1.0.0-hashes, de uitgebrachte v1.1.0-baseline en de afzonderlijke v1.1.1-patchkandidaat. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. De telefoontests bewaken daarnaast de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 

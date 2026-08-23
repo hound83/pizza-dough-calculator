@@ -154,9 +154,9 @@ const presets={
     room:19,fridge:4,autolyse:false,practical:false,flourW:285,flourType:'custom',stoneTemp:405,avpn:true
   },
   kodaNight:{
-    name:'Mijn standaardrecept • 32 cm • 63% • 25 uur',
+    name:'Mijn standaardrecept • 30 cm • 63% • 25 uur',
     h:63,s:18/600*100,yIdy:0.17,o:0,
-    pizzas:4,diameter:32,style:'neapolitan',fermentation:'hybrid',bulk:1,cold:20,ball:4,
+    pizzas:4,diameter:30,style:'neapolitan',fermentation:'hybrid',bulk:1,cold:20,ball:4,
     room:21,fridge:4,autolyse:true,flourType:'caputoPizzeria'
   },
   sameDay:{
@@ -764,4 +764,3 @@ const SAUCE_CHOICES=[
   {id:'pesto',     label:'🌿 Pesto',labelEn:'🌿 Pesto',short:'🌿 Pesto',shortEn:'🌿 Pesto'},
   {id:'bbq',       label:'🍖 BBQ',labelEn:'🍖 BBQ',short:'🍖 BBQ',shortEn:'🍖 BBQ'}
 ];
-

@@ -247,7 +247,7 @@ function copyRecipe(){
   const live=liveFermentationPlan(c),effective=live.effective;
   const sauceInfo=aggregateSauceNeeds(c);
   const lines=[];
-  lines.push(L(`Pizzadeeg — ${c.pizzas} pizza's van ±${fmt(c.actualBall,0)} g`,`Pizza dough — ${c.pizzas} pizzas of ±${fmt(c.actualBall,0)} g`));
+  lines.push(`${L('Pizzadeeg','Pizza dough')} — ${pizzaCountLabel(c.pizzas)} ${L('van','of')} ±${displayDoughBallWeight(c)} g`);
   lines.push(`${fmt(c.flour,0)} g ${L('bloem','flour')}`);
   lines.push(`${fmt(c.water,0)} g ${L('water','water')}`);
   lines.push(`${fmt(c.salt,0)} g ${L('zout','salt')}`);
@@ -256,9 +256,8 @@ function copyRecipe(){
   lines.push('');
   lines.push(L(`Hydratatie werkelijk: ${fmt(c.actualH,1)}%`,`Actual hydration: ${fmt(c.actualH,1)}%`));
   lines.push(live.active&&live.changed
-    ? L(`Fermentatie live aangepast: ${fmt(fermentationHours(effective),1)} uur (oorspronkelijk ${fmt(fermentationHours(c),1)} uur)`,
-        `Fermentation adjusted live: ${fmt(fermentationHours(effective),1)} hours (originally ${fmt(fermentationHours(c),1)} hours)`)
-    : L(`Fermentatie: ${fmt(fermentationHours(c),1)} uur`,`Fermentation: ${fmt(fermentationHours(c),1)} hours`));
+    ? `${L('Fermentatie live aangepast','Fermentation adjusted live')}: ${hourCountLabel(fermentationHours(effective))} (${L('oorspronkelijk','originally')} ${hourCountLabel(fermentationHours(c))})`
+    : `${L('Fermentatie','Fermentation')}: ${hourCountLabel(fermentationHours(c))}`);
   lines.push(L(`Steentemperatuur: ${fmt(c.stoneTemp,0)} °C`,`Stone temperature: ${fmt(c.stoneTemp,0)} °C`));
 
   if(appMode==='sauce' && sauceInfo.enabled && sauceInfo.groups.length){
