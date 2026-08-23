@@ -65,7 +65,7 @@ The order is a contract: later modules may use functions and state from earlier 
 | v1.0.0 CSS | `262e12b5356f5a50c63aa7cd7249b3c5c8b101d8954f076de1360efbc222b896` |
 | v1.0.0 JavaScript | `2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7` |
 
-The current feature bundle is no longer expected to equal the historical hashes. The test reconstructs the current standalone file exactly from `src/`, keeps the historical hashes documented, pins the current explicitly approved v1.1.0 standalone/CSS/JavaScript candidate baseline, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
+The current feature bundle is no longer expected to equal the historical hashes. The test reconstructs the current standalone file exactly from `src/`, keeps the historical hashes documented, pins the reviewed v1.1.0 standalone/CSS/JavaScript release baseline, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
 
 `tests/test_v50.js` runs all 71 functional regressions against both the modular source and the standalone bundle. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, the separate 30-minute cold-autolyse and 20-minute hydration-rest paths, the full hand/machine preparation-time matrix, exact two-minute KitchenAid speed-2 stage, rested-windowpane recovery without extra machine time, and displayed reserve-water portions that exactly sum to the displayed total. Basic-mode coverage distinguishes ordinary recipe inputs from intentional technical overrides.
 

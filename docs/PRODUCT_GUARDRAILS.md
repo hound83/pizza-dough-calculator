@@ -53,9 +53,9 @@ The behavior-neutral refactor protects these v1.0.0 hashes:
 
 When behavior is intentionally changed, do not silently replace these values. First document the approved product change, update or add focused tests, select the correct semantic version, and record the reviewed replacement baseline.
 
-## Current v1.1.0 release-candidate baseline
+## Released v1.1.0 baseline
 
-These hashes cover the Basic/Full display modes, mobile recipe-picker repair, Claude audit corrections, and the explicitly approved 30-minute cold-autolyse and revised KitchenAid mixing sequence. They pin the current v1.1.0 candidate for final audit; the v1.0.0 hashes above remain immutable historical evidence.
+These hashes cover the released Basic/Full display modes, mobile recipe-picker repair, Claude audit corrections, and the explicitly approved 30-minute cold-autolyse and revised KitchenAid mixing sequence. They pin the shipped v1.1.0 baseline; the v1.0.0 hashes above remain immutable historical evidence.
 
 | Artefact | SHA-256 |
 |---|---|
