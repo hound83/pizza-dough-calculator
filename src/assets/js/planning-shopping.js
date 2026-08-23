@@ -210,6 +210,7 @@ function applyDeadlinePlan(){
 
 // Kritieke voorbereiding vóór de fermentatie: elapsed time, niet actieve arbeid.
 function prepHours(){
+  if($('autolyse')?.checked)return 0.9;
   return currentMethod==='hand' ? 0.75 : 0.6;
 }
 
@@ -739,4 +740,3 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ e.preventDefault(); if(top==='picker')closePizzaPicker(); else closeIngredientsModal(); return; }
   trapFocus(e,root);
 });
-

@@ -53,6 +53,51 @@ The behavior-neutral refactor protects these v1.0.0 hashes:
 
 When behavior is intentionally changed, do not silently replace these values. First document the approved product change, update or add focused tests, select the correct semantic version, and record the reviewed replacement baseline.
 
+## Released v1.1.0 baseline
+
+These hashes cover the released Basic/Full display modes, mobile recipe-picker repair, Claude audit corrections, and the explicitly approved 30-minute cold-autolyse and revised KitchenAid mixing sequence. They pin the shipped v1.1.0 baseline; the v1.0.0 hashes above remain immutable historical evidence.
+
+| Artefact | SHA-256 |
+|---|---|
+| standalone `index.html` | `68070de6d4e3fb1f6e154200d04cb4de731659fda676d27fe80f14e811946fff` |
+| CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
+| combined JavaScript | `37851611903633e2baa3d4d6228b74f49c6fc851405ac159735a5a4a9e800761` |
+
+## v1.1.0 Basic/Full display contract
+
+- Basic and Full are display modes independent of the Dough only, Dough + sauce, and Complete pizzas output modes.
+- The Dutch labels are “Basis” and “Uitgebreid”, deliberately distinct from the “Volledige pizza’s” output mode.
+- New users start in Basic. Stored v1.0.0/schema-50 users migrate to Full.
+- Switching display mode never resets, recalculates, or replaces recipe values.
+- Basic shows the preset, pizza count and diameter, relevant temperatures, optional bake deadline, stone temperature, compact yeast guidance, ingredients, warnings, and practical workflow.
+- Pizza count, diameter, room temperature, refrigerator temperature, stone temperature, and bake deadline are practical recipe inputs. Editing them never changes the selected preset to Custom.
+- Presets continue to own hidden technical values: dough style, baker's percentages, manual yeast type and amount, oil, rounding, autolyse, fermentation method and phase times, flour/W settings, and technical explanations.
+- Basic keeps the calculated yeast recommendation and its explicit Apply action visible. Applying it intentionally overrides only the yeast amount, changes the preset to Custom, and is explained next to the action.
+- Technical values edited in Full remain intact after switching to Basic. If the preset has become Custom, Basic shows a localized “Custom settings active” badge.
+- The chosen display mode is stored in schema 51 under `pizzaCalcV51`; schema 50 is migrated once and then removed.
+
+## v1.1.0 mobile recipe-picker contract
+
+- At phone widths up to 760 px, the picker opens on a full-height recipe catalogue instead of splitting scarce vertical space with the customization preview.
+- Tapping a recipe opens its customization pane. The localized back control returns to the catalogue without changing or committing the pending selection.
+- Search never receives automatic focus on phone widths, so opening the picker does not summon the on-screen keyboard. Users can still tap search normally.
+- Desktop keeps the simultaneous two-column catalogue and preview.
+- Only the explicit “Choose pizza” action commits the pending recipe and customization to one or all dough balls.
+
+## v1.1.0 home-mixer guidance contract
+
+- The flour-and-water autolyse always lasts 30 minutes in the refrigerator; batch size does not trigger an automatic room-temperature fallback. The non-autolyse route retains its distinct 20-minute hydration rest with yeast already present.
+- Home-mixer times are staged guidance, not automatic targets. Time, dough temperature, mixer load, dough feel, and a rested windowpane check determine when mixing stops.
+- Schedule planning reserves 0.9 hours before fermentation whenever autolyse is enabled. Without autolyse it reserves 0.6 hours for a machine method and 0.75 hours for hand kneading.
+- With autolyse, the KitchenAid pizza method uses 2 minutes on speed 1 for incorporation, 3 minutes on speed 1 after adding yeast, 2 minutes on speed 1 after adding salt and reserved water, and a 2-minute speed-2 target for final development. Safety and dough-development stop criteria always take precedence.
+- Without autolyse, KitchenAid uses 2 minutes on speed 1 for incorporation, retains the 20-minute hydration rest, then uses 2 minutes on speed 1 after adding salt and reserved water and 2 minutes on speed 2 for final development.
+- The KitchenAid method never permits a speed above 2 and explicitly discloses that KitchenAid's official yeast-dough guidance specifies speed 2.
+- The KitchenAid method stops early when the dough is already developed, becomes glossy or sticky, approaches the selected final dough temperature, or the machine shows clear strain or strong warming.
+- After the KitchenAid stages, the dough rests covered for five minutes before a windowpane check. Only if it is still weak, the user performs 6–10 gentle push-fold-turn movements, rests it for another 5–10 minutes, and checks again. This recovery path adds no machine time and the folds are skipped when the dough already has a sufficient windowpane or feels strong and tight.
+- When displayed reserved water is divided between yeast and salt additions, the rounded portions must add up exactly to the rounded displayed total.
+- Kenwood timing remains model-dependent. The calculator stays within the range represented by Kenwood's own pizza-dough guidance, requires the model-specific manual to take precedence, and offers folds only as an optional correction after a short rest.
+- Mixer guidance never changes yeast quantity, baker's percentages, or fermentation calculations.
+
 ## Change checklist
 
 Before changing a rule above:

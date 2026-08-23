@@ -7,7 +7,7 @@ delete EN_TEXT['drukt.'];
 delete EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.'];
 
 Object.assign(EN_TEXT,{
-  "De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.0.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.":"Final dough and refrigerator temperatures are taken directly from the workflow. After baking, add your actual water temperature and assessment. The log keeps the information as reference, but v1.0.0 deliberately does not automatically adjust the DDT, yeast or timing model based on previous bakes.",
+  "De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.1.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.":"Final dough and refrigerator temperatures are taken directly from the workflow. After baking, add your actual water temperature and assessment. The log keeps the information as reference, but v1.1.0 deliberately does not automatically adjust the DDT, yeast or timing model based on previous bakes.",
   "← Vorige":"← Previous",
   "Witte spelt":"White spelt flour",
   "Volkoren spelt":"Wholemeal spelt flour",
@@ -34,4 +34,3 @@ Object.assign(EN_TEXT,{
   "bijv. mooi luchtig, iets slap, bodem perfect...":"e.g. nicely airy, slightly slack, perfect base...",
   "alleen invullen als bekend":"only enter if known"
 });
-

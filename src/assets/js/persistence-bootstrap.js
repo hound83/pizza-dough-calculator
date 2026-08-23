@@ -1,8 +1,17 @@
-const SAVE_KEY='pizzaCalcV50';
-const SAVE_VERSION=50;
-const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${49-i}`);
+const SAVE_KEY='pizzaCalcV51';
+const SAVE_VERSION=51;
+const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${50-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
+// Only these controls override the technical dough profile owned by a preset.
+// Practical recipe inputs such as pizza count, diameter, room/refrigerator
+// temperature, stone temperature and bake deadline deliberately keep the
+// selected preset active.
+const PRESET_TECHNICAL_FIELDS=new Set([
+  'ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct',
+  'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours',
+  'finalDoughTemp','flourType','flourW','sizeFromDiameter','autolyse','practical'
+]);
 
 let _saveTimer=null;
 let _storageWarningShown=false;
@@ -30,7 +39,7 @@ function scheduleSave(){
 }
 
 function saveState(){
-  const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,currentLang,completedSteps,bakeLog,liveMeasurements,
+  const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
     currentWizardPage,
     practical:$('practical').checked,autolyse:$('autolyse').checked,
     sizeFromDiameter:$('sizeFromDiameter').checked,includeSauce:$('includeSauce').checked,
@@ -95,12 +104,18 @@ function loadState(){
     if(!raw){ for(const k of LEGACY_KEYS){ raw=SAFE.get(k); if(raw) break; } }
     const d=JSON.parse(raw||'null');
     if(!d||typeof d!=='object'||Array.isArray(d))return false;
+    // v1.0.0 had no Basic/Full display mode. Existing users retain the full
+    // controls they were accustomed to; only genuinely new users start Basic.
+    experienceMode=Object.prototype.hasOwnProperty.call(d,'experienceMode')
+      ? (d.experienceMode==='full'?'full':'basic')
+      : 'full';
     suppressCustom=true;
     Object.entries(d).forEach(([k,v])=>{
       if(k==='version')return;
       else if(k==='currentMethod')currentMethod=['hand','kitchenaid','kenwood','pro'].includes(v)?v:'kitchenaid';
       else if(k==='currentLang')currentLang=v==='en'?'en':'nl';
       else if(k==='appMode')appMode=['dough','sauce','full'].includes(v)?v:'full';
+      else if(k==='experienceMode')experienceMode=v==='full'?'full':'basic';
       else if(k==='exactOverride')exactOverride=sanitizeExactOverride(v);
       else if(k==='previousYeastType')previousYeastType=yeastTypes[v]?v:'idy';
       else if(k==='currentWizardPage')_restoredWizardPage=Number.isFinite(Number(v))?Math.max(0,Math.round(Number(v))):0;
@@ -161,7 +176,7 @@ function wireEvents(){
     el.addEventListener('input',()=>{
       if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
       if(el.classList.contains('pct')) markCustomField(el.id);
-      else if(!['preset','bakeDay','bakeTime','sauceType','saucePerPizza','includeSauce','autoSauceFromPizzas','stoneTemp','preheatMinutes','flourType','flourW'].includes(el.id)) markCustom(false);
+      else if(PRESET_TECHNICAL_FIELDS.has(el.id)) markCustom(false);
       _deferDependentStatePrune=el.id==='pizzas';
       try{update();}finally{_deferDependentStatePrune=false;}
     });
@@ -185,7 +200,6 @@ function wireEvents(){
         markCustom(false);
       }else if(el.id==='diameter'){
         if(!$('sizeFromDiameter').checked)$('ballWeight').value=recommendedBallWeight();
-        markCustom(false);
       }else if(el.id==='ballWeight'){
         if($('sizeFromDiameter').checked)$('diameter').value=roundTo(estimatedDiameterFromWeight(),0.5);
         markCustom(false);
@@ -196,9 +210,11 @@ function wireEvents(){
       }else if(el.id==='flourType'){
         const ft=flourTypes[el.value];
         $('flourW').value=(ft && ft.w!=null)?ft.w:'';
+        markCustom(false);
       }else if(el.id==='flourW'){
         // W handmatig aanpassen is toegestaan bij ieder gekozen bloemtype:
         // het type blijft staan zodat we kwalitatieve spelt/volkorenwaarschuwingen behouden.
+        markCustom(false);
       }else if(el.classList.contains('pct')){
         markCustomField(el.id);
       }
@@ -239,10 +255,11 @@ function wireEvents(){
     update();
   });
   $('autolyse').addEventListener('change',()=>{markCustom(false);update();});
-  $('practical').addEventListener('change',update);
+  $('practical').addEventListener('change',()=>{markCustom(false);update();});
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('[data-experience]').forEach(button=>button.addEventListener('click',()=>setExperienceMode(button.dataset.experience)));
   const search=$('pizzaPickerSearch');
   if(search){
     // Zonder debounce werd de hele lijst van 89 recepten per toetsaanslag opnieuw

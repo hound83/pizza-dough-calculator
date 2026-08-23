@@ -174,6 +174,7 @@ let exactOverride=null;
 let previousYeastType='idy';
 let suppressCustom=false;
 let appMode='full';
+let experienceMode='basic';
 let currentWizardPage=0;
 let completedSteps={};
 let liveMeasurements={doughTemp:null,fridgeTemp:null};
@@ -181,6 +182,5 @@ let _livePlanCache={key:null,value:null};
 // Tijdens het typen van het pizza-aantal mag een geldige tussenstand (de "2"
 // van "20") nooit recepten of afgevinkte stappen vernietigen.
 let _deferDependentStatePrune=false;
-// Publieke productversie staat bewust los van opslag-/migratieschema 50.
-const APP_VERSION='1.0.0';
-
+// Publieke productversie staat bewust los van opslag-/migratieschema 51.
+const APP_VERSION='1.1.0';

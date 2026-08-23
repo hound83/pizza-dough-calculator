@@ -54,7 +54,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.0.0');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.1.0');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -63,10 +63,81 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.0.0',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.1.0',hasCalculator:true,horizontalOverflow:0});
         expect(failures).toEqual([]);
       });
     }
+
+    test('switches Basic and Full without changing recipe values',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
+      await expect(page.locator('#experienceFull b')).toHaveText('Uitgebreid');
+      await page.locator('#langEn').click();
+      await expect(page.locator('#experienceFull b')).toHaveText('Full');
+      await page.locator('#langNl').click();
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#hydration')).not.toBeVisible();
+      const before=await page.locator('#hydration').inputValue();
+      await page.locator('.mode-choice-nav').click();
+      await page.locator('#experienceFull').click();
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#hydration')).toBeVisible();
+      expect(await page.locator('#hydration').inputValue()).toBe(before);
+    });
+
+    test('keeps Custom hidden during routine Basic input',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="dough"]').click();
+      const cases=[
+        ['#pizzas','6','input'],['#diameter','30','input'],['#roomTemp','22','input'],['#fridgeTemp','5','input'],
+        ['#stoneTemp','450','input'],['#bakeDay','1','select'],['#bakeTime','19:30','input']
+      ];
+      for(const [selector,value,control] of cases){
+        if(control==='select')await page.locator(selector).selectOption(value);
+        else await page.locator(selector).fill(value);
+        await page.locator(selector).blur();
+        await expect(page.locator('#preset')).toHaveValue('kodaNight');
+        await expect(page.locator('#experienceCustomBadge')).toBeHidden();
+      }
+    });
+
+    test('persists the display mode and migrates existing v1.0 users to Full',async({page})=>{
+      await page.addInitScript(()=>localStorage.setItem('pizzaCalcV50',JSON.stringify({version:50,appMode:'dough',hydration:'67'})));
+      await page.goto(publication.path,{waitUntil:'load'});
+      await expect(page.locator('#experienceFull')).toHaveAttribute('aria-pressed','true');
+      await page.locator('#experienceBasic').click();
+      await page.waitForTimeout(350);
+      expect(await page.evaluate(()=>localStorage.getItem('pizzaCalcV50'))).toBeNull();
+      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV51')).version)).toBe(51);
+      await page.reload({waitUntil:'load'});
+      await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
+      await page.locator('[data-mode-card="dough"]').click();
+      expect(await page.locator('#hydration').inputValue()).toBe('67');
+    });
+
+    test('shows a custom-settings badge in Basic after Full edits',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('#experienceFull').click();
+      await page.locator('[data-mode-card="dough"]').click();
+      await page.locator('#hydration').fill('66');
+      await page.locator('#hydration').blur();
+      await page.locator('.mode-choice-nav').click();
+      await page.locator('#experienceBasic').click();
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#experienceCustomBadge')).toBeVisible();
+      await expect(page.locator('#experienceCustomBadge')).toHaveText('Eigen instellingen actief');
+    });
+
+    test('keeps explicit yeast advice usable and explained in Basic',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#yeastApplyHelp')).toHaveText('Past alleen de berekende hoeveelheid gist aan.');
+      await page.locator('#applyYeastAdviceButton').click();
+      await expect(page.locator('#preset')).toHaveValue('custom');
+      await expect(page.locator('#experienceCustomBadge')).toBeVisible();
+      await expect(page.locator('#hydration')).toBeHidden();
+      await expect(page.locator('#yeastPct')).toBeHidden();
+    });
 
     for(const viewport of VIEWPORTS.slice(0,3)){
       test(`keeps the picker usable and click-selected at ${viewport.name}`,async({page})=>{
@@ -87,11 +158,13 @@ for(const publication of PUBLICATIONS){
           return {
             documentOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
             listHeight:list.clientHeight,
-            minimumListHeight:Math.floor(innerHeight*.24),
+            minimumListHeight:Math.floor(innerHeight*.45),
             modalFits:modalRect.left>=-1&&modalRect.right<=innerWidth+1&&modalRect.top>=-1&&modalRect.bottom<=innerHeight+1,
             modalOverflow:modal.scrollWidth-modal.clientWidth,
             chipsOverflow:chips.scrollWidth>chips.clientWidth,
-            visibleRecipes
+            visibleRecipes,
+            searchFocused:document.activeElement===document.querySelector('#pizzaPickerSearch'),
+            previewVisible:getComputedStyle(document.querySelector('#pizzaPickerPreview')).display!=='none'
           };
         });
 
@@ -100,10 +173,19 @@ for(const publication of PUBLICATIONS){
         expect(metrics.modalOverflow).toBeLessThanOrEqual(1);
         expect(metrics.listHeight).toBeGreaterThanOrEqual(metrics.minimumListHeight);
         expect(metrics.chipsOverflow).toBe(true);
-        expect(metrics.visibleRecipes).toBeGreaterThan(0);
+        expect(metrics.visibleRecipes).toBeGreaterThanOrEqual(3);
+        expect(metrics.searchFocused).toBe(false);
+        expect(metrics.previewVisible).toBe(false);
 
         await page.locator('[data-recipe-id="salami"]').first().click();
+        await expect(page.locator('.picker-modal')).toHaveClass(/\bmobile-preview-open\b/);
         await expect(page.locator('#pizzaPickerPreview h2')).toHaveText('Salami');
+        await expect(page.locator('#pizzaPickerPreview')).toBeVisible();
+        await expect(page.locator('#pizzaPickerBack')).toBeVisible();
+        await expect(page.locator('#pizzaPickerPreviewClose')).toBeVisible();
+
+        await page.locator('#pizzaPickerBack').click();
+        await expect(page.locator('.picker-modal')).not.toHaveClass(/\bmobile-preview-open\b/);
         await expect(page.locator('[data-recipe-id="salami"][aria-pressed="true"]').first()).toBeVisible();
 
         await page.locator('[data-recipe-id="quattroFormaggi"]').first().hover();

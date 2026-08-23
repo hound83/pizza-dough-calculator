@@ -2,18 +2,18 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.0.0_release-76c990)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
-[![Tests](https://img.shields.io/badge/regression_tests-64%2F64_passing-76c990)](tests/test_v50.js)
+[![Version](https://img.shields.io/badge/version-v1.1.0-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.0)
+[![Tests](https://img.shields.io/badge/regression_tests-71%2F71_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
 A comprehensive Dutch and English calculator for pizza dough, fermentation, sauce, toppings, and a complete practical workflow.
 
-The downloadable v1.0.0 application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the same standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
+The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.0.0 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
-> Tag **v1.0.0** is the immutable golden behavior baseline. The maintainable source structure changes how developers work, not what users receive: recombined CSS and JavaScript remain byte-for-byte identical to the release, and storage/migration schema 50 is unchanged.
+> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.1.0 is the first approved feature change and introduces storage schema 51 with an explicit migration from schema 50.
 
 ## Features
 
@@ -25,6 +25,8 @@ The app currently offers three usage modes:
 | **Dough + sauce** | Everything in Dough only, plus a separate sauce calculator |
 | **Complete pizzas** | Dough, sauce, one recipe per dough ball, toppings, shopping list, and complete workflow |
 
+Independently of those output modes, the start screen offers **Basic** and **Full** display modes. Basic keeps the practical inputs and results visible while presets manage technical dough values. Full exposes every existing setting. Switching is lossless; existing v1.0 users migrate to Full and new users start in Basic.
+
 Highlights:
 
 - calculate from pizza diameter or target dough-ball weight;
@@ -34,7 +36,7 @@ Highlights:
 - hydration, salt, oil, and IDY, ADY, or fresh yeast;
 - hybrid, cold, or all-room-temperature fermentation;
 - room, refrigerator, and final dough temperatures;
-- practical water-temperature and DDT guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers;
+- practical water-temperature, DDT, and staged kneading guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers;
 - flour selection with known or manually entered W value;
 - 92 pizza recipes, seven sauce variants, and search/filtering by name or ingredient;
 - an individual recipe, sauce, pizza style, and topping customization for every dough ball;
@@ -47,7 +49,7 @@ Highlights:
 
 ## Usage
 
-1. Choose how much of the calculator you need on the start screen.
+1. Choose Basic or Full, then choose how much of the calculator you need.
 2. Select a preset or enter your own dough values.
 3. Choose diameter or dough-ball weight as the leading measurement.
 4. Configure fermentation, temperatures, and optionally a target baking time.
@@ -124,10 +126,10 @@ npm test
 Current result:
 
 ```text
-12 refactor-structure tests passed
-64 bundle regression tests passed
-64 source regression tests passed
-19 Chromium browser/layout tests passed
+13 refactor-structure tests passed
+71 bundle regression tests passed
+71 source regression tests passed
+29 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:
@@ -143,7 +145,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, and exact reconstruction of the golden single-file source. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading, horizontal fit, mobile picker space, filter scrolling, and the click-versus-hover selection contract.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical v1.0.0 hashes, and the reviewed v1.1.0 release baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract.
 
 Use the following commands when working on the modular sources:
 

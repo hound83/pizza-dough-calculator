@@ -175,7 +175,8 @@ function buildPizzaCustomize(c){
 }
 
 function methodInstructions(c){
-  const f=fmt(c.flour,0),mw=fmt(c.mainWater,0),rw=fmt(c.reserve,0),y=fmt(c.yeast,2),s=fmt(c.salt,0),yn=yeastName(c.yeastType).toLowerCase();
+  const displayedReserve=Math.round(c.reserve),firstReserve=Math.floor(displayedReserve/2),remainingReserve=displayedReserve-firstReserve;
+  const f=fmt(c.flour,0),mw=fmt(c.mainWater,0),rw=fmt(displayedReserve,0),firstRw=fmt(firstReserve,0),remainingRw=fmt(remainingReserve,0),y=fmt(c.yeast,2),s=fmt(c.salt,0),yn=yeastName(c.yeastType).toLowerCase();
   const first=c.autolyse
     ? L(`Meng <b>${f} g bloem</b> met <b>${mw} g water</b>. <b>Nog geen gist of zout.</b>`,
         `Mix <b>${f} g flour</b> with <b>${mw} g water</b>. <b>No yeast or salt yet.</b>`)
@@ -188,32 +189,47 @@ function methodInstructions(c){
         `After the rest, add <b>${s} g salt</b> and gradually the reserved <b>${rw} g water</b>.`);
 
   const coolTip=(brand)=>L(
-    `<b>${brand}-tip:</b> zet de kom met bloem + water tijdens deze 20 minuten gerust in de koelkast. Zo koelen deeg én metalen kom wat af vóór het kneden, wat helpt om de einddeegtemperatuur te beperken.`,
-    `<b>${brand} tip:</b> feel free to put the bowl with flour + water in the fridge during these 20 minutes. Both the dough and the metal bowl cool down before kneading, which helps keep the final dough temperature in check.`);
+    `<b>${brand}-tip:</b> deze koude rust koelt zowel het deeg als de metalen kom vóór het kneden en helpt zo de einddeegtemperatuur te beperken.`,
+    `<b>${brand} tip:</b> this cold rest cools both the dough and the metal bowl before kneading, helping to keep the final dough temperature in check.`);
 
   if(currentMethod==='hand') return {
     mix:first+L(' Meng 2–3 min met de hand tot alle bloem bevochtigd is.',' Mix by hand for 2–3 min until all the flour is hydrated.'),
     add,
     knead:L('Kneed daarna ongeveer <b>8–12 min</b> tot het deeg glad en elastisch is.','Then knead for roughly <b>8–12 min</b> until the dough is smooth and elastic.'),
     note:L('Bij veel weerstand: 5 min rust en daarna verder.','If it resists a lot: rest 5 min, then continue.'),
-    autolyseCooling:''};
+    autolyseCooling:'',finish:'',finishNote:''};
   if(currentMethod==='kenwood') return {
-    mix:first+L(' Meng <b>1½–2 min op MIN/laagste stand</b>.',' Mix for <b>1½–2 min on MIN/lowest speed</b>.'),
-    add,
-    knead:L('Kneed daarna ongeveer <b>4–6 min op lage deegstand</b>.','Then knead for roughly <b>4–6 min on a low dough speed</b>.'),
-    note:L('Kenwood-modellen verschillen; volg de modelspecifieke snelheidslimiet uit jouw handleiding.','Kenwood models differ; follow the model-specific speed limit in your manual.'),
-    autolyseCooling:coolTip('Kenwood')};
+    mix:first+L(' Meng <b>1½–2 min op MIN/laagste stand</b>, alleen tot alle bloem bevochtigd is.',' Mix for <b>1½–2 min on MIN/lowest speed</b>, only until all the flour is hydrated.'),
+    add:c.autolyse
+      ? L(`Voeg na de rust <b>${y} g ${yn}</b> toe met ongeveer <b>${firstRw} g</b> van het gereserveerde water. Meng <b>3–4 min op MIN/laag</b>. Voeg daarna <b>${s} g zout</b> toe met de resterende ongeveer <b>${remainingRw} g water</b>.`,
+          `After the rest, add <b>${y} g ${yn}</b> with about <b>${firstRw} g</b> of the reserved water. Mix for <b>3–4 min on MIN/low</b>. Then add <b>${s} g salt</b> with the remaining roughly <b>${remainingRw} g water</b>.`)
+      : add,
+    knead:c.autolyse
+      ? L('Meng na het zout nog <b>3 min op lage deegstand</b>; verleng alleen indien nodig tot maximaal ongeveer <b>4 min</b>.','After adding the salt, mix for another <b>3 min on a low dough speed</b>; extend only if needed to roughly <b>4 min maximum</b>.')
+      : L('Kneed daarna ongeveer <b>4–6 min op lage deegstand</b>.','Then knead for roughly <b>4–6 min on a low dough speed</b>.'),
+    note:L(`Kenwood-modellen verschillen sterk. Volg altijd de modelspecifieke snelheidslimiet en stop eerder zodra het deeg glad en elastisch is, de windowpane voldoende is of de deegtemperatuur richting ${fmt(c.doughTemp,1)} °C gaat.`,
+      `Kenwood models differ substantially. Always follow the model-specific speed limit and stop earlier once the dough is smooth and elastic, the windowpane is sufficient, or dough temperature approaches ${fmt(c.doughTemp,1)} °C.`),
+    autolyseCooling:coolTip('Kenwood'),
+    finish:L('Is de windowpane na een korte rust nog zwak, geef het deeg dan één rustige ronde van <b>4 stretch-and-folds</b> in de kom. Sla dit over als het deeg al sterk of strak aanvoelt.','If the windowpane is still weak after a short rest, give the dough one gentle round of <b>4 stretch-and-folds</b> in the bowl. Skip this if the dough already feels strong or tight.'),
+    finishNote:L('Dit is een optionele correctie, geen verplichte extra kneedfase.','This is an optional correction, not a mandatory extra kneading phase.')};
   if(currentMethod==='pro') return {
     mix:first+L(' Meng <b>1½–2 min op lage snelheid</b>.',' Mix for <b>1½–2 min on low speed</b>.'),
     add,
     knead:L('Meng kort laag en gebruik daarna, als jouw machine dat ondersteunt, de hogere kneedstand tot het deeg glad en elastisch is.','Mix briefly on low, then use the higher kneading speed if your machine supports it, until the dough is smooth and elastic.'),
     note:L('Bij professionele spiraalkneders zijn snelheid en minimale deegmassa modelafhankelijk.','On professional spiral mixers, speed and minimum dough mass depend on the model.'),
-    autolyseCooling:''};
+    autolyseCooling:'',finish:'',finishNote:''};
   return {
-    mix:first+L(' Meng met de haak <b>1½–2 min op stand 1</b>.',' Mix with the hook for <b>1½–2 min on speed 1</b>.'),
-    add,
-    knead:L('Als alles is opgenomen: <b>2–4 min op stand 2</b>.','Once everything is incorporated: <b>2–4 min on speed 2</b>.'),
-    note:L('Voor KitchenAid: blijf bij gistdeeg op maximaal stand 2.','For KitchenAid: stay at speed 2 maximum for yeasted dough.'),
-    autolyseCooling:coolTip('KitchenAid')};
+    mix:first+L(' Meng met de haak <b>2 min op stand 1</b>, alleen tot alle bloem bevochtigd en het deeg grof samengekomen is.',' Mix with the hook for <b>2 min on speed 1</b>, only until all the flour is hydrated and the dough has roughly come together.'),
+    add:c.autolyse
+      ? L(`Voeg na de rust <b>${y} g ${yn}</b> toe met ongeveer <b>${firstRw} g</b> van het gereserveerde water en meng <b>3 min op stand 1</b>. Voeg daarna <b>${s} g zout</b> toe met de resterende ongeveer <b>${remainingRw} g water</b>.`,
+          `After the rest, add <b>${y} g ${yn}</b> with about <b>${firstRw} g</b> of the reserved water and mix for <b>3 min on speed 1</b>. Then add <b>${s} g salt</b> with the remaining roughly <b>${remainingRw} g water</b>.`)
+      : add,
+    knead:c.autolyse
+      ? L('Meng zout en water eerst <b>2 min op stand 1</b> door het deeg. Kneed daarna <b>2 min op stand 2</b> voor de eindontwikkeling.','First mix the salt and water into the dough for <b>2 min on speed 1</b>. Then knead for <b>2 min on speed 2</b> for final development.')
+      : L('Meng zout en water na de hydratatierust <b>2 min op stand 1</b> door het deeg. Kneed daarna <b>2 min op stand 2</b> voor de eindontwikkeling.','After the hydration rest, mix the salt and water into the dough for <b>2 min on speed 1</b>. Then knead for <b>2 min on speed 2</b> for final development.'),
+    note:L(`Dit is een rustige, gefaseerde pizzamethode. KitchenAid schrijft voor gistdeeg officieel stand 2 voor; ga daarom nooit boven stand 2, blijf bij de machine en stop direct bij duidelijke belasting, sterke opwarming, glanzend/plakkerig deeg of zodra de deegtemperatuur richting ${fmt(c.doughTemp,1)} °C gaat.`,
+      `This is a gentle, staged pizza method. KitchenAid officially specifies speed 2 for yeasted dough; therefore never exceed speed 2, stay with the machine, and stop immediately if it strains, heats strongly, the dough turns glossy/sticky, or dough temperature approaches ${fmt(c.doughTemp,1)} °C.`),
+    autolyseCooling:coolTip('KitchenAid'),
+    finish:L('Laat het deeg <b>5 min afgedekt ontspannen</b> en controleer daarna de windowpane. Is die nog zwak, duw het deeg dan op het werkblad rustig van je af, vouw terug en draai een kwartslag; herhaal ongeveer <b>6–10 keer</b>. Laat het vervolgens nog <b>5–10 min afgedekt ontspannen</b> en controleer opnieuw. Niet trekken of scheuren.','Let the dough <b>relax covered for 5 min</b> and then check the windowpane. If it is still weak, gently push the dough away from you on the worktop, fold it back, and turn it a quarter turn; repeat roughly <b>6–10 times</b>. Then let it relax covered for another <b>5–10 min</b> and check again. Do not pull or tear it.'),
+    finishNote:L('Dit herstelpad gebruikt rust en vouwen, geen extra machinetijd. Sla de vouwen over als het deeg al een goede windowpane heeft of juist sterk en strak aanvoelt.','This recovery path uses rest and folds, with no extra machine time. Skip the folds if the dough already has a good windowpane or feels strong and tight.')};
 }
-

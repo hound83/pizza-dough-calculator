@@ -309,6 +309,32 @@ function popModal(id){
   }
 }
 
+function usesMobilePickerLayout(){
+  return typeof window.matchMedia==='function' && window.matchMedia('(max-width: 760px)').matches;
+}
+
+function showPickerListOnMobile(){
+  const modal=$('pizzaPickerModal');
+  if(!modal)return;
+  modal.classList.remove('mobile-preview-open');
+  requestAnimationFrame(()=>{
+    const selected=document.querySelector(`#pizzaPickerList [data-recipe-id="${pickerSelectedId}"][aria-pressed="true"]`);
+    if(selected&&typeof selected.focus==='function')selected.focus({preventScroll:true});
+  });
+}
+
+function showPickerPreviewOnMobile(){
+  if(!usesMobilePickerLayout())return;
+  const modal=$('pizzaPickerModal');
+  if(!modal)return;
+  modal.classList.add('mobile-preview-open');
+  $('pizzaPickerPreview').scrollTop=0;
+  requestAnimationFrame(()=>{
+    const back=$('pizzaPickerBack');
+    if(back&&typeof back.focus==='function')back.focus({preventScroll:true});
+  });
+}
+
 function openPizzaPicker(target){
   pickerTarget=target;
   activePizzaFilters.clear();
@@ -321,16 +347,20 @@ function openPizzaPicker(target){
   pickerSelectedId=currentId;
   $('pizzaPickerSearch').value='';
   $('pickerTitle').textContent=target==='all' ? L('Kies pizza voor alle bollen','Choose pizza for all dough balls') : L(`Kies pizza voor bol ${Number(target)+1}`,`Choose pizza for dough ball ${Number(target)+1}`);
+  $('pizzaPickerModal').classList.remove('mobile-preview-open');
   $('pizzaPickerOverlay').classList.add('open');
   pushModal('picker');
   renderPickerList();
   renderPickerPreview();
-  setTimeout(()=>$('pizzaPickerSearch').focus(),50);
+  setTimeout(()=>{
+    if(!usesMobilePickerLayout())$('pizzaPickerSearch').focus();
+  },50);
 }
 
 function closePizzaPicker(){
   if(!$('pizzaPickerOverlay').classList.contains('open'))return;
   $('pizzaPickerOverlay').classList.remove('open');
+  $('pizzaPickerModal').classList.remove('mobile-preview-open');
   popModal('picker');
 }
 
@@ -643,6 +673,7 @@ function renderPickerList(){
 function selectPickerRecipe(id){
   const selected=pizzaRecipes.find(r=>r.id===id);
   if(!selected)return;
+  const listScrollTop=$('pizzaPickerList').scrollTop;
   const selectionChanged=pickerSelectedId!==selected.id || pickerPendingRecipeId!==selected.id;
   pickerSelectedId=selected.id;
   // De tijdelijke instellingen horen bij precies één bewust aangeklikt recept.
@@ -650,7 +681,9 @@ function selectPickerRecipe(id){
   // receptdefaults gebruikt, zodat saus/toppings nooit van een vorige keuze lekken.
   if(selectionChanged)loadPickerPendingCustomization(pickerSelectedId);
   renderPickerList();
+  $('pizzaPickerList').scrollTop=listScrollTop;
   renderPickerPreview();
+  showPickerPreviewOnMobile();
 }
 
 function syncPickerPreviewHighlight(id){
@@ -702,6 +735,10 @@ function renderPickerPreview(){
       </div>`;
 
   $('pizzaPickerPreview').innerHTML=`
+    <div class="picker-mobile-toolbar">
+      <button class="picker-back" id="pizzaPickerBack" type="button">${L('← Recepten','← Recipes')}</button>
+      <button aria-label="${L('Sluiten','Close')}" class="picker-close" id="pizzaPickerPreviewClose" type="button">✕</button>
+    </div>
     <h2>${recipeNameText(r)}</h2>
     <span class="tag picker-tag">${recipeTagText(r)}</span>
     ${hasMushroomsRecipe(r)?`<span class="tag picker-tag" style="margin-left:6px">${L('🍄 bevat paddenstoelen','🍄 contains mushrooms')}</span>`:''}
@@ -757,6 +794,9 @@ function renderPickerPreview(){
     <div class="btnrow" style="margin-top:16px">
       <button class="btn primary" type="button" onclick="choosePickerRecipe()">${L('Kies','Choose')} ${recipeNameText(r)}</button>
     </div>`;
+
+  $('pizzaPickerBack').addEventListener('click',showPickerListOnMobile);
+  $('pizzaPickerPreviewClose').addEventListener('click',closePizzaPicker);
 }
 
 function choosePickerRecipe(){
@@ -802,5 +842,3 @@ function applyRecipeToAll(){
   pizzaCustomizations=pizzaSelections.map(id=>({recipeId:id,excluded:{},noSauce:false,extraCheese:false,pizzaStyle:'traditional',sauceOverride:null}));
   update();
 }
-
-
