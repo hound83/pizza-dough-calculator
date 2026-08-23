@@ -175,6 +175,12 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 .picker-item:hover,.picker-item.active{background:#24292c;border-color:#3b4246}
 .picker-item .meta{font-size:11px;color:var(--muted);white-space:nowrap}
 .picker-preview{padding:20px;overflow:auto;min-height:0}
+.picker-mobile-toolbar{display:none}
+.picker-back{
+  display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);
+  background:#24292c;color:var(--text);border-radius:10px;padding:9px 11px;
+  cursor:pointer;font-weight:800
+}
 .picker-preview h2{margin:0 0 4px}
 .picker-preview .picker-tag{display:inline-flex;margin:6px 0 12px}
 .picker-preview .ingredient-preview{display:grid;gap:7px;margin-top:12px}
@@ -324,9 +330,17 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
   vertical-align:1px;
 }
 @media(max-width:760px){
-  .picker-modal{height:92vh;max-height:92vh}
-  .picker-list-wrap{height:auto!important;max-height:none!important;min-height:0}
-  .picker-list{min-height:26vh}
+  .picker-overlay{align-items:flex-start;padding:6px}
+  .picker-modal{
+    width:100%;height:calc(100vh - 12px);height:calc(100dvh - 12px);
+    max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px);
+    border-radius:16px;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr);
+  }
+  .picker-list-wrap{
+    grid-column:1;grid-row:1;height:100%!important;max-height:none!important;min-height:0;
+    border-right:0;border-bottom:0
+  }
+  .picker-list{min-height:0}
   .pizza-filter-chips{
     flex-wrap:nowrap;
     overflow-x:auto;
@@ -334,7 +348,16 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
     padding-bottom:4px;
   }
   .filter-chip{flex:0 0 auto}
-  .picker-preview{max-height:none!important;min-height:0;overflow:auto}
+  .picker-preview{
+    display:none;grid-column:1;grid-row:1;height:100%;max-height:none!important;
+    min-height:0;overflow:auto;padding:14px
+  }
+  .picker-modal.mobile-preview-open .picker-list-wrap{display:none}
+  .picker-modal.mobile-preview-open .picker-preview{display:block}
+  .picker-mobile-toolbar{
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:-14px;z-index:3;background:#171a1c;
+    margin:-14px -14px 14px;padding:10px 14px;border-bottom:1px solid var(--line)
+  }
 }
 
 

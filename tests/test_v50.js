@@ -297,6 +297,12 @@ test('picker commit uses the clicked recipe and matching pending customization',
   assert(x.recipe==='quattroFormaggi'&&x.custom.recipeId==='quattroFormaggi'&&x.custom.sauceOverride==='sanMarzano'&&x.custom.excluded.Gorgonzola===true,JSON.stringify(x));
 });
 
+test('mobile picker switches between catalogue and customization panes without committing',()=>{
+  const x=run(`(()=>{const previousMatchMedia=window.matchMedia;window.matchMedia=()=>({matches:true});$('pizzas').value='1';pizzaSelections=['margherita'];pizzaCustomizations=[];recipeAllSelection='margherita';pickerTarget='all';pickerSelectedId='margherita';loadPickerPendingCustomization('margherita');$('pizzaPickerModal').classList.remove('mobile-preview-open');selectPickerRecipe('salami');const preview={open:$('pizzaPickerModal').classList.contains('mobile-preview-open'),selected:pickerSelectedId,committed:recipeAllSelection,backListeners:($('pizzaPickerBack').listeners.click||[]).length,closeListeners:($('pizzaPickerPreviewClose').listeners.click||[]).length};showPickerListOnMobile();const catalogue={open:$('pizzaPickerModal').classList.contains('mobile-preview-open'),selected:pickerSelectedId,committed:recipeAllSelection};window.matchMedia=previousMatchMedia;return {preview,catalogue};})()`);
+  assert(x.preview.open&&x.preview.selected==='salami'&&x.preview.committed==='margherita'&&x.preview.backListeners>0&&x.preview.closeListeners>0,JSON.stringify(x));
+  assert(!x.catalogue.open&&x.catalogue.selected==='salami'&&x.catalogue.committed==='margherita',JSON.stringify(x));
+});
+
 test('manual zero bulk gets neutral wording',()=>{
   const html=run(`(()=>{const c={...calc(),ferm:'room',bulk:0,cold:0,ball:4};const live={active:false,changed:false,effective:c,orig:{bulk:0,cold:0,ball:4}};_stepKeys=[];return fermentationSteps(c,1,live).html.join('');})()`);
   assert(html.includes('geen aparte warme bulk gepland')&&!html.includes('live temperatuurcorrectie'),html.slice(0,400));
@@ -473,8 +479,12 @@ test('AVPN information block renders completely and consistently in both languag
   assert(x.nl.includes('AVPN middenprofiel:')&&x.nl.includes('28,5 cm')&&x.nl.includes('58,8% hydratatie')&&x.nl.includes('2,94% zout'),x.nl);
 });
 
-test('mobile picker CSS reserves recipe space and keeps filters on one scrollable row',()=>{
-  assert(/\.picker-list\s*\{min-height:26vh\}/.test(styleSource),'missing mobile picker list minimum height');
+test('mobile picker CSS gives the catalogue a full single-pane view',()=>{
+  assert(/@media\(max-width:760px\)[\s\S]*?\.picker-modal\s*\{[\s\S]*?height:calc\(100dvh - 12px\);[\s\S]*?grid-template-rows:minmax\(0,1fr\);[\s\S]*?\}/.test(styleSource),'mobile picker is not sized to the dynamic viewport');
+  assert(/\.picker-list-wrap\s*\{[\s\S]*?height:100%!important;[\s\S]*?\}/.test(styleSource),'mobile picker list pane does not fill the modal');
+  assert(/\.picker-preview\s*\{[\s\S]*?display:none;[\s\S]*?height:100%;[\s\S]*?\}/.test(styleSource),'mobile picker preview must start as a separate hidden pane');
+  assert(/\.picker-modal\.mobile-preview-open \.picker-list-wrap\s*\{display:none\}/.test(styleSource),'mobile picker cannot switch away from the catalogue pane');
+  assert(/\.picker-modal\.mobile-preview-open \.picker-preview\s*\{display:block\}/.test(styleSource),'mobile picker cannot reveal the preview pane');
   assert(/\.pizza-filter-chips\s*\{[\s\S]*?flex-wrap:nowrap;[\s\S]*?overflow-x:auto;[\s\S]*?overscroll-behavior-x:contain;[\s\S]*?padding-bottom:4px;[\s\S]*?\}/.test(styleSource),'missing mobile filter scrolling');
   assert(/\.filter-chip\s*\{flex:0 0 auto\}/.test(styleSource),'filter chips may shrink');
 });

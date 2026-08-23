@@ -63,6 +63,14 @@ When behavior is intentionally changed, do not silently replace these values. Fi
 - Values edited in Full remain intact after switching to Basic. If the preset has become Custom, Basic shows a localized “Custom settings active” badge.
 - The chosen display mode is stored in schema 51 under `pizzaCalcV51`; schema 50 is migrated once and then removed.
 
+## v1.1.0 mobile recipe-picker contract
+
+- At phone widths up to 760 px, the picker opens on a full-height recipe catalogue instead of splitting scarce vertical space with the customization preview.
+- Tapping a recipe opens its customization pane. The localized back control returns to the catalogue without changing or committing the pending selection.
+- Search never receives automatic focus on phone widths, so opening the picker does not summon the on-screen keyboard. Users can still tap search normally.
+- Desktop keeps the simultaneous two-column catalogue and preview.
+- Only the explicit “Choose pizza” action commits the pending recipe and customization to one or all dough balls.
+
 ## Change checklist
 
 Before changing a rule above:

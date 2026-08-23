@@ -127,11 +127,13 @@ for(const publication of PUBLICATIONS){
           return {
             documentOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
             listHeight:list.clientHeight,
-            minimumListHeight:Math.floor(innerHeight*.24),
+            minimumListHeight:Math.floor(innerHeight*.45),
             modalFits:modalRect.left>=-1&&modalRect.right<=innerWidth+1&&modalRect.top>=-1&&modalRect.bottom<=innerHeight+1,
             modalOverflow:modal.scrollWidth-modal.clientWidth,
             chipsOverflow:chips.scrollWidth>chips.clientWidth,
-            visibleRecipes
+            visibleRecipes,
+            searchFocused:document.activeElement===document.querySelector('#pizzaPickerSearch'),
+            previewVisible:getComputedStyle(document.querySelector('#pizzaPickerPreview')).display!=='none'
           };
         });
 
@@ -140,10 +142,19 @@ for(const publication of PUBLICATIONS){
         expect(metrics.modalOverflow).toBeLessThanOrEqual(1);
         expect(metrics.listHeight).toBeGreaterThanOrEqual(metrics.minimumListHeight);
         expect(metrics.chipsOverflow).toBe(true);
-        expect(metrics.visibleRecipes).toBeGreaterThan(0);
+        expect(metrics.visibleRecipes).toBeGreaterThanOrEqual(3);
+        expect(metrics.searchFocused).toBe(false);
+        expect(metrics.previewVisible).toBe(false);
 
         await page.locator('[data-recipe-id="salami"]').first().click();
+        await expect(page.locator('.picker-modal')).toHaveClass(/\bmobile-preview-open\b/);
         await expect(page.locator('#pizzaPickerPreview h2')).toHaveText('Salami');
+        await expect(page.locator('#pizzaPickerPreview')).toBeVisible();
+        await expect(page.locator('#pizzaPickerBack')).toBeVisible();
+        await expect(page.locator('#pizzaPickerPreviewClose')).toBeVisible();
+
+        await page.locator('#pizzaPickerBack').click();
+        await expect(page.locator('.picker-modal')).not.toHaveClass(/\bmobile-preview-open\b/);
         await expect(page.locator('[data-recipe-id="salami"][aria-pressed="true"]').first()).toBeVisible();
 
         await page.locator('[data-recipe-id="quattroFormaggi"]').first().hover();

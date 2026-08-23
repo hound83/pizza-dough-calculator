@@ -145,7 +145,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, and exact reconstruction of the golden single-file source. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading, horizontal fit, mobile picker space, filter scrolling, and the click-versus-hover selection contract.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, and exact reconstruction of the golden single-file source. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract.
 
 Use the following commands when working on the modular sources:
 
