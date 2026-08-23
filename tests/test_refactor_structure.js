@@ -18,6 +18,11 @@ const GOLDEN={
   css:'262e12b5356f5a50c63aa7cd7249b3c5c8b101d8954f076de1360efbc222b896',
   javascript:'2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7'
 };
+const V1_1_0_BASELINE={
+  singleFile:'783692e762f3fbd907d9b90951caceb690532774a281e6dc605c628f85a80ebc',
+  css:'8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052',
+  javascript:'0fdc541f42e149f746413e9680da5a381e01bfc8a08a9a59883afad095c678d7'
+};
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}
 
@@ -48,6 +53,12 @@ pass('the legacy all-in-one app.js is absent from the modular source');
 const guardrails=fs.readFileSync(path.join(ROOT,'docs','PRODUCT_GUARDRAILS.md'),'utf8');
 for(const hash of Object.values(GOLDEN))assert(guardrails.includes(hash),`Historical v1.0.0 baseline hash is missing from product guardrails: ${hash}`);
 pass('historical v1.0.0 baseline hashes remain documented');
+
+assert(sha256(bundledHtml)===V1_1_0_BASELINE.singleFile,'Standalone v1.1.0 baseline hash changed without review.');
+assert(sha256(css)===V1_1_0_BASELINE.css,'CSS v1.1.0 baseline hash changed without review.');
+assert(sha256(combinedJavaScript)===V1_1_0_BASELINE.javascript,'JavaScript v1.1.0 baseline hash changed without review.');
+for(const hash of Object.values(V1_1_0_BASELINE))assert(guardrails.includes(hash),`Reviewed v1.1.0 baseline hash is missing from product guardrails: ${hash}`);
+pass('reviewed v1.1.0 release-candidate hashes are pinned and documented');
 
 new vm.Script(combinedJavaScript,{filename:'combined-refactor.js'});
 pass('recombined JavaScript parses successfully');
@@ -105,4 +116,4 @@ assert(JSON.stringify(headingLevels(readmeEnglish))===JSON.stringify(headingLeve
 assert(/README\.md.*canonieke/i.test(readmeDutch),'Dutch README must identify README.md as the canonical version.');
 pass('English and Dutch README files retain equivalent structure and canonical-language guidance');
 
-console.log('\n12 refactor-structure tests passed');
+console.log('\n13 refactor-structure tests passed');

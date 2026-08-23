@@ -5,7 +5,7 @@
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
 [![Versie](https://img.shields.io/badge/versie-v1.1.0_kandidaat-f0b45a)](https://github.com/hound83/pizza-dough-calculator)
-[![Tests](https://img.shields.io/badge/regressietests-65%2F65_groen-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regressietests-69%2F69_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
@@ -27,7 +27,7 @@ De app heeft drie huidige gebruiksmodi:
 | **Deeg + saus** | Alles van Alleen deeg, plus een losse sausberekening |
 | **Volledige pizza’s** | Deeg, saus, recept per bol, toppings, boodschappenlijst en compleet stappenplan |
 
-Los van die uitvoermodi biedt het beginscherm de weergavemodi **Basis** en **Volledig**. Basis houdt de praktische invoer en resultaten zichtbaar, terwijl presets de technische deegwaarden beheren. Volledig toont alle bestaande instellingen. Wisselen is verliesvrij; bestaande v1.0-gebruikers migreren naar Volledig en nieuwe gebruikers starten in Basis.
+Los van die uitvoermodi biedt het beginscherm de weergavemodi **Basis** en **Uitgebreid**. Basis houdt de praktische invoer en resultaten zichtbaar, terwijl presets de technische deegwaarden beheren. Uitgebreid toont alle bestaande instellingen. Wisselen is verliesvrij; bestaande v1.0-gebruikers migreren naar Uitgebreid en nieuwe gebruikers starten in Basis.
 
 Belangrijkste mogelijkheden:
 
@@ -38,7 +38,7 @@ Belangrijkste mogelijkheden:
 - hydratatie, zout, olie en IDY-, ADY- of verse gist;
 - hybride, koude of volledige kamertemperatuurfermentatie;
 - rekening houden met kamer-, koelkast- en einddeegtemperatuur;
-- praktisch water- en DDT-advies voor handmatig kneden, KitchenAid, Kenwood en spiraalkneders;
+- praktisch water-, DDT- en gefaseerd kneedadvies voor handmatig kneden, KitchenAid, Kenwood en spiraalkneders;
 - bloemkeuze met bekende of handmatig ingevoerde W-waarde;
 - 92 pizzarecepten, zeven sausvarianten en zoeken/filteren op naam of ingrediënt;
 - per deegbol een eigen recept, sausvariant, pizzastijl en toppingaanpassing;
@@ -51,7 +51,7 @@ Belangrijkste mogelijkheden:
 
 ## Zo gebruik je hem
 
-1. Kies Basis of Volledig en daarna hoeveel onderdelen je nodig hebt.
+1. Kies Basis of Uitgebreid en daarna hoeveel onderdelen je nodig hebt.
 2. Selecteer een preset of vul je eigen deegwaarden in.
 3. Kies diameter of bolgewicht als leidende maat.
 4. Stel fermentatie, temperaturen en eventueel een gewenste baktijd in.
@@ -128,10 +128,10 @@ npm test
 Huidige uitslag:
 
 ```text
-12 refactor-structure tests passed
-64 bundle regression tests passed
-64 source regression tests passed
-19 Chromium browser/layout tests passed
+13 refactor-structure tests passed
+69 bundle regression tests passed
+69 source regression tests passed
+29 Chromium browser/layout tests passed
 ```
 
 De suite controleert onder meer:
@@ -147,7 +147,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit en exacte reconstructie van de golden single-filebron. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. De telefoontests bewaken daarnaast de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract.
+De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische v1.0.0-hashes en de gereviewde v1.1.0-releasebaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. De telefoontests bewaken daarnaast de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 

@@ -53,14 +53,27 @@ The behavior-neutral refactor protects these v1.0.0 hashes:
 
 When behavior is intentionally changed, do not silently replace these values. First document the approved product change, update or add focused tests, select the correct semantic version, and record the reviewed replacement baseline.
 
+## Reviewed v1.1.0 release baseline
+
+These hashes cover the reviewed Basic/Full display modes, mobile recipe-picker repair, staged home-mixer guidance, and Claude audit corrections. They are the replacement integrity baseline for the v1.1.0 release; the v1.0.0 hashes above remain immutable historical evidence.
+
+| Artefact | SHA-256 |
+|---|---|
+| standalone `index.html` | `783692e762f3fbd907d9b90951caceb690532774a281e6dc605c628f85a80ebc` |
+| CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
+| combined JavaScript | `0fdc541f42e149f746413e9680da5a381e01bfc8a08a9a59883afad095c678d7` |
+
 ## v1.1.0 Basic/Full display contract
 
 - Basic and Full are display modes independent of the Dough only, Dough + sauce, and Complete pizzas output modes.
+- The Dutch labels are “Basis” and “Uitgebreid”, deliberately distinct from the “Volledige pizza’s” output mode.
 - New users start in Basic. Stored v1.0.0/schema-50 users migrate to Full.
 - Switching display mode never resets, recalculates, or replaces recipe values.
 - Basic shows the preset, pizza count and diameter, relevant temperatures, optional bake deadline, stone temperature, compact yeast guidance, ingredients, warnings, and practical workflow.
-- Presets continue to own hidden technical values: dough style, baker's percentages, yeast type and amount, oil, rounding, autolyse, fermentation method and phase times, flour/W settings, and technical explanations.
-- Values edited in Full remain intact after switching to Basic. If the preset has become Custom, Basic shows a localized “Custom settings active” badge.
+- Pizza count, diameter, room temperature, refrigerator temperature, stone temperature, and bake deadline are practical recipe inputs. Editing them never changes the selected preset to Custom.
+- Presets continue to own hidden technical values: dough style, baker's percentages, manual yeast type and amount, oil, rounding, autolyse, fermentation method and phase times, flour/W settings, and technical explanations.
+- Basic keeps the calculated yeast recommendation and its explicit Apply action visible. Applying it intentionally overrides only the yeast amount, changes the preset to Custom, and is explained next to the action.
+- Technical values edited in Full remain intact after switching to Basic. If the preset has become Custom, Basic shows a localized “Custom settings active” badge.
 - The chosen display mode is stored in schema 51 under `pizzaCalcV51`; schema 50 is migrated once and then removed.
 
 ## v1.1.0 mobile recipe-picker contract
@@ -70,6 +83,16 @@ When behavior is intentionally changed, do not silently replace these values. Fi
 - Search never receives automatic focus on phone widths, so opening the picker does not summon the on-screen keyboard. Users can still tap search normally.
 - Desktop keeps the simultaneous two-column catalogue and preview.
 - Only the explicit “Choose pizza” action commits the pending recipe and customization to one or all dough balls.
+
+## v1.1.0 home-mixer guidance contract
+
+- The refrigerated 20-minute flour-and-water autolyse remains available and recommended as a practical way to limit final dough temperature.
+- Home-mixer times are staged guidance, not automatic targets. Time, dough temperature, mixer load, dough feel, and a rested windowpane check determine when mixing stops.
+- The KitchenAid pizza method uses speed 1 in monitored stages around yeast and salt, never permits a speed above 2, and explicitly discloses that KitchenAid's official yeast-dough guidance specifies speed 2.
+- The KitchenAid method stops early when the dough is already developed, becomes glossy or sticky, approaches the selected final dough temperature, or the machine shows clear strain or strong warming.
+- A short manual push-fold-turn finish follows the KitchenAid stages only when useful. It is skipped when the dough already has a sufficient windowpane or feels strong and tight.
+- Kenwood timing remains model-dependent. The calculator stays within the range represented by Kenwood's own pizza-dough guidance, requires the model-specific manual to take precedence, and offers folds only as an optional correction after a short rest.
+- Mixer guidance never changes yeast quantity, baker's percentages, or fermentation calculations.
 
 ## Change checklist
 

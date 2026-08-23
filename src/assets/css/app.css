@@ -94,6 +94,9 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 .advisor{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-top:10px}
 .advisor-result{background:#111416;border:1px solid var(--line);border-radius:13px;padding:12px}
 .advisor-result b{font-size:18px}.advisor-result span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.advisor-action{display:grid;gap:5px;justify-items:stretch;max-width:190px}
+.advisor-action .btn{width:100%}
+.advisor-action .input-help{margin:0;text-align:center}
 .method-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 18px}
 .method{padding:11px 8px;border:1px solid var(--line);background:#111416;color:#d0d4d6;border-radius:12px;cursor:pointer;font-weight:800;font-size:13px}
 .method.active{background:var(--text);color:#111;border-color:var(--text)}
@@ -119,7 +122,7 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 }
 @media(max-width:560px){
  .app{padding:14px}.form-grid,.recipe-hero,.three{grid-template-columns:1fr}.stats{grid-template-columns:1fr}
- .timeitem{grid-template-columns:1fr}.advisor{grid-template-columns:1fr}
+ .timeitem{grid-template-columns:1fr}.advisor{grid-template-columns:1fr}.advisor-action{max-width:none}
 }
 @media print{
  body{background:#fff;color:#000}.topbar,.btnrow,.method-tabs,.calculator-only{display:none!important}

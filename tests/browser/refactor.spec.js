@@ -71,6 +71,10 @@ for(const publication of PUBLICATIONS){
     test('switches Basic and Full without changing recipe values',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
       await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
+      await expect(page.locator('#experienceFull b')).toHaveText('Uitgebreid');
+      await page.locator('#langEn').click();
+      await expect(page.locator('#experienceFull b')).toHaveText('Full');
+      await page.locator('#langNl').click();
       await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#hydration')).not.toBeVisible();
       const before=await page.locator('#hydration').inputValue();
@@ -79,6 +83,22 @@ for(const publication of PUBLICATIONS){
       await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#hydration')).toBeVisible();
       expect(await page.locator('#hydration').inputValue()).toBe(before);
+    });
+
+    test('keeps Custom hidden during routine Basic input',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="dough"]').click();
+      const cases=[
+        ['#pizzas','6','input'],['#diameter','30','input'],['#roomTemp','22','input'],['#fridgeTemp','5','input'],
+        ['#stoneTemp','450','input'],['#bakeDay','1','select'],['#bakeTime','19:30','input']
+      ];
+      for(const [selector,value,control] of cases){
+        if(control==='select')await page.locator(selector).selectOption(value);
+        else await page.locator(selector).fill(value);
+        await page.locator(selector).blur();
+        await expect(page.locator('#preset')).toHaveValue('kodaNight');
+        await expect(page.locator('#experienceCustomBadge')).toBeHidden();
+      }
     });
 
     test('persists the display mode and migrates existing v1.0 users to Full',async({page})=>{
@@ -106,6 +126,17 @@ for(const publication of PUBLICATIONS){
       await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#experienceCustomBadge')).toBeVisible();
       await expect(page.locator('#experienceCustomBadge')).toHaveText('Eigen instellingen actief');
+    });
+
+    test('keeps explicit yeast advice usable and explained in Basic',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#yeastApplyHelp')).toHaveText('Past alleen de berekende hoeveelheid gist aan.');
+      await page.locator('#applyYeastAdviceButton').click();
+      await expect(page.locator('#preset')).toHaveValue('custom');
+      await expect(page.locator('#experienceCustomBadge')).toBeVisible();
+      await expect(page.locator('#hydration')).toBeHidden();
+      await expect(page.locator('#yeastPct')).toBeHidden();
     });
 
     for(const viewport of VIEWPORTS.slice(0,3)){

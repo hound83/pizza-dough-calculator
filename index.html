@@ -101,6 +101,9 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 .advisor{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-top:10px}
 .advisor-result{background:#111416;border:1px solid var(--line);border-radius:13px;padding:12px}
 .advisor-result b{font-size:18px}.advisor-result span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.advisor-action{display:grid;gap:5px;justify-items:stretch;max-width:190px}
+.advisor-action .btn{width:100%}
+.advisor-action .input-help{margin:0;text-align:center}
 .method-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 18px}
 .method{padding:11px 8px;border:1px solid var(--line);background:#111416;color:#d0d4d6;border-radius:12px;cursor:pointer;font-weight:800;font-size:13px}
 .method.active{background:var(--text);color:#111;border-color:var(--text)}
@@ -126,7 +129,7 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 }
 @media(max-width:560px){
  .app{padding:14px}.form-grid,.recipe-hero,.three{grid-template-columns:1fr}.stats{grid-template-columns:1fr}
- .timeitem{grid-template-columns:1fr}.advisor{grid-template-columns:1fr}
+ .timeitem{grid-template-columns:1fr}.advisor{grid-template-columns:1fr}.advisor-action{max-width:none}
 }
 @media print{
  body{background:#fff;color:#000}.topbar,.btnrow,.method-tabs,.calculator-only{display:none!important}
@@ -1118,7 +1121,7 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 </div>
 <div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
 <button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
-<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Volledig</b><span>Alle instellingen en uitleg</span></button>
+<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Uitgebreid</b><span>Alle instellingen en uitleg</span></button>
 </div>
 <p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
 <div class="mode-grid">
@@ -1303,7 +1306,10 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 <b id="yeastAdvice">Gistadvies berekenen</b>
 <span id="yeastAdviceDetail">Wetenschappelijk geïnformeerd model met fermentatiefasen en geschatte afkoeling/opwarming.</span>
 </div>
-<button class="btn secondary" onclick="applyYeastAdvice()">Advies toepassen</button>
+<div class="advisor-action">
+<button class="btn secondary" id="applyYeastAdviceButton" onclick="applyYeastAdvice()">Advies toepassen</button>
+<span class="input-help" id="yeastApplyHelp">Past alleen de berekende hoeveelheid gist aan.</span>
+</div>
 </div>
 <div class="yeast-range experience-full-only" id="yeastRangeBar"></div>
 <div class="ferment-dashboard experience-full-only" id="fermentDashboard"></div>
@@ -4543,7 +4549,7 @@ function buildPizzaCustomize(c){
 }
 
 function methodInstructions(c){
-  const f=fmt(c.flour,0),mw=fmt(c.mainWater,0),rw=fmt(c.reserve,0),y=fmt(c.yeast,2),s=fmt(c.salt,0),yn=yeastName(c.yeastType).toLowerCase();
+  const f=fmt(c.flour,0),mw=fmt(c.mainWater,0),rw=fmt(c.reserve,0),halfRw=fmt(c.reserve/2,0),y=fmt(c.yeast,2),s=fmt(c.salt,0),yn=yeastName(c.yeastType).toLowerCase();
   const first=c.autolyse
     ? L(`Meng <b>${f} g bloem</b> met <b>${mw} g water</b>. <b>Nog geen gist of zout.</b>`,
         `Mix <b>${f} g flour</b> with <b>${mw} g water</b>. <b>No yeast or salt yet.</b>`)
@@ -4564,27 +4570,42 @@ function methodInstructions(c){
     add,
     knead:L('Kneed daarna ongeveer <b>8–12 min</b> tot het deeg glad en elastisch is.','Then knead for roughly <b>8–12 min</b> until the dough is smooth and elastic.'),
     note:L('Bij veel weerstand: 5 min rust en daarna verder.','If it resists a lot: rest 5 min, then continue.'),
-    autolyseCooling:''};
+    autolyseCooling:'',finish:'',finishNote:''};
   if(currentMethod==='kenwood') return {
-    mix:first+L(' Meng <b>1½–2 min op MIN/laagste stand</b>.',' Mix for <b>1½–2 min on MIN/lowest speed</b>.'),
-    add,
-    knead:L('Kneed daarna ongeveer <b>4–6 min op lage deegstand</b>.','Then knead for roughly <b>4–6 min on a low dough speed</b>.'),
-    note:L('Kenwood-modellen verschillen; volg de modelspecifieke snelheidslimiet uit jouw handleiding.','Kenwood models differ; follow the model-specific speed limit in your manual.'),
-    autolyseCooling:coolTip('Kenwood')};
+    mix:first+L(' Meng <b>1½–2 min op MIN/laagste stand</b>, alleen tot alle bloem bevochtigd is.',' Mix for <b>1½–2 min on MIN/lowest speed</b>, only until all the flour is hydrated.'),
+    add:c.autolyse
+      ? L(`Voeg na de rust <b>${y} g ${yn}</b> toe met ongeveer <b>${halfRw} g</b> van het gereserveerde water. Meng <b>3–4 min op MIN/laag</b>. Voeg daarna <b>${s} g zout</b> toe met de resterende ongeveer <b>${halfRw} g water</b>.`,
+          `After the rest, add <b>${y} g ${yn}</b> with about <b>${halfRw} g</b> of the reserved water. Mix for <b>3–4 min on MIN/low</b>. Then add <b>${s} g salt</b> with the remaining roughly <b>${halfRw} g water</b>.`)
+      : add,
+    knead:c.autolyse
+      ? L('Meng na het zout nog <b>3 min op lage deegstand</b>; verleng alleen indien nodig tot maximaal ongeveer <b>4 min</b>.','After adding the salt, mix for another <b>3 min on a low dough speed</b>; extend only if needed to roughly <b>4 min maximum</b>.')
+      : L('Kneed daarna ongeveer <b>4–6 min op lage deegstand</b>.','Then knead for roughly <b>4–6 min on a low dough speed</b>.'),
+    note:L(`Kenwood-modellen verschillen sterk. Volg altijd de modelspecifieke snelheidslimiet en stop eerder zodra het deeg glad en elastisch is, de windowpane voldoende is of de deegtemperatuur richting ${fmt(c.doughTemp,1)} °C gaat.`,
+      `Kenwood models differ substantially. Always follow the model-specific speed limit and stop earlier once the dough is smooth and elastic, the windowpane is sufficient, or dough temperature approaches ${fmt(c.doughTemp,1)} °C.`),
+    autolyseCooling:coolTip('Kenwood'),
+    finish:L('Is de windowpane na een korte rust nog zwak, geef het deeg dan één rustige ronde van <b>4 stretch-and-folds</b> in de kom. Sla dit over als het deeg al sterk of strak aanvoelt.','If the windowpane is still weak after a short rest, give the dough one gentle round of <b>4 stretch-and-folds</b> in the bowl. Skip this if the dough already feels strong or tight.'),
+    finishNote:L('Dit is een optionele correctie, geen verplichte extra kneedfase.','This is an optional correction, not a mandatory extra kneading phase.')};
   if(currentMethod==='pro') return {
     mix:first+L(' Meng <b>1½–2 min op lage snelheid</b>.',' Mix for <b>1½–2 min on low speed</b>.'),
     add,
     knead:L('Meng kort laag en gebruik daarna, als jouw machine dat ondersteunt, de hogere kneedstand tot het deeg glad en elastisch is.','Mix briefly on low, then use the higher kneading speed if your machine supports it, until the dough is smooth and elastic.'),
     note:L('Bij professionele spiraalkneders zijn snelheid en minimale deegmassa modelafhankelijk.','On professional spiral mixers, speed and minimum dough mass depend on the model.'),
-    autolyseCooling:''};
+    autolyseCooling:'',finish:'',finishNote:''};
   return {
-    mix:first+L(' Meng met de haak <b>1½–2 min op stand 1</b>.',' Mix with the hook for <b>1½–2 min on speed 1</b>.'),
-    add,
-    knead:L('Als alles is opgenomen: <b>2–4 min op stand 2</b>.','Once everything is incorporated: <b>2–4 min on speed 2</b>.'),
-    note:L('Voor KitchenAid: blijf bij gistdeeg op maximaal stand 2.','For KitchenAid: stay at speed 2 maximum for yeasted dough.'),
-    autolyseCooling:coolTip('KitchenAid')};
+    mix:first+L(' Meng met de haak <b>1½–2 min op stand 1</b>, alleen tot alle bloem bevochtigd en het deeg grof samengekomen is.',' Mix with the hook for <b>1½–2 min on speed 1</b>, only until all the flour is hydrated and the dough has roughly come together.'),
+    add:c.autolyse
+      ? L(`Voeg na de rust <b>${y} g ${yn}</b> toe met ongeveer <b>${halfRw} g</b> van het gereserveerde water. Meng <b>4 min op stand 1</b>, haal het deeg van de haak en controleer temperatuur en windowpane. Verleng alleen bij onvoldoende ontwikkeling tot ongeveer <b>5 min</b>. Voeg daarna <b>${s} g zout</b> toe met de resterende ongeveer <b>${halfRw} g water</b>.`,
+          `After the rest, add <b>${y} g ${yn}</b> with about <b>${halfRw} g</b> of the reserved water. Mix for <b>4 min on speed 1</b>, remove the dough from the hook, and check temperature and windowpane. Extend only when development is insufficient, to roughly <b>5 min</b>. Then add <b>${s} g salt</b> with the remaining roughly <b>${halfRw} g water</b>.`)
+      : add,
+    knead:c.autolyse
+      ? L('Meng na het zout <b>3 min op stand 1</b>. Controleer opnieuw en verleng alleen indien nodig tot maximaal ongeveer <b>5 min</b>.','After adding the salt, mix for <b>3 min on speed 1</b>. Check again and extend only if needed to roughly <b>5 min maximum</b>.')
+      : L('Meng na de rust ongeveer <b>4–6 min op stand 1</b> en controleer tussendoor temperatuur en windowpane.','After the rest, mix for roughly <b>4–6 min on speed 1</b>, checking temperature and windowpane along the way.'),
+    note:L(`Dit is een rustige, gefaseerde pizzamethode. KitchenAid schrijft voor gistdeeg officieel stand 2 voor; ga daarom nooit boven stand 2, blijf bij de machine en stop direct bij duidelijke belasting, sterke opwarming, glanzend/plakkerig deeg of zodra de deegtemperatuur richting ${fmt(c.doughTemp,1)} °C gaat.`,
+      `This is a gentle, staged pizza method. KitchenAid officially specifies speed 2 for yeasted dough; therefore never exceed speed 2, stay with the machine, and stop immediately if it strains, heats strongly, the dough turns glossy/sticky, or dough temperature approaches ${fmt(c.doughTemp,1)} °C.`),
+    autolyseCooling:coolTip('KitchenAid'),
+    finish:L('Laat het deeg <b>5 min afgedekt ontspannen</b>. Duw het daarna op het werkblad rustig van je af, vouw terug en draai een kwartslag; herhaal ongeveer <b>6–10 keer</b>. Niet trekken of scheuren.','Let the dough <b>relax covered for 5 min</b>. Then gently push it away from you on the worktop, fold it back, and turn it a quarter turn; repeat roughly <b>6–10 times</b>. Do not pull or tear it.'),
+    finishNote:L('Houd deze handmatige finish kort en sla hem over als het deeg al een goede windowpane heeft of juist sterk en strak aanvoelt.','Keep this manual finish short and skip it if the dough already has a good windowpane or feels strong and tight.')};
 }
-
 // DDT startwaarden. Dit zijn nadrukkelijk GEEN universele mixerconstanten.
 // Standmixers kunnen afhankelijk van model, snelheid, tijd en deegmassa veel
 // meer warmte inbrengen. Het logboek kan daarom een persoonlijke effectieve
@@ -5114,9 +5135,10 @@ function buildSteps(c){
     'rest'
   ));
   steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+' '+m.knead+oilText,m.note,'knead'));
+  if(m.finish)steps.push(step(i++,L('Korte handmatige finish','Short manual finish'),m.finish,m.finishNote,'manualfinish'));
   steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
-    L('Stop wanneer het deeg gladder, soepel en elastisch is en redelijk dun kan uitrekken voordat het scheurt.','Stop when the dough is smoother, supple and elastic, and can stretch reasonably thin before tearing.'),
-    L('Een perfecte windowpane is niet nodig.','A perfect windowpane is not required.'),'devcheck'));
+    L('Laat een klein stukje eerst 1–2 min ontspannen en rek het dan rustig uit. Stop wanneer het deeg glad, soepel en elastisch is en voldoende dun kan uitrekken zonder direct te scheuren.','Let a small piece relax for 1–2 min, then stretch it gently. Stop when the dough is smooth, supple and elastic, and can stretch sufficiently thin without tearing immediately.'),
+    L('Tijd, deegtemperatuur, gevoel en windowpane tellen samen. Een maximaal flinterdunne windowpane is niet verplicht; langer mengen is niet automatisch beter.','Time, dough temperature, feel, and windowpane work together. A maximally paper-thin windowpane is not mandatory; longer mixing is not automatically better.'),'devcheck'));
   const sci=yeastRecommendation(c);
   steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
     L(`Doel vóór het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden in het midden van de deegmassa.`,
@@ -5205,7 +5227,6 @@ function buildSteps(c){
     `<span class="badge">🍕 ${c.pizzas} × ${fmt(c.actualBall,0)} g</span>`
   ].join('');
 }
-
 function niceDate(d){
   // Maandnaam in plaats van cijfers: 20/08 is voor een Engelstalige lezer
   // dubbelzinnig, zeker naast getallen die in en-US worden opgemaakt.
@@ -6092,8 +6113,12 @@ function renderExperienceMode(){
   const nl=currentLang!=='en';
   const basic=$('experienceBasic'),full=$('experienceFull'),note=$('experienceNote'),badge=$('experienceCustomBadge');
   if(basic){const title=basic.querySelector('b'),hint=basic.querySelector('span');if(title)title.textContent=nl?'Basis':'Basic';if(hint)hint.textContent=nl?'Alleen wat je nodig hebt':'Only what you need';}
-  if(full){const title=full.querySelector('b'),hint=full.querySelector('span');if(title)title.textContent=nl?'Volledig':'Full';if(hint)hint.textContent=nl?'Alle instellingen en uitleg':'All settings and explanations';}
+  if(full){const title=full.querySelector('b'),hint=full.querySelector('span');if(title)title.textContent=nl?'Uitgebreid':'Full';if(hint)hint.textContent=nl?'Alle instellingen en uitleg':'All settings and explanations';}
   if($('experienceSwitch'))$('experienceSwitch').setAttribute('aria-label',nl?'Weergavemodus':'Display mode');
+  if($('applyYeastAdviceButton'))$('applyYeastAdviceButton').textContent=nl?'Advies toepassen':'Apply advice';
+  if($('yeastApplyHelp'))$('yeastApplyHelp').textContent=nl
+    ? 'Past alleen de berekende hoeveelheid gist aan.'
+    : 'Only changes the calculated yeast amount.';
   if(note)note.textContent=nl
     ? 'Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.'
     : 'Basic uses reliable preset values and keeps technical settings out of view. Switching does not change your recipe.';
@@ -6290,6 +6315,15 @@ const SAVE_VERSION=51;
 const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${50-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
+// Only these controls override the technical dough profile owned by a preset.
+// Practical recipe inputs such as pizza count, diameter, room/refrigerator
+// temperature, stone temperature and bake deadline deliberately keep the
+// selected preset active.
+const PRESET_TECHNICAL_FIELDS=new Set([
+  'ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct',
+  'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours',
+  'finalDoughTemp','flourType','flourW','sizeFromDiameter','autolyse','practical'
+]);
 
 let _saveTimer=null;
 let _storageWarningShown=false;
@@ -6454,7 +6488,7 @@ function wireEvents(){
     el.addEventListener('input',()=>{
       if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
       if(el.classList.contains('pct')) markCustomField(el.id);
-      else if(!['preset','bakeDay','bakeTime','sauceType','saucePerPizza','includeSauce','autoSauceFromPizzas','stoneTemp','preheatMinutes','flourType','flourW'].includes(el.id)) markCustom(false);
+      else if(PRESET_TECHNICAL_FIELDS.has(el.id)) markCustom(false);
       _deferDependentStatePrune=el.id==='pizzas';
       try{update();}finally{_deferDependentStatePrune=false;}
     });
@@ -6478,7 +6512,6 @@ function wireEvents(){
         markCustom(false);
       }else if(el.id==='diameter'){
         if(!$('sizeFromDiameter').checked)$('ballWeight').value=recommendedBallWeight();
-        markCustom(false);
       }else if(el.id==='ballWeight'){
         if($('sizeFromDiameter').checked)$('diameter').value=roundTo(estimatedDiameterFromWeight(),0.5);
         markCustom(false);
@@ -6489,9 +6522,11 @@ function wireEvents(){
       }else if(el.id==='flourType'){
         const ft=flourTypes[el.value];
         $('flourW').value=(ft && ft.w!=null)?ft.w:'';
+        markCustom(false);
       }else if(el.id==='flourW'){
         // W handmatig aanpassen is toegestaan bij ieder gekozen bloemtype:
         // het type blijft staan zodat we kwalitatieve spelt/volkorenwaarschuwingen behouden.
+        markCustom(false);
       }else if(el.classList.contains('pct')){
         markCustomField(el.id);
       }
@@ -6532,7 +6567,7 @@ function wireEvents(){
     update();
   });
   $('autolyse').addEventListener('change',()=>{markCustom(false);update();});
-  $('practical').addEventListener('change',update);
+  $('practical').addEventListener('change',()=>{markCustom(false);update();});
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
