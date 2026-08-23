@@ -527,9 +527,10 @@ function buildSteps(c){
     'rest'
   ));
   steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+' '+m.knead+oilText,m.note,'knead'));
+  if(m.finish)steps.push(step(i++,L('Korte handmatige finish','Short manual finish'),m.finish,m.finishNote,'manualfinish'));
   steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
-    L('Stop wanneer het deeg gladder, soepel en elastisch is en redelijk dun kan uitrekken voordat het scheurt.','Stop when the dough is smoother, supple and elastic, and can stretch reasonably thin before tearing.'),
-    L('Een perfecte windowpane is niet nodig.','A perfect windowpane is not required.'),'devcheck'));
+    L('Laat een klein stukje eerst 1–2 min ontspannen en rek het dan rustig uit. Stop wanneer het deeg glad, soepel en elastisch is en voldoende dun kan uitrekken zonder direct te scheuren.','Let a small piece relax for 1–2 min, then stretch it gently. Stop when the dough is smooth, supple and elastic, and can stretch sufficiently thin without tearing immediately.'),
+    L('Tijd, deegtemperatuur, gevoel en windowpane tellen samen. Een maximaal flinterdunne windowpane is niet verplicht; langer mengen is niet automatisch beter.','Time, dough temperature, feel, and windowpane work together. A maximally paper-thin windowpane is not mandatory; longer mixing is not automatically better.'),'devcheck'));
   const sci=yeastRecommendation(c);
   steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
     L(`Doel vóór het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden in het midden van de deegmassa.`,
@@ -618,4 +619,3 @@ function buildSteps(c){
     `<span class="badge">🍕 ${c.pizzas} × ${fmt(c.actualBall,0)} g</span>`
   ].join('');
 }
-

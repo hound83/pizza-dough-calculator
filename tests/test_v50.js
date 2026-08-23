@@ -596,6 +596,26 @@ test('method labels are user-facing and no automatic learning is applied',()=>{
   assert(x.label==='handmatig kneden'&&!x.water.calibrated&&x.water.correctionCount===0&&!x.source.includes('ddtLogStats('),JSON.stringify(x));
 });
 
+test('home-mixer guidance is staged, bilingual, and leaves recipe values unchanged',()=>{
+  defaults();
+  const x=run(`(()=>{
+    const before=calc();
+    currentLang='nl';currentMethod='kitchenaid';const kaNl=methodInstructions(before);
+    currentLang='en';const kaEn=methodInstructions(before);
+    currentLang='nl';currentMethod='kenwood';const kwNl=methodInstructions(before);
+    currentLang='en';const kwEn=methodInstructions(before);
+    const after=calc();
+    currentLang='nl';currentMethod='kitchenaid';
+    return {before:{flour:before.flour,water:before.water,salt:before.salt,yeast:before.yeast},after:{flour:after.flour,water:after.water,salt:after.salt,yeast:after.yeast},kaNl,kaEn,kwNl,kwEn};
+  })()`);
+  assert(JSON.stringify(x.before)===JSON.stringify(x.after),JSON.stringify({before:x.before,after:x.after}));
+  assert(x.kaNl.mix.includes('stand 1')&&x.kaNl.add.includes('4 min op stand 1')&&x.kaNl.knead.includes('3 min op stand 1')&&x.kaNl.finish.includes('6–10 keer'),JSON.stringify(x.kaNl));
+  assert(x.kaNl.note.includes('officieel stand 2')&&x.kaNl.note.includes('glanzend/plakkerig')&&x.kaNl.autolyseCooling.includes('koelkast'),JSON.stringify(x.kaNl));
+  assert(x.kaEn.add.includes('4 min on speed 1')&&x.kaEn.knead.includes('3 min on speed 1')&&x.kaEn.finish.includes('6–10 times')&&x.kaEn.note.includes('officially specifies speed 2'),JSON.stringify(x.kaEn));
+  assert(x.kwNl.add.includes('3–4 min op MIN/laag')&&x.kwNl.knead.includes('3 min op lage deegstand')&&x.kwNl.note.includes('modelspecifieke snelheidslimiet')&&x.kwNl.finish.includes('4 stretch-and-folds'),JSON.stringify(x.kwNl));
+  assert(x.kwEn.add.includes('3–4 min on MIN/low')&&x.kwEn.knead.includes('3 min on a low dough speed')&&x.kwEn.note.includes('model-specific speed limit')&&x.kwEn.finish.includes('4 stretch-and-folds'),JSON.stringify(x.kwEn));
+});
+
 test('blocked local storage warns once without breaking save',()=>{
   storage.fail=true;
   const x=run(`(()=>{_storageWarningShown=false;const ok=saveState();return {ok,shown:_storageWarningShown};})()`);

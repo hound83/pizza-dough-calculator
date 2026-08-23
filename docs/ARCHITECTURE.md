@@ -67,7 +67,7 @@ The order is a contract: later modules may use functions and state from earlier 
 
 The current feature bundle is no longer expected to equal those hashes. The test reconstructs the current standalone file exactly from `src/`, checks that the historical hashes remain documented, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
 
-`tests/test_v50.js` runs all 66 functional regressions against both the modular source and the standalone bundle.
+`tests/test_v50.js` runs all 67 functional regressions against both the modular source and the standalone bundle. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, temperature/windowpane stop criteria, and optional manual finishing without changing recipe calculations.
 
 `tests/browser/refactor.spec.js` runs 25 Chromium checks. One infrastructure contract protects the implicit `/favicon.ico` request made by full Chromium. The remaining checks cover the standalone bundle and modular source: six viewport widths (320, 390, 430, 760, 1024, and 1280 px) verify initialization, page/console/request failures, and horizontal fit, while focused checks protect the Basic/Full contract. The three phone sizes additionally protect the full-height single-pane recipe catalogue, non-autofocused search, the horizontally scrollable filter row, the catalogue-to-customization transition, back navigation, modal fit, and explicit click selection that cannot be changed by hover.
 

@@ -3,7 +3,7 @@
 [English](README.md) | [Nederlands](README.nl.md)
 
 [![Version](https://img.shields.io/badge/version-v1.1.0_candidate-f0b45a)](https://github.com/hound83/pizza-dough-calculator)
-[![Tests](https://img.shields.io/badge/regression_tests-65%2F65_passing-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regression_tests-67%2F67_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -36,7 +36,7 @@ Highlights:
 - hydration, salt, oil, and IDY, ADY, or fresh yeast;
 - hybrid, cold, or all-room-temperature fermentation;
 - room, refrigerator, and final dough temperatures;
-- practical water-temperature and DDT guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers;
+- practical water-temperature, DDT, and staged kneading guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers;
 - flour selection with known or manually entered W value;
 - 92 pizza recipes, seven sauce variants, and search/filtering by name or ingredient;
 - an individual recipe, sauce, pizza style, and topping customization for every dough ball;
@@ -127,9 +127,9 @@ Current result:
 
 ```text
 12 refactor-structure tests passed
-64 bundle regression tests passed
-64 source regression tests passed
-19 Chromium browser/layout tests passed
+67 bundle regression tests passed
+67 source regression tests passed
+25 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:

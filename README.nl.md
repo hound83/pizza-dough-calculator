@@ -5,7 +5,7 @@
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
 [![Versie](https://img.shields.io/badge/versie-v1.1.0_kandidaat-f0b45a)](https://github.com/hound83/pizza-dough-calculator)
-[![Tests](https://img.shields.io/badge/regressietests-65%2F65_groen-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regressietests-67%2F67_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
@@ -38,7 +38,7 @@ Belangrijkste mogelijkheden:
 - hydratatie, zout, olie en IDY-, ADY- of verse gist;
 - hybride, koude of volledige kamertemperatuurfermentatie;
 - rekening houden met kamer-, koelkast- en einddeegtemperatuur;
-- praktisch water- en DDT-advies voor handmatig kneden, KitchenAid, Kenwood en spiraalkneders;
+- praktisch water-, DDT- en gefaseerd kneedadvies voor handmatig kneden, KitchenAid, Kenwood en spiraalkneders;
 - bloemkeuze met bekende of handmatig ingevoerde W-waarde;
 - 92 pizzarecepten, zeven sausvarianten en zoeken/filteren op naam of ingrediënt;
 - per deegbol een eigen recept, sausvariant, pizzastijl en toppingaanpassing;
@@ -129,9 +129,9 @@ Huidige uitslag:
 
 ```text
 12 refactor-structure tests passed
-64 bundle regression tests passed
-64 source regression tests passed
-19 Chromium browser/layout tests passed
+67 bundle regression tests passed
+67 source regression tests passed
+25 Chromium browser/layout tests passed
 ```
 
 De suite controleert onder meer:

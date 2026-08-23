@@ -71,6 +71,16 @@ When behavior is intentionally changed, do not silently replace these values. Fi
 - Desktop keeps the simultaneous two-column catalogue and preview.
 - Only the explicit “Choose pizza” action commits the pending recipe and customization to one or all dough balls.
 
+## v1.1.0 home-mixer guidance contract
+
+- The refrigerated 20-minute flour-and-water autolyse remains available and recommended as a practical way to limit final dough temperature.
+- Home-mixer times are staged guidance, not automatic targets. Time, dough temperature, mixer load, dough feel, and a rested windowpane check determine when mixing stops.
+- The KitchenAid pizza method uses speed 1 in monitored stages around yeast and salt, never permits a speed above 2, and explicitly discloses that KitchenAid's official yeast-dough guidance specifies speed 2.
+- The KitchenAid method stops early when the dough is already developed, becomes glossy or sticky, approaches the selected final dough temperature, or the machine shows clear strain or strong warming.
+- A short manual push-fold-turn finish follows the KitchenAid stages only when useful. It is skipped when the dough already has a sufficient windowpane or feels strong and tight.
+- Kenwood timing remains model-dependent. The calculator stays within the range represented by Kenwood's own pizza-dough guidance, requires the model-specific manual to take precedence, and offers folds only as an optional correction after a short rest.
+- Mixer guidance never changes yeast quantity, baker's percentages, or fermentation calculations.
+
 ## Change checklist
 
 Before changing a rule above:
