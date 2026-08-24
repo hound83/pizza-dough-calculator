@@ -54,7 +54,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.1.0');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.1.1');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -63,7 +63,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.1.0',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.1.1',hasCalculator:true,horizontalOverflow:0});
         expect(failures).toEqual([]);
       });
     }
@@ -137,6 +137,34 @@ for(const publication of PUBLICATIONS){
       await expect(page.locator('#experienceCustomBadge')).toBeVisible();
       await expect(page.locator('#hydration')).toBeHidden();
       await expect(page.locator('#yeastPct')).toBeHidden();
+    });
+
+    test('uses practical percentage spinner grids while preserving off-grid preset precision',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('#experienceFull').click();
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#diameter')).toHaveValue('30');
+
+      const controls=[
+        {selector:'#hydration',step:'0.5',start:'63',firstUp:'63.5',secondUp:'64',typed:'63.05'},
+        {selector:'#saltPct',step:'0.25',start:'3',firstUp:'3.25',secondUp:'3.5',typed:'3.21'},
+        {selector:'#yeastPct',step:'0.025',start:'0.17',firstUp:'0.175',secondUp:'0.2',typed:'0.176'},
+        {selector:'#oilPct',step:'0.25',start:'0.25',firstUp:'0.5',secondUp:'0.75',typed:'0.3'}
+      ];
+      for(const control of controls){
+        const field=page.locator(control.selector);
+        await expect(field).toHaveAttribute('step',control.step);
+        await field.fill(control.typed);
+        await field.blur();
+        await expect(field).toHaveValue(control.typed);
+        await field.fill(control.start);
+        await field.press('ArrowUp');
+        await expect(field).toHaveValue(control.firstUp);
+        await field.press('ArrowUp');
+        await expect(field).toHaveValue(control.secondUp);
+        await field.press('ArrowDown');
+        await expect(field).toHaveValue(control.firstUp);
+      }
     });
 
     for(const viewport of VIEWPORTS.slice(0,3)){

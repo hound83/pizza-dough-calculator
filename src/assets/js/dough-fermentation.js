@@ -132,7 +132,7 @@ function calc(){
     : ($('coldStorageMode').value==='balls'?'coldBalls':'hybrid');
   const bulk=nonNegativeNum('bulkHours'),cold=ferm==='room'?0:nonNegativeNum('coldHours'),ball=nonNegativeNum('ballHours');
   return {
-    pizzas,targetBall,targetDiameter,byWeight,h,s,y,o,flour,water,salt,yeast,oil,total,actualBall,actualH,actualS,actualY,actualO,
+    pizzas,targetBall,targetDiameter,byWeight,h,s,y,o,flour,water,salt,yeast,oil,total,actualBall,actualH,actualS,actualY,actualO,practical,
     reserve,mainWater,bulk,cold,ball,
     room:boundedNum('roomTemp',21),fridge:boundedNum('fridgeTemp',4),autolyse:$('autolyse').checked,ferm,
     yeastType:$('yeastType').value,stoneTemp:boundedNum('stoneTemp',430),preheat:boundedNum('preheatMinutes',30),
@@ -148,6 +148,10 @@ function calc(){
     flourWDefault:!$('flourW').value.trim() && currentFlourType().w!=null,
     toppingScale
   };
+}
+
+function displayDoughBallWeight(c){
+  return fmt(c.actualBall,c.practical?0:1);
 }
 
 function fermentationHours(c){
@@ -367,8 +371,8 @@ function update(){
   const yt=yeastTypes[c.yeastType];
 
   $('targetSummary').textContent=c.byWeight
-    ? L(`${c.pizzas} pizza's • ${fmt(c.targetBall,0)} g per bol • geschat ±${fmt(c.targetDiameter,1)} cm`,`${c.pizzas} pizzas • ${fmt(c.targetBall,0)} g per dough ball • estimated ±${fmt(c.targetDiameter,1)} cm`)
-    : L(`${c.pizzas} pizza's • ${fmt(c.targetDiameter,1)} cm • berekend ±${fmt(c.targetBall,0)} g per bol`,`${c.pizzas} pizzas • ${fmt(c.targetDiameter,1)} cm • calculated ±${fmt(c.targetBall,0)} g per dough ball`);
+    ? L(`${pizzaCountLabel(c.pizzas)} • ${fmt(c.targetBall,0)} g per bol • geschat ±${fmt(c.targetDiameter,1)} cm`,`${pizzaCountLabel(c.pizzas)} • ${fmt(c.targetBall,0)} g per dough ball • estimated ±${fmt(c.targetDiameter,1)} cm`)
+    : L(`${pizzaCountLabel(c.pizzas)} • ${fmt(c.targetDiameter,1)} cm • berekend ±${fmt(c.targetBall,0)} g per bol`,`${pizzaCountLabel(c.pizzas)} • ${fmt(c.targetDiameter,1)} cm • calculated ±${fmt(c.targetBall,0)} g per dough ball`);
   $('flourOut').textContent=`${fmt(c.flour,1)} g`;
   $('waterOut').textContent=`${fmt(c.water,1)} g`;
   $('saltOut').textContent=`${fmt(c.salt,1)} g`;
@@ -405,7 +409,7 @@ function update(){
     peel.innerHTML=notes.join('<br>');
   }
   $('totalOut').textContent=`${fmt(c.total,1)} g`;
-  $('actualBallOut').textContent=`${fmt(c.actualBall,1)} g`;
+  $('actualBallOut').textContent=`${displayDoughBallWeight(c)} g`;
   {const lp=liveFermentationPlan(c);$('fermentOut').textContent=`${fmt(fermentationHours(lp.effective),1)} ${L('u','h')}${lp.active?L(' • live',' • live'):''}`;}
 
   const dh=Math.abs(c.actualH-c.h);
@@ -666,5 +670,4 @@ function refreshFermentationUI(){
     $('coldHours').disabled=false;
   }
 }
-
 

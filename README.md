@@ -3,7 +3,7 @@
 [English](README.md) | [Nederlands](README.nl.md)
 
 [![Version](https://img.shields.io/badge/version-v1.1.0-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.0)
-[![Tests](https://img.shields.io/badge/regression_tests-71%2F71_passing-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regression_tests-75%2F75_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -14,6 +14,8 @@ The downloadable application remains one self-contained `index.html`. The reposi
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.0.0 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
 
 > Tag **v1.0.0** remains the immutable golden behavior baseline. v1.1.0 is the first approved feature change and introduces storage schema 51 with an explicit migration from schema 50.
+
+> Development status: this branch is the v1.1.1 usability patch candidate. The released v1.1.0 remains the current public baseline until review and CI are complete.
 
 ## Features
 
@@ -126,10 +128,10 @@ npm test
 Current result:
 
 ```text
-13 refactor-structure tests passed
-71 bundle regression tests passed
-71 source regression tests passed
-29 Chromium browser/layout tests passed
+14 refactor-structure tests passed
+75 bundle regression tests passed
+75 source regression tests passed
+31 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:
@@ -145,7 +147,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical v1.0.0 hashes, and the reviewed v1.1.0 release baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical v1.0.0 hashes, the released v1.1.0 baseline, and the separate v1.1.1 patch candidate. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 

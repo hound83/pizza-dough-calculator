@@ -63,6 +63,16 @@ These hashes cover the released Basic/Full display modes, mobile recipe-picker r
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
 | combined JavaScript | `37851611903633e2baa3d4d6228b74f49c6fc851405ac159735a5a4a9e800761` |
 
+## Current v1.1.1 patch-candidate baseline
+
+These hashes cover the explicitly approved usability patch: a 30 cm / 220 g default for **My default recipe**, practical percentage-field spinner grids, correct Dutch/English count grammar, and consistent practical dough-ball-weight display. They pin the current review candidate without replacing either released baseline above.
+
+| Artefact | SHA-256 |
+|---|---|
+| standalone `index.html` | `3301a58d0fe0b26029877562b30ec4c427b328557f439e6b7649cc8003948951` |
+| CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
+| combined JavaScript | `db8d26918051d97d99a6e60f62da1f4970202097e4a91f1dc0e39a2c12d5a6ac` |
+
 ## v1.1.0 Basic/Full display contract
 
 - Basic and Full are display modes independent of the Dough only, Dough + sauce, and Complete pizzas output modes.
@@ -97,6 +107,15 @@ These hashes cover the released Basic/Full display modes, mobile recipe-picker r
 - When displayed reserved water is divided between yeast and salt additions, the rounded portions must add up exactly to the rounded displayed total.
 - Kenwood timing remains model-dependent. The calculator stays within the range represented by Kenwood's own pizza-dough guidance, requires the model-specific manual to take precedence, and offers folds only as an optional correction after a short rest.
 - Mixer guidance never changes yeast quantity, baker's percentages, or fermentation calculations.
+
+## v1.1.1 usability patch contract
+
+- Selecting or resetting **My default recipe** uses a 30 cm pizza diameter and its corresponding 220 g target dough-ball weight so it fits comfortably on the calculator's 12-inch peel profile. The other presets retain their own diameters, and topping recipes remain authored against the immutable 32 cm reference before surface-area scaling.
+- Previously stored schema-51 recipe values remain intact. In particular, this patch does not silently replace a user's saved 32 cm diameter; reloading the default preset or resetting the calculator intentionally adopts 30 cm.
+- Native increment/decrement controls use grids of 0.5 percentage point for hydration, 0.25 for salt, 0.025 for yeast, and 0.25 for olive oil. These grids affect arrow/spinner interaction only: manually typed values and exact preset values retain their existing precision. When an exact value is off-grid, the first native arrow press follows standard browser behavior and aligns it in the chosen direction to the nearest grid point; that first visible delta can therefore be smaller than the nominal step. Subsequent presses use the full grid interval.
+- Dynamic count text uses a true singular and plural in both languages, including `1 pizza` / `2 pizza's` and `1 deegbal` / `2 deegballen`, with the corresponding English forms. English time grammar follows the rounded number actually displayed, so a value shown as `1` always uses `hour` rather than `hours`.
+- Practical rounding displays the calculated per-ball dough weight as a whole gram everywhere it is shown. With practical rounding disabled, the same shared formatter may show one decimal. Calculations retain their full internal precision in both modes.
+- The persistence key and storage schema remain `pizzaCalcV51` / schema 51 because no stored field or interpretation changes.
 
 ## Change checklist
 

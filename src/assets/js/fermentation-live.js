@@ -437,6 +437,9 @@ function fermentationSteps(c,startIndex,live){
   let i=startIndex,arr=[];
   const p=live.effective;
   const skipBulk=p.bulk<0.10;
+  const ballWeight=displayDoughBallWeight(c);
+  const ballCount=doughBallCountLabel(c.pizzas);
+  const ballSubject=c.pizzas===1?L('de deegbal','the dough ball'):L('de deegballen','the dough balls');
   const skipBulkReason=(live.active&&live.orig.bulk>=0.10&&live.effective.bulk<0.10)
     ? L('De warme bulk is door de live temperatuurcorrectie praktisch vervallen. ','The warm bulk has effectively disappeared because of the live temperature correction. ')
     : L('In dit schema is geen aparte warme bulk gepland. ','No separate warm bulk is planned in this schedule. ');
@@ -444,10 +447,14 @@ function fermentationSteps(c,startIndex,live){
                   `Leave the whole dough mass covered for about <b>${smartHours(p.bulk)}</b> at roughly ${fmt(c.room,1)} °C.`);
   const coldBulkTxt=L(`Zet de deegmassa ongeveer <b>${smartHours(p.cold)}</b> bij gemiddeld ${fmt(p.fridge,1)} °C in de koelkast.`,
                       `Put the dough mass in the refrigerator for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`);
-  const shapeTxt=L(`Verdeel in <b>${c.pizzas} bollen van ongeveer ${fmt(c.actualBall,1)} g</b> en bol strak maar voorzichtig op.`,
-                   `Divide into <b>${c.pizzas} balls of about ${fmt(c.actualBall,1)} g</b> and shape them tightly but gently.`);
-  const shapeShort=L(`Verdeel in <b>${c.pizzas} bollen van ongeveer ${fmt(c.actualBall,1)} g</b>.`,
-                     `Divide into <b>${c.pizzas} balls of about ${fmt(c.actualBall,1)} g</b>.`);
+  const shapeTxt=c.pizzas===1
+    ? L(`Vorm <b>${ballCount} van ongeveer ${ballWeight} g</b> en bol hem strak maar voorzichtig op.`,
+        `Shape <b>${ballCount} of about ${ballWeight} g</b> tightly but gently.`)
+    : L(`Verdeel in <b>${ballCount} van ongeveer ${ballWeight} g</b> en bol ze strak maar voorzichtig op.`,
+        `Divide into <b>${ballCount} of about ${ballWeight} g</b> and shape them tightly but gently.`);
+  const shapeShort=c.pizzas===1
+    ? L(`Vorm <b>${ballCount} van ongeveer ${ballWeight} g</b>.`,`Shape <b>${ballCount} of about ${ballWeight} g</b>.`)
+    : L(`Verdeel in <b>${ballCount} van ongeveer ${ballWeight} g</b>.`,`Divide into <b>${ballCount} of about ${ballWeight} g</b>.`);
   const fridgeControl=fridgeMeasurementControl(c,live);
 
   if(c.ferm==='hybrid'){
@@ -459,26 +466,32 @@ function fermentationSteps(c,startIndex,live){
         : coldBulkTxt,
       `${skipBulk?skipBulkReason:''}${phaseAdjustmentDetail(c,live,'cold')}${fridgeControl}`,'cold'));
     arr.push(step(i++,L('Verdelen en opbollen','Divide and shape'),shapeTxt,'','shape'));
-    arr.push(step(i++,L('Bolrijs','Ball proof'),L(`Laat de bollen ongeveer <b>${smartHours(p.ball)}</b> bij ongeveer ${fmt(c.room,1)} °C verder rijzen.`,`Let the balls continue proofing for about <b>${smartHours(p.ball)}</b> at roughly ${fmt(c.room,1)} °C.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
+    arr.push(step(i++,L('Bolrijs','Ball proof'),L(`Laat ${ballSubject} ongeveer <b>${smartHours(p.ball)}</b> bij ongeveer ${fmt(c.room,1)} °C verder rijzen.`,`Let ${ballSubject} continue proofing for about <b>${smartHours(p.ball)}</b> at roughly ${fmt(c.room,1)} °C.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
   }else if(c.ferm==='room'){
     if(!skipBulk)arr.push(step(i++,L('Bulkrijs op kamertemperatuur','Bulk proof at room temperature'),bulkTxt,phaseAdjustmentDetail(c,live,'bulk'),'bulk'));
     arr.push(step(i++,skipBulk?L('Direct verdelen en opbollen','Divide and shape immediately'):L('Verdelen en opbollen','Divide and shape'),
       skipBulk
-        ? L(`Sla de warme bulk over en verdeel het deeg direct in <b>${c.pizzas} bollen van ongeveer ${fmt(c.actualBall,1)} g</b>.`,
-            `Skip the warm bulk and immediately divide the dough into <b>${c.pizzas} balls of about ${fmt(c.actualBall,1)} g</b>.`)
+        ? (c.pizzas===1
+            ? L(`Sla de warme bulk over en vorm het deeg direct tot <b>${ballCount} van ongeveer ${ballWeight} g</b>.`,
+                `Skip the warm bulk and immediately shape the dough into <b>${ballCount} of about ${ballWeight} g</b>.`)
+            : L(`Sla de warme bulk over en verdeel het deeg direct in <b>${ballCount} van ongeveer ${ballWeight} g</b>.`,
+                `Skip the warm bulk and immediately divide the dough into <b>${ballCount} of about ${ballWeight} g</b>.`))
         : shapeShort,
       skipBulk?skipBulkReason.trim():'','shape'));
-    arr.push(step(i++,L('Bolrijs op kamertemperatuur','Ball proof at room temperature'),L(`Laat de bollen nog ongeveer <b>${smartHours(p.ball)}</b> bij ongeveer ${fmt(c.room,1)} °C rijzen.`,`Let the balls proof for roughly another <b>${smartHours(p.ball)}</b> at about ${fmt(c.room,1)} °C.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
+    arr.push(step(i++,L('Bolrijs op kamertemperatuur','Ball proof at room temperature'),L(`Laat ${ballSubject} nog ongeveer <b>${smartHours(p.ball)}</b> bij ongeveer ${fmt(c.room,1)} °C rijzen.`,`Let ${ballSubject} proof for roughly another <b>${smartHours(p.ball)}</b> at about ${fmt(c.room,1)} °C.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
   }else{
     if(!skipBulk)arr.push(step(i++,L('Korte bulkrijs','Short bulk proof'),bulkTxt,phaseAdjustmentDetail(c,live,'bulk'),'bulk'));
     arr.push(step(i++,skipBulk?L('Direct verdelen en opbollen','Divide and shape immediately'):L('Verdelen en opbollen','Divide and shape'),
       skipBulk
-        ? L(`Sla de warme bulk over en verdeel direct in <b>${c.pizzas} bollen van ongeveer ${fmt(c.actualBall,1)} g</b>.`,
-            `Skip the warm bulk and immediately divide into <b>${c.pizzas} balls of about ${fmt(c.actualBall,1)} g</b>.`)
+        ? (c.pizzas===1
+            ? L(`Sla de warme bulk over en vorm direct <b>${ballCount} van ongeveer ${ballWeight} g</b>.`,
+                `Skip the warm bulk and immediately shape <b>${ballCount} of about ${ballWeight} g</b>.`)
+            : L(`Sla de warme bulk over en verdeel direct in <b>${ballCount} van ongeveer ${ballWeight} g</b>.`,
+                `Skip the warm bulk and immediately divide into <b>${ballCount} of about ${ballWeight} g</b>.`))
         : shapeShort,
       skipBulk?skipBulkReason.trim():'','shape'));
-    arr.push(step(i++,L('Koude fermentatie als bollen','Cold fermentation as balls'),L(`Zet de afgedekte bollen ongeveer <b>${smartHours(p.cold)}</b> bij gemiddeld ${fmt(p.fridge,1)} °C in de koelkast.`,`Put the covered balls in the refrigerator for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`),`${phaseAdjustmentDetail(c,live,'cold')}${fridgeControl}`,'cold'));
-    arr.push(step(i++,L('Laatste opwarming / eindrijs','Final warm-up / final proof'),L(`Haal de bollen ongeveer <b>${smartHours(p.ball)}</b> voor het bakken uit de koelkast.`,`Take the balls out of the refrigerator about <b>${smartHours(p.ball)}</b> before baking.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
+    arr.push(step(i++,L(c.pizzas===1?'Koude fermentatie als deegbal':'Koude fermentatie als deegballen',c.pizzas===1?'Cold fermentation as one dough ball':'Cold fermentation as dough balls'),L(`Zet ${ballSubject} ongeveer <b>${smartHours(p.cold)}</b> afgedekt bij gemiddeld ${fmt(p.fridge,1)} °C in de koelkast.`,`Put ${c.pizzas===1?'the covered dough ball':'the covered dough balls'} in the refrigerator for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`),`${phaseAdjustmentDetail(c,live,'cold')}${fridgeControl}`,'cold'));
+    arr.push(step(i++,L('Laatste opwarming / eindrijs','Final warm-up / final proof'),L(`Haal ${ballSubject} ongeveer <b>${smartHours(p.ball)}</b> voor het bakken uit de koelkast.`,`Take ${ballSubject} out of the refrigerator about <b>${smartHours(p.ball)}</b> before baking.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
   }
   return {html:arr,next:i};
 }
@@ -553,7 +566,8 @@ function buildSteps(c){
     }
     aggSauce.groups.forEach(g=>{
       const buyPart=g.s.tomato && !usesCombinedTomatoPurchase(aggSauce)?` ${L('en koop','and buy')} <b>${g.tins}× 400 g</b>`:'';
-      steps.push(step(i++,`${L('Maak','Make')} ${sauceName(g.type)}`,`${sauceDesc(g.type)} ${L("Nodig voor pizza's",'Needed for pizzas')} <b>${g.pizzas.join(', ')}</b>: ${L('ongeveer','roughly')} <b>${fmt(g.need,0)} g</b>${g.s.tomato?` • ${L('maak','make')} <b>${fmt(g.batch,0)} g</b>${buyPart}`:''}.`,g.ingredients.map(x=>`${tItem(x[0])}: ${x[1]}`).join(' • '),`sauce-${g.type}`));
+      const neededFor=L(g.pizzas.length===1?'Nodig voor pizza':"Nodig voor pizza's",g.pizzas.length===1?'Needed for pizza':'Needed for pizzas');
+      steps.push(step(i++,`${L('Maak','Make')} ${sauceName(g.type)}`,`${sauceDesc(g.type)} ${neededFor} <b>${g.pizzas.join(', ')}</b>: ${L('ongeveer','roughly')} <b>${fmt(g.need,0)} g</b>${g.s.tomato?` • ${L('maak','make')} <b>${fmt(g.batch,0)} g</b>${buyPart}`:''}.`,g.ingredients.map(x=>`${tItem(x[0])}: ${x[1]}`).join(' • '),`sauce-${g.type}`));
     });
   }
 
@@ -602,8 +616,8 @@ function buildSteps(c){
   steps.push(step(i++,L('Bakken','Bake'),
     L(`Bak bij deze steentemperatuur als startpunt ongeveer <b>${bake.time}</b> en draai <b>${bake.turn}</b>.`,
       `At this stone temperature, bake for roughly <b>${bake.time}</b> as a starting point and turn <b>${bake.turn}</b>.`),
-    L(`Steentemperatuur is de basis; vlam/bovenwarmte en hoeveelheid beleg blijven mede bepalend. Voor ${c.pizzas} ${c.pizzas===1?'pizza':"pizza's"} achter elkaar: reken op ongeveer <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minuten</b> totale baksessie.`,
-      `Stone temperature is the basis; flame/top heat and the amount of topping matter too. For ${c.pizzas} ${c.pizzas===1?'pizza':'pizzas'} in a row, allow roughly <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minutes</b> for the full baking session.`),'bake'));
+    L(`Steentemperatuur is de basis; vlam/bovenwarmte en hoeveelheid beleg blijven mede bepalend. Voor ${pizzaCountLabel(c.pizzas)} achter elkaar: reken op ongeveer <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minuten</b> totale baksessie.`,
+      `Stone temperature is the basis; flame/top heat and the amount of topping matter too. For ${pizzaCountLabel(c.pizzas)} in a row, allow roughly <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minutes</b> for the full baking session.`),'bake'));
   $('stepsList').innerHTML=steps.join('');
   // Vinkjes van stappen die niet meer bestaan opruimen, zodat ze niet
   // eeuwig in localStorage blijven staan en later verkeerd terugkomen.
@@ -616,6 +630,6 @@ function buildSteps(c){
     `<span class="badge">🧂 ${fmt(c.salt,0)} g ${L('zout','salt')}</span>`,
     `<span class="badge">🫧 ${fmtFixed(c.yeast,2)} g ${yeastShort(c.yeastType)}</span>`,
     `<span class="badge">${c.autolyse?L('✅ autolyse','✅ autolyse'):L('↪️ hydratatierust','↪️ hydration rest')}</span>`,
-    `<span class="badge">🍕 ${c.pizzas} × ${fmt(c.actualBall,0)} g</span>`
+    `<span class="badge">🍕 ${c.pizzas} × ${displayDoughBallWeight(c)} g</span>`
   ].join('');
 }

@@ -346,7 +346,9 @@ function openPizzaPicker(target){
   loadPickerPendingCustomization(currentId);
   pickerSelectedId=currentId;
   $('pizzaPickerSearch').value='';
-  $('pickerTitle').textContent=target==='all' ? L('Kies pizza voor alle bollen','Choose pizza for all dough balls') : L(`Kies pizza voor bol ${Number(target)+1}`,`Choose pizza for dough ball ${Number(target)+1}`);
+  $('pickerTitle').textContent=target==='all'
+    ? L(pizzaSelections.length===1?'Kies pizza voor de deegbal':'Kies pizza voor alle deegballen',pizzaSelections.length===1?'Choose pizza for the dough ball':'Choose pizza for all dough balls')
+    : L(`Kies pizza voor deegbal ${Number(target)+1}`,`Choose pizza for dough ball ${Number(target)+1}`);
   $('pizzaPickerModal').classList.remove('mobile-preview-open');
   $('pizzaPickerOverlay').classList.add('open');
   pushModal('picker');
