@@ -4,12 +4,12 @@
 
 - Released comparison baseline: `f85c1d2ce274a9c68e04916d55f630ce4d5c6fef` (`main`, released v1.1.1)
 - Candidate branch: `feature/v1.3.0-feedback`
-- Base calculation commit: `9a9742a` (`feature/v1.2.0-calculation-model`)
-- Comparison after publication: <https://github.com/hound83/pizza-dough-calculator/compare/main...feature/v1.3.0-feedback>
+- Base calculation commit on GitHub: `96e484f7a071f161ada394a2fd17f6f60b0e1614` (`feature/v1.2.0-calculation-model`)
+- Comparison: <https://github.com/hound83/pizza-dough-calculator/compare/main...feature/v1.3.0-feedback>
 - Public version in the candidate: `1.3.0`
 - Persistence remains: `pizzaCalcV51` / schema `51`
 
-This is a feature audit, not a behavior-neutral refactor audit. The intended new behavior is a Dutch/English in-app feedback form that does not require a GitHub account. The staged v1.2.0 calculation model at `9a9742a` is the direct functional baseline; all pizza, dough, fermentation, mixer, picker, Basic/Full, AVPN, and persistence behavior outside feedback must remain unchanged from that commit.
+This is a feature audit, not a behavior-neutral refactor audit. The intended new behavior is a Dutch/English in-app feedback form that does not require a GitHub account. The staged v1.2.0 calculation model at `96e484f7a071f161ada394a2fd17f6f60b0e1614` is the direct functional baseline; all pizza, dough, fermentation, mixer, picker, Basic/Full, AVPN, and persistence behavior outside feedback must remain unchanged from that commit.
 
 ## Product decision
 
