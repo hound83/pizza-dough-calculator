@@ -63,9 +63,9 @@ These hashes cover the released Basic/Full display modes, mobile recipe-picker r
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
 | combined JavaScript | `37851611903633e2baa3d4d6228b74f49c6fc851405ac159735a5a4a9e800761` |
 
-## Current v1.1.1 patch-candidate baseline
+## Released v1.1.1 baseline
 
-These hashes cover the explicitly approved usability patch: a 30 cm / 220 g default for **My default recipe**, practical percentage-field spinner grids, correct Dutch/English count grammar, and consistent practical dough-ball-weight display. They pin the current review candidate without replacing either released baseline above.
+These hashes cover the released usability patch: a 30 cm / 220 g default for **My default recipe**, practical percentage-field spinner grids, correct Dutch/English count grammar, and consistent practical dough-ball-weight display. They pin the shipped v1.1.1 baseline without replacing either historical release baseline above.
 
 | Artefact | SHA-256 |
 |---|---|
