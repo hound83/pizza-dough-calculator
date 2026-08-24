@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pizza-dough-feedback",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-24",
+  "observability": {
+    "enabled": true
+  },
+  "ratelimits": [
+    {
+      "name": "FEEDBACK_RATE_LIMITER",
+      "namespace_id": "1200",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    }
+  ],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://hound83.github.io",
+    "GITHUB_REPOSITORY": "hound83/pizza-dough-calculator",
+    "TURNSTILE_EXPECTED_ACTION": "pizza_feedback",
+    "TURNSTILE_EXPECTED_HOSTNAME": "hound83.github.io",
+    "TURNSTILE_SITE_KEY": ""
+  }
+}

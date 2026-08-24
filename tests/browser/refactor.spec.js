@@ -31,6 +31,44 @@ function observeBrowserFailures(page){
   return failures;
 }
 
+async function installFeedbackMock(page,{status=201,code='',issueNumber=42}={}){
+  const state={payload:null,postCount:0};
+  await page.addInitScript(()=>{
+    window.PIZZA_FEEDBACK_API_URL='http://127.0.0.1:4173/__feedback_api';
+    window.turnstile={
+      render(container,options){
+        window.__feedbackTurnstileOptions=options;
+        const marker=document.createElement('div');
+        marker.dataset.testTurnstile='ready';
+        marker.textContent='Turnstile test widget';
+        container.appendChild(marker);
+        queueMicrotask(()=>options.callback('browser-test-token'));
+        return 'browser-test-widget';
+      },
+      remove(){},
+      reset(){queueMicrotask(()=>window.__feedbackTurnstileOptions?.callback('browser-test-token-renewed'));}
+    };
+  });
+  await page.route('**/__feedback_api/config',route=>route.fulfill({
+    status:200,
+    contentType:'application/json',
+    body:JSON.stringify({enabled:true,siteKey:'1x00000000000000000000AA'})
+  }));
+  await page.route('**/__feedback_api/feedback',async route=>{
+    state.postCount++;
+    state.payload=route.request().postDataJSON();
+    const ok=status>=200&&status<300;
+    await route.fulfill({
+      status,
+      contentType:'application/json',
+      body:JSON.stringify(ok
+        ? {ok:true,issueUrl:`https://github.com/hound83/pizza-dough-calculator/issues/${issueNumber}`,issueNumber}
+        : {ok:false,code:code||'service_unavailable'})
+    });
+  });
+  return state;
+}
+
 test('test server handles the implicit browser favicon request',async({request})=>{
   const response=await request.get('/favicon.ico');
   expect(response.status()).toBe(204);
@@ -54,7 +92,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.1.1');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.2.0');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -63,7 +101,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.1.1',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.2.0',hasCalculator:true,horizontalOverflow:0});
         expect(failures).toEqual([]);
       });
     }
@@ -165,6 +203,90 @@ for(const publication of PUBLICATIONS){
         await field.press('ArrowDown');
         await expect(field).toHaveValue(control.firstUp);
       }
+    });
+
+    test('submits bilingual anonymous feedback with only opted-in safe context',async({page})=>{
+      const failures=observeBrowserFailures(page);
+      const feedback=await installFeedbackMock(page);
+      await page.setViewportSize({width:320,height:700});
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('#langEn').click();
+      await page.locator('#feedbackButton').click();
+
+      await expect(page.locator('#feedbackTitle')).toHaveText('Send feedback');
+      await expect(page.locator('#feedbackIntro')).toContainText('No GitHub account');
+      await expect(page.locator('#feedbackPrivacy')).toContainText('public GitHub issue');
+      await expect(page.locator('#feedbackThirdParty')).toContainText('anti-bot check');
+      await expect(page.locator('#feedbackThirdParty a')).toHaveAttribute('href','https://www.cloudflare.com/privacypolicy/');
+      await expect(page.locator('#feedbackIncludeDiagnostics')).not.toBeChecked();
+      await expect(page.locator('#feedbackSendButton')).toBeEnabled();
+      await expect(page.locator('#feedbackModal')).toHaveAttribute('aria-hidden','false');
+      await expect(page.locator('.app')).toHaveAttribute('aria-hidden','true');
+
+      const metrics=await page.evaluate(()=>{
+        const panel=document.querySelector('#feedbackPanel').getBoundingClientRect();
+        return {
+          documentOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+          panelFits:panel.left>=-1&&panel.right<=innerWidth+1&&panel.top>=-1&&panel.bottom<=innerHeight+1,
+          panelOverflow:document.querySelector('#feedbackPanel').scrollWidth-document.querySelector('#feedbackPanel').clientWidth
+        };
+      });
+      expect(metrics.documentOverflow).toBe(0);
+      expect(metrics.panelFits).toBe(true);
+      expect(metrics.panelOverflow).toBeLessThanOrEqual(1);
+
+      await page.locator('#feedbackCategory').selectOption('bug');
+      await page.locator('#feedbackSummary').fill('Picker button is clipped');
+      await page.locator('#feedbackMessage').fill('The final picker button is outside the visible phone screen.');
+      await page.locator('#feedbackSteps').fill('Open Complete pizzas, open the picker, then choose Salami.');
+      await page.locator('#feedbackIncludeDiagnostics').check();
+      await page.locator('#feedbackSendButton').click();
+
+      await expect(page.locator('#feedbackStatus')).toHaveText('Thank you! Your feedback was saved as a GitHub issue.');
+      await expect(page.locator('#feedbackIssueLink')).toBeVisible();
+      await expect(page.locator('#feedbackIssueLink')).toHaveAttribute('href','https://github.com/hound83/pizza-dough-calculator/issues/42');
+      expect(feedback.postCount).toBe(1);
+      expect(feedback.payload).toMatchObject({
+        category:'bug',summary:'Picker button is clipped',language:'en',turnstileToken:'browser-test-token',
+        diagnostics:{appVersion:'1.2.0',language:'en',experienceMode:'basic',outputMode:'full',wizardPage:0,viewport:'320x700'}
+      });
+      expect(Object.keys(feedback.payload.diagnostics).sort()).toEqual(['appVersion','experienceMode','language','outputMode','viewport','wizardPage'].sort());
+      expect(JSON.stringify(feedback.payload)).not.toMatch(/hydration|yeastPct|bakeLog|localStorage|email/i);
+      await page.locator('#feedbackCloseButton').click();
+      await expect(page.locator('#feedbackModal')).toHaveAttribute('aria-hidden','true');
+      await expect(page.locator('.app')).not.toHaveAttribute('aria-hidden');
+      await expect(page.locator('#feedbackButton')).toBeFocused();
+      expect(failures).toEqual([]);
+    });
+
+    test('keeps the calculator usable when anonymous feedback is not configured',async({page})=>{
+      const failures=observeBrowserFailures(page);
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('#feedbackButton').click();
+      await expect(page.locator('#feedbackStatus')).toHaveText('De feedbackservice is nog niet geconfigureerd. Er is niets verstuurd.');
+      await expect(page.locator('#feedbackSendButton')).toBeDisabled();
+      await expect(page.locator('#feedbackTurnstile')).toBeEmpty();
+      await page.locator('#feedbackCloseButton').click();
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#page1')).toHaveClass(/\bactive\b/);
+      expect(await page.evaluate(()=>({version:APP_VERSION,flour:calc().flour}))).toEqual({version:'1.2.0',flour:expect.any(Number)});
+      expect(failures).toEqual([]);
+    });
+
+    test('preserves a feedback draft and shows a safe retry path after backend failure',async({page})=>{
+      const feedback=await installFeedbackMock(page,{status:502,code:'service_unavailable'});
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('#feedbackButton').click();
+      await expect(page.locator('#feedbackSendButton')).toBeEnabled();
+      await page.locator('#feedbackCategory').selectOption('idea');
+      await page.locator('#feedbackSummary').fill('Maak de tijdlijn compacter');
+      await page.locator('#feedbackMessage').fill('De tijdlijn neemt op mijn telefoon erg veel verticale ruimte in.');
+      await page.locator('#feedbackSendButton').click();
+      await expect(page.locator('#feedbackStatus')).toHaveText('De feedbackservice is nu niet bereikbaar. Je tekst blijft staan; probeer het later opnieuw.');
+      await expect(page.locator('#feedbackSummary')).toHaveValue('Maak de tijdlijn compacter');
+      await expect(page.locator('#feedbackMessage')).toHaveValue('De tijdlijn neemt op mijn telefoon erg veel verticale ruimte in.');
+      await expect(page.locator('#feedbackSendButton')).toBeEnabled();
+      expect(feedback.postCount).toBe(1);
     });
 
     for(const viewport of VIEWPORTS.slice(0,3)){
