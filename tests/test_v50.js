@@ -219,6 +219,11 @@ test('pizza and dough-ball counts pluralize correctly and workflow rounding matc
   }
 });
 
+test('English hour grammar follows the rounded value shown to the user',()=>{
+  const x=run(`(()=>{currentLang='en';const values=[1,1.0419,0.9787,1.06].map(value=>hourCountLabel(value,1));currentLang='nl';return values;})()`);
+  assert(JSON.stringify(x)===JSON.stringify(['1 hour','1 hour','1 hour','1.1 hours']),JSON.stringify(x));
+});
+
 test('Basic and Full switch display only and preserve calculator values',()=>{
   const x=run(`(()=>{const before={h:$('hydration').value,y:$('yeastPct').value,bulk:$('bulkHours').value};setExperienceMode('full');const full=experienceMode;setExperienceMode('basic');return {full,basic:experienceMode,body:document.body.dataset.experienceMode,before,after:{h:$('hydration').value,y:$('yeastPct').value,bulk:$('bulkHours').value}};})()`);
   assert(x.full==='full'&&x.basic==='basic'&&x.body==='basic',JSON.stringify(x));

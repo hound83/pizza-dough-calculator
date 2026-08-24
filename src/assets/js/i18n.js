@@ -18,8 +18,9 @@ function pizzaCountLabel(count){return `${fmt(Number(count),0)} ${pizzaNoun(coun
 function doughBallCountLabel(count){return `${fmt(Number(count),0)} ${doughBallNoun(count)}`;}
 function hourCountLabel(hours,decimals=1){
   const value=Number(hours);
-  const unit=currentLang==='en'?(value===1?'hour':'hours'):'uur';
-  return `${fmt(value,decimals)} ${unit}`;
+  const shown=fmt(value,decimals);
+  const unit=currentLang==='en'?(shown==='1'?'hour':'hours'):'uur';
+  return `${shown} ${unit}`;
 }
 
 function translateNlText(raw){

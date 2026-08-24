@@ -3,7 +3,7 @@
 [English](README.md) | [Nederlands](README.nl.md)
 
 [![Version](https://img.shields.io/badge/version-v1.1.0-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.0)
-[![Tests](https://img.shields.io/badge/regression_tests-74%2F74_passing-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regression_tests-75%2F75_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -129,8 +129,8 @@ Current result:
 
 ```text
 14 refactor-structure tests passed
-74 bundle regression tests passed
-74 source regression tests passed
+75 bundle regression tests passed
+75 source regression tests passed
 31 Chromium browser/layout tests passed
 ```
 

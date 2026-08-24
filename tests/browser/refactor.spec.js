@@ -139,17 +139,17 @@ for(const publication of PUBLICATIONS){
       await expect(page.locator('#yeastPct')).toBeHidden();
     });
 
-    test('uses practical percentage spinner increments while preserving typed precision',async({page})=>{
+    test('uses practical percentage spinner grids while preserving off-grid preset precision',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
       await page.locator('#experienceFull').click();
       await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#diameter')).toHaveValue('30');
 
       const controls=[
-        {selector:'#hydration',step:'0.5',start:'63',up:'63.5',typed:'63.05'},
-        {selector:'#saltPct',step:'0.25',start:'3',up:'3.25',typed:'3.21'},
-        {selector:'#yeastPct',step:'0.025',start:'0.175',up:'0.2',typed:'0.176'},
-        {selector:'#oilPct',step:'0.25',start:'0.25',up:'0.5',typed:'0.3'}
+        {selector:'#hydration',step:'0.5',start:'63',firstUp:'63.5',secondUp:'64',typed:'63.05'},
+        {selector:'#saltPct',step:'0.25',start:'3',firstUp:'3.25',secondUp:'3.5',typed:'3.21'},
+        {selector:'#yeastPct',step:'0.025',start:'0.17',firstUp:'0.175',secondUp:'0.2',typed:'0.176'},
+        {selector:'#oilPct',step:'0.25',start:'0.25',firstUp:'0.5',secondUp:'0.75',typed:'0.3'}
       ];
       for(const control of controls){
         const field=page.locator(control.selector);
@@ -159,9 +159,11 @@ for(const publication of PUBLICATIONS){
         await expect(field).toHaveValue(control.typed);
         await field.fill(control.start);
         await field.press('ArrowUp');
-        await expect(field).toHaveValue(control.up);
+        await expect(field).toHaveValue(control.firstUp);
+        await field.press('ArrowUp');
+        await expect(field).toHaveValue(control.secondUp);
         await field.press('ArrowDown');
-        await expect(field).toHaveValue(control.start);
+        await expect(field).toHaveValue(control.firstUp);
       }
     });
 
