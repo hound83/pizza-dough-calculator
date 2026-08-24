@@ -61,9 +61,9 @@ npx playwright install chromium
 npm test
 ```
 
-## Candidate integrity hashes
+## Released integrity hashes
 
-The released v1.0.0 and v1.1.0 hashes remain immutable historical evidence. The review candidate is pinned separately:
+The released v1.0.0 and v1.1.0 hashes remain immutable historical evidence. The released v1.1.1 baseline is pinned separately:
 
 | Artefact | SHA-256 |
 |---|---|

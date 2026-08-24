@@ -4,7 +4,7 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v1.1.0-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.0)
+[![Versie](https://img.shields.io/badge/versie-v1.1.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
 [![Tests](https://img.shields.io/badge/regressietests-75%2F75_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
@@ -13,11 +13,9 @@ Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fe
 
 De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies de standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
 
-**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.0.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
+**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.1.1-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
 
-> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.1.0 is de eerste goedgekeurde functionele uitbreiding en introduceert opslagschema 51 met een expliciete migratie vanaf schema 50.
-
-> Ontwikkelstatus: deze branch is de v1.1.1-kandidaat met gebruiksverbeteringen. De uitgebrachte v1.1.0 blijft de huidige publieke baseline totdat review en CI compleet zijn.
+> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.1.0 introduceerde Basis/Uitgebreid en opslagschema 51; v1.1.1 is de huidige achterwaarts compatibele gebruiksrelease.
 
 ## Wat kan de calculator?
 
@@ -149,7 +147,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische v1.0.0-hashes, de uitgebrachte v1.1.0-baseline en de afzonderlijke v1.1.1-patchkandidaat. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. De telefoontests bewaken daarnaast de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische v1.0.0-hashes en de uitgebrachte v1.1.0- en v1.1.1-baselines. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. De telefoontests bewaken daarnaast de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -167,6 +165,7 @@ Vanaf de eerste golden release gebruikt het project semantic versioning:
 | **v1.0.0** | Eerste golden functionele release |
 | **v1.0.1** | Achterwaarts compatibele bugfix na v1.0.0 |
 | **v1.1.0** | Nieuwe achterwaarts compatibele functionaliteit, zoals Basis/Uitgebreid |
+| **v1.1.1** | Achterwaarts compatibele gebruikscorrectie na v1.1.0 |
 | **v2.0.0** | Alleen nodig bij een werkelijk brekende wijziging |
 
 Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigraties, testbestanden en auditdocumenten. Ze worden niet langer als publieke productversie doorgeteld.
@@ -194,11 +193,12 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Release:** tag v1.0.0 blijft de onveranderlijke golden functionele baseline.
-- **Huidige architectuur:** statische bron-HTML, CSS en elf JavaScriptmodules genereren de byte-identieke standalone publicatie voor GitHub Pages.
-- **Audit:** de gedrag-neutrale refactor en de laatste verbetering van de testinfrastructuur zijn onafhankelijk door Claude gecrosscheckt.
-- **Kleine follow-up:** de resterende niet-blokkerende toegankelijkheidsverbetering voor zeven uitgebreide veldlabels blijft buiten deze gedrag-neutrale refactor.
+- **Release:** v1.1.1 is de huidige release; tag v1.0.0 blijft de onveranderlijke historische golden baseline.
+- **Huidige architectuur:** statische bron-HTML, CSS en elf JavaScriptmodules genereren de geteste standalone publicatie voor GitHub Pages.
+- **Audit:** de refactor, v1.1.0-featureversie en v1.1.1-patch zijn onafhankelijk door Claude gecrosscheckt.
+- **Kleine follow-up:** voor zeven uitgebreide veldlabels blijft een niet-blokkerende toegankelijkheidsverbetering mogelijk.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
+- **v1.1.1:** een persoonlijk standaardrecept van 30 cm, praktische percentagebediening, gecorrigeerde tweetalige enkelvoud/meervoud-teksten en consistente weergave van deegbolgewicht.
 
 ## Achtergrond
 

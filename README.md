@@ -2,7 +2,7 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.1.0-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.0)
+[![Version](https://img.shields.io/badge/version-v1.1.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
 [![Tests](https://img.shields.io/badge/regression_tests-75%2F75_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
@@ -11,11 +11,9 @@ A comprehensive Dutch and English calculator for pizza dough, fermentation, sauc
 
 The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
-**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.0.0 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.0.0)
+**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.1.1 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
 
-> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.1.0 is the first approved feature change and introduces storage schema 51 with an explicit migration from schema 50.
-
-> Development status: this branch is the v1.1.1 usability patch candidate. The released v1.1.0 remains the current public baseline until review and CI are complete.
+> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.1.0 introduced Basic/Full modes and storage schema 51; v1.1.1 is the current backward-compatible usability release.
 
 ## Features
 
@@ -147,7 +145,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical v1.0.0 hashes, the released v1.1.0 baseline, and the separate v1.1.1 patch candidate. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical v1.0.0 hashes, and the released v1.1.0 and v1.1.1 baselines. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 
@@ -165,6 +163,7 @@ The project uses semantic versioning from the first golden release onward:
 | **v1.0.0** | First golden functional release |
 | **v1.0.1** | Backward-compatible bug fix after v1.0.0 |
 | **v1.1.0** | New backward-compatible functionality, such as Basic/Full |
+| **v1.1.1** | Backward-compatible usability correction after v1.1.0 |
 | **v2.0.0** | Reserved for a genuinely breaking change |
 
 Historic working versions such as v50 remain where technically necessary in storage migrations, test names, and audit documents. They are no longer used as public product versions.
@@ -192,11 +191,12 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Release:** tag v1.0.0 remains the immutable golden functional baseline.
-- **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the byte-identical standalone publication used by GitHub Pages.
-- **Audit:** the behavior-neutral refactor and final test-infrastructure follow-up passed independent Claude crosschecks.
-- **Small follow-up:** the remaining non-blocking accessibility improvement for seven extended field labels stays outside this behavior-neutral refactor.
+- **Release:** v1.1.1 is current; tag v1.0.0 remains the immutable historical golden baseline.
+- **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the tested standalone publication used by GitHub Pages.
+- **Audit:** the refactor, v1.1.0 feature release, and v1.1.1 patch passed independent Claude crosschecks.
+- **Small follow-up:** a non-blocking accessibility improvement remains possible for seven extended field labels.
 - **v1.1.0:** a clear **Basic/Full** toggle without creating two separate calculation models.
+- **v1.1.1:** a 30 cm personal default, practical percentage controls, corrected bilingual count grammar, and consistent dough-ball-weight display.
 
 ## Background
 
