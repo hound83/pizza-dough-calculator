@@ -34,3 +34,31 @@ Object.assign(EN_TEXT,{
   "bijv. mooi luchtig, iets slap, bodem perfect...":"e.g. nicely airy, slightly slack, perfect base...",
   "alleen invullen als bekend":"only enter if known"
 });
+
+Object.assign(EN_TEXT,{
+  "Feedback geven":"Send feedback",
+  "Geen GitHub-account nodig. Je bericht wordt via een beveiligde tussenlaag doorgestuurd.":"No GitHub account is required. Your message is sent through a secured intermediary.",
+  "Feedback sluiten":"Close feedback",
+  "Soort feedback":"Feedback type",
+  "Maak een keuze":"Choose an option",
+  "Bug of technisch probleem":"Bug or technical problem",
+  "Idee of verbetering":"Idea or improvement",
+  "Berekening of recept":"Calculation or recipe",
+  "Taal of vertaling":"Language or translation",
+  "Korte samenvatting":"Short summary",
+  "Bijv. knop valt buiten beeld op mijn telefoon":"E.g. a button falls outside the screen on my phone",
+  "Wat wil je melden?":"What would you like to report?",
+  "Beschrijf wat er gebeurde of wat je graag anders zou zien.":"Describe what happened or what you would like to see changed.",
+  "Stappen om het te reproduceren (optioneel)":"Steps to reproduce (optional)",
+  "Bijv. open Volledige pizza's → kies recept → ...":"E.g. open Complete pizzas → choose recipe → ...",
+  "Veilige technische informatie meesturen":"Include safe technical information",
+  "Alleen appversie, taal, schermmodus en schermgrootte; nooit receptwaarden, logboek of lokale opslag.":"Only app version, language, display mode, and viewport size; never recipe values, dough log, or local storage.",
+  "Let op:":"Please note:",
+  "je feedback wordt als openbaar GitHub-issue opgeslagen. Deel geen namen, e-mailadressen of andere persoonlijke gegevens.":"your feedback is stored as a public GitHub issue. Do not share names, email addresses, or other personal information.",
+  "Bij het openen van een geconfigureerd feedbackformulier wordt":"When a configured feedback form is opened,",
+  "geladen voor de anti-botcontrole.":"is loaded for the anti-bot check.",
+  "Open de live calculator om feedback te versturen":"Open the live calculator to send feedback",
+  "Bekijk je feedback op GitHub":"View your feedback on GitHub",
+  "Annuleren":"Cancel",
+  "Feedback versturen":"Send feedback"
+});

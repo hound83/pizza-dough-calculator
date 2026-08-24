@@ -117,6 +117,18 @@ These hashes cover the released usability patch: a 30 cm / 220 g default for **M
 - Practical rounding displays the calculated per-ball dough weight as a whole gram everywhere it is shown. With practical rounding disabled, the same shared formatter may show one decimal. Calculations retain their full internal precision in both modes.
 - The persistence key and storage schema remain `pizzaCalcV51` / schema 51 because no stored field or interpretation changes.
 
+## v1.2.0 anonymous-feedback contract
+
+- Feedback is an optional online feature. Every calculator, recipe, fermentation, mixer, picker, storage, and offline workflow remains usable when the feedback endpoint, network, Turnstile, Worker, or GitHub is unavailable.
+- A person submitting feedback does not need a GitHub account. A secured server-side adapter creates the issue; no GitHub credential or Turnstile secret may appear in source HTML, browser JavaScript, a request response, or committed configuration.
+- Feedback is stored as a public GitHub issue. The form must disclose this before submission, has no contact field, warns against personal information, and the server rejects email addresses rather than publishing them accidentally. The modal also discloses that Cloudflare Turnstile is loaded for the anti-bot check and links to Cloudflare's privacy policy.
+- The accepted categories are Bug/technical problem, Idea/improvement, Calculation/recipe, and Language/translation. Summary, message, optional reproduction steps, honeypot, language, Turnstile token, and the explicitly opted-in diagnostic object are the complete request contract.
+- Safe diagnostics are disabled by default. When enabled, they may contain only app version, interface language, Basic/Full display mode, output mode, wizard page, and viewport. Recipe inputs, ingredient amounts, fermentation values, temperatures, pizza selections, dough-log entries, local storage, user-agent strings, and unexpected keys must never be submitted or persisted.
+- Turnstile is loaded only after opening a configured feedback form and its token is always verified server-side with the `pizza_feedback` action and expected production hostname. Exact allowed origins, a fail-closed native issue rate limit after successful Turnstile validation and before GitHub, bounded JSON and text sizes, neutralized GitHub mentions, and safe generic error responses are mandatory backend controls.
+- A downloaded `file://` copy never attempts to embed Turnstile. It explains that submission requires the live calculator while preserving all offline calculator behavior.
+- Feedback fields are ephemeral and are excluded from `saveState()`. The persistence key and schema remain `pizzaCalcV51` / schema 51 because no recipe state or stored-field interpretation changes.
+- The release is not production-ready while the public Turnstile site key or feedback API URL is blank. Before tagging v1.2.0, the deployed Worker, real Turnstile validation, and creation of a disposable end-to-end GitHub issue must be verified, followed by removal or closure of that disposable issue.
+
 ## Change checklist
 
 Before changing a rule above:

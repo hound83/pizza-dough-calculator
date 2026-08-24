@@ -172,6 +172,7 @@ function loadState(){
 
 function wireEvents(){
   document.querySelectorAll('input,select').forEach(el=>{
+    if(el.hasAttribute('data-feedback-control'))return;
     el.addEventListener('focus',()=>rememberNumericEditStart(el));
     el.addEventListener('input',()=>{
       if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
@@ -290,4 +291,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(restored && _restoredWizardPage>0 && wizardPages().includes(_restoredWizardPage)) showPage(_restoredWizardPage);
   else showModeChooser();
   initI18n();
+  initFeedback();
 });
