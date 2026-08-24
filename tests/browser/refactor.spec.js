@@ -54,7 +54,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.1.1');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.2.0');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -63,7 +63,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.1.1',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.2.0',hasCalculator:true,horizontalOverflow:0});
         expect(failures).toEqual([]);
       });
     }
@@ -165,6 +165,67 @@ for(const publication of PUBLICATIONS){
         await field.press('ArrowDown');
         await expect(field).toHaveValue(control.firstUp);
       }
+    });
+
+    test('renders staged main-water and room-temperature reserve guidance bilingually',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>{
+        currentMethod='kitchenaid';
+        $('autolyse').checked=true;
+        $('roomTemp').value='21';
+        $('fridgeTemp').value='4';
+        $('finalDoughTemp').value='24';
+        update();showPage(4);
+      });
+      const weigh=page.locator('[data-step-key="s-weigh"]');
+      await expect(weigh).toContainText('reservewater');
+      await expect(weigh).toContainText('afgedekt op kamertemperatuur');
+      await expect(weigh).toContainText('315 g hoofdwater');
+      await expect(weigh).toContainText('18 °C');
+      await expect(weigh).not.toContainText('vaste praktische startcorrectie');
+      await expect(weigh).not.toContainText('nog verder drukken');
+
+      await page.locator('#langEn').click();
+      await expect(weigh).toContainText('reserved water');
+      await expect(weigh).toContainText('covered at room temperature');
+      await expect(weigh).toContainText('315 g main water');
+      await expect(weigh).not.toContainText('lower final dough temperature further');
+    });
+
+    test('shows practical water bands and route-correct hot-water warnings',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showPage(4));
+      const weigh=page.locator('[data-step-key="s-weigh"]');
+
+      await page.evaluate(()=>{
+        currentLang='nl';currentMethod='kitchenaid';$('autolyse').checked=false;
+        $('roomTemp').value='24';$('finalDoughTemp').value='24';update();showPage(4);
+      });
+      await expect(weigh).toContainText('Koud kraanwater kan hiervoor voldoende zijn');
+      await expect(weigh).not.toContainText('ijswater nodig');
+
+      await page.evaluate(()=>{$('roomTemp').value='27';update();showPage(4);});
+      await expect(weigh).toContainText('Hiervoor is ijswater nodig');
+      await expect(weigh).toContainText('weeg daarna opnieuw precies');
+
+      await page.evaluate(()=>{
+        currentMethod='hand';$('roomTemp').value='21';$('autolyse').checked=true;
+        const c=calc();$('finalDoughTemp').value=String(predictFinalDoughTemp(41,c,'hand'));
+        update();showPage(4);
+      });
+      await expect(weigh).toContainText('handkneden met koude autolyse');
+      await expect(weigh).not.toContainText('op deze directe route');
+
+      await page.evaluate(()=>{
+        $('autolyse').checked=false;const c=calc();
+        $('finalDoughTemp').value=String(predictFinalDoughTemp(41,c,'hand'));
+        update();showPage(4);
+      });
+      await expect(weigh).toContainText('op deze directe route');
+      await expect(weigh).toContainText('≥40 °C bij de gist');
+      await expect(weigh).not.toContainText('handkneden met koude autolyse');
     });
 
     for(const viewport of VIEWPORTS.slice(0,3)){

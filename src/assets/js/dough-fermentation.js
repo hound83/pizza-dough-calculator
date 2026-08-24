@@ -159,6 +159,44 @@ function fermentationHours(c){
   return c.bulk+c.cold+c.ball;
 }
 
+// Shared household thermal constants. These values describe the deliberately
+// simple v1.2 model boundary; mixer/bowl/handling losses remain inside the
+// effective stage rises in fermentation-live.js.
+const CP_FLOUR=1.850; // J/(g*K)
+const CP_WATER=4.186; // J/(g*K)
+const CP_SALT=0.900;  // J/(g*K), engineering approximation
+const CP_OIL=2.000;   // J/(g*K), engineering approximation
+const AUTOLYSE_REST_HOURS=0.5;
+const DIRECT_REST_HOURS=1/3;
+const EFFECTIVE_REST_TAU_HOURS=2.27;
+
+function thermalEquilibrium(parts){
+  if(!Array.isArray(parts)||!parts.length)throw new RangeError('Thermal equilibrium requires parts.');
+  let energy=0,capacity=0;
+  for(const part of parts){
+    if(!part||typeof part.temperature!=='number'||!Number.isFinite(part.temperature))throw new RangeError('Invalid thermal-part temperature.');
+    const hasCapacity=part.capacity!=null;
+    if(hasCapacity&&(typeof part.capacity!=='number'||!Number.isFinite(part.capacity)))throw new RangeError('Invalid thermal-part capacity.');
+    if(!hasCapacity&&(
+      typeof part.mass!=='number'||!Number.isFinite(part.mass)||
+      typeof part.cp!=='number'||!Number.isFinite(part.cp)
+    ))throw new RangeError('Invalid thermal-part mass or specific heat.');
+    const partCapacity=hasCapacity?part.capacity:part.mass*part.cp;
+    if(!Number.isFinite(partCapacity)||partCapacity<0)throw new RangeError('Invalid thermal-part capacity.');
+    if(partCapacity===0)continue;
+    energy+=partCapacity*Number(part.temperature);
+    capacity+=partCapacity;
+  }
+  if(!Number.isFinite(energy)||!Number.isFinite(capacity)||capacity<=0)throw new RangeError('Invalid total thermal capacity.');
+  return {temperature:energy/capacity,capacity};
+}
+
+function thermalEndTemperature(startTemp,environmentTemp,hours,tauHours){
+  const values=[startTemp,environmentTemp,hours,tauHours];
+  if(values.some(x=>!Number.isFinite(x))||values[2]<0||values[3]<=0)throw new RangeError('Invalid thermal phase.');
+  return values[1]+(values[0]-values[1])*Math.exp(-values[2]/values[3]);
+}
+
 // Praktische thuiskalibratie, geen natuurwet. Doorgetrokken boven 35 graden
 // zodat een warme rijskast of proofbox niet als "even snel als 35 graden"
 // wordt gemodelleerd; boven ~45 graden loopt gist snel dood.
@@ -201,7 +239,7 @@ function simulateThermalPhase(startTemp,envTemp,hours,tau,name,kind){
   const n=Math.max(1,Math.ceil(hours/step)),dt=hours/n;
   let t=startTemp,gas=0,maturity=0;
   for(let i=0;i<n;i++){
-    const next=envTemp+(t-envTemp)*Math.exp(-dt/tau);
+    const next=thermalEndTemperature(t,envTemp,dt,tau);
     const mid=(t+next)/2;
     gas+=yeastTempActivity(mid)*dt;
     maturity+=maturationActivity(mid)*dt;
@@ -670,4 +708,3 @@ function refreshFermentationUI(){
     $('coldHours').disabled=false;
   }
 }
-

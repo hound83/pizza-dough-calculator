@@ -170,12 +170,12 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('public v1.1.1 metadata keeps storage schema 51 with v50 migration',()=>{
+test('v1.2.0 calculation candidate keeps storage schema 51 with v50 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='1.1.1'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v1.1.1'&&x.titleEn==='Pizza dough calculator v1.1.1',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v1.1.1')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v1.1.1</title>'),'static document title is not v1.1.1');
+  assert(x.app==='1.2.0'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v1.2.0'&&x.titleEn==='Pizza dough calculator v1.2.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v1.2.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v1.2.0</title>'),'static document title is not v1.2.0');
 });
 
 test('standard preset uses a 30 cm peel-friendly default and practical percentage steps',()=>{
@@ -682,9 +682,227 @@ test('recipe copy reports live-adjusted fermentation time',()=>{
   assert(text.includes('Fermentatie live aangepast')&&text.includes('oorspronkelijk 8'),text);
 });
 
+test('thermal helpers conserve capacity and reject invalid parts',()=>{
+  const x=run(`(()=>{
+    const mixed=thermalEquilibrium([
+      {mass:100,cp:2,temperature:10},
+      {capacity:100,temperature:30},
+      {mass:0,cp:4,temperature:99}
+    ]);
+    const end=thermalEndTemperature(30,10,.5,2);
+    let invalid=false,invalidNull=false;
+    try{thermalEquilibrium([{mass:undefined,cp:2,temperature:10}]);}catch(error){invalid=error instanceof RangeError;}
+    try{thermalEndTemperature(null,10,.5,2);}catch(error){invalidNull=error instanceof RangeError;}
+    return {mixed,end,invalid,invalidNull};
+  })()`);
+  assert(approx(x.mixed.temperature,50/3,.000001)&&x.mixed.capacity===300,JSON.stringify(x));
+  assert(approx(x.end,10+20*Math.exp(-.25),.000001)&&x.invalid&&x.invalidNull,JSON.stringify(x));
+});
+
+test('v1.2 staged DDT model reproduces the approved nominal reference outputs',()=>{
+  defaults();
+  const result=run(`(()=>{
+    exactOverride=null;
+    $('hydration').value='63';$('saltPct').value='3';$('oilPct').value='0';
+    $('roomTemp').value='21';$('fridgeTemp').value='4';$('finalDoughTemp').value='24';
+    const out=[];
+    for(const method of ['hand','kitchenaid','kenwood','pro']){
+      currentMethod=method;
+      for(const autolyse of [true,false]){
+        $('autolyse').checked=autolyse;
+        const c=calc(),advice=waterTempAdvice(c);
+        out.push({method,autolyse,water:advice.water,predicted:advice.predictedFinal,achievable:advice.achievable});
+      }
+    }
+    applyPreset('avpnMid');$('autolyse').checked=false;
+    const avpn=[];
+    for(const method of ['kitchenaid','kenwood','pro']){
+      currentMethod=method;const advice=waterTempAdvice(calc());
+      avpn.push({method,water:advice.water,displayWater:advice.displayWater,inRange:advice.avpnRange});
+    }
+    currentMethod='kitchenaid';$('autolyse').checked=true;
+    return {rows:out,avpn};
+  })()`);
+  const expected={
+    'hand:true':32.94,'hand:false':25.28,
+    'kitchenaid:true':18.00,'kitchenaid:false':15.94,
+    'kenwood:true':18.00,'kenwood:false':14.26,
+    'pro:true':16.00,'pro:false':14.62
+  };
+  for(const row of result.rows){
+    const key=`${row.method}:${row.autolyse}`;
+    assert(row.achievable&&approx(row.water,expected[key],.06)&&approx(row.predicted,24,.02),JSON.stringify({row,expected:expected[key]}));
+  }
+  assert(result.avpn.every(row=>row.inRange&&row.displayWater>=16&&row.displayWater<=22),JSON.stringify(result.avpn));
+});
+
+test('staged DDT prediction is affine in main-water temperature',()=>{
+  defaults();
+  const rows=run(`(()=>{
+    exactOverride=null;const base=calc(),out=[];
+    for(const method of ['hand','kitchenaid','kenwood','pro'])for(const autolyse of [true,false]){
+      const c={...base,autolyse};
+      const a=predictFinalDoughTemp(5,c,method),b=predictFinalDoughTemp(20,c,method),d=predictFinalDoughTemp(35,c,method);
+      out.push({method,autolyse,error:a+d-2*b,gain:(d-a)/30});
+    }
+    return out;
+  })()`);
+  assert(rows.every(row=>Math.abs(row.error)<1e-9&&row.gain>0),JSON.stringify(rows));
+  const autolyse=rows.find(row=>row.method==='kitchenaid'&&row.autolyse);
+  const direct=rows.find(row=>row.method==='kitchenaid'&&!row.autolyse);
+  assert(approx(autolyse.gain,.4413,.0002)&&approx(direct.gain,.4749,.0002),JSON.stringify({autolyse,direct}));
+});
+
+test('room-temperature slope pins protect the staged mass selection',()=>{
+  defaults();
+  const rows=run(`(()=>{
+    exactOverride=null;const base=calc(),out=[];
+    for(const method of ['hand','kitchenaid','kenwood','pro'])for(const autolyse of [true,false]){
+      const cool=solveMainWaterTemperature({...base,autolyse,room:20},method);
+      const warm=solveMainWaterTemperature({...base,autolyse,room:22},method);
+      out.push({method,autolyse,slope:(warm.water-cool.water)/2});
+    }
+    return out;
+  })()`);
+  for(const row of rows){
+    const expected=row.autolyse?-.836:-1.106;
+    assert(approx(row.slope,expected,.02),JSON.stringify({row,expected}));
+  }
+});
+
+test('DDT solver reports unattainable boundaries without silent clamping',()=>{
+  defaults();
+  const x=run(`(()=>{
+    exactOverride=null;const base=calc(),method='kitchenaid';
+    const lowFinal=predictFinalDoughTemp(MAIN_WATER_MIN_C,base,method);
+    const highFinal=predictFinalDoughTemp(MAIN_WATER_MAX_C,base,method);
+    return {
+      low:solveMainWaterTemperature({...base,doughTemp:lowFinal-1},method),
+      high:solveMainWaterTemperature({...base,doughTemp:highFinal+1},method),
+      invalid:solveMainWaterTemperature({...base,salt:-1},method)
+    };
+  })()`);
+  assert(!x.low.achievable&&x.low.boundary==='low'&&x.low.water===1&&x.low.reason==='target-below-range',JSON.stringify(x.low));
+  assert(!x.high.achievable&&x.high.boundary==='high'&&x.high.water===45&&x.high.reason==='target-above-range',JSON.stringify(x.high));
+  assert(!x.invalid.achievable&&x.invalid.reason==='invalid-input'&&x.invalid.water===null,JSON.stringify(x.invalid));
+});
+
+test('DDT solver stays finite and honest across 1,920 normal-kitchen cases',()=>{
+  defaults();
+  const result=run(`(()=>{
+    exactOverride=null;let count=0,defensive=0,reachable=0,unreachable=0,bad=[];
+    for(const hydration of [55,63,70,75]){
+      $('hydration').value=String(hydration);const recipe=calc();
+      for(const method of ['hand','kitchenaid','kenwood','pro'])for(const autolyse of [true,false]){
+        const fridges=autolyse?[2,4,8]:[4];
+        for(const room of [15,18,21,24,27,30])for(const fridge of fridges)for(const doughTemp of [20,22,24,26,27]){
+          count++;
+          const c={...recipe,autolyse,room,fridge,doughTemp};
+          const solved=solveMainWaterTemperature(c,method);
+          const finite=Number.isFinite(solved.water)&&Number.isFinite(solved.predictedFinal);
+          if(solved.achievable){
+            reachable++;
+            if(!finite||solved.water<1||solved.water>45||Math.abs(solved.predictedFinal-doughTemp)>.025)bad.push({method,autolyse,hydration,room,fridge,doughTemp,solved});
+          }else{
+            unreachable++;
+            if(!finite||!['low','high'].includes(solved.boundary)||![1,45].includes(solved.water))bad.push({method,autolyse,hydration,room,fridge,doughTemp,solved});
+          }
+        }
+      }
+    }
+    for(const hydration of [45,85]){
+      $('hydration').value=String(hydration);$('saltPct').value=hydration===45?'0':'5';$('oilPct').value=hydration===45?'0':'10';
+      const recipe=calc();
+      for(const method of ['hand','kitchenaid','kenwood','pro'])for(const autolyse of [true,false]){
+        const fridges=autolyse?[0,15]:[4];
+        for(const room of [10,35])for(const fridge of fridges)for(const doughTemp of [10,35]){
+          defensive++;
+          const solved=solveMainWaterTemperature({...recipe,autolyse,room,fridge,doughTemp},method);
+          if(!Number.isFinite(solved.water)||!Number.isFinite(solved.predictedFinal)||(!solved.achievable&&!['low','high'].includes(solved.boundary)))bad.push({kind:'defensive',method,autolyse,hydration,room,fridge,doughTemp,solved});
+        }
+      }
+    }
+    $('hydration').value='63';$('saltPct').value='3';$('oilPct').value='0';currentMethod='kitchenaid';$('autolyse').checked=true;
+    return {count,defensive,reachable,unreachable,bad:bad.slice(0,5)};
+  })()`);
+  assert(result.count===1920&&result.defensive===96&&result.reachable>0&&result.unreachable>0&&result.bad.length===0,JSON.stringify(result));
+});
+
 test('method labels are user-facing and no automatic learning is applied',()=>{
-  const x=run(`(()=>{currentLang='nl';const c=calc();bakeLog=[{method:'hand',ddtCorrection:25}];return {label:methodLabel('hand'),water:waterTempAdvice(c),source:waterTempAdvice.toString()};})()`);
+  const x=run(`(()=>{currentLang='nl';currentMethod='hand';const c=calc();bakeLog=[{ts:1,method:'hand',ddtCorrection:25,rating:'good',notes:''}];renderBakeLog(c);const logNl=$('bakeLogSummary').innerHTML;currentLang='en';renderBakeLog(c);const logEn=$('bakeLogSummary').innerHTML;currentLang='nl';const result={label:methodLabel('hand'),water:waterTempAdvice(c),source:waterTempAdvice.toString(),logNl,logEn};currentMethod='kitchenaid';return result;})()`);
   assert(x.label==='handmatig kneden'&&!x.water.calibrated&&x.water.correctionCount===0&&!x.source.includes('ddtLogStats('),JSON.stringify(x));
+  assert(x.logNl.includes('Historische DDT-index')&&x.logNl.includes('gefaseerde warmtemodel')&&!x.logNl.includes('vaste startaanname'),x.logNl);
+  assert(x.logEn.includes('Historical DDT index')&&x.logEn.includes('staged heat model')&&!x.logEn.includes('fixed starting assumption'),x.logEn);
+});
+
+test('main-water guidance keeps the reserve at room temperature in both languages',()=>{
+  defaults();
+  const x=run(`(()=>{
+    exactOverride=null;currentMethod='kitchenaid';$('autolyse').checked=true;const c=calc(),wt=waterTempAdvice(c);
+    currentLang='nl';const nl=waterTemperatureGuidance(c,wt);
+    currentLang='en';const en=waterTemperatureGuidance(c,wt);
+    currentLang='nl';return {c,wt,nl,en};
+  })()`);
+  assert(x.nl.reserveLine.includes('reservewater')&&x.nl.reserveLine.includes('kamertemperatuur')&&x.nl.mainLine.includes(`${Math.round(x.c.mainWater)} g hoofdwater`),JSON.stringify(x.nl));
+  assert(x.en.reserveLine.includes('reserved water')&&x.en.reserveLine.includes('room temperature')&&x.en.mainLine.includes(`${Math.round(x.c.mainWater)} g main water`),JSON.stringify(x.en));
+  const joined=JSON.stringify({nl:x.nl,en:x.en});
+  assert(!joined.includes('nog verder drukken')&&!joined.includes('lower final dough temperature further'),joined);
+  const steps=run(`(()=>{currentLang='en';buildSteps(calc());const en=$('stepsList').innerHTML;currentLang='nl';buildSteps(calc());return {en,nl:$('stepsList').innerHTML};})()`);
+  assert(steps.en.includes('Target final dough temperature after kneading')&&!steps.en.includes('Target before kneading'),steps.en.slice(0,3000));
+  assert(steps.nl.includes('Doel-einddeegtemperatuur na het kneden')&&!steps.nl.includes('Doel vóór het kneden'),steps.nl.slice(0,3000));
+});
+
+test('water handling separates cold tap, ice water, warm water, and room-range notes',()=>{
+  defaults();
+  const x=run(`(()=>{
+    exactOverride=null;currentMethod='kitchenaid';$('autolyse').checked=true;const base=calc();
+    const atWater=(water,room=21)=>{
+      const c={...base,room};c.doughTemp=predictFinalDoughTemp(water,c,'kitchenaid');
+      const advice=waterTempAdvice(c);return {advice,text:waterTemperatureGuidance(c,advice).notes};
+    };
+    currentLang='nl';const tap=atWater(12),ice=atWater(8),warm=atWater(34),outside=atWater(18,14),room10=atWater(18,10),room35=atWater(18,35);
+    const fridgeC={...base,fridge:1};fridgeC.doughTemp=predictFinalDoughTemp(18,fridgeC,'kitchenaid');
+    const fridgeAdvice=waterTempAdvice(fridgeC),fridge={advice:fridgeAdvice,text:waterTemperatureGuidance(fridgeC,fridgeAdvice).notes};
+    const hydrationC={...base,h:50};hydrationC.doughTemp=predictFinalDoughTemp(18,hydrationC,'kitchenaid');
+    const hydrationAdvice=waterTempAdvice(hydrationC),hydration={advice:hydrationAdvice,text:waterTemperatureGuidance(hydrationC,hydrationAdvice).notes};
+    currentLang='en';const iceEn=atWater(8);
+    currentLang='nl';return {tap,ice,warm,outside,room10,room35,fridge,hydration,iceEn};
+  })()`);
+  assert(x.tap.advice.coldTap&&!x.tap.advice.iceWater&&x.tap.text.includes('Koud kraanwater')&&!x.tap.text.includes('ijswater nodig'),JSON.stringify(x.tap));
+  assert(x.ice.advice.iceWater&&x.ice.text.includes('ijswater nodig')&&x.ice.text.includes('weeg daarna opnieuw'),JSON.stringify(x.ice));
+  assert(x.iceEn.text.includes('requires ice water')&&x.iceEn.text.includes('re-weigh exactly'),JSON.stringify(x.iceEn));
+  assert(x.warm.advice.hot&&x.warm.text.includes('relatief warm hoofdwater'),JSON.stringify(x.warm));
+  assert(x.outside.advice.roomOutsideNormal&&x.outside.text.includes('15–30 °C'),JSON.stringify(x.outside));
+  assert(x.room10.advice.roomOutsideNormal&&Number.isFinite(x.room10.advice.water)&&x.room35.advice.roomOutsideNormal&&Number.isFinite(x.room35.advice.water),JSON.stringify({room10:x.room10,room35:x.room35}));
+  assert(x.fridge.advice.fridgeOutsideNormal&&x.fridge.text.includes('2–8 °C'),JSON.stringify(x.fridge));
+  assert(x.hydration.advice.hydrationOutsideNormal&&x.hydration.text.includes('55–75%'),JSON.stringify(x.hydration));
+});
+
+test('hot-water yeast warning fires only when yeast contacts main water',()=>{
+  defaults();
+  const x=run(`(()=>{
+    exactOverride=null;currentLang='nl';currentMethod='hand';const base=calc();
+    const auto={...base,autolyse:true};auto.doughTemp=predictFinalDoughTemp(41,auto,'hand');
+    const autoAdvice=waterTempAdvice(auto),autoText=waterTemperatureGuidance(auto,autoAdvice).notes;
+    const direct={...base,autolyse:false};direct.doughTemp=predictFinalDoughTemp(41,direct,'hand');
+    const directAdvice=waterTempAdvice(direct),directText=waterTemperatureGuidance(direct,directAdvice).notes;
+    currentMethod='kitchenaid';return {autoAdvice,autoText,directAdvice,directText};
+  })()`);
+  assert(x.autoAdvice.water>=40&&!x.autoAdvice.yeastHot&&x.autoAdvice.handAutolyseWarm&&x.autoText.includes('koude autolyse')&&!x.autoText.includes('bij de gist'),JSON.stringify(x));
+  assert(x.directAdvice.water>=40&&x.directAdvice.yeastHot&&!x.directAdvice.handAutolyseWarm&&x.directText.includes('directe route')&&x.directText.includes('bij de gist'),JSON.stringify(x));
+});
+
+test('unattainable DDT guidance leads with the model limitation',()=>{
+  defaults();
+  const x=run(`(()=>{
+    exactOverride=null;currentMethod='kitchenaid';const base=calc();
+    const c={...base,room:15,doughTemp:35},advice=waterTempAdvice(c);
+    currentLang='nl';const nl=waterTemperatureGuidance(c,advice).mainLine;
+    currentLang='en';const en=waterTemperatureGuidance(c,advice).mainLine;
+    currentLang='nl';return {advice,nl,en};
+  })()`);
+  assert(!x.advice.achievable&&x.advice.boundary==='high'&&x.advice.hot&&!x.advice.yeastHot&&x.nl.includes('niet haalbaar')&&x.nl.includes('1 en 45 °C'),JSON.stringify(x));
+  assert(x.en.includes('not reachable')&&x.en.includes('between 1 and 45 °C'),JSON.stringify(x));
 });
 
 test('home-mixer guidance is staged, bilingual, and leaves recipe values unchanged',()=>{
@@ -724,11 +942,12 @@ test('autolyse is refrigerated for 30 minutes while hydration rest remains 20 mi
     $('autolyse').checked=false;const handHydrationPrep=prepHours();
     currentMethod='kitchenaid';
     $('autolyse').checked=true;
-    return {autolyse,hydration,machineAutolysePrep,machineHydrationPrep,handAutolysePrep,handHydrationPrep};
+    return {autolyse,hydration,machineAutolysePrep,machineHydrationPrep,handAutolysePrep,handHydrationPrep,prepSource:prepHours.toString()};
   })()`);
   assert(x.autolyse.includes('Autolyse (bloem + water) • 30 min')&&x.autolyse.includes('30 minuten')&&x.autolyse.includes('koelkast'),x.autolyse.slice(0,1800));
   assert(x.hydration.includes('Hydratatierust • 20 min')&&x.hydration.includes('20 minuten'),x.hydration.slice(0,1800));
   assert(x.machineAutolysePrep===0.9&&x.machineHydrationPrep===0.6&&x.handAutolysePrep===0.9&&x.handHydrationPrep===0.75,JSON.stringify(x));
+  assert(x.prepSource.includes('AUTOLYSE_REST_HOURS')&&x.prepSource.includes('DIRECT_REST_HOURS'),x.prepSource);
 });
 
 test('displayed reserve-water portions add up to the displayed total',()=>{

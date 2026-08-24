@@ -28,6 +28,11 @@ const V1_1_1_RELEASE_BASELINE={
   css:'8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052',
   javascript:'db8d26918051d97d99a6e60f62da1f4970202097e4a91f1dc0e39a2c12d5a6ac'
 };
+const V1_2_0_CANDIDATE_BASELINE={
+  singleFile:'2f66d6162898c30b2a81347770cca990f1f6f1e0c5209b8c1efd30ff257a00bb',
+  css:'8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052',
+  javascript:'938be7cf4d8ae0b3c96a3f1ca4c19424d384e82bb647eff8ed31f3b08a5a9d35'
+};
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}
 
@@ -62,11 +67,14 @@ pass('historical v1.0.0 baseline hashes remain documented');
 for(const hash of Object.values(V1_1_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.1.0 baseline hash is missing from product guardrails: ${hash}`);
 pass('released v1.1.0 hashes are pinned and documented');
 
-assert(sha256(bundledHtml)===V1_1_1_RELEASE_BASELINE.singleFile,'Standalone v1.1.1 release baseline changed without approval.');
-assert(sha256(css)===V1_1_1_RELEASE_BASELINE.css,'CSS v1.1.1 release baseline changed without approval.');
-assert(sha256(combinedJavaScript)===V1_1_1_RELEASE_BASELINE.javascript,'JavaScript v1.1.1 release baseline changed without approval.');
 for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.1.1 baseline hash is missing from product guardrails: ${hash}`);
-pass('released v1.1.1 hashes are pinned and documented');
+pass('released v1.1.1 hashes remain documented');
+
+assert(sha256(bundledHtml)===V1_2_0_CANDIDATE_BASELINE.singleFile,'Standalone v1.2.0 candidate baseline changed without approval.');
+assert(sha256(css)===V1_2_0_CANDIDATE_BASELINE.css,'CSS v1.2.0 candidate baseline changed without approval.');
+assert(sha256(combinedJavaScript)===V1_2_0_CANDIDATE_BASELINE.javascript,'JavaScript v1.2.0 candidate baseline changed without approval.');
+for(const hash of Object.values(V1_2_0_CANDIDATE_BASELINE))assert(guardrails.includes(hash),`Approved v1.2.0 candidate hash is missing from product guardrails: ${hash}`);
+pass('approved v1.2.0 calculation candidate is pinned and documented');
 
 new vm.Script(combinedJavaScript,{filename:'combined-refactor.js'});
 pass('recombined JavaScript parses successfully');
@@ -124,4 +132,4 @@ assert(JSON.stringify(headingLevels(readmeEnglish))===JSON.stringify(headingLeve
 assert(/README\.md.*canonieke/i.test(readmeDutch),'Dutch README must identify README.md as the canonical version.');
 pass('English and Dutch README files retain equivalent structure and canonical-language guidance');
 
-console.log('\n14 refactor-structure tests passed');
+console.log('\n15 refactor-structure tests passed');

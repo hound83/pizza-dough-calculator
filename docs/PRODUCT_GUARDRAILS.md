@@ -73,6 +73,16 @@ These hashes cover the released usability patch: a 30 cm / 220 g default for **M
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
 | combined JavaScript | `db8d26918051d97d99a6e60f62da1f4970202097e4a91f1dc0e39a2c12d5a6ac` |
 
+## Approved v1.2.0 calculation candidate baseline
+
+These hashes cover the reviewed calculation candidate: staged heat-capacity DDT prediction, separate autolyse/direct routes, main versus reserved water, honest solver boundaries, normal-kitchen warnings, and version 1.2.0 metadata. They are candidate evidence rather than a release tag; all historical release hashes above remain immutable.
+
+| Artefact | SHA-256 |
+|---|---|
+| standalone `index.html` | `2f66d6162898c30b2a81347770cca990f1f6f1e0c5209b8c1efd30ff257a00bb` |
+| CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
+| combined JavaScript | `938be7cf4d8ae0b3c96a3f1ca4c19424d384e82bb647eff8ed31f3b08a5a9d35` |
+
 ## v1.1.0 Basic/Full display contract
 
 - Basic and Full are display modes independent of the Dough only, Dough + sauce, and Complete pizzas output modes.
@@ -116,6 +126,75 @@ These hashes cover the released usability patch: a 30 cm / 220 g default for **M
 - Dynamic count text uses a true singular and plural in both languages, including `1 pizza` / `2 pizza's` and `1 deegbal` / `2 deegballen`, with the corresponding English forms. English time grammar follows the rounded number actually displayed, so a value shown as `1` always uses `hour` rather than `hours`.
 - Practical rounding displays the calculated per-ball dough weight as a whole gram everywhere it is shown. With practical rounding disabled, the same shared formatter may show one decimal. Calculations retain their full internal precision in both modes.
 - The persistence key and storage schema remain `pizzaCalcV51` / schema 51 because no stored field or interpretation changes.
+
+## v1.2.0 staged water-temperature contract
+
+v1.2.0 replaces the route-blind three-factor DDT rule with a staged, heat-capacity-weighted household model. This is an approved functional change over v1.1.1. It is science-informed and operationally explicit, but it is not a calorimetrically validated claim for every mixer, bowl, batch, or kitchen.
+
+### Intended kitchen envelope
+
+- The calibrated core is room temperature 15–30 °C, refrigerator temperature 2–8 °C, target final dough temperature 20–27 °C, and hydration 55–75%.
+- Existing input bounds remain wider for defensive use: room 10–35 °C, refrigerator 0–15 °C, target dough temperature 10–35 °C, and hydration 45–85%.
+- Room values below 15 °C or above 30 °C continue to calculate but are labelled outside the normal kitchen validation range. The 10 °C and 35 °C endpoints are robustness checks, not calibration points.
+- The practical main-water solver interval is 1–45 °C. An unbracketed target is reported as unattainable with its boundary prediction; it is never silently presented as if the boundary reaches the target.
+
+### Thermal stage order
+
+The advised temperature applies only to the **main water** used in the first mix. The small reserved portion remains covered at room temperature and is added after the rest. The prediction order is fixed:
+
+1. heat-capacity equilibrium of flour at room temperature and main water at the advised temperature;
+2. effective first-mix temperature rise;
+3. first-order rest exchange for 0.5 hours at refrigerator temperature with autolyse, or 1/3 hour at room temperature without autolyse;
+4. heat-capacity equilibrium with reserved water, salt, and oil at room temperature;
+5. effective route-specific post-rest temperature rise.
+
+Shared constants are:
+
+| Constant | Value |
+|---|---:|
+| flour specific heat | 1.850 J/(g·K) |
+| water specific heat | 4.186 J/(g·K) |
+| salt specific heat | 0.900 J/(g·K) |
+| oil specific heat | 2.000 J/(g·K) |
+| effective rest tau | 2.27 h |
+| refrigerated autolyse | 0.5 h |
+| direct hydration rest | 1/3 h |
+
+Salt and oil may legitimately be zero. Thermal helpers validate every part, conserve capacity, and never return `NaN` or `Infinity`. Fermentation simulation and DDT prediction share the same first-order temperature helper, while planning reads the shared rest durations without deriving elapsed preparation time from the thermal equation.
+
+### Effective mixing terms
+
+The production terms are fixed temperature rises at the 880 g / 63% hydration reference recipe. They absorb mixer power, programme wording, bowl coupling, ambient exchange, evaporation, and handling. They are fitted model terms, not fixed energies, measurements, or universal brand properties.
+
+| Method | First mix | Post-rest, autolyse | Post-rest, direct |
+|---|---:|---:|---:|
+| hand | 0.200 °C | 0.800 °C | 0.800 °C |
+| KitchenAid | 1.489 °C | 6.402 °C | 4.168 °C |
+| Kenwood | 1.683 °C | 6.252 °C | 4.809 °C |
+| spiral mixer | 2.124 °C | 6.796 °C | 4.272 °C |
+
+The three machine/autolyse reference outputs at DDT 24 °C, room 21 °C, refrigerator 4 °C, and the default recipe are continuity anchors: KitchenAid 18.0 °C main water, Kenwood 18.0 °C, and spiral mixer 16.0 °C. The nominal direct outputs (15.9, 14.3, and 14.6 °C respectively) and hand outputs (32.9 °C autolyse, 25.3 °C direct) are versioned model scenarios, not equally precise physical truths.
+
+The spiral-mixer direct term uses the KitchenAid direct/autolyse work ratio of approximately 0.717 because the Pro programme is unspecified. It is the lowest-confidence machine output. The workflow must not be rewritten to imitate KitchenAid merely to make this placeholder appear derived. Hand/autolyse is also low confidence because evaporation and worktop conduction are not separately identified.
+
+No unvalidated batch-size exponent is applied. Exact numerical anchors concern the approximately 880 g reference batch. The existing mixer-capacity warning also explains that water-temperature confidence decreases near mixer capacity or for a materially different batch. A ±30% change in machine heat terms moves advised water by roughly 7–11.5 °C, so whole-degree presentation and the existing post-knead measurement remain mandatory.
+
+### Solver and user guidance
+
+- Once a target is bracketed, bisection converges to a sub-0.01 °C internal bracket. The prediction is affine and strictly increasing in main-water temperature; unachievable metadata is a bracketing result, not a convergence failure.
+- At the reference recipe, the room-temperature derivative of advised water is pinned at −0.836 ±0.02 on the autolyse route and −1.106 ±0.02 on the direct route for tau 2.27 h. These pins are method-independent and detect mass-selection, missing-term, and unit errors that fitted point anchors can hide.
+- Whole-degree water presentation changes predicted dough temperature by only about ±0.22 °C on the autolyse route and ±0.24 °C on the direct route, within the existing ±1 °C measurement deadband.
+- Handling bands follow the whole-degree value shown to the user. At 10–14 °C, guidance says measured cold tap water may be sufficient. Below 10 °C, it explains how to chill with ice, remove remaining ice, and re-weigh the main water. Above 32 °C, it adds a contextual warm-water caution.
+- The ≥40 °C yeast-contact warning appears only on the direct route. Hand/autolyse at or above roughly 38 °C instead gets an uncertainty hint and may suggest disabling refrigerated autolyse and recalculating; the app never switches routes automatically or calls the routes equivalent.
+- The old statement that refrigerated autolyse may lower the endpoint “further” is prohibited because that phase is already inside the calculation.
+- The room-temperature reserve assumption costs less than about 0.25 °C at the reference machine recipes and can approach 1 °C only at warned matrix extremes. Workflow copy therefore explicitly says not to chill the reserve with the main water.
+- AVPN's official 16–22 °C water range remains the primary reference in its preset. Nominal agreement with that broad range is a sanity snapshot, not validation or calibration evidence.
+
+### Explicit exclusions
+
+- The yeast activity curve, covered-ball thermal constant, storage key, and schema 51 remain unchanged.
+- No new Basic input, batch exponent, calibration UI, automatic learning, box selector, or cold-phase measurement is added.
+- Anonymous feedback is not part of v1.2.0. Its existing candidate is deferred, rebased after this calculation release, and proposed separately as v1.3.0.
 
 ## Change checklist
 
