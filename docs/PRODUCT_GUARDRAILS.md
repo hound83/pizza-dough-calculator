@@ -83,6 +83,16 @@ These hashes cover the reviewed calculation candidate: staged heat-capacity DDT 
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
 | combined JavaScript | `938be7cf4d8ae0b3c96a3f1ca4c19424d384e82bb647eff8ed31f3b08a5a9d35` |
 
+## Approved v1.3.0 feedback candidate baseline
+
+These hashes cover the v1.3.0 candidate that adds optional anonymous feedback on top of the unchanged v1.2.0 calculation candidate. They are pre-production evidence rather than a release tag; the Worker endpoint and Turnstile site key remain intentionally blank until deployment and the real end-to-end issue check.
+
+| Artefact | SHA-256 |
+|---|---|
+| standalone `index.html` | `e61ba35b31976b37ef3edf2ea81e3f395597ae3da39a21932f405494fd394b8b` |
+| CSS | `dae8b7731125c3540d3070b0940290052cc93d1d86db17d398643b215b5c5f7e` |
+| combined JavaScript | `119b40d3e858240dbe6e336f2701962efa764f208e82b07c8b3c6fc9948c355d` |
+
 ## v1.1.0 Basic/Full display contract
 
 - Basic and Full are display modes independent of the Dough only, Dough + sauce, and Complete pizzas output modes.
@@ -194,7 +204,19 @@ No unvalidated batch-size exponent is applied. Exact numerical anchors concern t
 
 - The yeast activity curve, covered-ball thermal constant, storage key, and schema 51 remain unchanged.
 - No new Basic input, batch exponent, calibration UI, automatic learning, box selector, or cold-phase measurement is added.
-- Anonymous feedback is not part of v1.2.0. Its existing candidate is deferred, rebased after this calculation release, and proposed separately as v1.3.0.
+- Anonymous feedback is not part of the v1.2.0 calculation baseline. It is added separately in v1.3.0.
+
+## v1.3.0 anonymous-feedback contract
+
+- Feedback is an optional online feature. Every calculator, recipe, fermentation, mixer, picker, storage, and offline workflow remains usable when the feedback endpoint, network, Turnstile, Worker, or GitHub is unavailable.
+- A person submitting feedback does not need a GitHub account. A secured server-side adapter creates the issue; no GitHub credential or Turnstile secret may appear in source HTML, browser JavaScript, a request response, or committed configuration.
+- Feedback is stored as a public GitHub issue. The form must disclose this before submission, has no contact field, warns against personal information, and the server rejects email addresses rather than publishing them accidentally. The modal also discloses that Cloudflare Turnstile is loaded for the anti-bot check and links to Cloudflare's privacy policy.
+- The accepted categories are Bug/technical problem, Idea/improvement, Calculation/recipe, and Language/translation. Summary, message, optional reproduction steps, honeypot, language, Turnstile token, and the explicitly opted-in diagnostic object are the complete request contract.
+- Safe diagnostics are disabled by default. When enabled, they may contain only app version, interface language, Basic/Full display mode, output mode, wizard page, and viewport. Recipe inputs, ingredient amounts, fermentation values, temperatures, pizza selections, dough-log entries, local storage, user-agent strings, and unexpected keys must never be submitted or persisted.
+- Turnstile is loaded only after opening a configured feedback form and its token is always verified server-side with the `pizza_feedback` action and expected production hostname. Exact allowed origins, a fail-closed native issue rate limit after successful Turnstile validation and before GitHub, bounded JSON and text sizes, neutralized GitHub mentions, and safe generic error responses are mandatory backend controls.
+- A downloaded `file://` copy never attempts to embed Turnstile. It explains that submission requires the live calculator while preserving all offline calculator behavior.
+- Feedback fields are ephemeral and are excluded from `saveState()`. The persistence key and schema remain `pizzaCalcV51` / schema 51 because no recipe state or stored-field interpretation changes.
+- The release is not production-ready while the public Turnstile site key or feedback API URL is blank. Before tagging v1.3.0, the deployed Worker, real Turnstile validation, and creation of a disposable end-to-end GitHub issue must be verified, followed by removal or closure of that disposable issue.
 
 ## Change checklist
 

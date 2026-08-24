@@ -4,18 +4,18 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v1.2.0_kandidaat-f0b45a)](docs/V1.2.0_CALCULATION_MODEL.md)
-[![Tests](https://img.shields.io/badge/regressietests-85%2F85_groen-76c990)](tests/test_v50.js)
+[![Versie](https://img.shields.io/badge/versie-v1.3.0_kandidaat-f0b45a)](docs/Claude_v1.3.0_feedback_handoff.md)
+[![Tests](https://img.shields.io/badge/regressietests-86%2F86_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
 Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fermentatie, saus, toppings en een compleet praktisch stappenplan.
 
-De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies de standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
+De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit de standalone root-`index.html` voor GitHub Pages en lokaal gebruik. De calculator zelf heeft geen runtime-dependency; v1.3-feedback is een optionele online actie die de anti-botcontrole pas bij openen laadt.
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.1.1-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
 
-> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.1.1 is de huidige publieke release; deze branch is de v1.2.0-kandidaat voor het gefaseerde watertemperatuurmodel en behoudt opslagschema 51.
+> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.1.1 is de huidige publieke release; deze branch bouwt de achterwaarts compatibele v1.3.0-feedbackkandidaat op het geaccepteerde v1.2.0-rekenmodel zonder opslagschema 51 te wijzigen.
 
 ## Wat kan de calculator?
 
@@ -47,6 +47,7 @@ Belangrijkste mogelijkheden:
 - planning terugrekenen vanaf een gewenste bakdag en baktijd;
 - afvinkbaar stappenplan, printweergave en kopieerbare recepten;
 - optionele live temperatuurmetingen en een lokaal deeglogboek;
+- optionele feedback in de app zonder GitHub-account, transparant opgeslagen als openbaar GitHub-issue;
 - volledige Nederlandse en Engelse interface.
 
 ## Zo gebruik je hem
@@ -57,6 +58,7 @@ Belangrijkste mogelijkheden:
 4. Stel fermentatie, temperaturen en eventueel een gewenste baktijd in.
 5. Voeg in de modus Volledige pizza’s per deegbol een pizzarecept toe.
 6. Volg daarna het berekende stappenplan van mengen tot bakken.
+7. Gebruik eventueel **Feedback** om zonder GitHub-login een bug of idee te melden.
 
 Alle berekeningen worden direct bijgewerkt. Ingevoerde waarden en voortgang worden lokaal in de browser bewaard, zodat een refresh je recept niet wist.
 
@@ -71,14 +73,17 @@ Dit is bewust **geen gevalideerd laboratoriummodel** en ook geen officiële AVPN
 ## Taal, privacy en opslag
 
 - De interface kan direct wisselen tussen Nederlands en Engels.
-- Er is geen account of server nodig.
+- Voor berekeningen, recepten, opslag en het deeglogboek is geen account, server of netwerk nodig.
 - Receptinstellingen, voortgang en het deeglogboek worden alleen via `localStorage` in je eigen browser bewaard.
-- De app verstuurt geen recept- of logboekgegevens naar een backend.
+- Feedback versturen is een aparte, expliciete online actie. Daarbij gaan nooit receptwaarden, deeglogboekgegevens of browseropslag mee.
+- Veilige technische context staat standaard uit en bevat bij aanvinken alleen appversie, taal, modi, wizardpagina en schermgrootte.
+- Feedbacktekst wordt als openbaar GitHub-issue opgeslagen. Het formulier heeft geen contactveld en waarschuwt tegen persoonsgegevens.
+- Bij het openen van een geconfigureerd feedbackformulier wordt Cloudflare Turnstile voor de anti-botcontrole geladen; het venster meldt dit en linkt naar Cloudflare's privacybeleid.
 - `Reset` wist de lokaal opgeslagen calculatorstate; de taalkeuze blijft behouden.
 
 ## Lokaal draaien
 
-De eenvoudigste manier is `index.html` downloaden en rechtstreeks in een moderne browser openen.
+De eenvoudigste manier is `index.html` downloaden en rechtstreeks in een moderne browser openen. Alle calculatorfuncties werken dan; het feedbackformulier verwijst offline kopieën naar de live calculator omdat Cloudflare Turnstile geen `file://`-pagina's ondersteunt.
 
 Je kunt de repository ook klonen:
 
@@ -110,9 +115,11 @@ Na publicatie staat de pagina normaal op:
 https://<gebruikersnaam>.github.io/<repositorynaam>/
 ```
 
+GitHub Pages kan zelf niet veilig anonieme issues maken. De optionele v1.3-feedbackknop gebruikt daarom de aparte adapter onder [`feedback-worker/`](feedback-worker/). De eenmalige Cloudflare-, Turnstile- en repository-beperkte GitHub-configuratie staat in [`feedback-worker/README.md`](feedback-worker/README.md). Zonder deze adapter blijft de calculator volledig bruikbaar.
+
 ## Ontwikkelen en testen
 
-De gepubliceerde applicatie heeft geen runtime-dependencies. Voor ontwikkeling is Node.js 20 of nieuwer nodig; Playwright is de enige ontwikkeldependency en verzorgt de echte Chromium-controles.
+De calculator zelf heeft geen runtime-dependencies. Voor ontwikkeling is Node.js 20 of nieuwer nodig; Playwright verzorgt de echte Chromium-controles. De optionele feedbackadapter houdt zijn vastgepinde Wrangler-tooling in een apart package, zodat die nooit in de standalone calculatorbundle komt.
 
 Installeer de reproduceerbare ontwikkelomgeving eenmalig:
 
@@ -127,13 +134,14 @@ Voer daarna de complete suite uit:
 npm test
 ```
 
-Huidige uitslag:
+Testinventaris van de kandidaat:
 
 ```text
 15 refactor-structure tests passed
-85 bundle regression tests passed
-85 source regression tests passed
-35 Chromium browser/layout tests passed
+13 feedback Worker security tests passed
+86 bundle regression tests passed
+86 source regression tests passed
+41 Chromium browser/layout checks
 ```
 
 De suite controleert onder meer:
@@ -149,7 +157,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de goedgekeurde v1.2-kandidaatbaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater en routecorrecte waarschuwingen voor heet water. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de twaalf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de goedgekeurde v1.2-rekenbaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte tests bewaken de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water en de succes-, niet-geconfigureerd-, privacy-, payload- en retryroutes van het feedbackvenster. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown. De Workersuite injecteert Turnstile- en GitHub-responses en bewijst dat secrets en receptdata niet over de API-grens kunnen gaan.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -169,6 +177,7 @@ Vanaf de eerste golden release gebruikt het project semantic versioning:
 | **v1.1.0** | Nieuwe achterwaarts compatibele functionaliteit, zoals Basis/Uitgebreid |
 | **v1.1.1** | Achterwaarts compatibele gebruikscorrectie na v1.1.0 |
 | **v1.2.0** | Gefaseerde, route-afhankelijke berekening van hoofdwater en einddeegtemperatuur |
+| **v1.3.0** | Optionele anonieme feedbackfunctionaliteit bovenop v1.2.0 |
 | **v2.0.0** | Alleen nodig bij een werkelijk brekende wijziging |
 
 Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigraties, testbestanden en auditdocumenten. Ze worden niet langer als publieke productversie doorgeteld.
@@ -180,11 +189,13 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 | [`index.html`](index.html) | Gegenereerde standalone publicatie voor Pages en lokaal gebruik |
 | [`src/index.html`](src/index.html) | Semantische bron-HTML en de vaste laadvolgorde van de statische assets |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Volledige presentatie en responsive layout |
-| [`src/assets/js/`](src/assets/js/) | Elf geordende modules per verantwoordelijkheid |
+| [`src/assets/js/`](src/assets/js/) | Twaalf geordende modules per verantwoordelijkheid |
+| [`feedback-worker/`](feedback-worker/) | Optionele beveiligde adapter van anonieme feedback naar GitHub Issues |
 | [`tools/bundle.js`](tools/bundle.js) | Dependencyvrije standalone bundler en driftcontrole |
 | [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architectuur-, integriteits- en golden-equivalentietests |
 | [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromiumtests voor laden, responsive layout en pickerinteractie |
+| [`tests/feedback-worker.test.mjs`](tests/feedback-worker.test.mjs) | Beveiligingstests voor CORS, privacy, Turnstile en de GitHub-adapter |
 | [`playwright.config.js`](playwright.config.js) | Reproduceerbare browsertestconfiguratie voor lokaal gebruik en CI |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Modulegrenzen, afhankelijkheden en wijzigingsregels |
 | [`docs/PRODUCT_GUARDRAILS.md`](docs/PRODUCT_GUARDRAILS.md) | Harde productafspraken die niet stilzwijgend mogen wijzigen |
@@ -197,14 +208,14 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Release:** v1.1.1 is de huidige release; v1.2.0 is de kandidaat voor het gefaseerde rekenmodel. Tag v1.0.0 blijft de onveranderlijke historische golden baseline.
-- **Huidige architectuur:** statische bron-HTML, CSS en elf JavaScriptmodules genereren de geteste standalone publicatie voor GitHub Pages.
+- **Release:** v1.1.1 is de huidige release; v1.2.0 is de geaccepteerde kandidaat voor het gefaseerde rekenmodel en v1.3.0 is de daarop gebouwde feedbackkandidaat. Tag v1.0.0 blijft de onveranderlijke historische golden baseline.
+- **Huidige architectuur:** statische bron-HTML, CSS en twaalf JavaScriptmodules genereren de standalone publicatie; een aparte optionele Worker verzorgt anonieme issuecreatie.
 - **Audit:** de refactor, v1.1.0-featureversie en v1.1.1-patch zijn onafhankelijk door Claude gecrosscheckt.
 - **Kleine follow-up:** voor zeven uitgebreide veldlabels blijft een niet-blokkerende toegankelijkheidsverbetering mogelijk.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
 - **v1.1.1:** een persoonlijk standaardrecept van 30 cm, praktische percentagebediening, gecorrigeerde tweetalige enkelvoud/meervoud-teksten en consistente weergave van deegbolgewicht.
 - **v1.2.0-kandidaat:** een op warmtecapaciteit gebaseerd gefaseerd DDT-model, aparte autolyse/directe routes, expliciet hoofd- versus reservewater, eerlijke haalbaarheidsmelding en normale-keukenbegeleiding.
-- **v1.3.0-voorstel:** de bestaande kandidaat voor anonieme feedback pas na acceptatie van v1.2.0 opnieuw baseren.
+- **v1.3.0-kandidaat:** accountvrije feedback in de app met duidelijke openbare opslagmelding, optionele veilige diagnostiek, server-side anti-botvalidatie en geen migratie van calculatorstate.
 
 ## Achtergrond
 

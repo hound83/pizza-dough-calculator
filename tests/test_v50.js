@@ -170,12 +170,28 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('v1.2.0 calculation candidate keeps storage schema 51 with v50 migration',()=>{
+test('v1.3.0 feedback candidate keeps the v1.2 calculation model and storage schema 51',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='1.2.0'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v1.2.0'&&x.titleEn==='Pizza dough calculator v1.2.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v1.2.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v1.2.0</title>'),'static document title is not v1.2.0');
+  assert(x.app==='1.3.0'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v1.3.0'&&x.titleEn==='Pizza dough calculator v1.3.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v1.3.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v1.3.0</title>'),'static document title is not v1.3.0');
+});
+
+test('feedback is opt-in, excludes recipe data, and does not change storage schema',()=>{
+  setField('feedbackCategory','bug');
+  setField('feedbackSummary','Picker valt buiten beeld');
+  setField('feedbackMessage','De onderste knop is op mijn telefoon niet zichtbaar.');
+  setField('feedbackSteps','Open de picker en kies Salami.');
+  setField('feedbackWebsite','');
+  setField('feedbackIncludeDiagnostics','',{checked:false,type:'checkbox'});
+  ['feedbackCategory','feedbackSummary','feedbackMessage','feedbackSteps','feedbackWebsite','feedbackIncludeDiagnostics'].forEach(id=>{get(id).setAttribute('data-feedback-control','');});
+  const x=run(`(()=>{window.innerWidth=390;window.innerHeight=844;_feedbackTurnstileToken='test-token';const without=buildFeedbackPayload();$('feedbackIncludeDiagnostics').checked=true;const withDiagnostics=buildFeedbackPayload();saveState();return {without,withDiagnostics,stored:JSON.parse(SAFE.get(SAVE_KEY))};})()`);
+  assert(x.without.diagnostics===undefined,JSON.stringify(x.without));
+  assert(JSON.stringify(x.withDiagnostics.diagnostics)===JSON.stringify({appVersion:'1.3.0',language:'nl',experienceMode:'basic',outputMode:'full',wizardPage:0,viewport:'390x844'}),JSON.stringify(x.withDiagnostics));
+  assert(!('feedbackSummary' in x.stored)&&!('feedbackMessage' in x.stored)&&x.stored.version===51,JSON.stringify(x.stored));
+  assert(html.includes('name="pizza-feedback-api"')&&html.includes('id="feedbackButton"')&&html.includes('id="feedbackModal"'),'feedback UI contract is incomplete');
+  assert(!/<button[^>]+id="feedbackButton"[^>]+onclick=/i.test(html),'new feedback interaction uses an inline handler');
 });
 
 test('standard preset uses a 30 cm peel-friendly default and practical percentage steps',()=>{
