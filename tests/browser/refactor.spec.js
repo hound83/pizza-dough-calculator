@@ -255,7 +255,13 @@ for(const publication of PUBLICATIONS){
       await expect(page.locator('#pizzaPickerPreview .sauce-choice-disclosure')).not.toHaveAttribute('open','');
       await expect(page.locator('#pizzaPickerPreview .sauce-choice-current')).toContainText('Pesto');
 
+      // The language switch sits behind the modal by design. Close the picker
+      // through its real keyboard interaction, switch language, then reopen it.
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#pizzaPickerOverlay')).not.toHaveClass(/\bopen\b/);
       await page.locator('#langEn').click();
+      await page.locator('#pizzaRecipeAllButton').click();
+      await expect(page.locator('#pizzaPickerOverlay')).toHaveClass(/\bopen\b/);
       await expect(page.locator('#pizzaPickerPreview .sauce-choice-action')).toHaveText('Choose another sauce');
       await expect(page.locator('#sauceType option')).toHaveCount(7);
     });
