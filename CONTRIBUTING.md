@@ -6,6 +6,7 @@
 - Keep functional changes, architecture changes, and data changes in separate commits.
 - Change the storage key or schema only with an explicit migration path and regression test.
 - Use `addEventListener` for new interactions; do not add new inline handlers.
+- Keep feedback controls isolated from calculator event wiring and persistence.
 
 ## Language policy
 
@@ -25,6 +26,8 @@
 - Put new catalogue data in `catalog.js` and validate references with an invariant test.
 - Document every intentional deviation from the v1.0.0 golden hashes.
 - Treat generated root `index.html` as a distribution artefact: edit `src/`, run `npm run bundle`, and commit both source and bundle.
+- Never commit `.dev.vars`, GitHub tokens, Turnstile secrets, or copied production responses. Public Worker variables still require review before deployment.
+- Treat public feedback as untrusted input. Preserve the server-side category allowlist, body limits, email rejection, mention neutralization, exact CORS origins, and Turnstile action/hostname validation.
 
 ## Required checks
 
@@ -33,6 +36,8 @@ npm test
 ```
 
 Changes to layout, focus, native events, persistence, or asset loading also require a real browser test. For responsive changes, verify at least 320, 390, 430, 760, 1024, and 1280 px.
+
+Feedback changes additionally require `npm run test:worker`. A v1.2 production release also requires a real submission through the deployed Worker and Turnstile widget; mocked browser tests alone do not prove secret or hostname configuration.
 
 ## Review checklist
 
@@ -43,4 +48,6 @@ Changes to layout, focus, native events, persistence, or asset loading also requ
 - [ ] Storage compatibility and AVPN rules remain intact or are explicitly migrated.
 - [ ] Dutch and English have both been checked.
 - [ ] Relevant keyboard and mobile scenarios have been tested in a real browser.
+- [ ] Feedback changes send no recipe/log/storage data and expose no credential.
+- [ ] Production feedback setup has passed a disposable end-to-end issue submission before release.
 - [ ] README, architecture documentation, or audit handoff was updated when the structure changed.
