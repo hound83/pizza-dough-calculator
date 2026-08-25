@@ -37,6 +37,26 @@ test('test server handles the implicit browser favicon request',async({request})
   expect((await response.body()).length).toBe(0);
 });
 
+async function waitForStablePickerPreview(page){
+  const preview=page.locator('#pizzaPickerPreview');
+  await expect(preview.locator('.sauce-choice-disclosure')).toHaveCount(1);
+  // Opening the modal can be followed by one late preview render. Wait until
+  // the preview DOM has been quiet before a test targets one of its controls.
+  await page.evaluate(()=>new Promise(resolve=>{
+    const root=document.querySelector('#pizzaPickerPreview');
+    let quietTimer=null;
+    const observer=new MutationObserver(()=>schedule());
+    const done=()=>{observer.disconnect();resolve();};
+    const schedule=()=>{
+      if(quietTimer!==null)clearTimeout(quietTimer);
+      quietTimer=setTimeout(done,200);
+    };
+    observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true});
+    schedule();
+  }));
+  await expect(preview.locator('.sauce-choice-disclosure')).toHaveCount(1);
+}
+
 async function openPicker(page,publication){
   await page.goto(publication.path,{waitUntil:'load'});
   await page.locator('[data-mode-card="full"]').click();
@@ -44,6 +64,7 @@ async function openPicker(page,publication){
   await page.locator('#pizzaRecipeAllButton').click();
   await expect(page.locator('#pizzaPickerOverlay')).toHaveClass(/\bopen\b/);
   await expect(page.locator('#pizzaPickerList .picker-item').first()).toBeVisible();
+  await waitForStablePickerPreview(page);
 }
 
 for(const publication of PUBLICATIONS){
@@ -54,7 +75,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.2.0');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.2.1');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -63,7 +84,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.2.0',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.2.1',hasCalculator:true,horizontalOverflow:0});
         expect(failures).toEqual([]);
       });
     }
@@ -233,6 +254,66 @@ for(const publication of PUBLICATIONS){
       await expect(weigh).toContainText('op deze directe route');
       await expect(weigh).toContainText('≥40 °C bij de gist');
       await expect(weigh).not.toContainText('handkneden met koude autolyse');
+    });
+
+    test('keeps recipe sauce alternatives collapsed until requested',async({page})=>{
+      await page.setViewportSize({width:1280,height:900});
+      await openPicker(page,publication);
+
+      const disclosure=page.locator('#pizzaPickerPreview .sauce-choice-disclosure');
+      await expect(disclosure).toBeVisible();
+      await expect(disclosure).not.toHaveAttribute('open','');
+      await expect(disclosure.locator('.sauce-choice-current')).toContainText('San Marzano');
+      await expect(disclosure.locator('.sauce-choice-options')).toBeHidden();
+
+      await disclosure.locator('summary').click();
+      await expect(disclosure).toHaveAttribute('open','');
+      await expect(disclosure.locator('.sauce-choice-options')).toBeVisible();
+      await expect(disclosure.locator('[data-sauce-group]')).toHaveCount(2);
+      await expect(disclosure.locator('[data-sauce-choice]')).toHaveCount(7);
+
+      await disclosure.locator('[data-sauce-choice="pesto"]').click();
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-disclosure')).not.toHaveAttribute('open','');
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-current')).toContainText('Pesto');
+
+      // The language switch sits behind the modal by design. Close the picker
+      // through its real keyboard interaction, switch language, then reopen it.
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#pizzaPickerOverlay')).not.toHaveClass(/\bopen\b/);
+      await page.locator('#langEn').click();
+      await page.locator('#pizzaRecipeAllButton').click();
+      await expect(page.locator('#pizzaPickerOverlay')).toHaveClass(/\bopen\b/);
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-action')).toHaveText('Choose another sauce');
+      await expect(page.locator('#sauceType option')).toHaveCount(7);
+    });
+
+    test('keeps per-ball sauce customization collapsed and functional',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="full"]').click();
+      await page.evaluate(()=>showPage(3));
+
+      const disclosure=page.locator('#pizzaCustomize .sauce-choice-disclosure').first();
+      await expect(disclosure).toBeVisible();
+      await expect(disclosure).not.toHaveAttribute('open','');
+      await expect(disclosure.locator('.sauce-choice-current')).toContainText('Rood');
+
+      await disclosure.locator('summary').click();
+      await expect(disclosure.locator('[data-sauce-choice]')).toHaveCount(7);
+      await disclosure.locator('[data-sauce-choice="pesto"]').click();
+      await expect(page.locator('#pizzaCustomize .sauce-choice-disclosure').first()).not.toHaveAttribute('open','');
+      await expect(page.locator('#pizzaCustomize .sauce-choice-current').first()).toContainText('Pesto');
+    });
+
+    test('supports keyboard activation of sauce disclosures and choices',async({page})=>{
+      await page.setViewportSize({width:1280,height:900});
+      await openPicker(page,publication);
+
+      const disclosure=page.locator('#pizzaPickerPreview .sauce-choice-disclosure');
+      await disclosure.locator('summary').press('Enter');
+      await expect(disclosure).toHaveAttribute('open','');
+      await disclosure.locator('[data-sauce-choice="bbq"]').press('Enter');
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-disclosure')).not.toHaveAttribute('open','');
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-current')).toContainText('BBQ');
     });
 
     for(const viewport of VIEWPORTS.slice(0,3)){

@@ -74,13 +74,13 @@ function deadlineRecommendation(c,bake){
   let plan;
   if(until<6){
     plan={ferm:'room',bulk:1,ball:Math.max(2,usable-1),cold:0,room:27,
-      labelNl:'nood-same-day rijs',labelEn:'emergency same-day proof'};
+      labelNl:'noodschema voor dezelfde dag',labelEn:'emergency same-day proof'};
   }else if(until<8){
     plan={ferm:'room',bulk:1.5,ball:Math.max(3.5,usable-1.5),cold:0,room:25,
-      labelNl:'korte same-day rijs',labelEn:'short same-day proof'};
+      labelNl:'kort dagschema',labelEn:'short same-day proof'};
   }else if(until<12){
     plan={ferm:'room',bulk:2,ball:Math.max(5,usable-2),cold:0,room:23,
-      labelNl:'same-day rijs',labelEn:'same-day proof'};
+      labelNl:'dagschema',labelEn:'same-day proof'};
   }else if(until<18){
     plan={ferm:'room',bulk:3,ball:Math.max(7,usable-3),cold:0,room:21,
       labelNl:'lange kamertemperatuurrijs',labelEn:'long room-temperature proof'};
@@ -176,7 +176,7 @@ function buildDeadlineAdvice(c){
       ${nl?'Start rond':'Start around'} <b>${niceDate(r.planStart)}</b>.
       ${p.ferm==='room' && p.room>c.room ? `<br>${nl?'Gebruik voor de rijs een warme plek rond':'Use a warm proofing spot around'} <b>${fmt(p.room,0)} °C</b>.` : ''}
       ${r.until<8 ? `<br><b>${nl?'Let op':'Note'}:</b> ${nl
-        ? 'dit is een korte same-day variant en dus een kwaliteitscompromis. Vanaf ongeveer 8 uur sluit de planning beter aan bij gangbare room-temperature pizzarijping; lange koude fermentatie ontwikkelt anders.'
+        ? 'dit is een korte variant voor dezelfde dag en dus een kwaliteitscompromis. Vanaf ongeveer 8 uur sluit de planning beter aan bij gangbare pizzarijs op kamertemperatuur; lange koude fermentatie ontwikkelt zich anders.'
         : 'this is a short same-day version and therefore a quality compromise. From roughly 8 hours onward, the schedule aligns better with common room-temperature pizza proofing; long cold fermentation develops differently.'}` : ''}
     </div>
     <div class="deadline-apply">

@@ -36,6 +36,13 @@ function translateNlText(raw){
   const coreT=core+trail;
 
   const rules=[
+    [/^Bloemsoort$/,'Flour type'],
+    [/^Overige tipo 00 pizzabloem$/,'Other tipo 00 pizza flour'],
+    [/^Manitoba \/ sterke tarwebloem$/,'Manitoba / strong wheat flour'],
+    [/^Nederlandse tarwe-\/patentbloem$/,'Dutch wheat/patent flour'],
+    [/^Zoekopdracht wissen$/,'Clear search'],
+    [/Caputo Pizzeria is officieel W260–280; W270 is precies het midden van dat bereik en daarom een logische standaard voor deze calculator\./,'Caputo Pizzeria is officially W260–280; W270 is exactly the midpoint of that range and therefore a logical default for this calculator.'],
+    [/Afkoeling en opwarming daarna worden automatisch geschat uit de deegmassa en of het deeg als bulk of als losse bollen staat\./,'Cooling and warming afterward are estimated automatically from the dough mass and whether the dough is stored as one bulk or as separate dough balls.'],
     [/^Mijn standaardrecept • 30 cm • 63% • 25 uur$/,'My default recipe • 30 cm • 63% • 25 hours'],
     [/^De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen\. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe\. Het logboek bewaart de informatie als referentie, maar v([0-9.]+) past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan\.$/,'Final dough and refrigerator temperatures are taken directly from the workflow. After baking, add your actual water temperature and assessment. The log keeps the information as reference, but v$1 deliberately does not automatically adjust the DDT, yeast or timing model based on previous bakes.'],
     [/^Maak (.+)$/,'Make $1'],
@@ -312,4 +319,8 @@ function sauceChoiceLabel(sc,short=false){
   if(!sc)return '';
   if(currentLang==='en')return short?(sc.shortEn||sc.short):(sc.labelEn||sc.label);
   return short?sc.short:sc.label;
+}
+function sauceChoiceGroupLabel(group){
+  if(!group)return '';
+  return currentLang==='en'?(group.labelEn||group.label):group.label;
 }

@@ -272,8 +272,9 @@ const pizzaRecipes=[
    items:[['Fior di latte (mozzarella)',85,'g'],['Parmigiano Reggiano (optioneel)',6,'g'],['Basilicum',3,'blaadjes'],['EVOO',5,'g']],
    note:'Tomaat, fior di latte (mozzarella), basilicum en olijfolie. Een klein beetje geraspte Parmigiano is optioneel en kan in de ingrediëntenpicker worden uitgevinkt.'},
   {id:'marinara',name:'Marinara',tag:'Traditioneel',sauce:'marinara',sauceG:80,
-   items:[['Knoflook',1,'teen'],['Oregano',0.5,'g'],['EVOO',5,'g']],
-   note:'Zonder kaas. Simpel, uitgesproken en klassiek.'},
+   items:[['EVOO',5,'g']],
+   note:'Zonder kaas. Knoflook en oregano zitten in de Marinara-saus; werk de pizza af met de extra EVOO uit de toppinglijst.',
+   noteEn:'No cheese. Garlic and oregano are included in the Marinara sauce; finish the pizza with the additional EVOO topping.'},
   {id:'margheritaExtra',name:'Margherita Extra / Bufalina',tag:'Traditioneel',sauce:'sanMarzano',sauceG:80,
    items:[['Mozzarella di bufala',95,'g'],['Parmigiano Reggiano (optioneel)',6,'g'],['Basilicum',3,'blaadjes'],['EVOO',5,'g']],
    note:'Variant met mozzarella di bufala. Laat de buffelmozzarella zeer goed uitlekken; Parmigiano is optioneel.'},
@@ -368,7 +369,7 @@ const pizzaRecipes=[
    items:[['Fior di latte (mozzarella)',60,'g'],['Pittige salami',45,'g'],['Gorgonzola',30,'g']],
    note:'Pittige salami en Gorgonzola; zwaar genoeg om iets rustiger te bakken.'},
 
-  {id:'parmaBurrata',name:'Parmaham & Burrata',tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:70,
+  {id:'parmaBurrata',name:'Parmaham & Burrata',nameEn:'Parma ham & Burrata',tag:'Modern Italiaans',sauce:'sanMarzano',sauceG:70,
    items:[['Fior di latte (mozzarella)',50,'g'],['Prosciutto crudo / Parmaham',60,'g'],['Burrata',70,'g'],['Parmigiano Reggiano',10,'g']],
    after:['Prosciutto crudo / Parmaham','Burrata','Parmigiano Reggiano'],
    note:'Tomaat en lichte mozzarella-basis; Parmaham en burrata na het bakken.'},
@@ -466,7 +467,7 @@ const pizzaRecipes=[
    after:['Mortadella','Stracciatella','Pistache'],
    note:'Pesto dun gebruiken; rijke toppings na het bakken.'},
 
-  {id:'pestoParmaBurrata',name:'Pesto, Parmaham & Burrata',tag:'Modern Italiaans',sauce:'pesto',sauceG:25,
+  {id:'pestoParmaBurrata',name:'Pesto, Parmaham & Burrata',nameEn:'Pesto, Parma ham & Burrata',tag:'Modern Italiaans',sauce:'pesto',sauceG:25,
    items:[['Fior di latte (mozzarella)',40,'g'],['Prosciutto crudo / Parmaham',55,'g'],['Burrata',65,'g'],['Parmigiano Reggiano',10,'g']],
    after:['Prosciutto crudo / Parmaham','Burrata','Parmigiano Reggiano'],
    note:'Pesto als dunne basis, Parmaham en burrata na het bakken.'},
@@ -753,14 +754,18 @@ function tUnit(unit,qty){
 
 function recipeById(id){return pizzaRecipes.find(r=>r.id===id)||pizzaRecipes[0];}
 
-// Alle saustypes zijn nu ook per bol te kiezen. Witte saus, BBQ en NY-saus
-// bestonden wel als object maar waren nergens bereikbaar.
+// Every recipe keeps its intended sauce, while deliberate overrides remain
+// available on demand in two compact groups.
+const SAUCE_CHOICE_GROUPS=[
+  {id:'tomato',label:'Tomaat',labelEn:'Tomato'},
+  {id:'other',label:'Wit & overig',labelEn:'White & other'}
+];
 const SAUCE_CHOICES=[
-  {id:'sanMarzano',label:'🔴 Rood / San Marzano',labelEn:'🔴 Red / San Marzano',short:'🔴 Rood',shortEn:'🔴 Red'},
-  {id:'marinara',  label:'🍅 Marinara',labelEn:'🍅 Marinara',short:'🍅 Marinara',shortEn:'🍅 Marinara'},
-  {id:'ny',        label:'🗽 New York-saus',labelEn:'🗽 New York sauce',short:'🗽 NY',shortEn:'🗽 NY'},
-  {id:'bianca',    label:'⚪ Bianca • olijfolie',labelEn:'⚪ Bianca • olive oil',short:'⚪ Bianca',shortEn:'⚪ Bianca'},
-  {id:'white',     label:'🥛 Romige witte saus • crème fraîche',labelEn:'🥛 Creamy white sauce • crème fraîche',short:'🥛 Romig wit',shortEn:'🥛 Creamy white'},
-  {id:'pesto',     label:'🌿 Pesto',labelEn:'🌿 Pesto',short:'🌿 Pesto',shortEn:'🌿 Pesto'},
-  {id:'bbq',       label:'🍖 BBQ',labelEn:'🍖 BBQ',short:'🍖 BBQ',shortEn:'🍖 BBQ'}
+  {id:'sanMarzano',group:'tomato',label:'🔴 Rood / San Marzano',labelEn:'🔴 Red / San Marzano',short:'🔴 Rood',shortEn:'🔴 Red'},
+  {id:'marinara',  group:'tomato',label:'🍅 Marinara',labelEn:'🍅 Marinara',short:'🍅 Marinara',shortEn:'🍅 Marinara'},
+  {id:'ny',        group:'tomato',label:'🗽 New York-saus',labelEn:'🗽 New York sauce',short:'🗽 NY',shortEn:'🗽 NY'},
+  {id:'bianca',    group:'other',label:'⚪ Bianca • olijfolie',labelEn:'⚪ Bianca • olive oil',short:'⚪ Bianca',shortEn:'⚪ Bianca'},
+  {id:'white',     group:'other',label:'🥛 Romige witte saus • crème fraîche',labelEn:'🥛 Creamy white sauce • crème fraîche',short:'🥛 Romig wit',shortEn:'🥛 Creamy white'},
+  {id:'pesto',     group:'other',label:'🌿 Pesto',labelEn:'🌿 Pesto',short:'🌿 Pesto',shortEn:'🌿 Pesto'},
+  {id:'bbq',       group:'other',label:'🍖 BBQ',labelEn:'🍖 BBQ',short:'🍖 BBQ',shortEn:'🍖 BBQ'}
 ];
