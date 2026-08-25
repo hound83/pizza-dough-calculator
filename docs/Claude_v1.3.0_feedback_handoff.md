@@ -4,7 +4,7 @@
 
 - Released comparison baseline: `f85c1d2ce274a9c68e04916d55f630ce4d5c6fef` (`main`, released v1.1.1)
 - Candidate branch: `feature/v1.3.0-feedback`
-- Base calculation branch: `feature/v1.2.0-calculation-model`, including the post-audit selector and lower-bound handling correction
+- Base calculation commit on GitHub: `749e19912da7a2d086710e95d1acc801c21aa92a` (`feature/v1.2.0-calculation-model`), including the post-audit selector and lower-bound handling correction
 - Comparison: <https://github.com/hound83/pizza-dough-calculator/compare/main...feature/v1.3.0-feedback>
 - Public version in the candidate: `1.3.0`
 - Persistence remains: `pizzaCalcV51` / schema `51`
@@ -104,7 +104,10 @@ Local completed gates:
 
 Playwright discovers 41 Chromium checks: the v1.2.0 suite plus six feedback cases across standalone and source. The new browser coverage verifies a 320 px English success flow with an exact opt-in payload, the localized unconfigured path, and draft preservation after a backend failure for both publications.
 
-This Codex sandbox has no Chromium executable, so local launch stops before application code runs. GitHub Actions must run all 41 checks with its installed Chromium before this candidate can advance.
+The local Codex sandbox has no Chromium executable, so the browser layer was delegated to GitHub Actions. Both post-audit push runs completed successfully:
+
+- [v1.2.0 calculation run](https://github.com/hound83/pizza-dough-calculator/actions/runs/32796167088): all 35 Chromium checks passed;
+- [v1.3.0 feedback run](https://github.com/hound83/pizza-dough-calculator/actions/runs/32796225873): all 41 Chromium checks passed.
 
 ## Intentional pre-release blanks
 
