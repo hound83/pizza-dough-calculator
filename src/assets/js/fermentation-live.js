@@ -104,16 +104,15 @@ function waterTempAdvice(c){
   const solved=solveMainWaterTemperature(c,currentMethod);
   const water=solved.water;
   const finiteWater=Number.isFinite(water);
-  const usableWater=finiteWater&&solved.achievable;
   const displayWater=finiteWater?Math.round(water):null;
   return {
     ...solved,
     raw:water,displayWater,
     correction:null,correctionCount:0,calibrated:false,target:c.doughTemp,
     clamped:!solved.achievable,
-    cold:usableWater&&displayWater<14,
-    coldTap:usableWater&&displayWater>=10&&displayWater<14,
-    iceWater:usableWater&&displayWater<10,
+    cold:finiteWater&&displayWater<14,
+    coldTap:finiteWater&&displayWater>=10&&displayWater<14,
+    iceWater:finiteWater&&displayWater<10,
     hot:finiteWater&&displayWater>32,
     yeastHot:finiteWater&&!c.autolyse&&displayWater>=40,
     handAutolyseWarm:finiteWater&&currentMethod==='hand'&&c.autolyse&&displayWater>=38,

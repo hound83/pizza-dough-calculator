@@ -699,7 +699,7 @@ test('thermal helpers conserve capacity and reject invalid parts',()=>{
   assert(approx(x.end,10+20*Math.exp(-.25),.000001)&&x.invalid&&x.invalidNull,JSON.stringify(x));
 });
 
-test('v1.2 staged DDT model reproduces the approved nominal reference outputs',()=>{
+test('v1.2 staged DDT model preserves the versioned nominal output snapshot',()=>{
   defaults();
   const result=run(`(()=>{
     exactOverride=null;
@@ -753,6 +753,8 @@ test('staged DDT prediction is affine in main-water temperature',()=>{
   assert(approx(autolyse.gain,.4413,.0002)&&approx(direct.gain,.4749,.0002),JSON.stringify({autolyse,direct}));
 });
 
+// The direct-route value intentionally depends on EFFECTIVE_REST_TAU_HOURS.
+// A future measured tau must trigger review and recomputation of this pin.
 test('room-temperature slope pins protect the staged mass selection',()=>{
   defaults();
   const rows=run(`(()=>{
@@ -892,17 +894,20 @@ test('hot-water yeast warning fires only when yeast contacts main water',()=>{
   assert(x.directAdvice.water>=40&&x.directAdvice.yeastHot&&!x.directAdvice.handAutolyseWarm&&x.directText.includes('directe route')&&x.directText.includes('bij de gist'),JSON.stringify(x));
 });
 
-test('unattainable DDT guidance leads with the model limitation',()=>{
+test('unattainable DDT guidance leads with the limitation and keeps boundary handling advice',()=>{
   defaults();
   const x=run(`(()=>{
-    exactOverride=null;currentMethod='kitchenaid';const base=calc();
-    const c={...base,room:15,doughTemp:35},advice=waterTempAdvice(c);
-    currentLang='nl';const nl=waterTemperatureGuidance(c,advice).mainLine;
-    currentLang='en';const en=waterTemperatureGuidance(c,advice).mainLine;
-    currentLang='nl';return {advice,nl,en};
+    exactOverride=null;currentMethod='kitchenaid';$('autolyse').checked=false;const base=calc();
+    const highC={...base,room:15,doughTemp:35},highAdvice=waterTempAdvice(highC);
+    const lowC={...base,room:30,doughTemp:20},lowAdvice=waterTempAdvice(lowC);
+    currentLang='nl';const highNl=waterTemperatureGuidance(highC,highAdvice),lowNl=waterTemperatureGuidance(lowC,lowAdvice);
+    currentLang='en';const highEn=waterTemperatureGuidance(highC,highAdvice),lowEn=waterTemperatureGuidance(lowC,lowAdvice);
+    currentLang='nl';return {highAdvice,lowAdvice,highNl,lowNl,highEn,lowEn};
   })()`);
-  assert(!x.advice.achievable&&x.advice.boundary==='high'&&x.advice.hot&&!x.advice.yeastHot&&x.nl.includes('niet haalbaar')&&x.nl.includes('1 en 45 °C'),JSON.stringify(x));
-  assert(x.en.includes('not reachable')&&x.en.includes('between 1 and 45 °C'),JSON.stringify(x));
+  assert(!x.highAdvice.achievable&&x.highAdvice.boundary==='high'&&x.highAdvice.hot&&x.highAdvice.yeastHot&&x.highNl.mainLine.includes('niet haalbaar')&&x.highNl.mainLine.includes('1 en 45 °C'),JSON.stringify(x));
+  assert(x.highEn.mainLine.includes('not reachable')&&x.highEn.mainLine.includes('between 1 and 45 °C'),JSON.stringify(x));
+  assert(!x.lowAdvice.achievable&&x.lowAdvice.boundary==='low'&&x.lowAdvice.water===1&&x.lowAdvice.iceWater&&x.lowNl.mainLine.includes('niet haalbaar')&&x.lowNl.notes.includes('ijswater nodig'),JSON.stringify(x));
+  assert(x.lowEn.mainLine.includes('not reachable')&&x.lowEn.notes.includes('requires ice water'),JSON.stringify(x));
 });
 
 test('home-mixer guidance is staged, bilingual, and leaves recipe values unchanged',()=>{

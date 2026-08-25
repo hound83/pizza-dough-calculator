@@ -75,13 +75,13 @@ These hashes cover the released usability patch: a 30 cm / 220 g default for **M
 
 ## Approved v1.2.0 calculation candidate baseline
 
-These hashes cover the reviewed calculation candidate: staged heat-capacity DDT prediction, separate autolyse/direct routes, main versus reserved water, honest solver boundaries, normal-kitchen warnings, and version 1.2.0 metadata. They are candidate evidence rather than a release tag; all historical release hashes above remain immutable.
+These hashes cover the reviewed calculation candidate: staged heat-capacity DDT prediction, separate autolyse/direct routes, main versus reserved water, honest solver boundaries with handling guidance retained, normal-kitchen warnings, and version 1.2.0 metadata. They are candidate evidence rather than a release tag; all historical release hashes above remain immutable.
 
 | Artefact | SHA-256 |
 |---|---|
-| standalone `index.html` | `2f66d6162898c30b2a81347770cca990f1f6f1e0c5209b8c1efd30ff257a00bb` |
+| standalone `index.html` | `54b48cf9b17af1d60e8c0ab2fe04622013c253567ed21281868f809dcc4b7c41` |
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
-| combined JavaScript | `938be7cf4d8ae0b3c96a3f1ca4c19424d384e82bb647eff8ed31f3b08a5a9d35` |
+| combined JavaScript | `5de43375deece0f2689217b2d47fe1aa98ed8ac265f990e0a09a981752dd0519` |
 
 ## v1.1.0 Basic/Full display contract
 
@@ -136,7 +136,7 @@ v1.2.0 replaces the route-blind three-factor DDT rule with a staged, heat-capaci
 - The calibrated core is room temperature 15–30 °C, refrigerator temperature 2–8 °C, target final dough temperature 20–27 °C, and hydration 55–75%.
 - Existing input bounds remain wider for defensive use: room 10–35 °C, refrigerator 0–15 °C, target dough temperature 10–35 °C, and hydration 45–85%.
 - Room values below 15 °C or above 30 °C continue to calculate but are labelled outside the normal kitchen validation range. The 10 °C and 35 °C endpoints are robustness checks, not calibration points.
-- The practical main-water solver interval is 1–45 °C. An unbracketed target is reported as unattainable with its boundary prediction; it is never silently presented as if the boundary reaches the target.
+- The practical main-water solver interval is 1–45 °C. An unbracketed target is reported as unattainable with its boundary prediction; it is never silently presented as if the boundary reaches the target. Boundary results keep their applicable handling guidance, including the ice-water instruction at the 1 °C lower boundary.
 
 ### Thermal stage order
 
