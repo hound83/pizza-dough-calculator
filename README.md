@@ -2,7 +2,7 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.2.1--rc-f0b45a)](https://github.com/hound83/pizza-dough-calculator/compare/v1.2.0...fix/v1.2.1-i18n-marinara)
+[![Version](https://img.shields.io/badge/version-v1.2.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
 [![Tests](https://img.shields.io/badge/regression_tests-89%2F89_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
@@ -11,9 +11,9 @@ A comprehensive Dutch and English calculator for pizza dough, fermentation, sauc
 
 The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
-**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Review the v1.2.1 candidate](https://github.com/hound83/pizza-dough-calculator/compare/v1.2.0...fix/v1.2.1-i18n-marinara)
+**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.2.1 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
 
-> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.2.1 is the review candidate over the current public v1.2.0 release and keeps storage schema 51.
+> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.2.1 is the current public release and keeps storage schema 51.
 
 ## Features
 
@@ -147,7 +147,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, and the approved v1.2.1 candidate baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, and the released v1.2.1 baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 
@@ -188,7 +188,7 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module boundaries, dependencies, and change rules |
 | [`docs/PRODUCT_GUARDRAILS.md`](docs/PRODUCT_GUARDRAILS.md) | Non-negotiable product behavior and change protocol |
 | [`docs/V1.2.0_CALCULATION_MODEL.md`](docs/V1.2.0_CALCULATION_MODEL.md) | Approved v1.2 calculation boundary, constants, outputs, and tests |
-| [`docs/Claude_v1.2.1_patch_handoff.md`](docs/Claude_v1.2.1_patch_handoff.md) | Review scope and evidence for the v1.2.1 patch candidate |
+| [`docs/Claude_v1.2.1_patch_handoff.md`](docs/Claude_v1.2.1_patch_handoff.md) | Independent audit record and evidence for the v1.2.1 release |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quality rules and review checklist |
 | [`README.nl.md`](README.nl.md) | Complete Dutch project documentation |
 | [`docs/`](docs/) | Audit handoffs, rationale, and test instructions |
@@ -197,14 +197,14 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Release:** v1.2.1 is the review candidate over the current public v1.2.0 release; tag v1.0.0 remains the immutable historical golden baseline.
+- **Release:** v1.2.1 is current; tag v1.0.0 remains the immutable historical golden baseline.
 - **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the tested standalone publication used by GitHub Pages.
-- **Audit:** Claude's first v1.2.1 review found the candidate safe and internally consistent. Its one Marinara fidelity finding and both browser-coverage notes are now incorporated and awaiting a focused recheck.
+- **Audit:** Claude's final v1.2.1 re-audit approved the release after the Marinara fidelity correction and both browser-coverage additions; all 15 + 89 + 89 + 41 checks passed independently.
 - **Small follow-up:** a non-blocking accessibility improvement remains possible for seven extended field labels.
 - **v1.1.0:** a clear **Basic/Full** toggle without creating two separate calculation models.
 - **v1.1.1:** a 30 cm personal default, practical percentage controls, corrected bilingual count grammar, and consistent dough-ball-weight display.
 - **v1.2.0:** a heat-capacity-weighted staged DDT model, separate autolyse/direct routes, explicit main versus reserved water, honest attainability reporting, and normal-kitchen guidance.
-- **v1.2.1 candidate:** repaired NL/EN copy, deduplicated Marinara garlic/oregano with the separate 5 g finishing EVOO preserved, and a cleaner collapsed sauce override that retains all seven sauce types.
+- **v1.2.1:** repaired NL/EN copy, deduplicated Marinara garlic/oregano with the separate 5 g finishing EVOO preserved, and a cleaner collapsed sauce override that retains all seven sauce types.
 - **v1.3.0 next:** anonymous feedback remains separate and requires production Turnstile/Worker configuration and a real end-to-end issue check before release.
 
 ## Background
