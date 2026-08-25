@@ -2,7 +2,7 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.2.0_candidate-f0b45a)](docs/V1.2.0_CALCULATION_MODEL.md)
+[![Version](https://img.shields.io/badge/version-v1.2.0-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.0)
 [![Tests](https://img.shields.io/badge/regression_tests-85%2F85_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
@@ -11,9 +11,9 @@ A comprehensive Dutch and English calculator for pizza dough, fermentation, sauc
 
 The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
-**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.1.1 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
+**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.2.0 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.0)
 
-> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.1.1 is the current public release; this branch is the v1.2.0 staged water-temperature calculation candidate and keeps storage schema 51.
+> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.2.0 is the current public release and keeps storage schema 51.
 
 ## Features
 
@@ -195,14 +195,14 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Release:** v1.1.1 is current; v1.2.0 is the staged calculation candidate. Tag v1.0.0 remains the immutable historical golden baseline.
+- **Release:** v1.2.0 is current; tag v1.0.0 remains the immutable historical golden baseline.
 - **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the tested standalone publication used by GitHub Pages.
-- **Audit:** the refactor, v1.1.0 feature release, and v1.1.1 patch passed independent Claude crosschecks.
+- **Audit:** the refactor, v1.1.0 feature release, v1.1.1 patch, and v1.2.0 calculation release passed independent Claude crosschecks.
 - **Small follow-up:** a non-blocking accessibility improvement remains possible for seven extended field labels.
 - **v1.1.0:** a clear **Basic/Full** toggle without creating two separate calculation models.
 - **v1.1.1:** a 30 cm personal default, practical percentage controls, corrected bilingual count grammar, and consistent dough-ball-weight display.
-- **v1.2.0 candidate:** a heat-capacity-weighted staged DDT model, separate autolyse/direct routes, explicit main versus reserved water, honest attainability reporting, and normal-kitchen guidance.
-- **v1.3.0 proposal:** rebase the existing anonymous-feedback candidate only after v1.2.0 is accepted.
+- **v1.2.0:** a heat-capacity-weighted staged DDT model, separate autolyse/direct routes, explicit main versus reserved water, honest attainability reporting, and normal-kitchen guidance.
+- **v1.3.0 next:** anonymous feedback remains separate and requires production Turnstile/Worker configuration and a real end-to-end issue check before release.
 
 ## Background
 

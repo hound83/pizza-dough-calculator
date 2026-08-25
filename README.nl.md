@@ -4,7 +4,7 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v1.2.0_kandidaat-f0b45a)](docs/V1.2.0_CALCULATION_MODEL.md)
+[![Versie](https://img.shields.io/badge/versie-v1.2.0-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.0)
 [![Tests](https://img.shields.io/badge/regressietests-85%2F85_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
@@ -13,9 +13,9 @@ Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fe
 
 De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies de standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
 
-**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.1.1-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
+**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.2.0-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.0)
 
-> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.1.1 is de huidige publieke release; deze branch is de v1.2.0-kandidaat voor het gefaseerde watertemperatuurmodel en behoudt opslagschema 51.
+> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.2.0 is de huidige publieke release en behoudt opslagschema 51.
 
 ## Wat kan de calculator?
 
@@ -197,14 +197,14 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Release:** v1.1.1 is de huidige release; v1.2.0 is de kandidaat voor het gefaseerde rekenmodel. Tag v1.0.0 blijft de onveranderlijke historische golden baseline.
+- **Release:** v1.2.0 is de huidige release; tag v1.0.0 blijft de onveranderlijke historische golden baseline.
 - **Huidige architectuur:** statische bron-HTML, CSS en elf JavaScriptmodules genereren de geteste standalone publicatie voor GitHub Pages.
-- **Audit:** de refactor, v1.1.0-featureversie en v1.1.1-patch zijn onafhankelijk door Claude gecrosscheckt.
+- **Audit:** de refactor, v1.1.0-featureversie, v1.1.1-patch en v1.2.0-rekenrelease zijn onafhankelijk door Claude gecrosscheckt.
 - **Kleine follow-up:** voor zeven uitgebreide veldlabels blijft een niet-blokkerende toegankelijkheidsverbetering mogelijk.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
 - **v1.1.1:** een persoonlijk standaardrecept van 30 cm, praktische percentagebediening, gecorrigeerde tweetalige enkelvoud/meervoud-teksten en consistente weergave van deegbolgewicht.
-- **v1.2.0-kandidaat:** een op warmtecapaciteit gebaseerd gefaseerd DDT-model, aparte autolyse/directe routes, expliciet hoofd- versus reservewater, eerlijke haalbaarheidsmelding en normale-keukenbegeleiding.
-- **v1.3.0-voorstel:** de bestaande kandidaat voor anonieme feedback pas na acceptatie van v1.2.0 opnieuw baseren.
+- **v1.2.0:** een op warmtecapaciteit gebaseerd gefaseerd DDT-model, aparte autolyse/directe routes, expliciet hoofd- versus reservewater, eerlijke haalbaarheidsmelding en normale-keukenbegeleiding.
+- **v1.3.0 hierna:** anonieme feedback blijft gescheiden en vereist vóór release productieconfiguratie van Turnstile/Worker en een echte end-to-end-issuetest.
 
 ## Achtergrond
 
