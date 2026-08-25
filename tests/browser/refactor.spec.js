@@ -216,7 +216,7 @@ for(const publication of PUBLICATIONS){
         $('finalDoughTemp').value='24';
         update();showPage(4);
       });
-      const weigh=page.locator('[data-step-key="s-weigh"]');
+      const weigh=page.locator('div.step-card[data-step-key="s-weigh"]');
       await expect(weigh).toContainText('reservewater');
       await expect(weigh).toContainText('afgedekt op kamertemperatuur');
       await expect(weigh).toContainText('315 g hoofdwater');
@@ -235,7 +235,7 @@ for(const publication of PUBLICATIONS){
       await page.goto(publication.path,{waitUntil:'load'});
       await page.locator('[data-mode-card="dough"]').click();
       await page.evaluate(()=>showPage(4));
-      const weigh=page.locator('[data-step-key="s-weigh"]');
+      const weigh=page.locator('div.step-card[data-step-key="s-weigh"]');
 
       await page.evaluate(()=>{
         currentLang='nl';currentMethod='kitchenaid';$('autolyse').checked=false;
@@ -247,6 +247,13 @@ for(const publication of PUBLICATIONS){
       await page.evaluate(()=>{$('roomTemp').value='27';update();showPage(4);});
       await expect(weigh).toContainText('Hiervoor is ijswater nodig');
       await expect(weigh).toContainText('weeg daarna opnieuw precies');
+
+      await page.evaluate(()=>{
+        $('roomTemp').value='30';$('finalDoughTemp').value='20';update();showPage(4);
+      });
+      await expect(weigh).toContainText('niet haalbaar');
+      await expect(weigh).toContainText('1 °C hoofdwater');
+      await expect(weigh).toContainText('Hiervoor is ijswater nodig');
 
       await page.evaluate(()=>{
         currentMethod='hand';$('roomTemp').value='21';$('autolyse').checked=true;
