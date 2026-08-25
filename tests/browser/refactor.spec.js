@@ -274,7 +274,7 @@ for(const publication of PUBLICATIONS){
       const disclosure=page.locator('#pizzaCustomize .sauce-choice-disclosure').first();
       await expect(disclosure).toBeVisible();
       await expect(disclosure).not.toHaveAttribute('open','');
-      await expect(disclosure.locator('.sauce-choice-current')).toContainText('San Marzano');
+      await expect(disclosure.locator('.sauce-choice-current')).toContainText('Rood');
 
       await disclosure.locator('summary').click();
       await expect(disclosure.locator('[data-sauce-choice]')).toHaveCount(7);
