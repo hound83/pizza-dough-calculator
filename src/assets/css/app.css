@@ -388,6 +388,38 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 .style-segment button:hover{border-color:#596267;color:var(--text)}
 .style-segment button.active{background:#2a3134;border-color:#727c82;color:var(--text)}
 .style-explain{margin:8px 1px 0!important}
+.sauce-choice-disclosure{
+  margin:12px 0 14px;border:1px solid var(--line);border-radius:12px;background:#111416;overflow:hidden
+}
+.sauce-choice-disclosure.compact{margin:4px 0 10px}
+.sauce-choice-disclosure summary{
+  list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 12px;cursor:pointer
+}
+.sauce-choice-disclosure.compact summary{padding:9px 10px}
+.sauce-choice-disclosure summary::-webkit-details-marker{display:none}
+.sauce-choice-disclosure summary:hover{background:#15191b}
+.sauce-choice-disclosure[open] summary{border-bottom:1px solid var(--line)}
+.sauce-choice-summary-copy{display:grid;gap:2px;min-width:0}
+.sauce-choice-summary-copy .picker-section-title{padding:0}
+.sauce-choice-current{font-weight:900;color:var(--text)}
+.sauce-choice-status{font-size:11px;line-height:1.35;color:var(--muted)}
+.sauce-choice-action{
+  display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:6px 8px;border:1px solid #3b4347;
+  border-radius:9px;color:var(--muted);font-size:11px;font-weight:850
+}
+.sauce-choice-action::after{content:'▾';display:inline-block;transition:transform .16s ease}
+.sauce-choice-disclosure[open] .sauce-choice-action::after{transform:rotate(180deg)}
+.sauce-choice-options{padding:10px 12px 12px}
+.sauce-choice-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sauce-choice-group-title{margin:0 0 5px;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+.sauce-choice-group .sauce-option-grid{grid-template-columns:1fr}
+.sauce-choice-disclosure.compact .style-segment button{padding:7px 8px;font-size:11px}
+@media(max-width:560px){
+  .sauce-choice-disclosure summary{align-items:flex-start;flex-direction:column;gap:8px}
+  .sauce-choice-action{align-self:flex-start}
+  .sauce-choice-groups{grid-template-columns:1fr}
+}
 
 
 .picker-item.active{
@@ -415,14 +447,6 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
   font-size:10px;
 }
 
-
-.sauce-style-choice{
-  margin:12px 0 14px;
-  padding:11px 12px;
-  border:1px solid rgba(199,79,63,.28);
-  border-radius:12px;
-  background:rgba(199,79,63,.04)
-}
 
 .ferment-dashboard{
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 10px

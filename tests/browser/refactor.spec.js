@@ -54,7 +54,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.2.0');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.2.1');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -63,7 +63,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.2.0',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.2.1',hasCalculator:true,horizontalOverflow:0});
         expect(failures).toEqual([]);
       });
     }
@@ -233,6 +233,31 @@ for(const publication of PUBLICATIONS){
       await expect(weigh).toContainText('op deze directe route');
       await expect(weigh).toContainText('≥40 °C bij de gist');
       await expect(weigh).not.toContainText('handkneden met koude autolyse');
+    });
+
+    test('keeps recipe sauce alternatives collapsed until requested',async({page})=>{
+      await page.setViewportSize({width:1280,height:900});
+      await openPicker(page,publication);
+
+      const disclosure=page.locator('#pizzaPickerPreview .sauce-choice-disclosure');
+      await expect(disclosure).toBeVisible();
+      await expect(disclosure).not.toHaveAttribute('open','');
+      await expect(disclosure.locator('.sauce-choice-current')).toContainText('San Marzano');
+      await expect(disclosure.locator('.sauce-choice-options')).toBeHidden();
+
+      await disclosure.locator('summary').click();
+      await expect(disclosure).toHaveAttribute('open','');
+      await expect(disclosure.locator('.sauce-choice-options')).toBeVisible();
+      await expect(disclosure.locator('[data-sauce-group]')).toHaveCount(2);
+      await expect(disclosure.locator('[data-sauce-choice]')).toHaveCount(7);
+
+      await disclosure.locator('[data-sauce-choice="pesto"]').click();
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-disclosure')).not.toHaveAttribute('open','');
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-current')).toContainText('Pesto');
+
+      await page.locator('#langEn').click();
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-action')).toHaveText('Choose another sauce');
+      await expect(page.locator('#sauceType option')).toHaveCount(7);
     });
 
     for(const viewport of VIEWPORTS.slice(0,3)){

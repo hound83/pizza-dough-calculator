@@ -724,17 +724,34 @@ function renderPickerPreview(){
   const sauceG=sauceGramsForRecipe(r,sauceType);
 
   const sauceChanged=sauceType!==r.sauce;
-  const sauceChoice=`<div class="sauce-style-choice">
-        <div class="picker-section-title" style="padding-left:0">${L('Sauskeuze','Sauce choice')}</div>
-        <div class="style-segment">
-          ${SAUCE_CHOICES.map(sc=>`<button type="button" class="${sauceType===sc.id?'active':''}" onclick="setPickerSauceType('${sc.id}')">${sauceChoiceLabel(sc)}</button>`).join('')}
+  const selectedSauceChoice=SAUCE_CHOICES.find(sc=>sc.id===sauceType);
+  const sauceGroups=SAUCE_CHOICE_GROUPS.map(group=>`<div class="sauce-choice-group" data-sauce-group="${group.id}">
+        <div class="sauce-choice-group-title">${esc(sauceChoiceGroupLabel(group))}</div>
+        <div class="style-segment sauce-option-grid">
+          ${SAUCE_CHOICES.filter(sc=>sc.group===group.id).map(sc=>`<button type="button" data-sauce-choice="${sc.id}" aria-pressed="${sauceType===sc.id}" class="${sauceType===sc.id?'active':''}" onclick="setPickerSauceType('${sc.id}')">${sauceChoiceLabel(sc)}</button>`).join('')}
         </div>
+      </div>`).join('');
+  const sauceChoice=`<details class="sauce-choice-disclosure">
+        <summary>
+          <span class="sauce-choice-summary-copy">
+            <span class="picker-section-title">${L('Saus','Sauce')}</span>
+            <span class="sauce-choice-current">${sauceChoiceLabel(selectedSauceChoice)} • ${sauceG} g</span>
+            <span class="sauce-choice-status">${sauceChanged
+              ? L(`Aangepast; receptadvies is ${sauceName(r.sauce)}.`,`Changed; recipe recommendation is ${sauceName(r.sauce)}.`)
+              : L('Aanbevolen door dit recept.','Recommended for this recipe.')}</span>
+          </span>
+          <span class="sauce-choice-action">${L('Andere saus kiezen','Choose another sauce')}</span>
+        </summary>
+        <div class="sauce-choice-options">
+          <div class="sauce-choice-groups">${sauceGroups}</div>
         <div class="hint style-explain">${sauceChanged
           ? L(`Aangepast van ${sauceName(r.sauce)} naar ${sauceName(sauceType)}. Hoeveelheid wordt automatisch aan het gekozen saustype aangepast.`,
               `Changed from ${sauceName(r.sauce)} to ${sauceName(sauceType)}. Quantity is adjusted automatically for the selected sauce type.`)
           : L(`Receptbasis: ${sauceName(r.sauce)}. Je kunt hier bewust een andere saus kiezen zonder het hele recept te vervangen.`,
               `Recipe base: ${sauceName(r.sauce)}. You can deliberately choose another sauce here without replacing the whole recipe.`)}
-      </div>`;
+        </div>
+        </div>
+      </details>`;
 
   $('pizzaPickerPreview').innerHTML=`
     <div class="picker-mobile-toolbar">

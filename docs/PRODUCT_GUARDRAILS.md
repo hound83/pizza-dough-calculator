@@ -83,6 +83,29 @@ These hashes cover the released staged heat-capacity DDT prediction, separate au
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
 | combined JavaScript | `5de43375deece0f2689217b2d47fe1aa98ed8ac265f990e0a09a981752dd0519` |
 
+## v1.2.1 review-candidate baseline
+
+These hashes cover the explicitly approved patch over v1.2.0: repaired Dutch/English interface copy, one authoritative Marinara ingredient source, and a collapsed grouped sauce override in recipe views. The calculation model, recipe-to-sauce defaults, storage schema, and all seven available sauce types remain unchanged.
+
+| Artefact | SHA-256 |
+|---|---|
+| standalone `index.html` | `54f71ca2efe1451207bc1fe5046c00bb0fc1ea82b8697889305f6cf829f75102` |
+| CSS | `7140b86b8e3d0335ea5bc6e88c37e756aabb9713de011ded629c59266cb2df19` |
+| combined JavaScript | `542fa05379e0ca37f72a18e13d9f57dccac1a5b2784efbb7e7b6046f1af3a890` |
+
+## v1.2.1 localization, Marinara, and sauce-choice contract
+
+- `windowpane` remains the deliberate Dutch and English term. The interface must not replace it with `vliesjestest`.
+- English mode translates the flour-type label and options, the complete advanced W270 explanation, the recipe-search clear-label, and the two recipe names containing `Parmaham`.
+- Dutch planning labels and the short-schedule warning do not mix in the English terms `same-day` or `room-temperature`.
+- The Marinara sauce definition is the single source for its tomatoes, salt, garlic, oregano, and EVOO. The Marinara pizza recipe must not add garlic, oregano, or EVOO a second time as toppings.
+- All seven sauce types remain valid and available. Their recipe defaults are not remapped or pruned.
+- In Complete pizzas, the recipe picker and per-ball customization show only the current recommended or deliberately selected sauce by default. `Andere saus kiezen` / `Choose another sauce` opens a native disclosure containing exactly two groups: tomato (San Marzano, Marinara, New York) and white/other (Bianca, creamy white, pesto, BBQ).
+- Choosing an alternative updates the existing per-ball override and returns to the collapsed summary. Sauce inclusion, quantities, scaling, aggregation, shopping output, and recipe commit behavior remain unchanged.
+- In Dough + sauce, sauce selection is the primary task; its standalone selector therefore continues to expose all seven choices directly.
+- The disclosure introduces no persisted field and no migration. Storage remains `pizzaCalcV51` / schema 51.
+- The v1.2.0 staged DDT calculation modules and their numerical contract remain unchanged.
+
 ## v1.1.0 Basic/Full display contract
 
 - Basic and Full are display modes independent of the Dough only, Dough + sauce, and Complete pizzas output modes.

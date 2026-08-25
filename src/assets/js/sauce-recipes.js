@@ -157,12 +157,25 @@ function buildPizzaCustomize(c){
           : `${cheese.label}. Maximaal ongeveer ${fmt(cheese.cap,0)} g kaas vóór het bakken bij ${fmt(c.stoneTemp,0)} °C.`)
       : L(`Deze pizza zit qua kaas al rond de verstandige bovengrens voor ${fmt(c.stoneTemp,0)} °C.`,`This pizza is already around the sensible upper cheese limit at ${fmt(c.stoneTemp,0)} °C.`);
 
-    const sauceChoice=`<div class="pizza-style-choice compact">
-          <div class="picker-section-title" style="padding-left:0">${L('Saus','Sauce')}</div>
-          <div class="style-segment">
-            ${SAUCE_CHOICES.map(sc=>`<button type="button" class="${sauceType===sc.id?'active':''}" onclick="setPizzaSauceType(${idx},'${sc.id}')">${sauceChoiceLabel(sc,true)}</button>`).join('')}
+    const selectedSauceChoice=SAUCE_CHOICES.find(sc=>sc.id===sauceType);
+    const sauceChanged=sauceType!==r.sauce;
+    const sauceGroups=SAUCE_CHOICE_GROUPS.map(group=>`<div class="sauce-choice-group" data-sauce-group="${group.id}">
+          <div class="sauce-choice-group-title">${esc(sauceChoiceGroupLabel(group))}</div>
+          <div class="style-segment sauce-option-grid">
+            ${SAUCE_CHOICES.filter(sc=>sc.group===group.id).map(sc=>`<button type="button" data-sauce-choice="${sc.id}" aria-pressed="${sauceType===sc.id}" class="${sauceType===sc.id?'active':''}" onclick="setPizzaSauceType(${idx},'${sc.id}')">${sauceChoiceLabel(sc,true)}</button>`).join('')}
           </div>
-        </div>`;
+        </div>`).join('');
+    const sauceChoice=`<details class="sauce-choice-disclosure compact">
+          <summary>
+            <span class="sauce-choice-summary-copy">
+              <span class="picker-section-title">${L('Saus','Sauce')}</span>
+              <span class="sauce-choice-current">${sauceChoiceLabel(selectedSauceChoice,true)} • ${sauceG} g</span>
+              <span class="sauce-choice-status">${sauceChanged?L('Aangepast ten opzichte van het recept.','Changed from the recipe recommendation.'):L('Receptadvies.','Recipe recommendation.')}</span>
+            </span>
+            <span class="sauce-choice-action">${L('Andere saus kiezen','Choose another sauce')}</span>
+          </summary>
+          <div class="sauce-choice-options"><div class="sauce-choice-groups">${sauceGroups}</div></div>
+        </details>`;
 
     return `<div class="customize-card">
       <div class="customize-head"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeTagText(r)}${hasMushroomsRecipe(r)?L(' • 🍄 bevat champignons',' • 🍄 contains mushrooms'):''}</div></div><button class="btn ghost" style="padding:7px 10px" onclick="resetPizzaCustomization(${idx})">${L('Reset toppings','Reset toppings')}</button></div>

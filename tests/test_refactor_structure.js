@@ -33,6 +33,11 @@ const V1_2_0_RELEASE_BASELINE={
   css:'8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052',
   javascript:'5de43375deece0f2689217b2d47fe1aa98ed8ac265f990e0a09a981752dd0519'
 };
+const V1_2_1_CANDIDATE_BASELINE={
+  singleFile:'54f71ca2efe1451207bc1fe5046c00bb0fc1ea82b8697889305f6cf829f75102',
+  css:'7140b86b8e3d0335ea5bc6e88c37e756aabb9713de011ded629c59266cb2df19',
+  javascript:'542fa05379e0ca37f72a18e13d9f57dccac1a5b2784efbb7e7b6046f1af3a890'
+};
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}
 
@@ -70,11 +75,12 @@ pass('released v1.1.0 hashes are pinned and documented');
 for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.1.1 baseline hash is missing from product guardrails: ${hash}`);
 pass('released v1.1.1 hashes remain documented');
 
-assert(sha256(bundledHtml)===V1_2_0_RELEASE_BASELINE.singleFile,'Standalone v1.2.0 release baseline changed without approval.');
-assert(sha256(css)===V1_2_0_RELEASE_BASELINE.css,'CSS v1.2.0 release baseline changed without approval.');
-assert(sha256(combinedJavaScript)===V1_2_0_RELEASE_BASELINE.javascript,'JavaScript v1.2.0 release baseline changed without approval.');
 for(const hash of Object.values(V1_2_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.0 baseline hash is missing from product guardrails: ${hash}`);
-pass('released v1.2.0 calculation baseline is pinned and documented');
+assert(sha256(bundledHtml)===V1_2_1_CANDIDATE_BASELINE.singleFile,'Standalone v1.2.1 candidate baseline changed without approval.');
+assert(sha256(css)===V1_2_1_CANDIDATE_BASELINE.css,'CSS v1.2.1 candidate baseline changed without approval.');
+assert(sha256(combinedJavaScript)===V1_2_1_CANDIDATE_BASELINE.javascript,'JavaScript v1.2.1 candidate baseline changed without approval.');
+for(const hash of Object.values(V1_2_1_CANDIDATE_BASELINE))assert(guardrails.includes(hash),`v1.2.1 candidate baseline hash is missing from product guardrails: ${hash}`);
+pass('released v1.2.0 and reviewed v1.2.1 candidate baselines are pinned and documented');
 
 new vm.Script(combinedJavaScript,{filename:'combined-refactor.js'});
 pass('recombined JavaScript parses successfully');

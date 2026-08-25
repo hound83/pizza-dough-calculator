@@ -170,12 +170,12 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('v1.2.0 release keeps storage schema 51 with v50 migration',()=>{
+test('v1.2.1 patch keeps storage schema 51 with v50 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='1.2.0'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v1.2.0'&&x.titleEn==='Pizza dough calculator v1.2.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v1.2.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v1.2.0</title>'),'static document title is not v1.2.0');
+  assert(x.app==='1.2.1'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v1.2.1'&&x.titleEn==='Pizza dough calculator v1.2.1',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v1.2.1')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v1.2.1</title>'),'static document title is not v1.2.1');
 });
 
 test('standard preset uses a 30 cm peel-friendly default and practical percentage steps',()=>{
@@ -591,6 +591,51 @@ test('fermentation temperature help cannot push the room field downward',()=>{
 test('remaining audited static labels have exact English translations',()=>{
   const x=run(`(()=>{currentLang='en';return ['← Vorige','Witte spelt','Volkoren spelt','Volkoren tarwe','Eigen bloem (W zelf invullen)','Alleen bekende productspecificaties krijgen automatisch een W-waarde; bij generieke bloem blijft W bewust onbekend.','Vul in als de W-waarde bekend is. Bij spelt is eiwitpercentage géén betrouwbare vervanger voor W.','Mijn standaardrecept • 30 cm • 63% • 25 uur'].map(translateNlText);})()`);
   assert(x[0]==='← Previous'&&x[1]==='White spelt flour'&&x[4].startsWith('Custom flour')&&x[5].startsWith('Only known')&&x[6].startsWith('Enter a value')&&x[7]==='My default recipe • 30 cm • 63% • 25 hours',JSON.stringify(x));
+});
+
+test('flour controls, advanced help and search accessibility translate completely',()=>{
+  const x=run(`(()=>{currentLang='en';const labels=['Bloemsoort','Overige tipo 00 pizzabloem','Manitoba / sterke tarwebloem','Nederlandse tarwe-/patentbloem','Zoekopdracht wissen'].map(translateNlText);const advanced=translateNlText('Caputo Pizzeria is officieel W260–280; W270 is precies het midden van dat bereik en daarom een logische standaard voor deze calculator. Afkoeling en opwarming daarna worden automatisch geschat uit de deegmassa en of het deeg als bulk of als losse bollen staat.');return {labels,advanced};})()`);
+  assert(JSON.stringify(x.labels)===JSON.stringify(['Flour type','Other tipo 00 pizza flour','Manitoba / strong wheat flour','Dutch wheat/patent flour','Clear search']),JSON.stringify(x));
+  assert(x.advanced.includes('Caputo Pizzeria is officially W260–280')&&x.advanced.includes('Cooling and warming afterward are estimated automatically'),x.advanced);
+  assert(!/officieel|precies het midden|daarna|deegmassa|losse bollen/.test(x.advanced),x.advanced);
+});
+
+test('Dutch planning copy is idiomatic and keeps windowpane untranslated',()=>{
+  const x=run(`(()=>{currentLang='nl';const c=calc();const labels=[5,7,10].map(hours=>deadlineRecommendation(c,new Date(Date.now()+hours*3600000)).plan?.labelNl);const mix=methodInstructions(c);return {labels,mix:JSON.stringify(mix),windowpane:translateNlText('windowpane')};})()`);
+  assert(JSON.stringify(x.labels)===JSON.stringify(['noodschema voor dezelfde dag','kort dagschema','dagschema']),JSON.stringify(x));
+  assert(!/labelNl:'[^']*same-day|gangbare room-temperature pizzarijping/.test(script),'Dutch planning source still contains mixed-language copy');
+  assert(x.windowpane==='windowpane'&&x.mix.includes('windowpane')&&!/vliesjestest/i.test(script),JSON.stringify(x));
+});
+
+test('English recipe names and Marinara composition have one authoritative source',()=>{
+  const x=run(`(()=>{currentLang='en';const parma=recipeNameText(recipeById('parmaBurrata'));const pestoParma=recipeNameText(recipeById('pestoParmaBurrata'));const recipe=recipeById('marinara');const sauceItems=sauces.marinara.ingredients(320,4).map(item=>item[0]);return {parma,pestoParma,recipeItems:recipe.items.map(item=>item[0]),sauceItems,note:recipe.noteEn||recipe.note};})()`);
+  assert(x.parma==='Parma ham & Burrata'&&x.pestoParma==='Pesto, Parma ham & Burrata',JSON.stringify(x));
+  assert(x.recipeItems.length===0,`Marinara recipe duplicates sauce ingredients: ${JSON.stringify(x.recipeItems)}`);
+  assert(x.sauceItems.includes('Knoflook')&&x.sauceItems.includes('Gedroogde oregano')&&x.sauceItems.includes('EVOO'),JSON.stringify(x));
+  assert(x.note.includes('already included in the Marinara sauce'),x.note);
+});
+
+test('recipe sauce overrides are collapsed and grouped without pruning manual choices',()=>{
+  defaults();
+  const x=run(`(()=>{
+    currentLang='nl';appMode='full';$('pizzas').value='1';pizzaSelections=['margherita'];pizzaCustomizations=[];
+    pickerTarget=0;pickerSelectedId='margherita';loadPickerPendingCustomization('margherita');renderPickerPreview();
+    const pickerNl=$('pizzaPickerPreview').innerHTML;buildPizzaCustomize(calc());const cardNl=$('pizzaCustomize').innerHTML;
+    currentLang='en';renderPickerPreview();buildPizzaCustomize(calc());
+    return {pickerNl,cardNl,pickerEn:$('pizzaPickerPreview').innerHTML,cardEn:$('pizzaCustomize').innerHTML,
+      groups:SAUCE_CHOICE_GROUPS.map(group=>({id:group.id,choices:SAUCE_CHOICES.filter(choice=>choice.group===group.id).map(choice=>choice.id)}))};
+  })()`);
+  const ids=x.groups.flatMap(group=>group.choices);
+  assert(JSON.stringify(x.groups)===JSON.stringify([{id:'tomato',choices:['sanMarzano','marinara','ny']},{id:'other',choices:['bianca','white','pesto','bbq']}]),JSON.stringify(x.groups));
+  assert(ids.length===7&&new Set(ids).size===7,JSON.stringify(ids));
+  for(const markup of [x.pickerNl,x.cardNl,x.pickerEn,x.cardEn]){
+    assert(markup.includes('<details class="sauce-choice-disclosure')&&!/<details class="sauce-choice-disclosure[^"]*" open/.test(markup),markup.slice(0,1800));
+    assert((markup.match(/data-sauce-group=/g)||[]).length===2&&(markup.match(/data-sauce-choice=/g)||[]).length===7,markup.slice(0,2400));
+  }
+  assert(x.pickerNl.includes('Andere saus kiezen')&&x.pickerNl.includes('Tomaat')&&x.pickerNl.includes('Wit &amp; overig'),x.pickerNl);
+  assert(x.pickerEn.includes('Choose another sauce')&&x.pickerEn.includes('Tomato')&&x.pickerEn.includes('White &amp; other'),x.pickerEn);
+  const manual=html.match(/<select class="field" id="sauceType">([\s\S]*?)<\/select>/)?.[1]||'';
+  assert((manual.match(/<option /g)||[]).length===7,'standalone Dough + sauce selector lost a sauce option');
 });
 
 test('core recipe arithmetic stays finite across methods, sizes and hydration bounds',()=>{
