@@ -28,7 +28,7 @@ const V1_1_1_RELEASE_BASELINE={
   css:'8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052',
   javascript:'db8d26918051d97d99a6e60f62da1f4970202097e4a91f1dc0e39a2c12d5a6ac'
 };
-const V1_2_0_CANDIDATE_BASELINE={
+const V1_2_0_RELEASE_BASELINE={
   singleFile:'54b48cf9b17af1d60e8c0ab2fe04622013c253567ed21281868f809dcc4b7c41',
   css:'8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052',
   javascript:'5de43375deece0f2689217b2d47fe1aa98ed8ac265f990e0a09a981752dd0519'
@@ -70,11 +70,11 @@ pass('released v1.1.0 hashes are pinned and documented');
 for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.1.1 baseline hash is missing from product guardrails: ${hash}`);
 pass('released v1.1.1 hashes remain documented');
 
-assert(sha256(bundledHtml)===V1_2_0_CANDIDATE_BASELINE.singleFile,'Standalone v1.2.0 candidate baseline changed without approval.');
-assert(sha256(css)===V1_2_0_CANDIDATE_BASELINE.css,'CSS v1.2.0 candidate baseline changed without approval.');
-assert(sha256(combinedJavaScript)===V1_2_0_CANDIDATE_BASELINE.javascript,'JavaScript v1.2.0 candidate baseline changed without approval.');
-for(const hash of Object.values(V1_2_0_CANDIDATE_BASELINE))assert(guardrails.includes(hash),`Approved v1.2.0 candidate hash is missing from product guardrails: ${hash}`);
-pass('approved v1.2.0 calculation candidate is pinned and documented');
+assert(sha256(bundledHtml)===V1_2_0_RELEASE_BASELINE.singleFile,'Standalone v1.2.0 release baseline changed without approval.');
+assert(sha256(css)===V1_2_0_RELEASE_BASELINE.css,'CSS v1.2.0 release baseline changed without approval.');
+assert(sha256(combinedJavaScript)===V1_2_0_RELEASE_BASELINE.javascript,'JavaScript v1.2.0 release baseline changed without approval.');
+for(const hash of Object.values(V1_2_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.0 baseline hash is missing from product guardrails: ${hash}`);
+pass('released v1.2.0 calculation baseline is pinned and documented');
 
 new vm.Script(combinedJavaScript,{filename:'combined-refactor.js'});
 pass('recombined JavaScript parses successfully');

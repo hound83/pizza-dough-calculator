@@ -41,7 +41,7 @@ src/index.html + src/assets/css/app.css + src/assets/js/*.js
 | 8 | `fermentation-live.js` | DDT/water advice, live temperature corrections, solver, and checkable fermentation steps |
 | 9 | `planning-shopping.js` | deadline planning, timeline, shopping, oven advice, copy output, and ingredients modal |
 | 10 | `navigation-logbook.js` | wizard navigation, app modes, recipe copying, and dough-log presentation |
-| 11 | `persistence-bootstrap.js` | schema-50 persistence/migration, event registration, and the sole `DOMContentLoaded` bootstrap |
+| 11 | `persistence-bootstrap.js` | schema-51 persistence with migration from schema 50, event registration, and the sole `DOMContentLoaded` bootstrap |
 
 The order is a contract: later modules may use functions and state from earlier modules. Function declarations may also call later-loaded functions after user interaction, because all eleven scripts have loaded before the user can operate the application.
 
@@ -65,7 +65,7 @@ The order is a contract: later modules may use functions and state from earlier 
 | v1.0.0 CSS | `262e12b5356f5a50c63aa7cd7249b3c5c8b101d8954f076de1360efbc222b896` |
 | v1.0.0 JavaScript | `2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7` |
 
-The current feature bundle is no longer expected to equal the historical hashes. The test reconstructs the current standalone file exactly from `src/`, keeps the historical v1.0.0 and released v1.1.0 hashes documented, pins the released v1.1.1 baseline separately, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
+The current release bundle is no longer expected to equal the historical hashes. The test reconstructs the current standalone file exactly from `src/`, keeps the historical v1.0.0 and released v1.1.0 hashes documented, pins the released v1.1.1 and v1.2.0 baselines separately, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
 
 `tests/test_v50.js` runs all 85 functional regressions against both the modular source and the standalone bundle. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, the separate 30-minute cold-autolyse and 20-minute hydration-rest paths, the full hand/machine preparation-time matrix, exact two-minute KitchenAid speed-2 stage, rested-windowpane recovery without extra machine time, and displayed reserve-water portions that exactly sum to the displayed total. v1.2 calculation coverage adds the heat-capacity equilibrium, exact thermal stage order, shared rest constants, eight approved nominal outputs, affine prediction, room-temperature slope pins, honest unattainable metadata, bilingual main/reserved-water guidance, route-correct hot-water warnings, and a 1,920-case normal-kitchen DDT matrix. Basic-mode coverage distinguishes ordinary recipe inputs from intentional technical overrides. Patch coverage also protects the 30 cm / 220 g default without overwriting a saved 32 cm recipe, percentage spinner grids including the first off-grid preset snap, localized count grammar including rounded English hour labels, and shared dough-ball-weight formatting.
 

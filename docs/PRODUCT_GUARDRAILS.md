@@ -73,9 +73,9 @@ These hashes cover the released usability patch: a 30 cm / 220 g default for **M
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
 | combined JavaScript | `db8d26918051d97d99a6e60f62da1f4970202097e4a91f1dc0e39a2c12d5a6ac` |
 
-## Approved v1.2.0 calculation candidate baseline
+## Released v1.2.0 baseline
 
-These hashes cover the reviewed calculation candidate: staged heat-capacity DDT prediction, separate autolyse/direct routes, main versus reserved water, honest solver boundaries with handling guidance retained, normal-kitchen warnings, and version 1.2.0 metadata. They are candidate evidence rather than a release tag; all historical release hashes above remain immutable.
+These hashes cover the released staged heat-capacity DDT prediction, separate autolyse/direct routes, main versus reserved water, honest solver boundaries with handling guidance retained, normal-kitchen warnings, and version 1.2.0 metadata. They pin the shipped v1.2.0 baseline; all historical release hashes above remain immutable.
 
 | Artefact | SHA-256 |
 |---|---|
@@ -194,7 +194,7 @@ No unvalidated batch-size exponent is applied. Exact numerical anchors concern t
 
 - The yeast activity curve, covered-ball thermal constant, storage key, and schema 51 remain unchanged.
 - No new Basic input, batch exponent, calibration UI, automatic learning, box selector, or cold-phase measurement is added.
-- Anonymous feedback is not part of v1.2.0. Its existing candidate is deferred, rebased after this calculation release, and proposed separately as v1.3.0.
+- Anonymous feedback is not part of v1.2.0. It is maintained separately as the v1.3.0 candidate.
 
 ## Change checklist
 

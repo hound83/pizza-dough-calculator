@@ -170,7 +170,7 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('v1.2.0 calculation candidate keeps storage schema 51 with v50 migration',()=>{
+test('v1.2.0 release keeps storage schema 51 with v50 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
   assert(x.app==='1.2.0'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
   assert(x.titleNl==='Pizzadeegcalculator v1.2.0'&&x.titleEn==='Pizza dough calculator v1.2.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
