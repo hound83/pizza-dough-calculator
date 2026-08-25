@@ -8,10 +8,18 @@
   },
   "ratelimits": [
     {
+      "name": "FEEDBACK_REQUEST_LIMITER",
+      "namespace_id": "1201",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    },
+    {
       "name": "FEEDBACK_RATE_LIMITER",
       "namespace_id": "1200",
       "simple": {
-        "limit": 20,
+        "limit": 3,
         "period": 60
       }
     }

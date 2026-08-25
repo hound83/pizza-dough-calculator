@@ -41,12 +41,12 @@ function json(data,status=200,origin=''){
 }
 
 function cleanText(value,max){
-  return typeof value==='string'?value.replace(/\u0000/g,'').trim().slice(0,max):'';
+  return typeof value==='string'?value.replace(/\u0000/g,'').replace(/\p{Cf}/gu,'').trim().slice(0,max):'';
 }
 
 function cleanSummary(value){return cleanText(value,120).replace(/[\r\n\t]+/g,' ');}
 
-function containsEmail(value){return /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(value);}
+function containsEmail(value){return /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(String(value).normalize('NFKC'));}
 
 function sanitizeDiagnostics(value){
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
@@ -83,15 +83,23 @@ function configuredRepository(env){
 }
 
 function serviceConfigured(env){
-  return Boolean(configuredRepository(env)&&String(env.GITHUB_TOKEN||'').trim()&&String(env.TURNSTILE_SECRET_KEY||'').trim()&&String(env.TURNSTILE_SITE_KEY||'').trim()&&typeof env.FEEDBACK_RATE_LIMITER?.limit==='function');
+  return Boolean(configuredRepository(env)&&String(env.GITHUB_TOKEN||'').trim()&&String(env.TURNSTILE_SECRET_KEY||'').trim()&&String(env.TURNSTILE_SITE_KEY||'').trim()&&String(env.TURNSTILE_EXPECTED_HOSTNAME||'').trim()&&typeof env.FEEDBACK_REQUEST_LIMITER?.limit==='function'&&typeof env.FEEDBACK_RATE_LIMITER?.limit==='function');
 }
 
-async function rateLimitAllows(origin,env){
+async function limiterAllows(limiter,key){
   try{
-    const result=await env.FEEDBACK_RATE_LIMITER.limit({key:`feedback:${origin}`});
+    const result=await limiter.limit({key});
     return result?.success===true;
   }catch(error){return false}
 }
+
+function requestRateLimitKey(request,origin){
+  const clientIp=String(request.headers.get('CF-Connecting-IP')||'').trim();
+  return `feedback-request:${clientIp||origin}`;
+}
+
+function requestRateLimitAllows(request,origin,env){return limiterAllows(env.FEEDBACK_REQUEST_LIMITER,requestRateLimitKey(request,origin));}
+function issueRateLimitAllows(origin,env){return limiterAllows(env.FEEDBACK_RATE_LIMITER,`feedback-issue:${origin}`);}
 
 async function verifyTurnstile(payload,request,env,fetchImpl){
   const body=new FormData();
@@ -110,13 +118,18 @@ async function verifyTurnstile(payload,request,env,fetchImpl){
   const expectedHostname=String(env.TURNSTILE_EXPECTED_HOSTNAME||'').trim();
   const expectedAction=String(env.TURNSTILE_EXPECTED_ACTION||TURNSTILE_ACTION).trim();
   const actionMatches=result.action===expectedAction;
-  const hostnameMatches=!expectedHostname||result.hostname===expectedHostname;
+  const hostnameMatches=Boolean(expectedHostname)&&result.hostname===expectedHostname;
   return {ok:result.success===true&&actionMatches&&hostnameMatches};
 }
 
 function neutralizeMentions(value){return String(value).replace(/@/g,'@\u200b');}
 
-function quoteMarkdown(value){return neutralizeMentions(value).split('\n').map(line=>`> ${line||' '}`).join('\n');}
+function fenceMarkdown(value){
+  const safe=neutralizeMentions(value);
+  const longestRun=Math.max(0,...[...safe.matchAll(/`+/g)].map(match=>match[0].length));
+  const fence='`'.repeat(Math.max(3,longestRun+1));
+  return `${fence}text\n${safe}\n${fence}`;
+}
 
 function issueBody(payload){
   const sections=[
@@ -126,15 +139,16 @@ function issueBody(payload){
     `**Interface language:** ${payload.language==='en'?'English':'Dutch'}`,
     '',
     '### Message',
-    quoteMarkdown(payload.message)
+    fenceMarkdown(payload.message)
   ];
   if(payload.steps){
-    sections.push('','### Steps to reproduce',quoteMarkdown(payload.steps));
+    sections.push('','### Steps to reproduce',fenceMarkdown(payload.steps));
   }
   if(payload.diagnostics){
     sections.push('','<details>','<summary>Opt-in technical context</summary>','',`\`\`\`json\n${JSON.stringify(payload.diagnostics,null,2)}\n\`\`\``,'</details>');
   }
-  sections.push('','---',`Submitted anonymously through the pizza calculator v${payload.diagnostics?.appVersion||'1.2'} feedback form. The form does not collect recipe values, dough-log data, email addresses, or browser storage.`);
+  const formLabel=payload.diagnostics?.appVersion?`pizza calculator v${payload.diagnostics.appVersion} feedback form`:'pizza calculator feedback form';
+  sections.push('','---',`Submitted anonymously through the ${formLabel}. No contact details are requested; recipe values, dough-log data, and browser storage are not included automatically.`);
   return sections.join('\n');
 }
 
@@ -198,17 +212,21 @@ async function handleRequest(request,env,fetchImpl=fetch){
   if(validated.error)return json({ok:false,code:'invalid_request'},400,origin);
   const payload=validated.payload;
 
+  // A generous per-client request limit protects Siteverify from syntactically
+  // valid floods. It is separate from the tighter shared issue quota below.
+  if(!await requestRateLimitAllows(request,origin,env))return json({ok:false,code:'rate_limited'},429,origin);
+
   const turnstile=await verifyTurnstile(payload,request,env,fetchImpl);
   if(!turnstile.ok)return json({ok:false,code:turnstile.unavailable?'service_unavailable':'captcha_failed'},turnstile.unavailable?502:400,origin);
 
   // Invalid tokens cannot consume the shared issue quota. A verified token is
   // still rate-limited before the GitHub credential is used.
-  if(!await rateLimitAllows(origin,env))return json({ok:false,code:'rate_limited'},429,origin);
+  if(!await issueRateLimitAllows(origin,env))return json({ok:false,code:'rate_limited'},429,origin);
 
   const issue=await createGitHubIssue(payload,env,fetchImpl);
   if(!issue.ok)return json({ok:false,code:'service_unavailable'},502,origin);
   return json({ok:true,issueUrl:issue.issueUrl,issueNumber:issue.issueNumber},201,origin);
 }
 
-export {CATEGORIES,MAX_REQUEST_BYTES,TURNSTILE_ACTION,handleRequest,issueBody,sanitizeDiagnostics,validatePayload};
+export {CATEGORIES,MAX_REQUEST_BYTES,TURNSTILE_ACTION,fenceMarkdown,handleRequest,issueBody,sanitizeDiagnostics,validatePayload};
 export default {fetch(request,env){return handleRequest(request,env)}};

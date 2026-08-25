@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {handleRequest,issueBody,sanitizeDiagnostics,validatePayload} from '../feedback-worker/src/index.js';
+import {fenceMarkdown,handleRequest,issueBody,sanitizeDiagnostics,validatePayload} from '../feedback-worker/src/index.js';
 
 const ORIGIN='https://hound83.github.io';
 const WORKER_URL='https://feedback.example.test';
@@ -12,12 +12,14 @@ const ENV={
   TURNSTILE_SITE_KEY:'1x00000000000000000000AA',
   TURNSTILE_EXPECTED_ACTION:'pizza_feedback',
   TURNSTILE_EXPECTED_HOSTNAME:'hound83.github.io',
+  FEEDBACK_REQUEST_LIMITER:{limit:async()=>({success:true})},
   FEEDBACK_RATE_LIMITER:{limit:async()=>({success:true})}
 };
 
-function request(path,{method='GET',body,origin=ORIGIN,contentType='application/json'}={}){
+function request(path,{method='GET',body,origin=ORIGIN,contentType='application/json',clientIp='203.0.113.7'}={}){
   const headers={};
   if(origin!=null)headers.Origin=origin;
+  if(clientIp!=null)headers['CF-Connecting-IP']=clientIp;
   if(body!==undefined)headers['Content-Type']=contentType;
   return new Request(`${WORKER_URL}${path}`,{method,headers,body:body===undefined?undefined:typeof body==='string'?body:JSON.stringify(body)});
 }
@@ -71,17 +73,33 @@ test('configuration is CORS restricted and never returns secrets',async()=>{
 });
 
 test('configuration remains disabled until every required binding exists',async()=>{
-  for(const key of ['GITHUB_REPOSITORY','GITHUB_TOKEN','TURNSTILE_SECRET_KEY','TURNSTILE_SITE_KEY','FEEDBACK_RATE_LIMITER']){
+  for(const key of ['GITHUB_REPOSITORY','GITHUB_TOKEN','TURNSTILE_SECRET_KEY','TURNSTILE_SITE_KEY','TURNSTILE_EXPECTED_HOSTNAME','FEEDBACK_REQUEST_LIMITER','FEEDBACK_RATE_LIMITER']){
     const env={...ENV,[key]:''};
     const response=await handleRequest(request('/config'),env,async()=>{throw new Error('unused')});
     assert.deepEqual(await response.json(),{enabled:false,siteKey:''},key);
   }
 });
 
-test('the native Worker rate limit fails closed after Turnstile and before GitHub',async()=>{
+test('the request limiter fails closed before Turnstile validation',async()=>{
+  let requestLimitKey='';
+  const env={
+    ...ENV,
+    FEEDBACK_REQUEST_LIMITER:{limit:async({key})=>{requestLimitKey=key;return {success:false};}}
+  };
+  const response=await handleRequest(request('/feedback',{method:'POST',body:validPayload()}),env,async()=>{throw new Error('must not run')});
+  assert.equal(response.status,429);
+  assert.deepEqual(await response.json(),{ok:false,code:'rate_limited'});
+  assert.equal(requestLimitKey,'feedback-request:203.0.113.7');
+});
+
+test('the shared issue limiter fails closed after Turnstile and before GitHub',async()=>{
   const externalCalls=[];
-  let rateLimitKey='';
-  const env={...ENV,FEEDBACK_RATE_LIMITER:{limit:async({key})=>{rateLimitKey=key;return {success:false};}}};
+  let requestLimitKey='',issueLimitKey='';
+  const env={
+    ...ENV,
+    FEEDBACK_REQUEST_LIMITER:{limit:async({key})=>{requestLimitKey=key;return {success:true};}},
+    FEEDBACK_RATE_LIMITER:{limit:async({key})=>{issueLimitKey=key;return {success:false};}}
+  };
   const response=await handleRequest(request('/feedback',{method:'POST',body:validPayload()}),env,async url=>{
     externalCalls.push(String(url));
     assert.match(String(url),/siteverify$/);
@@ -89,7 +107,8 @@ test('the native Worker rate limit fails closed after Turnstile and before GitHu
   });
   assert.equal(response.status,429);
   assert.deepEqual(await response.json(),{ok:false,code:'rate_limited'});
-  assert.equal(rateLimitKey,`feedback:${ORIGIN}`);
+  assert.equal(requestLimitKey,'feedback-request:203.0.113.7');
+  assert.equal(issueLimitKey,`feedback-issue:${ORIGIN}`);
   assert.equal(externalCalls.length,1);
 });
 
@@ -142,11 +161,37 @@ test('diagnostic and issue-body helpers only retain approved non-recipe context'
   assert.doesNotMatch(markdown,/hydration|bakeLog|person@example\.com/);
 });
 
-test('email addresses are rejected before external services are called',async()=>{
+test('user Markdown is contained in an adaptive text fence',()=>{
+  const input='![tracking](https://attacker.example/p.png)\n[click](https://phishing.example)\n<img src=x onerror=1>\n````nested````\n@octocat';
+  const fenced=fenceMarkdown(input);
+  const lines=fenced.split('\n');
+  const opening=lines.shift(),closing=lines.pop();
+  const delimiter=opening.slice(0,-4);
+  assert.match(opening,/^`{3,}text$/);
+  assert.equal(closing,delimiter);
+  assert(delimiter.length>Math.max(...[...lines.join('\n').matchAll(/`+/g)].map(match=>match[0].length),0));
+  assert.equal(lines.join('\n'),input.replace('@','@\u200b'));
+  const validated=validatePayload(validPayload({message:input,steps:'',diagnostics:null}));
+  const body=issueBody(validated.payload);
+  assert.match(body,/Submitted anonymously through the pizza calculator feedback form\./);
+  assert.doesNotMatch(body,/v1\.2 feedback form/);
+  assert(body.includes(fenced));
+});
+
+test('Unicode format controls are removed from public feedback fields',()=>{
+  const validated=validatePayload(validPayload({summary:'safe\u202Etitle here',message:'Clear\u2066 message content'}));
+  assert.equal(validated.error,undefined);
+  assert.equal(validated.payload.summary,'safetitle here');
+  assert.equal(validated.payload.message,'Clear message content');
+});
+
+test('recognizable literal email addresses are rejected before external services are called',async()=>{
   let calls=0;
-  const response=await handleRequest(request('/feedback',{method:'POST',body:validPayload({message:'Please contact me at person@example.com about this bug.'})}),ENV,async()=>{calls++;throw new Error('must not run')});
-  assert.equal(response.status,400);
-  assert.deepEqual(await response.json(),{ok:false,code:'personal_data'});
+  for(const email of ['person@example.com','person＠example.com']){
+    const response=await handleRequest(request('/feedback',{method:'POST',body:validPayload({message:`Please contact me at ${email} about this bug.`})}),ENV,async()=>{calls++;throw new Error('must not run')});
+    assert.equal(response.status,400,email);
+    assert.deepEqual(await response.json(),{ok:false,code:'personal_data'},email);
+  }
   assert.equal(calls,0);
 });
 

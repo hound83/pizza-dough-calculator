@@ -17,7 +17,7 @@ const FEEDBACK_COPY={
   sending:['Feedback wordt veilig verstuurd…','Sending feedback securely…'],
   success:['Bedankt! Je feedback is als GitHub-issue opgeslagen.','Thank you! Your feedback was saved as a GitHub issue.'],
   rateLimited:['Er zijn kort na elkaar te veel berichten verstuurd. Wacht even en probeer het daarna opnieuw.','Too many messages were sent in a short period. Wait a moment and try again.'],
-  privacyRejected:['Verwijder e-mailadressen of andere contactgegevens; je feedback wordt openbaar opgeslagen.','Remove email addresses or other contact details; your feedback is stored publicly.'],
+  privacyRejected:['Verwijder het e-mailadres. Deel ook geen andere contactgegevens; je feedback wordt openbaar opgeslagen.','Remove the email address. Do not include other contact details either; your feedback is stored publicly.'],
   rejected:['De feedback kon niet worden opgeslagen. Controleer je tekst en probeer het opnieuw.','The feedback could not be saved. Check your text and try again.'],
   send:['Feedback versturen','Send feedback'],
   sendingButton:['Bezig met versturen…','Sending…'],

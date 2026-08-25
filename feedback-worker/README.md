@@ -7,19 +7,20 @@ This optional Cloudflare Worker validates anonymous calculator feedback and crea
 - `GITHUB_TOKEN` and `TURNSTILE_SECRET_KEY` are Worker secrets and must never be committed or sent to the browser.
 - The public Turnstile site key is returned by `GET /config` only when all required production bindings exist.
 - `POST /feedback` accepts only four categories and strictly bounded text fields.
-- Cloudflare Turnstile is verified server-side with the fixed `pizza_feedback` action and configured hostname.
-- The browser form has no contact field. The Worker rejects email addresses because issues in the configured repository are public.
+- Cloudflare Turnstile is verified server-side with the fixed `pizza_feedback` action and a mandatory configured hostname. The service remains disabled if that hostname is blank.
+- The browser form has no contact field. The Worker rejects recognizable literal email addresses after Unicode normalization because issues in the configured repository are public; the form warning remains the primary protection against obfuscated contact details.
+- Unicode format controls are removed and submitted message text is placed inside an adaptive Markdown text fence, so links, images, HTML, and nested fences remain inert in the public issue.
 - Opt-in diagnostics are allowlisted. Recipe values, dough-log entries, local storage, and unexpected diagnostic keys are discarded.
 - The Worker does not add the visitor's IP address to GitHub or application storage. Cloudflare processes the request and Turnstile check under its own privacy policy, which is linked directly in the modal.
 - Allowed browser origins are exact matches from `ALLOWED_ORIGINS`.
-- After a valid Turnstile result, a native Cloudflare binding limits issue creation to 20 attempts per minute per Cloudflare location before GitHub is called. Invalid tokens cannot consume that shared issue quota, and the limiter deliberately does not use IP addresses as user identifiers.
+- A generous native limiter permits at most 10 syntactically valid submissions per minute per Cloudflare request IP before Siteverify, protecting the validation service without storing that IP in GitHub or application data. After a valid Turnstile result, a separate shared binding limits issue creation to 3 attempts per minute per Cloudflare location before GitHub is called. Invalid tokens cannot consume the tighter shared issue quota.
 
 ## One-time production setup
 
 1. Create a Cloudflare Turnstile widget for `hound83.github.io` and copy its public site key and secret key.
 2. Create a fine-grained GitHub token restricted to `hound83/pizza-dough-calculator`, with **Issues: Read and write** and no broader repository permission. A GitHub App installation token with the same permission is also supported.
 3. Replace the empty `TURNSTILE_SITE_KEY` value in `wrangler.jsonc` with the public site key.
-   The committed rate-limit namespace `1200` must be unique within the Cloudflare account; change only that identifier if it already belongs to another binding.
+   The committed rate-limit namespaces `1200` and `1201` must each be unique within the Cloudflare account; change only an identifier that already belongs to another binding.
 4. Install and authenticate Wrangler:
 
    ```bash

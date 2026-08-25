@@ -4,12 +4,30 @@
 
 - Released comparison baseline: `f85c1d2ce274a9c68e04916d55f630ce4d5c6fef` (`main`, released v1.1.1)
 - Candidate branch: `feature/v1.3.0-feedback`
-- Base calculation commit on GitHub: `96e484f7a071f161ada394a2fd17f6f60b0e1614` (`feature/v1.2.0-calculation-model`)
+- Base calculation branch: `feature/v1.2.0-calculation-model`, including the post-audit selector and lower-bound handling correction
 - Comparison: <https://github.com/hound83/pizza-dough-calculator/compare/main...feature/v1.3.0-feedback>
 - Public version in the candidate: `1.3.0`
 - Persistence remains: `pizzaCalcV51` / schema `51`
 
-This is a feature audit, not a behavior-neutral refactor audit. The intended new behavior is a Dutch/English in-app feedback form that does not require a GitHub account. The staged v1.2.0 calculation model at `96e484f7a071f161ada394a2fd17f6f60b0e1614` is the direct functional baseline; all pizza, dough, fermentation, mixer, picker, Basic/Full, AVPN, and persistence behavior outside feedback must remain unchanged from that commit.
+This is a feature audit, not a behavior-neutral refactor audit. The intended new behavior is a Dutch/English in-app feedback form that does not require a GitHub account. The staged v1.2.0 calculation branch is the direct functional baseline; all pizza, dough, fermentation, mixer, picker, Basic/Full, AVPN, and persistence behavior outside its explicitly documented water-guidance correction must remain unchanged.
+
+## Post-audit correction set
+
+This handoff supersedes the candidate reviewed in `pz-audit-v130.md`. The accepted findings were resolved as follows:
+
+| Finding | Resolution |
+|---|---|
+| B1 | Both ambiguous Playwright selectors now target the step card explicitly. The cold-boundary scenario is also covered in Chromium. |
+| B2 | A nonblank expected hostname is required before `/config` reports enabled, and Siteverify itself also fails closed when the hostname is absent. |
+| B3 | Message and reproduction text are placed inside an adaptive Markdown text fence longer than every submitted backtick run. Links, images, HTML, and nested fences remain inert without rewriting the original text. |
+| H1 | A generous per-client limiter runs before Siteverify; a separate shared limit of three verified issue attempts per minute runs before GitHub. Both bindings fail closed. |
+| M1 | A finite 1 °C lower-bound result retains the ice-water handling instruction even when the target remains unattainable. |
+| M2 | Unicode format controls are removed from public text before the issue title or body is built. |
+| M3 | Literal-email detection scans an NFKC-normalized copy, covering full-width characters. Documentation now explicitly avoids claiming detection of obfuscated contact details. |
+| L2 | When diagnostics are not supplied, the issue footer is version-neutral instead of falling back to v1.2. |
+| L5/L6 | The nominal output test is named as a versioned snapshot, and the direct room-slope pin documents its intentional tau dependency. |
+
+The optional honeypot/autofill, Basic-mode Pro note, and bootstrap-guard suggestions remain deliberately outside this correction set.
 
 ## Product decision
 
@@ -45,12 +63,12 @@ Diagnostics are a new object built from six existing non-recipe UI variables. Th
 The dependency-free module is `feedback-worker/src/index.js`; deployment configuration is `feedback-worker/wrangler.jsonc`.
 
 1. `ALLOWED_ORIGINS` is an exact origin allowlist; rejected origins receive no CORS grant.
-2. A native Cloudflare rate-limit binding fails closed after successful Turnstile validation and before GitHub. Invalid tokens cannot consume the shared issue quota; the limiter keys the approved application origin, not an IP address shared by mobile users.
+2. Two native Cloudflare rate-limit bindings fail closed. A generous per-client request limiter runs before Siteverify to bound validation floods. A separate tighter origin-keyed issue limiter runs after successful Turnstile validation and before GitHub, so invalid tokens cannot consume the issue quota.
 3. The body is JSON-only and capped at 16 KiB; individual fields and categories are bounded again after parsing.
 4. Honeypot submissions receive a quiet success but never call either remote service.
-5. Email addresses are rejected before public storage.
-6. Turnstile Siteverify is mandatory and checks success, action `pizza_feedback`, and the configured production hostname. Tokens remain server-side validated and single-use.
-7. GitHub mentions are neutralized and user text is block-quoted in the generated issue.
+5. Recognizable literal email addresses are rejected after Unicode normalization before public storage; the UI warning remains the protection against obfuscated contact details.
+6. Turnstile Siteverify is mandatory and checks success, action `pizza_feedback`, and a required configured production hostname. Tokens remain server-side validated and single-use.
+7. Unicode format controls are removed, GitHub mentions are neutralized, and user text is contained in an adaptive inert Markdown fence in the generated issue.
 8. `GITHUB_TOKEN` and `TURNSTILE_SECRET_KEY` exist only as Worker secrets. Errors expose neither upstream response bodies nor credentials.
 9. The GitHub token is documented as fine-grained and restricted to Issues write on `hound83/pizza-dough-calculator`.
 10. GitHub issue URLs returned to the browser are accepted only when they match the configured repository; the client additionally accepts only HTTPS `github.com/.../issues/<number>` links.
@@ -67,9 +85,9 @@ Current candidate bundle evidence before production endpoint configuration:
 
 | Artefact | SHA-256 |
 |---|---|
-| standalone `index.html` | `e61ba35b31976b37ef3edf2ea81e3f395597ae3da39a21932f405494fd394b8b` |
+| standalone `index.html` | `40b482c0bb4d85fc4667eeda0a03ebf2c8966f86cee95a48f160c0da31918473` |
 | CSS | `dae8b7731125c3540d3070b0940290052cc93d1d86db17d398643b215b5c5f7e` |
-| combined JavaScript | `119b40d3e858240dbe6e336f2701962efa764f208e82b07c8b3c6fc9948c355d` |
+| combined JavaScript | `ecec933074dc5df25d03f24fb4a01348730abade853265a3916104d0f8a78ac3` |
 
 These are candidate reconstruction evidence, not a released baseline. The immutable v1.0.0, v1.1.0, and v1.1.1 release hashes remain documented unchanged.
 
@@ -79,7 +97,7 @@ Local completed gates:
 
 ```text
 15/15 structure and bundle-integrity checks
-13/13 feedback Worker security tests
+16/16 feedback Worker security tests
 86/86 standalone functional regressions
 86/86 modular-source functional regressions
 ```
