@@ -38,6 +38,11 @@ const V1_2_1_RELEASE_BASELINE={
   css:'7140b86b8e3d0335ea5bc6e88c37e756aabb9713de011ded629c59266cb2df19',
   javascript:'dd69b2d1be8f912e15fcb4524642d27ea27a89d29dae2c5e76f00b9f3d0d73cd'
 };
+const V1_3_0_CANDIDATE_BASELINE={
+  singleFile:'f481a73b0ea1fdf5df452e790c386d2040addf4bb95bce74d1e7b6b4231b9203',
+  css:'cb614bf7107294becbfabe37f0d30409c7b60aea558359cfd9ae6dd6c5a96bee',
+  javascript:'c36ec45478369dbd8f820045d39b40edf7b3c03033216e76054567b8f390c3ab'
+};
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}
 
@@ -48,7 +53,7 @@ const css=built.css;
 const combinedJavaScript=built.javascript;
 const scripts=[...sourceHtml.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*><\/script>/gi)].map(match=>match[1]);
 assert(JSON.stringify(scripts)===JSON.stringify(EXPECTED_SCRIPTS),`Unexpected script order: ${scripts.join(', ')}`);
-pass('source HTML loads the eleven responsibility-based scripts in the documented order');
+pass('source HTML loads the twelve responsibility-based scripts in the documented order');
 
 assert(!/<style(?:\s[^>]*)?>/i.test(sourceHtml),'Source HTML contains an inline stylesheet.');
 assert(!/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>/i.test(sourceHtml),'Source HTML contains inline JavaScript.');
@@ -76,11 +81,12 @@ for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.inclu
 pass('released v1.1.1 hashes remain documented');
 
 for(const hash of Object.values(V1_2_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.0 baseline hash is missing from product guardrails: ${hash}`);
-assert(sha256(bundledHtml)===V1_2_1_RELEASE_BASELINE.singleFile,'Standalone v1.2.1 release baseline changed without approval.');
-assert(sha256(css)===V1_2_1_RELEASE_BASELINE.css,'CSS v1.2.1 release baseline changed without approval.');
-assert(sha256(combinedJavaScript)===V1_2_1_RELEASE_BASELINE.javascript,'JavaScript v1.2.1 release baseline changed without approval.');
 for(const hash of Object.values(V1_2_1_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.1 baseline hash is missing from product guardrails: ${hash}`);
-pass('released v1.2.0 and v1.2.1 baselines are pinned and documented');
+assert(sha256(bundledHtml)===V1_3_0_CANDIDATE_BASELINE.singleFile,'Standalone v1.3.0 candidate baseline changed without approval.');
+assert(sha256(css)===V1_3_0_CANDIDATE_BASELINE.css,'CSS v1.3.0 candidate baseline changed without approval.');
+assert(sha256(combinedJavaScript)===V1_3_0_CANDIDATE_BASELINE.javascript,'JavaScript v1.3.0 candidate baseline changed without approval.');
+for(const hash of Object.values(V1_3_0_CANDIDATE_BASELINE))assert(guardrails.includes(hash),`Approved v1.3.0 candidate hash is missing from product guardrails: ${hash}`);
+pass('released v1.2.0 and v1.2.1 baselines remain documented and the integrated v1.3.0 feedback candidate is pinned');
 
 new vm.Script(combinedJavaScript,{filename:'combined-refactor.js'});
 pass('recombined JavaScript parses successfully');
@@ -102,6 +108,7 @@ const contracts=[
   ['fermentation-live.js','function liveFermentationPlan'],
   ['planning-shopping.js','function buildTimeline'],
   ['navigation-logbook.js','function renderBakeLog'],
+  ['feedback.js','function initFeedback'],
   ['persistence-bootstrap.js','const SAVE_KEY']
 ];
 for(const [file,needle] of contracts){
@@ -116,6 +123,17 @@ for(const [contract,expectedOwner] of [['DOMContentLoaded','persistence-bootstra
   assert(actual.length===1&&actual[0]===expectedOwner,`${contract} ownership is ${actual.join(', ')||'missing'}, expected ${expectedOwner}.`);
 }
 pass('bootstrap and persistence contracts have one explicit owner');
+
+const feedbackSource=owners.get('feedback.js');
+for(const forbidden of ['localStorage','SAVE_KEY','saveState','bakeLog','pizzaSelections','yeastPct','hydration']){
+  assert(!feedbackSource.includes(forbidden),`feedback.js crosses the calculator-data boundary through ${forbidden}.`);
+}
+const feedbackMarkup=sourceHtml.slice(sourceHtml.indexOf('id="feedbackModal"'),sourceHtml.indexOf('id="pizzaPickerOverlay"'));
+const feedbackControls=[...feedbackMarkup.matchAll(/<(?:input|select|textarea)\b[^>]*>/gi)].map(match=>match[0]);
+assert(feedbackControls.length===6,`Expected six feedback controls, found ${feedbackControls.length}.`);
+assert(feedbackControls.every(tag=>/\bdata-feedback-control(?:="")?\b/i.test(tag)),`Feedback controls must be excluded from calculator wiring: ${feedbackControls.filter(tag=>!/\bdata-feedback-control(?:="")?\b/i.test(tag)).join(', ')}`);
+assert(!/<button[^>]+id="feedbackButton"[^>]+onclick=/i.test(sourceHtml),'The feedback button uses an inline event handler.');
+pass('feedback UI is isolated from calculator data, persistence, and inline handlers');
 
 const staticHtml=sourceHtml.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
 const ids=[...staticHtml.matchAll(/\bid=["']([^"']+)["']/gi)].map(match=>match[1]);

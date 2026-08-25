@@ -106,6 +106,16 @@ These hashes cover the released patch over v1.2.0: repaired Dutch/English interf
 - The disclosure introduces no persisted field and no migration. Storage remains `pizzaCalcV51` / schema 51.
 - The v1.2.0 staged DDT calculation modules and their numerical contract remain unchanged.
 
+## Approved v1.3.0 feedback candidate baseline
+
+These hashes cover the integrated v1.3.0 candidate that adds optional anonymous feedback on top of the released v1.2.1 application and preserves its calculation, localization, Marinara, and sauce-choice contracts. They remain provisional until the production Worker endpoint and real end-to-end issue check are complete.
+
+| Artefact | SHA-256 |
+|---|---|
+| standalone `index.html` | `f481a73b0ea1fdf5df452e790c386d2040addf4bb95bce74d1e7b6b4231b9203` |
+| CSS | `cb614bf7107294becbfabe37f0d30409c7b60aea558359cfd9ae6dd6c5a96bee` |
+| combined JavaScript | `c36ec45478369dbd8f820045d39b40edf7b3c03033216e76054567b8f390c3ab` |
+
 ## v1.1.0 Basic/Full display contract
 
 - Basic and Full are display modes independent of the Dough only, Dough + sauce, and Complete pizzas output modes.
@@ -217,7 +227,19 @@ No unvalidated batch-size exponent is applied. Exact numerical anchors concern t
 
 - The yeast activity curve, covered-ball thermal constant, storage key, and schema 51 remain unchanged.
 - No new Basic input, batch exponent, calibration UI, automatic learning, box selector, or cold-phase measurement is added.
-- Anonymous feedback is not part of v1.2.0. It is maintained separately as the v1.3.0 candidate.
+- Anonymous feedback is not part of the v1.2.0 calculation baseline. It is added separately in v1.3.0.
+
+## v1.3.0 anonymous-feedback contract
+
+- Feedback is an optional online feature. Every calculator, recipe, fermentation, mixer, picker, storage, and offline workflow remains usable when the feedback endpoint, network, Turnstile, Worker, or GitHub is unavailable.
+- A person submitting feedback does not need a GitHub account. A secured server-side adapter creates the issue; no GitHub credential or Turnstile secret may appear in source HTML, browser JavaScript, a request response, or committed configuration.
+- Feedback is stored as a public GitHub issue. The form must disclose this before submission, has no contact field, and warns against personal information. The server rejects recognizable literal email addresses after Unicode normalization; obfuscated contact details remain the submitter's responsibility and must not be claimed as automatically detected. The modal also discloses that Cloudflare Turnstile is loaded for the anti-bot check and links to Cloudflare's privacy policy.
+- The accepted categories are Bug/technical problem, Idea/improvement, Calculation/recipe, and Language/translation. Summary, message, optional reproduction steps, honeypot, language, Turnstile token, and the explicitly opted-in diagnostic object are the complete request contract.
+- Safe diagnostics are disabled by default. When enabled, they may contain only app version, interface language, Basic/Full display mode, output mode, wizard page, and viewport. Recipe inputs, ingredient amounts, fermentation values, temperatures, pizza selections, dough-log entries, local storage, user-agent strings, and unexpected keys must never be submitted or persisted.
+- Turnstile is loaded only after opening a configured feedback form and its token is always verified server-side with the `pizza_feedback` action and a mandatory expected production hostname. Exact allowed origins, a generous fail-closed per-client request limit before Siteverify, a tighter shared issue limit after successful Turnstile validation and before GitHub, bounded JSON and text sizes, removal of Unicode format controls, neutralized GitHub mentions, inert fenced user text, and safe generic error responses are mandatory backend controls. The per-client limiter may use Cloudflare's request IP only as an ephemeral rate-limit key; it is never added to GitHub or application storage.
+- A downloaded `file://` copy never attempts to embed Turnstile. It explains that submission requires the live calculator while preserving all offline calculator behavior.
+- Feedback fields are ephemeral and are excluded from `saveState()`. The persistence key and schema remain `pizzaCalcV51` / schema 51 because no recipe state or stored-field interpretation changes.
+- The release is not production-ready while the public Turnstile site key or feedback API URL is blank. Before tagging v1.3.0, the deployed Worker, real Turnstile validation, and creation of a disposable end-to-end GitHub issue must be verified, followed by removal or closure of that disposable issue.
 
 ## Change checklist
 

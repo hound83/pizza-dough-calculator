@@ -19,6 +19,7 @@ const EXPECTED_SCRIPTS=[
   'assets/js/fermentation-live.js',
   'assets/js/planning-shopping.js',
   'assets/js/navigation-logbook.js',
+  'assets/js/feedback.js',
   'assets/js/persistence-bootstrap.js'
 ];
 const SCRIPT_TAGS=EXPECTED_SCRIPTS.map(src=>`<script src="${src}"></script>`).join('\n');

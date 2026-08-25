@@ -2,18 +2,18 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.2.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
-[![Tests](https://img.shields.io/badge/regression_tests-89%2F89_passing-76c990)](tests/test_v50.js)
+[![Version](https://img.shields.io/badge/version-v1.3.0_candidate-f0b45a)](docs/Claude_v1.3.0_feedback_handoff.md)
+[![Tests](https://img.shields.io/badge/regression_tests-90%2F90_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
 A comprehensive Dutch and English calculator for pizza dough, fermentation, sauce, toppings, and a complete practical workflow.
 
-The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
+The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use. The calculator core has no runtime dependency; v1.3 feedback is an optional online action that loads its anti-bot check only when opened.
 
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.2.1 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
 
-> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.2.1 is the current public release and keeps storage schema 51.
+> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.2.1 is the current public release; this branch builds the backward-compatible v1.3.0 anonymous-feedback candidate on top of that complete release without changing storage schema 51.
 
 ## Features
 
@@ -45,6 +45,7 @@ Highlights:
 - backward planning from a desired baking day and time;
 - checkable steps, print layout, and copyable recipes;
 - optional live temperature measurements and a local dough log;
+- optional in-app feedback without a GitHub account, stored transparently as a public GitHub issue;
 - complete Dutch and English interface.
 
 ## Usage
@@ -55,6 +56,7 @@ Highlights:
 4. Configure fermentation, temperatures, and optionally a target baking time.
 5. In Complete pizzas mode, assign a recipe to each dough ball.
 6. Follow the generated workflow from mixing through baking.
+7. Optionally use **Feedback** to report a bug or idea without signing in to GitHub.
 
 All calculations update immediately. Values and progress are stored locally in the browser, so refreshing the page does not discard the recipe.
 
@@ -69,14 +71,17 @@ This is intentionally **not a validated laboratory model** or an official AVPN c
 ## Language, privacy, and storage
 
 - The interface switches immediately between Dutch and English.
-- No account or server is required.
+- No account, server, or network is required for calculations, recipes, storage, or the dough log.
 - Recipe settings, progress, and the dough log are stored only in the browser through `localStorage`.
-- The app sends no recipe or log data to a backend.
+- Feedback submission is a separate, explicit online action. It never sends recipe values, dough-log data, or browser storage.
+- Safe technical context is off by default and contains only app version, language, modes, wizard page, and viewport when selected.
+- Feedback text is stored as a public GitHub issue. The form has no contact field and warns against personal information.
+- Opening a configured feedback form loads Cloudflare Turnstile for the anti-bot check; the modal discloses this and links to Cloudflare's privacy policy.
 - `Reset` removes the locally stored calculator state but preserves the language choice.
 
 ## Running locally
 
-The simplest option is to download `index.html` and open it directly in a modern browser.
+The simplest option is to download `index.html` and open it directly in a modern browser. All calculator functions work this way; the feedback form directs offline copies to the live calculator because Cloudflare Turnstile does not support `file://` pages.
 
 You can also clone the repository:
 
@@ -108,9 +113,11 @@ The site will normally be available at:
 https://<username>.github.io/<repository-name>/
 ```
 
+GitHub Pages cannot securely create anonymous issues by itself. The optional v1.3 feedback button therefore uses the separate adapter under [`feedback-worker/`](feedback-worker/). Its one-time Cloudflare, Turnstile, and repository-scoped GitHub setup is documented in [`feedback-worker/README.md`](feedback-worker/README.md). The calculator stays fully usable when this adapter is absent.
+
 ## Development and tests
 
-The published application has no runtime dependencies. Development requires Node.js 20 or newer; Playwright is the single development dependency used for real Chromium coverage.
+The calculator core has no runtime dependencies. Development requires Node.js 20 or newer; Playwright provides real Chromium coverage. The optional feedback adapter keeps its pinned Wrangler tooling in a separate package so it never enters the standalone calculator bundle.
 
 Install the reproducible development environment once:
 
@@ -125,13 +132,14 @@ Then run the complete suite:
 npm test
 ```
 
-Current result:
+Candidate test inventory:
 
 ```text
 15 refactor-structure tests passed
-89 bundle regression tests passed
-89 source regression tests passed
-41 Chromium browser/layout tests passed
+16 feedback Worker security tests passed
+90 bundle regression tests passed
+90 source regression tests passed
+47 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:
@@ -147,7 +155,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, and the released v1.2.1 baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the twelve fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, every released baseline through v1.2.1, and the integrated v1.3.0 candidate. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused checks protect staged water guidance, the v1.2.1 translation and sauce-choice repairs, and the feedback modal's success, unconfigured, privacy, payload, and retry paths. Phone coverage protects the full-height picker and click-versus-hover contract. The Worker suite injects Turnstile and GitHub responses and verifies that secrets and recipe data cannot cross the API boundary.
 
 Use the following commands when working on the modular sources:
 
@@ -168,6 +176,7 @@ The project uses semantic versioning from the first golden release onward:
 | **v1.1.1** | Backward-compatible usability correction after v1.1.0 |
 | **v1.2.0** | Staged, route-aware main-water and final-dough-temperature calculation |
 | **v1.2.1** | Backward-compatible localization, recipe-data, and sauce-choice cleanup |
+| **v1.3.0** | Optional anonymous-feedback functionality on top of v1.2.1 |
 | **v2.0.0** | Reserved for a genuinely breaking change |
 
 Historic working versions such as v50 remain where technically necessary in storage migrations, test names, and audit documents. They are no longer used as public product versions.
@@ -179,11 +188,13 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`index.html`](index.html) | Generated standalone publication for Pages and offline use |
 | [`src/index.html`](src/index.html) | Semantic source HTML and fixed asset-loading order |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Complete presentation and responsive layout |
-| [`src/assets/js/`](src/assets/js/) | Eleven ordered responsibility-based modules |
+| [`src/assets/js/`](src/assets/js/) | Twelve ordered responsibility-based modules |
+| [`feedback-worker/`](feedback-worker/) | Optional secured adapter from anonymous feedback to GitHub Issues |
 | [`tools/bundle.js`](tools/bundle.js) | Dependency-free standalone bundler and drift check |
 | [`tests/test_v50.js`](tests/test_v50.js) | Fast Node/VM functional regression suite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architecture, integrity, and golden-equivalence tests |
 | [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromium loading, responsive layout, and picker interaction tests |
+| [`tests/feedback-worker.test.mjs`](tests/feedback-worker.test.mjs) | CORS, privacy, Turnstile, and GitHub-adapter security tests |
 | [`playwright.config.js`](playwright.config.js) | Reproducible local and CI browser-test configuration |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module boundaries, dependencies, and change rules |
 | [`docs/PRODUCT_GUARDRAILS.md`](docs/PRODUCT_GUARDRAILS.md) | Non-negotiable product behavior and change protocol |
@@ -197,15 +208,15 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Release:** v1.2.1 is current; tag v1.0.0 remains the immutable historical golden baseline.
-- **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the tested standalone publication used by GitHub Pages.
-- **Audit:** Claude's final v1.2.1 re-audit approved the release after the Marinara fidelity correction and both browser-coverage additions; all 15 + 89 + 89 + 41 checks passed independently.
+- **Release:** v1.2.1 is current; v1.3.0 is the integrated feedback candidate. Tag v1.0.0 remains the immutable historical golden baseline.
+- **Current architecture:** static source HTML, CSS, and twelve JavaScript modules generate the standalone publication; a separate optional Worker owns anonymous issue creation.
+- **Audit:** v1.2.0, v1.2.1, and the feedback candidate passed independent Claude crosschecks before integration.
 - **Small follow-up:** a non-blocking accessibility improvement remains possible for seven extended field labels.
 - **v1.1.0:** a clear **Basic/Full** toggle without creating two separate calculation models.
 - **v1.1.1:** a 30 cm personal default, practical percentage controls, corrected bilingual count grammar, and consistent dough-ball-weight display.
 - **v1.2.0:** a heat-capacity-weighted staged DDT model, separate autolyse/direct routes, explicit main versus reserved water, honest attainability reporting, and normal-kitchen guidance.
-- **v1.2.1:** repaired NL/EN copy, deduplicated Marinara garlic/oregano with the separate 5 g finishing EVOO preserved, and a cleaner collapsed sauce override that retains all seven sauce types.
-- **v1.3.0 next:** anonymous feedback remains separate and requires production Turnstile/Worker configuration and a real end-to-end issue check before release.
+- **v1.2.1:** repaired NL/EN copy, corrected Marinara layers, and a cleaner collapsed sauce override retaining all seven sauce types.
+- **v1.3.0 candidate:** account-free feedback with explicit public-storage notice, opt-in safe diagnostics, server-side anti-bot validation, and no calculator-state migration.
 
 ## Background
 

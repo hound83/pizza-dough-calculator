@@ -4,7 +4,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v1.2.1</title>
+<meta content="" name="pizza-feedback-api"/>
+<title>Pizzadeegcalculator v1.3.0</title>
 <link href="assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
@@ -19,6 +20,7 @@
 </div>
 <div class="top-tools">
 <button class="reset-button" onclick="resetCalculator()" title="Calculator resetten" type="button">↻ <span>Reset</span></button>
+<button aria-controls="feedbackModal" aria-haspopup="dialog" class="feedback-button" id="feedbackButton" type="button"><span aria-hidden="true">💬</span> <span id="feedbackButtonLabel">Feedback</span></button>
 <div aria-label="Taal / Language" class="language-switch">
 <button aria-label="Nederlands" id="langNl" onclick="setLanguage('nl')" type="button">NL</button>
 <button aria-label="English" id="langEn" onclick="setLanguage('en')" type="button">EN</button>
@@ -501,6 +503,7 @@
 <script src="assets/js/fermentation-live.js"></script>
 <script src="assets/js/planning-shopping.js"></script>
 <script src="assets/js/navigation-logbook.js"></script>
+<script src="assets/js/feedback.js"></script>
 <script src="assets/js/persistence-bootstrap.js"></script>
 <div class="float-actions hidden" id="floatingActions">
 <button class="float-next" id="floatNext" onclick="nextWizardPage(currentWizardPage)">Volgende →</button>
@@ -516,6 +519,56 @@
 </div>
 </div>
 <div id="ingredientsModalBody"></div>
+</div>
+</div>
+<div aria-hidden="true" class="feedback-overlay hidden" id="feedbackModal">
+<div aria-describedby="feedbackIntro" aria-labelledby="feedbackTitle" aria-modal="true" class="feedback-panel" id="feedbackPanel" role="dialog" tabindex="-1">
+<div class="feedback-head">
+<div>
+<h2 id="feedbackTitle">Feedback geven</h2>
+<p class="hint" id="feedbackIntro">Geen GitHub-account nodig. Je bericht wordt via een beveiligde tussenlaag doorgestuurd.</p>
+</div>
+<button aria-label="Feedback sluiten" class="modal-close" id="feedbackCloseButton" type="button">×</button>
+</div>
+<form autocomplete="off" id="feedbackForm" novalidate="">
+<div class="feedback-grid">
+<label>Soort feedback
+<select class="field" data-feedback-control="" id="feedbackCategory" required="">
+<option value="">Maak een keuze</option>
+<option value="bug">Bug of technisch probleem</option>
+<option value="idea">Idee of verbetering</option>
+<option value="calculation">Berekening of recept</option>
+<option value="translation">Taal of vertaling</option>
+</select>
+</label>
+<label>Korte samenvatting
+<input class="field" data-feedback-control="" id="feedbackSummary" maxlength="120" minlength="3" placeholder="Bijv. knop valt buiten beeld op mijn telefoon" required="" type="text"/>
+</label>
+<label class="wide">Wat wil je melden?
+<textarea class="field" data-feedback-control="" id="feedbackMessage" maxlength="4000" minlength="10" placeholder="Beschrijf wat er gebeurde of wat je graag anders zou zien." required="" rows="5"></textarea>
+</label>
+<label class="wide">Stappen om het te reproduceren (optioneel)
+<textarea class="field" data-feedback-control="" id="feedbackSteps" maxlength="1500" placeholder="Bijv. open Volledige pizza's → kies recept → ..." rows="3"></textarea>
+</label>
+</div>
+<div aria-hidden="true" class="feedback-honeypot">
+<label>Website<input autocomplete="off" data-feedback-control="" id="feedbackWebsite" tabindex="-1" type="text"/></label>
+</div>
+<label class="feedback-diagnostics">
+<input data-feedback-control="" id="feedbackIncludeDiagnostics" type="checkbox"/>
+<span><b>Veilige technische informatie meesturen</b><small id="feedbackDiagnosticsHelp">Alleen appversie, taal, schermmodus en schermgrootte; nooit receptwaarden, logboek of lokale opslag.</small></span>
+</label>
+<div class="warning feedback-privacy" id="feedbackPrivacy"><b>Let op:</b> je feedback wordt als openbaar GitHub-issue opgeslagen. Deel geen namen, e-mailadressen of andere persoonlijke gegevens.</div>
+<p class="feedback-third-party" id="feedbackThirdParty">Bij het openen van een geconfigureerd feedbackformulier wordt <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener" target="_blank">Cloudflare Turnstile</a> geladen voor de anti-botcontrole.</p>
+<div aria-live="polite" class="feedback-status" id="feedbackStatus"></div>
+<div class="feedback-turnstile" id="feedbackTurnstile"></div>
+<a class="feedback-live-link hidden" href="https://hound83.github.io/pizza-dough-calculator/" id="feedbackLiveLink" rel="noopener" target="_blank">Open de live calculator om feedback te versturen</a>
+<a class="feedback-success-link hidden" href="#" id="feedbackIssueLink" rel="noopener" target="_blank">Bekijk je feedback op GitHub</a>
+<div class="feedback-actions">
+<button class="btn ghost" id="feedbackCancelButton" type="button">Annuleren</button>
+<button class="btn primary" disabled="" id="feedbackSendButton" type="submit">Feedback versturen</button>
+</div>
+</form>
 </div>
 </div>
 <div class="picker-overlay" id="pizzaPickerOverlay" onclick="overlayBackgroundClose(event)">

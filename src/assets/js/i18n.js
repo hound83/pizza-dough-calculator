@@ -274,6 +274,7 @@ function setLanguage(lang){
   clearSearchCaches();
   SAFE.set('pizzaCalcLanguage',currentLang);
   update();
+  if(typeof refreshFeedbackLanguage==='function')refreshFeedbackLanguage();
   // De picker bevat rechtstreeks met L(nl,en) opgebouwde HTML. Wanneer hij
   // openstaat moet die bron opnieuw worden gerenderd voordat de algemene
   // tekstnodevertaler draait; anders kan oude en nieuwe taal zich mengen.
