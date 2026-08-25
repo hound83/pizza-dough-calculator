@@ -266,6 +266,35 @@ for(const publication of PUBLICATIONS){
       await expect(page.locator('#sauceType option')).toHaveCount(7);
     });
 
+    test('keeps per-ball sauce customization collapsed and functional',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="full"]').click();
+      await page.evaluate(()=>showPage(3));
+
+      const disclosure=page.locator('#pizzaCustomize .sauce-choice-disclosure').first();
+      await expect(disclosure).toBeVisible();
+      await expect(disclosure).not.toHaveAttribute('open','');
+      await expect(disclosure.locator('.sauce-choice-current')).toContainText('San Marzano');
+
+      await disclosure.locator('summary').click();
+      await expect(disclosure.locator('[data-sauce-choice]')).toHaveCount(7);
+      await disclosure.locator('[data-sauce-choice="pesto"]').click();
+      await expect(page.locator('#pizzaCustomize .sauce-choice-disclosure').first()).not.toHaveAttribute('open','');
+      await expect(page.locator('#pizzaCustomize .sauce-choice-current').first()).toContainText('Pesto');
+    });
+
+    test('supports keyboard activation of sauce disclosures and choices',async({page})=>{
+      await page.setViewportSize({width:1280,height:900});
+      await openPicker(page,publication);
+
+      const disclosure=page.locator('#pizzaPickerPreview .sauce-choice-disclosure');
+      await disclosure.locator('summary').press('Enter');
+      await expect(disclosure).toHaveAttribute('open','');
+      await disclosure.locator('[data-sauce-choice="bbq"]').press('Enter');
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-disclosure')).not.toHaveAttribute('open','');
+      await expect(page.locator('#pizzaPickerPreview .sauce-choice-current')).toContainText('BBQ');
+    });
+
     for(const viewport of VIEWPORTS.slice(0,3)){
       test(`keeps the picker usable and click-selected at ${viewport.name}`,async({page})=>{
         const failures=observeBrowserFailures(page);

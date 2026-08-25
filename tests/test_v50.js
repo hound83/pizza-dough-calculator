@@ -607,12 +607,23 @@ test('Dutch planning copy is idiomatic and keeps windowpane untranslated',()=>{
   assert(x.windowpane==='windowpane'&&x.mix.includes('windowpane')&&!/vliesjestest/i.test(script),JSON.stringify(x));
 });
 
-test('English recipe names and Marinara composition have one authoritative source',()=>{
-  const x=run(`(()=>{currentLang='en';const parma=recipeNameText(recipeById('parmaBurrata'));const pestoParma=recipeNameText(recipeById('pestoParmaBurrata'));const recipe=recipeById('marinara');const sauceItems=sauces.marinara.ingredients(320,4).map(item=>item[0]);return {parma,pestoParma,recipeItems:recipe.items.map(item=>item[0]),sauceItems,note:recipe.noteEn||recipe.note};})()`);
+test('English recipe names and Marinara composition preserve distinct sauce and finishing layers',()=>{
+  defaults();
+  const x=run(`(()=>{
+    currentLang='en';appMode='full';$('pizzas').value='4';$('diameter').value='30';setToppingScale(30);
+    pizzaSelections=Array(4).fill('marinara');pizzaCustomizations=[];
+    const parma=recipeNameText(recipeById('parmaBurrata')),pestoParma=recipeNameText(recipeById('pestoParmaBurrata'));
+    const recipe=recipeById('marinara'),sauceItems=Object.fromEntries(sauces.marinara.ingredients(320,4));
+    const c=calc(),group=aggregateSauceNeeds(c).groups[0];buildShopping(c);
+    return {parma,pestoParma,recipeItems:recipe.items,sauceItems,note:recipe.noteEn||recipe.note,
+      madeSauceItems:Object.fromEntries(group.ingredients),shoppingHtml:$('shoppingList').innerHTML};
+  })()`);
   assert(x.parma==='Parma ham & Burrata'&&x.pestoParma==='Pesto, Parma ham & Burrata',JSON.stringify(x));
-  assert(x.recipeItems.length===0,`Marinara recipe duplicates sauce ingredients: ${JSON.stringify(x.recipeItems)}`);
-  assert(x.sauceItems.includes('Knoflook')&&x.sauceItems.includes('Gedroogde oregano')&&x.sauceItems.includes('EVOO'),JSON.stringify(x));
-  assert(x.note.includes('already included in the Marinara sauce'),x.note);
+  assert(JSON.stringify(x.recipeItems)===JSON.stringify([['EVOO',5,'g']]),`Unexpected Marinara finishing layer: ${JSON.stringify(x.recipeItems)}`);
+  assert(x.sauceItems.Knoflook==='2 clove(s)'&&x.sauceItems['Gedroogde oregano']==='0.6 g'&&x.sauceItems.EVOO==='4.8 g',JSON.stringify(x.sauceItems));
+  assert(x.madeSauceItems.Knoflook==='2 clove(s)'&&x.madeSauceItems['Gedroogde oregano']==='0.6 g'&&x.madeSauceItems.EVOO==='4.4 g',JSON.stringify(x.madeSauceItems));
+  assert(x.shoppingHtml.includes('<span>↳ EVOO</span><span>4.4 g</span>')&&x.shoppingHtml.includes('<span>EVOO</span><span>16 g</span>'),x.shoppingHtml);
+  assert(x.note.toLowerCase().includes('garlic and oregano')&&x.note.includes('additional EVOO'),x.note);
 });
 
 test('recipe sauce overrides are collapsed and grouped without pruning manual choices',()=>{

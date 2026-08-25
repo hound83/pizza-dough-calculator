@@ -133,7 +133,7 @@ Huidige uitslag:
 15 refactor-structure tests passed
 89 bundle regression tests passed
 89 source regression tests passed
-37 Chromium browser/layout tests passed
+41 Chromium browser/layout tests passed
 ```
 
 De suite controleert onder meer:
@@ -149,7 +149,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de goedgekeurde v1.2.1-kandidaatbaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water en de ingeklapte, gegroepeerde sausoverride. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de goedgekeurde v1.2.1-kandidaatbaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -201,12 +201,12 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 - **Release:** v1.2.1 is de reviewkandidaat boven op de huidige publieke v1.2.0-release; tag v1.0.0 blijft de onveranderlijke historische golden baseline.
 - **Huidige architectuur:** statische bron-HTML, CSS en elf JavaScriptmodules genereren de geteste standalone publicatie voor GitHub Pages.
-- **Audit:** de refactor, v1.1.0-featureversie, v1.1.1-patch en v1.2.0-rekenrelease zijn onafhankelijk door Claude gecrosscheckt; v1.2.1 wacht nog op die review.
+- **Audit:** Claude vond de eerste v1.2.1-kandidaat veilig en intern consistent. De ene Marinara-fideliteitsbevinding en beide browserdekkingsadviezen zijn nu verwerkt en wachten op een gerichte hercontrole.
 - **Kleine follow-up:** voor zeven uitgebreide veldlabels blijft een niet-blokkerende toegankelijkheidsverbetering mogelijk.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
 - **v1.1.1:** een persoonlijk standaardrecept van 30 cm, praktische percentagebediening, gecorrigeerde tweetalige enkelvoud/meervoud-teksten en consistente weergave van deegbolgewicht.
 - **v1.2.0:** een op warmtecapaciteit gebaseerd gefaseerd DDT-model, aparte autolyse/directe routes, expliciet hoofd- versus reservewater, eerlijke haalbaarheidsmelding en normale-keukenbegeleiding.
-- **v1.2.1-kandidaat:** herstelde NL/EN-teksten, één bron voor de Marinara-ingrediënten en een schonere ingeklapte sausoverride met behoud van alle zeven saustypes.
+- **v1.2.1-kandidaat:** herstelde NL/EN-teksten, gededupliceerde Marinara-knoflook/-oregano met behoud van de aparte 5 g afwerk-EVOO, en een schonere ingeklapte sausoverride met behoud van alle zeven saustypes.
 - **v1.3.0 hierna:** anonieme feedback blijft gescheiden en vereist vóór release productieconfiguratie van Turnstile/Worker en een echte end-to-end-issuetest.
 
 ## Achtergrond

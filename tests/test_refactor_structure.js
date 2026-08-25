@@ -34,9 +34,9 @@ const V1_2_0_RELEASE_BASELINE={
   javascript:'5de43375deece0f2689217b2d47fe1aa98ed8ac265f990e0a09a981752dd0519'
 };
 const V1_2_1_CANDIDATE_BASELINE={
-  singleFile:'54f71ca2efe1451207bc1fe5046c00bb0fc1ea82b8697889305f6cf829f75102',
+  singleFile:'1dceb735571ddc2fcaf6be85c2df19b1546cd8b7f5d703f220a7b44382acd955',
   css:'7140b86b8e3d0335ea5bc6e88c37e756aabb9713de011ded629c59266cb2df19',
-  javascript:'542fa05379e0ca37f72a18e13d9f57dccac1a5b2784efbb7e7b6046f1af3a890'
+  javascript:'dd69b2d1be8f912e15fcb4524642d27ea27a89d29dae2c5e76f00b9f3d0d73cd'
 };
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}

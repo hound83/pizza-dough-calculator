@@ -85,23 +85,23 @@ These hashes cover the released staged heat-capacity DDT prediction, separate au
 
 ## v1.2.1 review-candidate baseline
 
-These hashes cover the explicitly approved patch over v1.2.0: repaired Dutch/English interface copy, one authoritative Marinara ingredient source, and a collapsed grouped sauce override in recipe views. The calculation model, recipe-to-sauce defaults, storage schema, and all seven available sauce types remain unchanged.
+These hashes cover the explicitly approved patch over v1.2.0: repaired Dutch/English interface copy, distinct Marinara sauce and finishing-oil layers without duplicated garlic or oregano, and a collapsed grouped sauce override in recipe views. The calculation model, recipe-to-sauce defaults, storage schema, and all seven available sauce types remain unchanged.
 
 | Artefact | SHA-256 |
 |---|---|
-| standalone `index.html` | `54f71ca2efe1451207bc1fe5046c00bb0fc1ea82b8697889305f6cf829f75102` |
+| standalone `index.html` | `1dceb735571ddc2fcaf6be85c2df19b1546cd8b7f5d703f220a7b44382acd955` |
 | CSS | `7140b86b8e3d0335ea5bc6e88c37e756aabb9713de011ded629c59266cb2df19` |
-| combined JavaScript | `542fa05379e0ca37f72a18e13d9f57dccac1a5b2784efbb7e7b6046f1af3a890` |
+| combined JavaScript | `dd69b2d1be8f912e15fcb4524642d27ea27a89d29dae2c5e76f00b9f3d0d73cd` |
 
 ## v1.2.1 localization, Marinara, and sauce-choice contract
 
 - `windowpane` remains the deliberate Dutch and English term. The interface must not replace it with `vliesjestest`.
 - English mode translates the flour-type label and options, the complete advanced W270 explanation, the recipe-search clear-label, and the two recipe names containing `Parmaham`.
 - Dutch planning labels and the short-schedule warning do not mix in the English terms `same-day` or `room-temperature`.
-- The Marinara sauce definition is the single source for its tomatoes, salt, garlic, oregano, and EVOO. The Marinara pizza recipe must not add garlic, oregano, or EVOO a second time as toppings.
+- The Marinara sauce definition owns its tomatoes, salt, garlic, oregano, and its 1.5% sauce oil. The pizza recipe must not duplicate garlic or oregano, but it deliberately keeps one separate 5 g EVOO topping at the 32 cm catalogue reference. At the 30 cm default, existing area scaling and practical rounding show 4 g per pizza, or 16 g for four pizzas, in addition to the sauce oil.
 - All seven sauce types remain valid and available. Their recipe defaults are not remapped or pruned.
 - In Complete pizzas, the recipe picker and per-ball customization show only the current recommended or deliberately selected sauce by default. `Andere saus kiezen` / `Choose another sauce` opens a native disclosure containing exactly two groups: tomato (San Marzano, Marinara, New York) and white/other (Bianca, creamy white, pesto, BBQ).
-- Choosing an alternative updates the existing per-ball override and returns to the collapsed summary. Sauce inclusion, quantities, scaling, aggregation, shopping output, and recipe commit behavior remain unchanged.
+- Choosing an alternative updates the existing per-ball override and returns to the collapsed summary. Apart from the explicit Marinara recipe correction above, the disclosure itself does not change sauce inclusion, quantities, scaling, aggregation, shopping output, or recipe commit behavior.
 - In Dough + sauce, sauce selection is the primary task; its standalone selector therefore continues to expose all seven choices directly.
 - The disclosure introduces no persisted field and no migration. Storage remains `pizzaCalcV51` / schema 51.
 - The v1.2.0 staged DDT calculation modules and their numerical contract remain unchanged.
