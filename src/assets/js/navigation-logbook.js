@@ -289,9 +289,8 @@ function saveBakeLogEntry(){
   const notes=String($('logNotes').value||'').trim().slice(0,500);
   let ddtCorrection=null;
   if(Number.isFinite(water)&&Number.isFinite(finalT)){
-    // Effectieve correctie voor DEZE routine. Omdat bloemtemp voorlopig op
-    // kamertemp wordt aangenomen, kan de waarde naast mixerwarmte ook vaste
-    // koeling (bijv. koelkast-autolyse) bevatten. Dat is bewust: reproduceerbaarheid.
+    // Legacy three-factor comparison index retained for schema-51 log
+    // continuity. v1.2 never feeds this value into its staged thermal model.
     const corr=3*finalT-c.room-c.room-water;
     if(corr>=-12&&corr<=30)ddtCorrection=corr;
   }
@@ -321,10 +320,10 @@ function renderBakeLog(c){
   const stats=ddtLogStats(currentMethod);
   const rows=bakeLog.slice(-4).reverse();
   const calText=stats.count
-    ? L(`<div class="info"><b>DDT-log:</b> ${stats.count} bruikbare ${stats.count===1?'meting':'metingen'} voor ${methodLabel()} opgeslagen${stats.median==null?'':` • mediaan effectieve correctie ${fmt(stats.median,1)} °C`}. Deze waarde wordt <b>niet automatisch toegepast</b>; het wateradvies blijft op de vaste startaanname zodat recept- en proceswijzigingen niet onbedoeld als “leren” worden geïnterpreteerd.</div>`,
-        `<div class="info"><b>DDT log:</b> ${stats.count} usable ${stats.count===1?'measurement':'measurements'} stored for ${methodLabel()}${stats.median==null?'':` • median effective correction ${fmt(stats.median,1)} °C`}. This value is <b>not applied automatically</b>; water guidance stays on the fixed starting assumption so recipe and process changes are not accidentally interpreted as “learning”.</div>`)
-    : L(`<div class="info">Nog geen bruikbare DDT-metingen in het logboek. v${APP_VERSION} gebruikt bewust alleen de vaste startaanname en leert niets automatisch uit vorige bakes.</div>`,
-        `<div class="info">No usable DDT measurements in the log yet. v${APP_VERSION} deliberately uses only the fixed starting assumption and learns nothing automatically from previous bakes.</div>`);
+    ? L(`<div class="info"><b>Historische DDT-index:</b> ${stats.count} bruikbare ${stats.count===1?'meting':'metingen'} voor ${methodLabel()} opgeslagen${stats.median==null?'':` • mediaan ${fmt(stats.median,1)} °C`}. Deze oude vergelijkingsindex wordt <b>niet automatisch toegepast</b>; v${APP_VERSION} berekent het hoofdwater met het vaste, gefaseerde warmtemodel.</div>`,
+        `<div class="info"><b>Historical DDT index:</b> ${stats.count} usable ${stats.count===1?'measurement':'measurements'} stored for ${methodLabel()}${stats.median==null?'':` • median ${fmt(stats.median,1)} °C`}. This legacy comparison index is <b>not applied automatically</b>; v${APP_VERSION} calculates main water with the fixed staged heat model.</div>`)
+    : L(`<div class="info">Nog geen bruikbare temperatuurmetingen in het logboek. v${APP_VERSION} gebruikt het vaste, gefaseerde warmtemodel en leert niets automatisch uit vorige bakes.</div>`,
+        `<div class="info">No usable temperature measurements in the log yet. v${APP_VERSION} uses the fixed staged heat model and does not learn automatically from previous bakes.</div>`);
   const modelText=L(
     `<div class="info"><b>Fermentatiemodel:</b> beoordelingen zoals “te traag” of “te snel” worden alleen als logboekcontext opgeslagen. v${APP_VERSION} verandert gist, tijdcurves of DDT bewust niet automatisch op basis van vorige bakes.</div>`,
     `<div class="info"><b>Fermentation model:</b> ratings such as “too slow” or “too fast” are stored only as log context. v${APP_VERSION} deliberately does not automatically change yeast, timing curves or DDT based on previous bakes.</div>`);
@@ -333,7 +332,7 @@ function renderBakeLog(c){
     const d=dt.toLocaleDateString(currentLang==='en'?'en-GB':'nl-NL',{day:'2-digit',month:'short'});
     const temp=(x.waterTemp!=null&&x.finalDoughTemp!=null)?` • ${fmt(x.waterTemp,1)}→${fmt(x.finalDoughTemp,1)} °C`:'';
     const fridge=x.fridgeTempActual!=null?` • koelkast ${fmt(x.fridgeTempActual,1)} °C`:'';
-    const corr=x.ddtCorrection!=null?` • DDT ${fmt(x.ddtCorrection,1)} °C`:'';
+    const corr=x.ddtCorrection!=null?` • ${L('DDT-index','DDT index')} ${fmt(x.ddtCorrection,1)} °C`:'';
     return `<div class="list-row"><span>${d} • ${ratingLabel(x.rating)}${temp}${fridge}${corr}</span><span>${x.notes?esc(x.notes):'—'}</span></div>`;
   }).join('')}</div>`:L('<div class="hint" style="margin-top:10px">Nog geen bakresultaten opgeslagen.</div>','<div class="hint" style="margin-top:10px">No bake results saved yet.</div>');
   box.innerHTML=calText+modelText+list;

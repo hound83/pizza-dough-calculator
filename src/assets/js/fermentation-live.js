@@ -1,11 +1,20 @@
-// DDT startwaarden. Dit zijn nadrukkelijk GEEN universele mixerconstanten.
-// Standmixers kunnen afhankelijk van model, snelheid, tijd en deegmassa veel
-// meer warmte inbrengen. Het logboek kan daarom een persoonlijke effectieve
-// correctie afleiden uit jouw werkelijke water- en einddeegtemperatuur.
-// Die effectieve correctie mag ook koeling uit jouw vaste autolyseroutine
-// absorberen: voor herhaalbaarheid is dat nuttiger dan doen alsof het pure
-// mechanische wrijving is.
-const DDT_START_CORRECTION={hand:3,kitchenaid:12,kenwood:12,pro:14};
+// Fixed temperature rises at the 880 g / 63% hydration reference recipe.
+// These effective fitted terms absorb mixer, bowl and handling effects; they
+// are model constants, not calorimetric measurements or universal brand data.
+const METHOD_STAGE_HEAT={
+  hand:{first:.200,postAutolyse:.800,postDirect:.800},
+  kitchenaid:{first:1.489,postAutolyse:6.402,postDirect:4.168},
+  kenwood:{first:1.683,postAutolyse:6.252,postDirect:4.809},
+  pro:{first:2.124,postAutolyse:6.796,postDirect:4.272}
+};
+const MAIN_WATER_MIN_C=1;
+const MAIN_WATER_MAX_C=45;
+const NORMAL_ROOM_MIN_C=15;
+const NORMAL_ROOM_MAX_C=30;
+const NORMAL_FRIDGE_MIN_C=2;
+const NORMAL_FRIDGE_MAX_C=8;
+const NORMAL_HYDRATION_MIN=55;
+const NORMAL_HYDRATION_MAX=75;
 const METHOD_LABELS={
   hand:{nl:'handmatig kneden',en:'hand kneading'},
   kitchenaid:{nl:'KitchenAid',en:'KitchenAid'},
@@ -32,20 +41,85 @@ function ddtLogStats(method=currentMethod){
     .slice(-8);
   return {count:samples.length,median:median(samples)};
 }
+function predictFinalDoughTemp(mainWaterTemp,c,method=currentMethod){
+  const heat=METHOD_STAGE_HEAT[method];
+  if(!heat)throw new RangeError(`Unknown kneading method: ${method}`);
+  if(!c||![mainWaterTemp,c.room,c.fridge,c.flour,c.mainWater,c.reserve,c.salt,c.oil].every(Number.isFinite))throw new RangeError('Invalid DDT context.');
+  if(c.flour<=0||c.mainWater<=0||c.reserve<0||c.salt<0||c.oil<0)throw new RangeError('Invalid DDT ingredient mass.');
+
+  const initial=thermalEquilibrium([
+    {mass:c.flour,cp:CP_FLOUR,temperature:c.room},
+    {mass:c.mainWater,cp:CP_WATER,temperature:mainWaterTemp}
+  ]);
+  const afterFirstMix=initial.temperature+heat.first;
+  const afterRest=thermalEndTemperature(
+    afterFirstMix,
+    c.autolyse?c.fridge:c.room,
+    c.autolyse?AUTOLYSE_REST_HOURS:DIRECT_REST_HOURS,
+    EFFECTIVE_REST_TAU_HOURS
+  );
+  const additions=[{capacity:initial.capacity,temperature:afterRest}];
+  if(c.reserve>0)additions.push({mass:c.reserve,cp:CP_WATER,temperature:c.room});
+  if(c.salt>0)additions.push({mass:c.salt,cp:CP_SALT,temperature:c.room});
+  if(c.oil>0)additions.push({mass:c.oil,cp:CP_OIL,temperature:c.room});
+  const afterAdditions=thermalEquilibrium(additions).temperature;
+  return afterAdditions+(c.autolyse?heat.postAutolyse:heat.postDirect);
+}
+
+function solveMainWaterTemperature(c,method=currentMethod){
+  const target=Number(c.doughTemp);
+  let low=MAIN_WATER_MIN_C,high=MAIN_WATER_MAX_C;
+  let lowFinal,highFinal;
+  try{
+    lowFinal=predictFinalDoughTemp(low,c,method);
+    highFinal=predictFinalDoughTemp(high,c,method);
+  }catch(error){
+    return {achievable:false,reason:'invalid-input',error:String(error&&error.message||error),water:null,predictedFinal:null,boundary:null,iterations:0};
+  }
+  if(!Number.isFinite(target)||!Number.isFinite(lowFinal)||!Number.isFinite(highFinal)||highFinal<=lowFinal){
+    return {achievable:false,reason:'invalid-model',water:null,predictedFinal:null,boundary:null,iterations:0,lowFinal,highFinal};
+  }
+  if(target<lowFinal){
+    return {achievable:false,reason:'target-below-range',water:low,predictedFinal:lowFinal,boundary:'low',iterations:0,lowFinal,highFinal};
+  }
+  if(target>highFinal){
+    return {achievable:false,reason:'target-above-range',water:high,predictedFinal:highFinal,boundary:'high',iterations:0,lowFinal,highFinal};
+  }
+
+  let predictedFinal=NaN,iterations=0,converged=false;
+  for(;iterations<64;iterations++){
+    const mid=(low+high)/2;
+    predictedFinal=predictFinalDoughTemp(mid,c,method);
+    if(Math.abs(predictedFinal-target)<.01||high-low<.01){low=mid;high=mid;converged=true;break;}
+    if(predictedFinal<target)low=mid;else high=mid;
+  }
+  const water=(low+high)/2;
+  predictedFinal=predictFinalDoughTemp(water,c,method);
+  if(!converged)return {achievable:false,reason:'iteration-limit',water,predictedFinal,boundary:null,iterations,lowFinal,highFinal};
+  return {achievable:true,reason:'solved',water,predictedFinal,boundary:null,iterations:iterations+1,lowFinal,highFinal};
+}
+
 function waterTempAdvice(c){
-  // v50: logboekdata verandert het advies bewust NIET automatisch.
-  // De gebruiker kan recept, proces en temperaturen zelf aanpassen; een vorige
-  // bake is daarom context, geen automatische modelparameter.
-  const correction=DDT_START_CORRECTION[currentMethod]??12;
-  const flourT=c.room;
-  const raw=3*c.doughTemp-flourT-c.room-correction;
-  const water=clamp(raw,1,45);
+  // Bake-log observations remain context and never rewrite model constants.
+  const solved=solveMainWaterTemperature(c,currentMethod);
+  const water=solved.water;
+  const finiteWater=Number.isFinite(water);
+  const displayWater=finiteWater?Math.round(water):null;
   return {
-    water,raw,correction,correctionCount:0,calibrated:false,target:c.doughTemp,
-    clamped:Math.abs(raw-water)>0.05,
-    cold:raw<14,
-    hot:raw>32,
-    avpnRange:raw>=16&&raw<=22
+    ...solved,
+    raw:water,displayWater,
+    correction:null,correctionCount:0,calibrated:false,target:c.doughTemp,
+    clamped:!solved.achievable,
+    cold:finiteWater&&displayWater<14,
+    coldTap:finiteWater&&displayWater>=10&&displayWater<14,
+    iceWater:finiteWater&&displayWater<10,
+    hot:finiteWater&&displayWater>32,
+    yeastHot:finiteWater&&!c.autolyse&&displayWater>=40,
+    handAutolyseWarm:finiteWater&&currentMethod==='hand'&&c.autolyse&&displayWater>=38,
+    roomOutsideNormal:c.room<NORMAL_ROOM_MIN_C||c.room>NORMAL_ROOM_MAX_C,
+    fridgeOutsideNormal:c.autolyse&&(c.fridge<NORMAL_FRIDGE_MIN_C||c.fridge>NORMAL_FRIDGE_MAX_C),
+    hydrationOutsideNormal:c.h<NORMAL_HYDRATION_MIN||c.h>NORMAL_HYDRATION_MAX,
+    avpnRange:finiteWater&&displayWater>=16&&displayWater<=22
   };
 }
 
@@ -67,10 +141,10 @@ function buildMixerCapacityNote(c){
   if(!x.near && !x.over){box.innerHTML='';return;}
   const cls=x.over?'warning':'info';
   const msg=x.over
-    ? L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem ligt boven de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Verdeel dit deeg bij voorkeur over meerdere mixerbatches of controleer de handleiding van jouw exacte model.`,
-        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour exceeds the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Prefer splitting the dough into multiple mixer batches or check the manual for your exact model.`)
-    : L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem zit dicht bij de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Houd motorgeluid, kombeweging en deegtemperatuur extra in de gaten; exacte modellen verschillen.`,
-        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour is close to the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Watch motor load, bowl movement and dough temperature more closely; exact models differ.`);
+    ? L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem ligt boven de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Verdeel dit deeg bij voorkeur over meerdere mixerbatches of controleer de handleiding van jouw exacte model. Het warmtemodel is afgestemd op ongeveer 880 g deeg; bij een duidelijk andere batch neemt ook de zekerheid van het wateradvies af.`,
+        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour exceeds the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Prefer splitting the dough into multiple mixer batches or check the manual for your exact model. The heat model is fitted to roughly 880 g of dough; confidence in the water guidance also decreases for a materially different batch.`)
+    : L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem zit dicht bij de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Houd motorgeluid, kombeweging en deegtemperatuur extra in de gaten; exacte modellen verschillen. Het warmtemodel is afgestemd op ongeveer 880 g deeg, dus controleer de einddeegtemperatuur extra zorgvuldig.`,
+        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour is close to the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Watch motor load, bowl movement and dough temperature more closely; exact models differ. The heat model is fitted to roughly 880 g of dough, so check the final dough temperature particularly carefully.`);
   box.innerHTML=`<div class="${cls}">${msg}</div>`;
 }
 
@@ -496,6 +570,77 @@ function fermentationSteps(c,startIndex,live){
   return {html:arr,next:i};
 }
 
+function waterTemperatureGuidance(c,wt){
+  const reserveLine=L(
+    `Houd ongeveer <b>${fmt(c.reserve,0)} g reservewater</b> afgedekt op kamertemperatuur voor na de rust. Koel of verwarm dit kleine deel niet mee met het hoofdwater.`,
+    `Keep about <b>${fmt(c.reserve,0)} g reserved water</b> covered at room temperature for after the rest. Do not chill or warm this small portion with the main water.`
+  );
+  let mainLine;
+  if(wt.achievable){
+    mainLine=L(
+      `Streef naar <b>${fmt(c.doughTemp,1)} °C</b> einddeegtemperatuur. Breng alleen de resterende <b>${fmt(c.mainWater,0)} g hoofdwater</b> voor de eerste menging op ongeveer <b>${fmt(wt.water,0)} °C</b>.`,
+      `Aim for a final dough temperature of <b>${fmt(c.doughTemp,1)} °C</b>. Bring only the remaining <b>${fmt(c.mainWater,0)} g main water</b> for the first mix to approximately <b>${fmt(wt.water,0)} °C</b>.`
+    );
+  }else if(Number.isFinite(wt.water)&&Number.isFinite(wt.predictedFinal)){
+    mainLine=L(
+      `De gewenste einddeegtemperatuur is onder deze omstandigheden niet haalbaar met praktisch hoofdwater tussen ${MAIN_WATER_MIN_C} en ${MAIN_WATER_MAX_C} °C. Met <b>${fmt(wt.water,0)} °C hoofdwater</b> voorspelt het model ongeveer <b>${fmt(wt.predictedFinal,1)} °C deeg</b>. Kies zo nodig een haalbaarder doel of pas de omstandigheden aan.`,
+      `The requested final dough temperature is not reachable under these conditions with practical main water between ${MAIN_WATER_MIN_C} and ${MAIN_WATER_MAX_C} °C. With <b>${fmt(wt.water,0)} °C main water</b>, the model predicts approximately <b>${fmt(wt.predictedFinal,1)} °C dough</b>. If needed, choose a more reachable target or adjust the conditions.`
+    );
+  }else{
+    mainLine=L(
+      'Het wateradvies kon met deze invoer niet veilig worden berekend. Controleer de temperatuur- en receptvelden.',
+      'The water guidance could not be calculated safely from these inputs. Check the temperature and recipe fields.'
+    );
+  }
+
+  const notes=[];
+  if(wt.roomOutsideNormal)notes.push(L(
+    ` De kamertemperatuur ligt buiten het normale keukenbereik van ${NORMAL_ROOM_MIN_C}–${NORMAL_ROOM_MAX_C} °C; gebruik dit advies als voorzichtige schatting en meet na het kneden.`,
+    ` The room temperature is outside the normal kitchen range of ${NORMAL_ROOM_MIN_C}–${NORMAL_ROOM_MAX_C} °C; treat this guidance as a cautious estimate and measure after kneading.`
+  ));
+  if(wt.fridgeOutsideNormal)notes.push(L(
+    ` De koelkasttemperatuur ligt voor deze koude autolyse buiten het normale modelbereik van ${NORMAL_FRIDGE_MIN_C}–${NORMAL_FRIDGE_MAX_C} °C; meet de einddeegtemperatuur extra zorgvuldig.`,
+    ` For this refrigerated autolyse, the refrigerator temperature is outside the normal model range of ${NORMAL_FRIDGE_MIN_C}–${NORMAL_FRIDGE_MAX_C} °C; measure the final dough temperature particularly carefully.`
+  ));
+  if(wt.hydrationOutsideNormal)notes.push(L(
+    ` Deze hydratatie ligt buiten het gekalibreerde kernbereik van ${NORMAL_HYDRATION_MIN}–${NORMAL_HYDRATION_MAX}%; het model rekent met de werkelijke massa's maar de mixerwarmte is onzekerder.`,
+    ` This hydration is outside the calibrated core range of ${NORMAL_HYDRATION_MIN}–${NORMAL_HYDRATION_MAX}%; the model uses the actual masses, but mixer heat is less certain.`
+  ));
+  if(wt.coldTap)notes.push(L(
+    ' Koud kraanwater kan hiervoor voldoende zijn; meet het voordat je mengt.',
+    ' Cold tap water may be sufficient; measure it before mixing.'
+  ));
+  if(wt.iceWater)notes.push(L(
+    ` Hiervoor is ijswater nodig. Koel het hoofdwater met ijs, verwijder resterend ijs en weeg daarna opnieuw precies ${fmt(c.mainWater,0)} g hoofdwater af.`,
+    ` This requires ice water. Chill the main water with ice, remove any remaining ice, then re-weigh exactly ${fmt(c.mainWater,0)} g of main water.`
+  ));
+  if(wt.hot)notes.push(L(
+    ' Dit is relatief warm hoofdwater. Meet de einddeegtemperatuur extra zorgvuldig en compenseer een afwijking nooit blind met heter water.',
+    ' This is relatively warm main water. Measure the final dough temperature particularly carefully and never compensate for a deviation blindly with hotter water.'
+  ));
+  if(wt.yeastHot)notes.push(L(
+    ' Gebruik op deze directe route geen hoofdwater ≥40 °C bij de gist; laat het eerst afkoelen.',
+    ' On this direct route, do not use main water ≥40 °C with the yeast; let it cool first.'
+  ));
+  if(wt.handAutolyseWarm)notes.push(L(
+    ' Dit hoge advies ontstaat bij handkneden met koude autolyse en is onzeker. Je kunt de koude autolyse uitschakelen en opnieuw rekenen voor een praktisch alternatief; de calculator wisselt de route niet automatisch.',
+    ' This high result comes from hand kneading with refrigerated autolyse and is uncertain. You can disable refrigerated autolyse and recalculate for a practical alternative; the calculator does not switch routes automatically.'
+  ));
+  if(experienceMode==='full'&&currentMethod==='pro'&&!c.autolyse)notes.push(L(
+    ' Het directe spiraalknederprogramma is modelafhankelijk; dit wateradvies gebruikt daarom een voorlopige verhouding en heeft extra onzekerheid.',
+    ' The direct spiral-mixer programme depends on the machine; this water guidance therefore uses a provisional ratio and carries extra uncertainty.'
+  ));
+  if($('preset').value==='avpnMid'&&!wt.avpnRange)notes.push(L(
+    ' Voor de AVPN-preset blijft de officiële waterrange van 16–22 °C de primaire praktische referentie.',
+    ' For the AVPN preset, the official 16–22 °C water range remains the primary practical reference.'
+  ));
+  notes.push(L(
+    ` Logboekmetingen worden bewaard als referentie maar veranderen dit advies in v${APP_VERSION} bewust niet automatisch.`,
+    ` Log measurements are kept as reference but deliberately do not automatically change this guidance in v${APP_VERSION}.`
+  ));
+  return {reserveLine,mainLine,notes:notes.join('')};
+}
+
 function buildSteps(c){
   ensurePizzaCustomizations();
   const m=methodInstructions(c),aggSauce=aggregateSauceNeeds(c),bake=stoneProfile(c.stoneTemp),live=liveFermentationPlan(c);
@@ -503,28 +648,11 @@ function buildSteps(c){
   let i=1,steps=[];
   _stepKeys=[];
   const wt=waterTempAdvice(c);
-  const waterTempExtra=wt.cold
-    ? L(' Dit advies gebruikt relatief koud water. Een korte koude autolyse kan de einddeegtemperatuur nog verder drukken; meet daarom na het kneden en stuur daarna op tijd, niet op extra gist.',
-        ' This guidance uses relatively cold water. A short refrigerated autolyse can lower final dough temperature further; measure after kneading and then adjust time, not yeast.')
-    : (wt.hot
-        ? L(' Dit advies gebruikt relatief warm water. Meet de einddeegtemperatuur extra zorgvuldig en gebruik nooit heet water om een afwijking blind te compenseren.',
-            ' This guidance uses relatively warm water. Measure final dough temperature carefully and never use hot water to blindly compensate for a deviation.')
-        : '');
-  const waterLine=L(
-      `Streef naar <b>${fmt(c.doughTemp,1)} °C</b> einddeegtemperatuur. De DDT-berekening gebruikt voor ${methodLabel()} een vaste praktische startcorrectie van <b>${fmt(wt.correction,1)} °C</b> en komt uit op ongeveer <b>${fmt(wt.water,0)} °C water</b>`,
-      `Aim for a final dough temperature of <b>${fmt(c.doughTemp,1)} °C</b>. The DDT calculation uses a fixed practical starting correction of <b>${fmt(wt.correction,1)} °C</b> for ${methodLabel()} and estimates roughly <b>${fmt(wt.water,0)} °C water</b>`)
-    +(wt.clamped?L(' (praktisch begrensd)',' (practically capped)'):'')+'.'
-    +L(` Logboekmetingen worden bewaard als referentie maar veranderen dit advies in v${APP_VERSION} bewust niet automatisch.`,
-       ` Log measurements are kept as reference but deliberately do not automatically change this guidance in v${APP_VERSION}.`)
-    +waterTempExtra
-    +(wt.water>=40?L(' Gebruik geen water ≥40 °C voor gistdeeg; koel het eerst terug.',' Do not use water ≥40 °C for yeasted dough; cool it first.'):'')
-    +(($('preset').value==='avpnMid'&&!wt.avpnRange)?L(` Voor de AVPN-preset blijft de officiële 16–22 °C waterrange de primaire referentie.`,
-      ` For the AVPN preset, the official 16–22 °C water range remains the primary reference.`):'');
+  const waterText=waterTemperatureGuidance(c,wt);
   steps.push(step(i++,L('Weeg de ingrediënten','Weigh the ingredients'),
     L(`Bloem <b>${fmt(c.flour,0)} g</b> • water <b>${fmt(c.water,0)} g</b> • zout <b>${fmt(c.salt,0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,2)} g</b>${c.o>0?` • olie <b>${fmt(c.oil,0)} g</b>`:''}.`,
       `Flour <b>${fmt(c.flour,0)} g</b> • water <b>${fmt(c.water,0)} g</b> • salt <b>${fmt(c.salt,0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,2)} g</b>${c.o>0?` • oil <b>${fmt(c.oil,0)} g</b>`:''}.`),
-    L(`Houd ongeveer <b>${fmt(c.reserve,0)} g water</b> apart voor na de rust. ${waterLine}`,
-      `Hold back about <b>${fmt(c.reserve,0)} g water</b> for after the rest. ${waterLine}`),'weigh'));
+    `${waterText.reserveLine} ${waterText.mainLine}${waterText.notes}`,'weigh'));
   steps.push(step(i++,L('Eerste menging','First mix'),m.mix,'','mix'));
   steps.push(step(
     i++,
@@ -546,8 +674,8 @@ function buildSteps(c){
     L('Tijd, deegtemperatuur, gevoel en windowpane tellen samen. Een maximaal flinterdunne windowpane is niet verplicht; langer mengen is niet automatisch beter.','Time, dough temperature, feel, and windowpane work together. A maximally paper-thin windowpane is not mandatory; longer mixing is not automatically better.'),'devcheck'));
   const sci=yeastRecommendation(c);
   steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
-    L(`Doel vóór het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden in het midden van de deegmassa.`,
-      `Target before kneading: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (default target)':''}. Now measure directly after kneading in the centre of the dough mass.`),
+    L(`Doel-einddeegtemperatuur na het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden in het midden van de deegmassa.`,
+      `Target final dough temperature after kneading: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (default target)':''}. Now measure directly after kneading in the centre of the dough mass.`),
     `${L('De gist zit nu al in het deeg. Een afwijkende meting verandert daarom <b>niet</b> achteraf de gistdosering; de calculator past alleen de nog toekomstige fermentatietijden aan.','The yeast is already in the dough. A different measurement therefore does <b>not</b> retroactively change the yeast dose; the calculator only adjusts the future fermentation timings.')}${doughMeasurementControl(c,live)}`,'doughtemp'));
   const fs=fermentationSteps(c,i,live);steps.push(...fs.html);i=fs.next;
   steps.push(step(i++,L('Kijk naar het deeg, niet alleen naar de klok','Watch the dough, not just the clock'),

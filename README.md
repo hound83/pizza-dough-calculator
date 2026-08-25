@@ -2,8 +2,8 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.1.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
-[![Tests](https://img.shields.io/badge/regression_tests-75%2F75_passing-76c990)](tests/test_v50.js)
+[![Version](https://img.shields.io/badge/version-v1.2.0_candidate-f0b45a)](docs/V1.2.0_CALCULATION_MODEL.md)
+[![Tests](https://img.shields.io/badge/regression_tests-85%2F85_passing-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -13,7 +13,7 @@ The downloadable application remains one self-contained `index.html`. The reposi
 
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.1.1 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.1.1)
 
-> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.1.0 introduced Basic/Full modes and storage schema 51; v1.1.1 is the current backward-compatible usability release.
+> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.1.1 is the current public release; this branch is the v1.2.0 staged water-temperature calculation candidate and keeps storage schema 51.
 
 ## Features
 
@@ -36,7 +36,7 @@ Highlights:
 - hydration, salt, oil, and IDY, ADY, or fresh yeast;
 - hybrid, cold, or all-room-temperature fermentation;
 - room, refrigerator, and final dough temperatures;
-- practical water-temperature, DDT, and staged kneading guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers;
+- staged, heat-capacity-weighted main-water guidance for hand kneading, KitchenAid, Kenwood, and spiral mixers, with refrigerated autolyse and direct hydration rest modelled separately;
 - flour selection with known or manually entered W value;
 - 92 pizza recipes, seven sauce variants, and search/filtering by name or ingredient;
 - an individual recipe, sauce, pizza style, and topping customization for every dough ball;
@@ -60,7 +60,9 @@ All calculations update immediately. Values and progress are stored locally in t
 
 ## Scientifically informed, practically oriented
 
-The calculator combines baker's percentages, time, temperature, yeast type, dough mass, and flour strength in one practical home model. The AVPN preset uses published AVPN constraints for dough, time, and yeast range. Other parts use evidence-informed relationships from dough and yeast literature, supplemented by clearly identifiable practical home-baking calibrations.
+The calculator combines baker's percentages, time, temperature, yeast type, dough mass, and flour strength in one practical home model. v1.2 models the actual thermal workflow: main water and flour first, mixing heat, a refrigerated autolyse or room-temperature hydration rest, room-temperature reserved water and later ingredients, then route-specific kneading heat. It solves the required main-water temperature inside a practical 1–45 °C interval and reports targets that cannot be reached inside that interval. The calibrated core focuses on ordinary kitchens at 15–30 °C; the wider 10–35 °C input range remains available with a confidence warning.
+
+The AVPN preset uses published AVPN constraints for dough, time, and yeast range. Other parts use evidence-informed relationships from dough and yeast literature, supplemented by explicitly documented practical home-baking calibrations. The effective mixer constants are reference-batch model terms, not universal measurements for every machine.
 
 This is intentionally **not a validated laboratory model** or an official AVPN calculator. Treat its advice as a well-informed starting point and always assess the actual dough: volume, tension, aeration, temperature, and maturity matter more than the clock alone.
 
@@ -126,16 +128,16 @@ npm test
 Current result:
 
 ```text
-14 refactor-structure tests passed
-75 bundle regression tests passed
-75 source regression tests passed
-31 Chromium browser/layout tests passed
+15 refactor-structure tests passed
+85 bundle regression tests passed
+85 source regression tests passed
+35 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:
 
 - recipe calculations and numeric boundaries;
-- more than 1,500 fermentation and solver combinations;
+- more than 1,500 fermentation-schedule combinations and a separate 1,920-case normal-kitchen DDT matrix;
 - per-keystroke input, empty fields, and browser-like focus/blur semantics;
 - migration and storage of older calculator versions;
 - preservation of recipes and checked steps when the pizza count changes;
@@ -145,7 +147,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical v1.0.0 hashes, and the released v1.1.0 and v1.1.1 baselines. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Phone coverage additionally protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, and the approved v1.2 candidate baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, and route-correct hot-water warnings. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 
@@ -164,6 +166,7 @@ The project uses semantic versioning from the first golden release onward:
 | **v1.0.1** | Backward-compatible bug fix after v1.0.0 |
 | **v1.1.0** | New backward-compatible functionality, such as Basic/Full |
 | **v1.1.1** | Backward-compatible usability correction after v1.1.0 |
+| **v1.2.0** | Staged, route-aware main-water and final-dough-temperature calculation |
 | **v2.0.0** | Reserved for a genuinely breaking change |
 
 Historic working versions such as v50 remain where technically necessary in storage migrations, test names, and audit documents. They are no longer used as public product versions.
@@ -183,6 +186,7 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`playwright.config.js`](playwright.config.js) | Reproducible local and CI browser-test configuration |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module boundaries, dependencies, and change rules |
 | [`docs/PRODUCT_GUARDRAILS.md`](docs/PRODUCT_GUARDRAILS.md) | Non-negotiable product behavior and change protocol |
+| [`docs/V1.2.0_CALCULATION_MODEL.md`](docs/V1.2.0_CALCULATION_MODEL.md) | Approved v1.2 calculation boundary, constants, outputs, and tests |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quality rules and review checklist |
 | [`README.nl.md`](README.nl.md) | Complete Dutch project documentation |
 | [`docs/`](docs/) | Audit handoffs, rationale, and test instructions |
@@ -191,12 +195,14 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Release:** v1.1.1 is current; tag v1.0.0 remains the immutable historical golden baseline.
+- **Release:** v1.1.1 is current; v1.2.0 is the staged calculation candidate. Tag v1.0.0 remains the immutable historical golden baseline.
 - **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the tested standalone publication used by GitHub Pages.
 - **Audit:** the refactor, v1.1.0 feature release, and v1.1.1 patch passed independent Claude crosschecks.
 - **Small follow-up:** a non-blocking accessibility improvement remains possible for seven extended field labels.
 - **v1.1.0:** a clear **Basic/Full** toggle without creating two separate calculation models.
 - **v1.1.1:** a 30 cm personal default, practical percentage controls, corrected bilingual count grammar, and consistent dough-ball-weight display.
+- **v1.2.0 candidate:** a heat-capacity-weighted staged DDT model, separate autolyse/direct routes, explicit main versus reserved water, honest attainability reporting, and normal-kitchen guidance.
+- **v1.3.0 proposal:** rebase the existing anonymous-feedback candidate only after v1.2.0 is accepted.
 
 ## Background
 

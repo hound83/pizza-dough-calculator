@@ -210,8 +210,8 @@ function applyDeadlinePlan(){
 
 // Kritieke voorbereiding vóór de fermentatie: elapsed time, niet actieve arbeid.
 function prepHours(){
-  if($('autolyse')?.checked)return 0.9;
-  return currentMethod==='hand' ? 0.75 : 0.6;
+  if($('autolyse')?.checked)return AUTOLYSE_REST_HOURS+0.4;
+  return DIRECT_REST_HOURS+(currentMethod==='hand'?5/12:4/15);
 }
 
 // Actieve voorbereiding is iets anders dan doorlooptijd: wegen, mengen/kneden,
