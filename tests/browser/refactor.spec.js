@@ -37,6 +37,26 @@ test('test server handles the implicit browser favicon request',async({request})
   expect((await response.body()).length).toBe(0);
 });
 
+async function waitForStablePickerPreview(page){
+  const preview=page.locator('#pizzaPickerPreview');
+  await expect(preview.locator('.sauce-choice-disclosure')).toHaveCount(1);
+  // Opening the modal can be followed by one late preview render. Wait until
+  // the preview DOM has been quiet before a test targets one of its controls.
+  await page.evaluate(()=>new Promise(resolve=>{
+    const root=document.querySelector('#pizzaPickerPreview');
+    let quietTimer=null;
+    const observer=new MutationObserver(()=>schedule());
+    const done=()=>{observer.disconnect();resolve();};
+    const schedule=()=>{
+      if(quietTimer!==null)clearTimeout(quietTimer);
+      quietTimer=setTimeout(done,200);
+    };
+    observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true});
+    schedule();
+  }));
+  await expect(preview.locator('.sauce-choice-disclosure')).toHaveCount(1);
+}
+
 async function openPicker(page,publication){
   await page.goto(publication.path,{waitUntil:'load'});
   await page.locator('[data-mode-card="full"]').click();
@@ -44,6 +64,7 @@ async function openPicker(page,publication){
   await page.locator('#pizzaRecipeAllButton').click();
   await expect(page.locator('#pizzaPickerOverlay')).toHaveClass(/\bopen\b/);
   await expect(page.locator('#pizzaPickerList .picker-item').first()).toBeVisible();
+  await waitForStablePickerPreview(page);
 }
 
 for(const publication of PUBLICATIONS){
