@@ -1,4 +1,4 @@
-# Claude re-audit handoff — v1.2.1 localization, Marinara, and sauce-choice patch
+# Claude audit record — v1.2.1 localization, Marinara, and sauce-choice patch
 
 ## Comparison target
 
@@ -23,6 +23,15 @@ and two non-blocking coverage notes. All three are adopted:
 The audit also documented a pre-existing approximately-48-hour deadline edge case. It reproduces on
 v1.2.0 and is unrelated to this patch, so it is recorded in `docs/ARCHITECTURE.md` as a separate
 follow-up rather than expanding v1.2.1 into a planning change.
+
+## Final re-audit outcome
+
+Claude's final re-audit approved the corrected release without further findings. It independently
+reproduced all three integrity hashes and the complete **15 + 89 + 89 + 41** test result, confirmed
+that only Marinara differs from v1.2.0 recipe data, and verified the separate sauce-oil and finishing-
+oil quantities. After that approval, one test-only preview-stability wait was added in response to
+Claude's CI timing observation. The application bundle and all three release hashes remained
+unchanged, and both the branch and pull-request CI matrices passed again.
 
 ## Approved user-visible changes
 
@@ -61,7 +70,7 @@ The catalogue currently maps 51 recipes to San Marzano, 31 to Bianca, three to c
 
 ## Automated evidence
 
-Expected complete result:
+Verified complete result:
 
 ```text
 15 refactor-structure tests passed
@@ -90,9 +99,9 @@ npx playwright install chromium
 npm test
 ```
 
-## Candidate integrity hashes
+## Release integrity hashes
 
-All historical release hashes remain immutable. The v1.2.1 review candidate is pinned separately:
+All historical release hashes remain immutable. The released v1.2.1 baseline is pinned separately:
 
 | Artefact | SHA-256 |
 |---|---|
@@ -114,6 +123,6 @@ Please compare the branch with tag `v1.2.0` and verify:
 8. The calculation modules and their versioned v1.2.0 numerical outputs remain unchanged.
 9. Storage remains schema 51 and existing saved recipes reload without migration or data loss.
 
-## Audit question
+## Final conclusion
 
-Do the audit corrections resolve the Marinara recipe-fidelity finding without reintroducing duplicated garlic or oregano, close both browser-coverage gaps, and preserve the first audit's conclusion that v1.2.1 has no calculation or persistence drift from released v1.2.0?
+The audit corrections resolve the Marinara recipe-fidelity finding without reintroducing duplicated garlic or oregano, close both browser-coverage gaps, and preserve the conclusion that v1.2.1 has no calculation or persistence drift from released v1.2.0.

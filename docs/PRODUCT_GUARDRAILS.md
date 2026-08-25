@@ -83,9 +83,9 @@ These hashes cover the released staged heat-capacity DDT prediction, separate au
 | CSS | `8e08ea9e85fc924fd10d86c19ac85c920bc48caf6bd6267fae71b2e24b0d4052` |
 | combined JavaScript | `5de43375deece0f2689217b2d47fe1aa98ed8ac265f990e0a09a981752dd0519` |
 
-## v1.2.1 review-candidate baseline
+## Released v1.2.1 baseline
 
-These hashes cover the explicitly approved patch over v1.2.0: repaired Dutch/English interface copy, distinct Marinara sauce and finishing-oil layers without duplicated garlic or oregano, and a collapsed grouped sauce override in recipe views. The calculation model, recipe-to-sauce defaults, storage schema, and all seven available sauce types remain unchanged.
+These hashes cover the released patch over v1.2.0: repaired Dutch/English interface copy, distinct Marinara sauce and finishing-oil layers without duplicated garlic or oregano, and a collapsed grouped sauce override in recipe views. The calculation model, recipe-to-sauce defaults, storage schema, and all seven available sauce types remain unchanged.
 
 | Artefact | SHA-256 |
 |---|---|

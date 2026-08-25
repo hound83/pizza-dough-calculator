@@ -4,7 +4,7 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v1.2.1--rc-f0b45a)](https://github.com/hound83/pizza-dough-calculator/compare/v1.2.0...fix/v1.2.1-i18n-marinara)
+[![Versie](https://img.shields.io/badge/versie-v1.2.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
 [![Tests](https://img.shields.io/badge/regressietests-89%2F89_groen-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
@@ -13,9 +13,9 @@ Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fe
 
 De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies de standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
 
-**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Review de v1.2.1-kandidaat](https://github.com/hound83/pizza-dough-calculator/compare/v1.2.0...fix/v1.2.1-i18n-marinara)
+**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.2.1-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
 
-> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.2.1 is de reviewkandidaat boven op de huidige publieke v1.2.0-release en behoudt opslagschema 51.
+> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.2.1 is de huidige publieke release en behoudt opslagschema 51.
 
 ## Wat kan de calculator?
 
@@ -149,7 +149,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de goedgekeurde v1.2.1-kandidaatbaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de uitgebrachte v1.2.1-baseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -190,7 +190,7 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Modulegrenzen, afhankelijkheden en wijzigingsregels |
 | [`docs/PRODUCT_GUARDRAILS.md`](docs/PRODUCT_GUARDRAILS.md) | Harde productafspraken die niet stilzwijgend mogen wijzigen |
 | [`docs/V1.2.0_CALCULATION_MODEL.md`](docs/V1.2.0_CALCULATION_MODEL.md) | Goedgekeurde v1.2-rekengrenzen, constanten, uitkomsten en tests |
-| [`docs/Claude_v1.2.1_patch_handoff.md`](docs/Claude_v1.2.1_patch_handoff.md) | Reviewscope en bewijs voor de v1.2.1-patchkandidaat |
+| [`docs/Claude_v1.2.1_patch_handoff.md`](docs/Claude_v1.2.1_patch_handoff.md) | Onafhankelijk auditverslag en bewijs voor de v1.2.1-release |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Kwaliteitsregels en reviewchecklist voor vervolgwerk |
 | [`README.md`](README.md) | Canonieke Engelse projectdocumentatie |
 | [`docs/`](docs/) | Audit-handoffs, wijzigingsonderbouwing en testinstructies |
@@ -199,14 +199,14 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Release:** v1.2.1 is de reviewkandidaat boven op de huidige publieke v1.2.0-release; tag v1.0.0 blijft de onveranderlijke historische golden baseline.
+- **Release:** v1.2.1 is de huidige release; tag v1.0.0 blijft de onveranderlijke historische golden baseline.
 - **Huidige architectuur:** statische bron-HTML, CSS en elf JavaScriptmodules genereren de geteste standalone publicatie voor GitHub Pages.
-- **Audit:** Claude vond de eerste v1.2.1-kandidaat veilig en intern consistent. De ene Marinara-fideliteitsbevinding en beide browserdekkingsadviezen zijn nu verwerkt en wachten op een gerichte hercontrole.
+- **Audit:** Claude keurde v1.2.1 in de definitieve heraudit goed na de Marinara-fideliteitscorrectie en beide browserdekkingsaanvullingen; alle 15 + 89 + 89 + 41 controles slaagden onafhankelijk.
 - **Kleine follow-up:** voor zeven uitgebreide veldlabels blijft een niet-blokkerende toegankelijkheidsverbetering mogelijk.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
 - **v1.1.1:** een persoonlijk standaardrecept van 30 cm, praktische percentagebediening, gecorrigeerde tweetalige enkelvoud/meervoud-teksten en consistente weergave van deegbolgewicht.
 - **v1.2.0:** een op warmtecapaciteit gebaseerd gefaseerd DDT-model, aparte autolyse/directe routes, expliciet hoofd- versus reservewater, eerlijke haalbaarheidsmelding en normale-keukenbegeleiding.
-- **v1.2.1-kandidaat:** herstelde NL/EN-teksten, gededupliceerde Marinara-knoflook/-oregano met behoud van de aparte 5 g afwerk-EVOO, en een schonere ingeklapte sausoverride met behoud van alle zeven saustypes.
+- **v1.2.1:** herstelde NL/EN-teksten, gededupliceerde Marinara-knoflook/-oregano met behoud van de aparte 5 g afwerk-EVOO, en een schonere ingeklapte sausoverride met behoud van alle zeven saustypes.
 - **v1.3.0 hierna:** anonieme feedback blijft gescheiden en vereist vóór release productieconfiguratie van Turnstile/Worker en een echte end-to-end-issuetest.
 
 ## Achtergrond
