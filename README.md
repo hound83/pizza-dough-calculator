@@ -17,6 +17,8 @@ The downloadable application remains one self-contained `index.html`. The reposi
 
 **This branch: v1.3.0 candidate.** Clearer schedule and yeast guidance, explicit fridge events, review fixes and an independent numerical core. The public version remains v1.2.1 until an explicit release. Mixing times, preset durations and model constants are preserved. [Review, scientific limits and code roadmap](docs/V1_3_0_REVIEW_AND_ROADMAP.md).
 
+**For Claude/reviewers:** [start here](CLAUDE.md#v130-review-start-here). The [full original review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) and current implementation roadmap are stored in this branch; separate attachments are unnecessary.
+
 ## Features
 
 The app currently offers three usage modes:

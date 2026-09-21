@@ -19,6 +19,8 @@ De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De
 
 **Deze branch: v1.3.0-kandidaat.** Duidelijker schema en gistadvies, expliciete koelkastmomenten, correcties uit de review en een afzonderlijke rekenkern. De publieke versie blijft v1.2.1 tot een bewuste release. Mixtijden, preset-tijden en modelconstanten blijven behouden. [Review, wetenschappelijke beperkingen en codeplan](docs/V1_3_0_REVIEW_AND_ROADMAP.md).
 
+**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v130-review-start-here). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
+
 ## Wat kan de calculator?
 
 De app heeft drie huidige gebruiksmodi:

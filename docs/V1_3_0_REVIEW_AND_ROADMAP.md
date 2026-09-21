@@ -2,6 +2,8 @@
 
 Status: candidate based on released v1.2.1; not a release or deployment. The user requested implementation following the full review and clarified that roughly two hours until refrigeration is a useful target, but shorter rests are only worthwhile if product quality is retained. Mixing times must not be shortened.
 
+**Review documents:** this file records the current candidate's decisions and implementation. The [complete original review of 21 September 2026](Pizza_Calculator_Volledige_Review_2026-09-21.md) is preserved alongside it, including the assessment of earlier Claude comments, all recommendations, scientific sources and the professional DSP recipe. Read the original findings as pre-implementation evidence; use this file and the current source to establish which findings remain open. [CLAUDE.md](../CLAUDE.md) provides the review entry point.
+
 This candidate is independent of the parked feedback/Cloudflare PR #12. It does not activate that work. The old feedback candidate must be rebased and assigned its eventual version separately before any future release.
 
 ## Decisions and product changes
