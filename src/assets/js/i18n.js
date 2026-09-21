@@ -286,6 +286,9 @@ function setLanguage(lang){
   _applyLanguageTree(document.body);
   updateLanguageSwitch();
   if(_storageWarningShown)showStorageWarningOnce();
+  // A language action is a commit boundary. Persist before an immediate reload
+  // can restore the older language from the main calculator state.
+  saveState();
   _observeI18n();
 }
 

@@ -45,7 +45,8 @@ for(const path of ['/index.html','/src/index.html']){
       await page.locator('#batchEventKey').selectOption('bulkStart');await page.locator('#batchEventAt').fill('2026-09-21T11:30');
       await page.locator('[data-workshop-action="record-time"]').click();await expect(page.locator('#batchRunner [role="status"]')).toContainText('vorige en volgende');
       expect(await page.evaluate(()=>activeBatch().events.fridgeIn)).toBe(anchor);
-      await page.locator('#stepsList .step-check input').first().check();
+      await page.locator('#stepsList .step-check').first().click();
+      await expect(page.locator('#stepsList .step-check input').first()).toBeChecked();
       await page.evaluate(()=>{setLiveMeasurement('doughTemp','25');setLiveMeasurement('doughTemp','');});
       await page.locator('[data-workshop-action="close-batch"]').click();
       await page.locator('#batchArchive summary').click();await page.locator('[data-workshop-action="resume-batch"]').first().click();
