@@ -103,30 +103,8 @@ function calc(){
   const pizzasRaw=Math.round(num('pizzas'));
   const pizzas=clamp(Number.isFinite(pizzasRaw)&&pizzasRaw>0?pizzasRaw:1,1,MAX_PIZZAS);
   const h=selectedHydration(),s=selectedSalt(),y=selectedYeastPct(),o=selectedOil();
-  const totalTarget=pizzas*targetBall;
-  const factor=1+h/100+s/100+y/100+o/100;
-  const flourExact=totalTarget/factor;
   const practical=$('practical').checked;
-  let flour,water,salt,yeast,oil;
-  if(practical){
-    flour=roundTo(flourExact,5);
-    water=roundTo(flour*h/100,5);
-    salt=roundTo(flour*s/100,1);
-    yeast=roundTo(flour*y/100,0.1);
-    oil=roundTo(flour*o/100,1);
-  }else{
-    flour=roundTo(flourExact,0.1);
-    water=roundTo(flour*h/100,0.1);
-    salt=roundTo(flour*s/100,0.1);
-    yeast=roundTo(flour*y/100,0.01);
-    oil=roundTo(flour*o/100,0.1);
-  }
-  const total=flour+water+salt+yeast+oil;
-  const actualBall=total/pizzas;
-  const actualH=water/flour*100,actualS=salt/flour*100,actualY=yeast/flour*100,actualO=oil/flour*100;
-  let reserve=roundTo(water*(20/380),practical?5:0.1);
-  reserve=clamp(reserve,practical?5:1,Math.max(practical?5:1,water*0.10));
-  const mainWater=water-reserve;
+  const {flour,water,salt,yeast,oil,total,actualBall,actualH,actualS,actualY,actualO,reserve,mainWater}=DoughCore.doughQuantities({pizzas,targetBall,h,s,y,o,practical});
   const ferm=$('fermentationMethod').value==='room'
     ? 'room'
     : ($('coldStorageMode').value==='balls'?'coldBalls':'hybrid');

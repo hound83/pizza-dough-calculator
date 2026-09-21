@@ -130,6 +130,35 @@ function genericYeastModel(c,sim){
   return {eq,idy,saltFactor,styleFactor};
 }
 
+// Baker percentages and practical weighing are shared by live and saved recipes.
+function doughQuantities({pizzas,targetBall,h,s,y,o,practical}){
+  const round=(value,step)=>Math.round(value/step)*step;
+  const totalTarget=pizzas*targetBall;
+  const factor=1+h/100+s/100+y/100+o/100;
+  const flourExact=totalTarget/factor;
+  let flour,water,salt,yeast,oil;
+  if(practical){
+    flour=round(flourExact,5);
+    water=round(flour*h/100,5);
+    salt=round(flour*s/100,1);
+    yeast=round(flour*y/100,0.1);
+    oil=round(flour*o/100,1);
+  }else{
+    flour=round(flourExact,0.1);
+    water=round(flour*h/100,0.1);
+    salt=round(flour*s/100,0.1);
+    yeast=round(flour*y/100,0.01);
+    oil=round(flour*o/100,0.1);
+  }
+  const total=flour+water+salt+yeast+oil;
+  const actualBall=total/pizzas;
+  const actualH=water/flour*100,actualS=salt/flour*100,actualY=yeast/flour*100,actualO=oil/flour*100;
+  let reserve=round(water*(20/380),practical?5:0.1);
+  reserve=clamp(reserve,practical?5:1,Math.max(practical?5:1,water*0.10));
+  const mainWater=water-reserve;
+  return {flour,water,salt,yeast,oil,total,actualBall,actualH,actualS,actualY,actualO,reserve,mainWater};
+}
+
 // Elapsed preparation includes the existing rest and all mixing stages.
 function preparationHours(autolyse,method){
   if(autolyse)return AUTOLYSE_REST_HOURS+0.4;
@@ -150,6 +179,6 @@ function scheduleOffsets(c,preparation){
     bake:ballStart+ball,fermentation:bulk+cold+ball,
     beforeFridge:coldRoute?fridgeIn:null,preparation};
 }
-return Object.freeze({CP_FLOUR,CP_WATER,CP_SALT,CP_OIL,AUTOLYSE_REST_HOURS,DIRECT_REST_HOURS,EFFECTIVE_REST_TAU_HOURS,YEAST_TEMP_CURVE,thermalEquilibrium,thermalEndTemperature,interpolateCurve,yeastTempActivity,maturationActivity,thermalTauHours,simulateThermalPhase,simulateFermentation,genericYeastModel,preparationHours,scheduleOffsets});
+return Object.freeze({doughQuantities,CP_FLOUR,CP_WATER,CP_SALT,CP_OIL,AUTOLYSE_REST_HOURS,DIRECT_REST_HOURS,EFFECTIVE_REST_TAU_HOURS,YEAST_TEMP_CURVE,thermalEquilibrium,thermalEndTemperature,interpolateCurve,yeastTempActivity,maturationActivity,thermalTauHours,simulateThermalPhase,simulateFermentation,genericYeastModel,preparationHours,scheduleOffsets});
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=DoughCore;
