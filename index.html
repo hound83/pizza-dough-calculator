@@ -4290,6 +4290,7 @@ function refreshSizeModeUI(){
 }
 
 function calc(){
+  if(activeBatch())restoreRecipe(activeBatch().recipe);
   refreshSizeModeUI();
   const byWeight=!$('sizeFromDiameter').checked;
   let targetBall, targetDiameter;
@@ -5507,7 +5508,7 @@ function step(n,title,text,detail='',id=null){
       <span class="step-check-mark"></span>
     </label>
     <div class="num">${n}</div>
-    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${activeBatch()&&activeBatch().events[momentKey]!=null?L('Werkelijk','Actual'):L('Verwacht','Expected')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
+    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${batchMomentIsActual(momentKey)?L('Werkelijk','Actual'):L('Verwacht','Expected')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
   </div>`;
 }
 
@@ -6938,6 +6939,7 @@ function saveBakeLogEntry(){
     ddtCorrection,rating,notes,
     profile:currentMixerProfile()?WorkflowCore.clone(currentMixerProfile()):null,
     batchId:activeBatch()?.id||null,totalDough:c.total,autolyse:c.autolyse,
+    route:c.ferm,observedHours:observedBatchHours(),storage:WorkflowCore.clone(activeBatch()?.storage||workshop.storage),
     mixMinutes:validMeasured($('logMixMinutes')?.value,0,120)
   });
   if(bakeLog.length>30)bakeLog=bakeLog.slice(-30);
@@ -7024,7 +7026,18 @@ function parseLocalDateTime(value){
 }
 function batchEventName(key){
   const b=activeBatch(),balls=b?.route==='coldBalls';
-  return ({start:L('Deeg gestart','Dough started'),bulkStart:L('Kneden klaar · bulk gestart','Kneading done · bulk started'),fridgeIn:balls?L('Opgebold · koelkast in','Shaped · into the fridge'):L('Koelkast in · bulk','Into the fridge · bulk'),fridgeOut:balls?L('Koelkast uit · opwarmen','Out of the fridge · warm up'):L('Koelkast uit · verdelen en opbollen','Out of the fridge · divide and shape'),shape:L('Opgebold · eindrijs gestart','Shaped · final proof started'),bake:L('Eerste pizza in de oven','First pizza in the oven')})[key]||key;
+  return ({start:L('Deeg gestart','Dough started'),bulkStart:L('Afwerken klaar · bulk gestart','Finishing done · bulk started'),fridgeIn:balls?L('Opgebold · koelkast in','Shaped · into the fridge'):L('Koelkast in · bulk','Into the fridge · bulk'),fridgeOut:balls?L('Koelkast uit · opwarmen','Out of the fridge · warm up'):L('Koelkast uit · verdelen en opbollen','Out of the fridge · divide and shape'),shape:L('Opgebold · eindrijs gestart','Shaped · final proof started'),bake:L('Eerste pizza in de oven','First pizza in the oven')})[key]||key;
+}
+function batchMomentIsActual(key){
+  const b=activeBatch();if(!b)return false;
+  if(key==='shape'&&b.route!=='room')key=b.route==='coldBalls'?'fridgeIn':'fridgeOut';
+  if(key==='ballStart')key=b.route==='room'?'shape':'fridgeOut';
+  return b.events[key]!=null;
+}
+function observedBatchHours(){
+  const b=activeBatch();if(!b)return null;
+  const d=WorkflowCore.actualSchedule(b);
+  return Object.fromEntries(['bulk','cold','ball'].map(key=>[key,b.route==='room'&&key==='cold'?0:WorkflowCore.phaseDone(b,key)?d[key]:null]));
 }
 function currentMixerProfile(){const b=activeBatch();return b?b.profile:workshop.profiles.find(p=>p.id===workshop.profileId)||null;}
 function saveWorkshop(){saveState();update();}
@@ -7233,6 +7246,9 @@ function renderBakeComparison(){
       [L('Mixerprofiel','Mixer profile'),av.profile?.name||mixerMethodName(av.method),bv.profile?.name||mixerMethodName(bv.method)],
       [L('Model / haak','Model / hook'),[av.profile?.model,av.profile?.hook].filter(Boolean).join(' · ')||'—',[bv.profile?.model,bv.profile?.hook].filter(Boolean).join(' · ')||'—'],
       ...[['flour',L('Bloem','Flour'),' g'],['totalDough',L('Deegmassa','Dough mass'),' g'],['hydration',L('Hydratatie','Hydration'),'%'],['mixMinutes',L('Werkelijk gemixt','Actually mixed'),' min'],['waterTemp',L('Werkelijk hoofdwater','Actual main water'),' °C'],['finalDoughTemp',L('Gemeten na kneden','Measured after kneading'),' °C'],['room',L('Kamer','Room'),' °C'],['fridgeTempActual',L('Gemeten koelkast','Measured fridge'),' °C']].map(([key,label,unit])=>[label,value(av,key,unit),value(bv,key,unit)]),
+      [L('Autolyse','Autolyse'),av.autolyse==null?'—':av.autolyse?L('30 min koud','30 min cold'):L('Directe route','Direct route'),bv.autolyse==null?'—':bv.autolyse?L('30 min koud','30 min cold'):L('Directe route','Direct route')],
+      [L('Koelkastroute','Fridge route'),av.route==null?'—':av.route==='room'?L('Kamer','Room'):av.route==='coldBalls'?L('Bollen','Balls'):L('Bulk','Bulk'),bv.route==null?'—':bv.route==='room'?L('Kamer','Room'):bv.route==='coldBalls'?L('Bollen','Balls'):L('Bulk','Bulk')],
+      ...[['bulk',L('Werkelijke bulk','Actual bulk')],['cold',L('Werkelijk in koelkast','Actual refrigeration')],['ball',L('Werkelijke eindrijs','Actual final proof')]].map(([key,label])=>[label,av.observedHours?.[key]==null?'—':durationLabel(av.observedHours[key]),bv.observedHours?.[key]==null?'—':durationLabel(bv.observedHours[key])]),
       [L('Uitkomst','Outcome'),ratingLabel(av.rating),ratingLabel(bv.rating)]
     ];
     compare=`<div class="workshop-grid">${workshopSelect('compareBakeA',L('Bake A','Bake A'),options,a,{draft:true})}${workshopSelect('compareBakeB',L('Bake B','Bake B'),options,b,{draft:true})}</div>${workshopTable([L('Meting','Measurement'),'A','B'],rows)}`;
@@ -7410,7 +7426,10 @@ function sanitizeBakeLog(v){
       rating:['good','slow','fast'].includes(x.rating)?x.rating:'good',
       notes:typeof x.notes==='string'?x.notes.slice(0,500):'',
       profile:WorkflowCore.profile(x.profile),batchId:typeof x.batchId==='string'?x.batchId.slice(0,80):null,
-      totalDough:numOrNull(x.totalDough,0,30000),mixMinutes:numOrNull(x.mixMinutes,0,120),autolyse:typeof x.autolyse==='boolean'?x.autolyse:null
+      totalDough:numOrNull(x.totalDough,0,30000),mixMinutes:numOrNull(x.mixMinutes,0,120),autolyse:typeof x.autolyse==='boolean'?x.autolyse:null,
+      route:['room','hybrid','coldBalls'].includes(x.route)?x.route:null,
+      observedHours:x.observedHours&&typeof x.observedHours==='object'?{bulk:numOrNull(x.observedHours.bulk,0,10000),cold:numOrNull(x.observedHours.cold,0,10000),ball:numOrNull(x.observedHours.ball,0,10000)}:null,
+      storage:x.storage&&typeof x.storage==='object'?WorkflowCore.storage(x.storage):null
     };
   }).filter(Boolean);
 }

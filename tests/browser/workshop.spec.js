@@ -31,6 +31,7 @@ for(const path of ['/index.html','/src/index.html']){
     });
     test('actual checkpoints validate chronology and archive/resume preserves progress and cleared measurements',async({page})=>{
       await page.clock.install({time:new Date('2026-09-21T12:00:00Z')});await open(page);
+      await page.locator('#coldStorageDetails summary').click();await page.locator('#workshopColdRoute').selectOption('balls');
       await page.locator('#batchStartDetails summary').click();await page.locator('#batchStartAt').fill('2026-09-21T09:00');
       await page.locator('#batchPlanner [data-workshop-action="start-batch"]').click();
       await page.locator('#batchEventDetails summary').click();await page.locator('#batchEventAt').fill('2026-09-22T10:00');
@@ -40,6 +41,7 @@ for(const path of ['/index.html','/src/index.html']){
       await expect(page.locator('#batchEventKey')).toHaveValue('fridgeIn');
       await page.locator('#batchEventAt').fill('2026-09-21T11:00');await page.locator('[data-workshop-action="record-time"]').click();
       const anchor=await page.evaluate(()=>activeBatch().events.fridgeIn);
+      await expect(page.locator('[data-step-key="s-shape"] .step-moment')).toContainText('Werkelijk');
       await page.locator('#batchEventKey').selectOption('bulkStart');await page.locator('#batchEventAt').fill('2026-09-21T11:30');
       await page.locator('[data-workshop-action="record-time"]').click();await expect(page.locator('#batchRunner [role="status"]')).toContainText('vorige en volgende');
       expect(await page.evaluate(()=>activeBatch().events.fridgeIn)).toBe(anchor);

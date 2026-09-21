@@ -10,7 +10,7 @@ The user explicitly requested implementation of all seven additional recommendat
 | Fixed dates and actual phases | Fixed calendar bake target, record-now actions, dated corrections, actual/expected timeline, close/reopen batches | Absolute timestamps, recorded checkpoints, correction history, observations and step progress |
 | Diagnose unexpected dough behaviour | Stage and symptom selectors with specific, bilingual guidance | No diagnosis or automatic recipe change |
 | Weighable yeast advice | 1 g / 0.1 g / 0.01 g scale selector, nearest scale step, quantization impact, explicit fresh-yeast conversion before mixing | Scale preference; actual recipe dose is never silently rounded to the chosen scale |
-| Mixer/hook/batch observations | Named equipment profiles, actual active mixing minutes in the bake log, two-bake comparison | Exact model/hook/programme note copied into each observation; no automatic learning |
+| Mixer/hook/batch observations | Named equipment profiles, actual active mixing minutes in the bake log, two-bake comparison | Exact model/hook/programme note, cold route and completed actual phase durations copied into each observation; no automatic learning |
 | Practical refrigerator layout | Cold route, comfortable balls per box, available boxes, dough depth, stacking and load | Capacity shortfall and visible thermal-model limitations; no invented container constants |
 | Saved recipes and plan comparison | Up to 30 named dough recipes, two-plan comparison, recipe-file export/import | Whitelisted recipe values, no private notes or measurements in the recipe exchange file |
 

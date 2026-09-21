@@ -41,7 +41,18 @@ function parseLocalDateTime(value){
 }
 function batchEventName(key){
   const b=activeBatch(),balls=b?.route==='coldBalls';
-  return ({start:L('Deeg gestart','Dough started'),bulkStart:L('Kneden klaar · bulk gestart','Kneading done · bulk started'),fridgeIn:balls?L('Opgebold · koelkast in','Shaped · into the fridge'):L('Koelkast in · bulk','Into the fridge · bulk'),fridgeOut:balls?L('Koelkast uit · opwarmen','Out of the fridge · warm up'):L('Koelkast uit · verdelen en opbollen','Out of the fridge · divide and shape'),shape:L('Opgebold · eindrijs gestart','Shaped · final proof started'),bake:L('Eerste pizza in de oven','First pizza in the oven')})[key]||key;
+  return ({start:L('Deeg gestart','Dough started'),bulkStart:L('Afwerken klaar · bulk gestart','Finishing done · bulk started'),fridgeIn:balls?L('Opgebold · koelkast in','Shaped · into the fridge'):L('Koelkast in · bulk','Into the fridge · bulk'),fridgeOut:balls?L('Koelkast uit · opwarmen','Out of the fridge · warm up'):L('Koelkast uit · verdelen en opbollen','Out of the fridge · divide and shape'),shape:L('Opgebold · eindrijs gestart','Shaped · final proof started'),bake:L('Eerste pizza in de oven','First pizza in the oven')})[key]||key;
+}
+function batchMomentIsActual(key){
+  const b=activeBatch();if(!b)return false;
+  if(key==='shape'&&b.route!=='room')key=b.route==='coldBalls'?'fridgeIn':'fridgeOut';
+  if(key==='ballStart')key=b.route==='room'?'shape':'fridgeOut';
+  return b.events[key]!=null;
+}
+function observedBatchHours(){
+  const b=activeBatch();if(!b)return null;
+  const d=WorkflowCore.actualSchedule(b);
+  return Object.fromEntries(['bulk','cold','ball'].map(key=>[key,b.route==='room'&&key==='cold'?0:WorkflowCore.phaseDone(b,key)?d[key]:null]));
 }
 function currentMixerProfile(){const b=activeBatch();return b?b.profile:workshop.profiles.find(p=>p.id===workshop.profileId)||null;}
 function saveWorkshop(){saveState();update();}

@@ -95,7 +95,10 @@ function sanitizeBakeLog(v){
       rating:['good','slow','fast'].includes(x.rating)?x.rating:'good',
       notes:typeof x.notes==='string'?x.notes.slice(0,500):'',
       profile:WorkflowCore.profile(x.profile),batchId:typeof x.batchId==='string'?x.batchId.slice(0,80):null,
-      totalDough:numOrNull(x.totalDough,0,30000),mixMinutes:numOrNull(x.mixMinutes,0,120),autolyse:typeof x.autolyse==='boolean'?x.autolyse:null
+      totalDough:numOrNull(x.totalDough,0,30000),mixMinutes:numOrNull(x.mixMinutes,0,120),autolyse:typeof x.autolyse==='boolean'?x.autolyse:null,
+      route:['room','hybrid','coldBalls'].includes(x.route)?x.route:null,
+      observedHours:x.observedHours&&typeof x.observedHours==='object'?{bulk:numOrNull(x.observedHours.bulk,0,10000),cold:numOrNull(x.observedHours.cold,0,10000),ball:numOrNull(x.observedHours.ball,0,10000)}:null,
+      storage:x.storage&&typeof x.storage==='object'?WorkflowCore.storage(x.storage):null
     };
   }).filter(Boolean);
 }

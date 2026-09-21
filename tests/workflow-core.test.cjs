@@ -11,7 +11,7 @@ const batch=()=>W.createBatch({id:'test',recipe:snapshot(),startedAt:start,bakeA
 test('recipe exchange is strict, strips private data, and preserves zero salt/oil and exact yeast',()=>{
   const r=snapshot();r.fields.saltPct='0';r.exact={ySelected:.17345};r.notes='private';r.profile={model:'private'};
   const exported=W.exportRecipe('Weekend',r),imported=W.importRecipe(JSON.parse(JSON.stringify(exported)));
-  assert.equal(imported.recipe.exact.ySelected,.17345);assert.equal(imported.recipe.fields.saltPct,'0');
+  assert.equal(imported.recipe.preset,'custom');assert.equal(imported.recipe.exact.ySelected,.17345);assert.equal(imported.recipe.fields.saltPct,'0');
   assert.equal(JSON.stringify(exported).includes('private'),false);
   assert.equal(W.importRecipe({...exported,version:99}),null);
   const invalid=structuredClone(exported);delete invalid.recipe.fields.hydration;assert.equal(W.importRecipe(invalid),null);
@@ -57,6 +57,7 @@ test('all-room and refrigerated-ball routes expose the correct shaping checkpoin
 test('temperature proposal preserves anchors, uses actual past durations and only changes final proof',()=>{
   let b=batch();const c=W.summary(b.recipe,factors,D);
   b=W.recordEvent(b,'bulkStart',start+.9*W.HOUR,now);b=W.recordEvent(b,'fridgeIn',start+1.9*W.HOUR,now);b=W.recordEvent(b,'fridgeOut',start+21.9*W.HOUR,now);
+  assert.equal(W.finalProofProposal(batch(),c,{doughTemp:24,fridgeTemp:4},D,start+3*W.HOUR).reason,'checkpoint-needed');
   const original=JSON.stringify(b),proposal=W.finalProofProposal(b,c,{doughTemp:24,fridgeTemp:4},D,start+22*W.HOUR);
   assert.equal(proposal.ok,true);assert.ok(Math.abs(proposal.ball-4)<.02);assert.ok(proposal.remaining<4);assert.equal(JSON.stringify(b),original);
   const expired=W.finalProofProposal(b,c,{doughTemp:30,fridgeTemp:8},D,start+35*W.HOUR);assert.equal(expired.ok,false);

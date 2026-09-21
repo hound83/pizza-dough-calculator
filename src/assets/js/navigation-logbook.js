@@ -304,6 +304,7 @@ function saveBakeLogEntry(){
     ddtCorrection,rating,notes,
     profile:currentMixerProfile()?WorkflowCore.clone(currentMixerProfile()):null,
     batchId:activeBatch()?.id||null,totalDough:c.total,autolyse:c.autolyse,
+    route:c.ferm,observedHours:observedBatchHours(),storage:WorkflowCore.clone(activeBatch()?.storage||workshop.storage),
     mixMinutes:validMeasured($('logMixMinutes')?.value,0,120)
   });
   if(bakeLog.length>30)bakeLog=bakeLog.slice(-30);

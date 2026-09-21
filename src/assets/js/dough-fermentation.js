@@ -77,6 +77,7 @@ function refreshSizeModeUI(){
 }
 
 function calc(){
+  if(activeBatch())restoreRecipe(activeBatch().recipe);
   refreshSizeModeUI();
   const byWeight=!$('sizeFromDiameter').checked;
   let targetBall, targetDiameter;

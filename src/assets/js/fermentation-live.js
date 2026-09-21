@@ -466,7 +466,7 @@ function step(n,title,text,detail='',id=null){
       <span class="step-check-mark"></span>
     </label>
     <div class="num">${n}</div>
-    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${activeBatch()&&activeBatch().events[momentKey]!=null?L('Werkelijk','Actual'):L('Verwacht','Expected')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
+    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${batchMomentIsActual(momentKey)?L('Werkelijk','Actual'):L('Verwacht','Expected')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
   </div>`;
 }
 
