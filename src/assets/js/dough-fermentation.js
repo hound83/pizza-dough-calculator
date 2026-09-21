@@ -133,6 +133,7 @@ function calc(){
   const bulk=nonNegativeNum('bulkHours'),cold=ferm==='room'?0:nonNegativeNum('coldHours'),ball=nonNegativeNum('ballHours');
   return {
     pizzas,targetBall,targetDiameter,byWeight,h,s,y,o,flour,water,salt,yeast,oil,total,actualBall,actualH,actualS,actualY,actualO,practical,
+    style:$('doughStyle').value,presetKey:$('preset').value,
     reserve,mainWater,bulk,cold,ball,
     room:boundedNum('roomTemp',21),fridge:boundedNum('fridgeTemp',4),autolyse:$('autolyse').checked,ferm,
     yeastType:$('yeastType').value,stoneTemp:boundedNum('stoneTemp',430),preheat:boundedNum('preheatMinutes',30),
@@ -159,124 +160,13 @@ function fermentationHours(c){
   return c.bulk+c.cold+c.ball;
 }
 
-// Shared household thermal constants. These values describe the deliberately
-// simple v1.2 model boundary; mixer/bowl/handling losses remain inside the
-// effective stage rises in fermentation-live.js.
-const CP_FLOUR=1.850; // J/(g*K)
-const CP_WATER=4.186; // J/(g*K)
-const CP_SALT=0.900;  // J/(g*K), engineering approximation
-const CP_OIL=2.000;   // J/(g*K), engineering approximation
-const AUTOLYSE_REST_HOURS=0.5;
-const DIRECT_REST_HOURS=1/3;
-const EFFECTIVE_REST_TAU_HOURS=2.27;
-
-function thermalEquilibrium(parts){
-  if(!Array.isArray(parts)||!parts.length)throw new RangeError('Thermal equilibrium requires parts.');
-  let energy=0,capacity=0;
-  for(const part of parts){
-    if(!part||typeof part.temperature!=='number'||!Number.isFinite(part.temperature))throw new RangeError('Invalid thermal-part temperature.');
-    const hasCapacity=part.capacity!=null;
-    if(hasCapacity&&(typeof part.capacity!=='number'||!Number.isFinite(part.capacity)))throw new RangeError('Invalid thermal-part capacity.');
-    if(!hasCapacity&&(
-      typeof part.mass!=='number'||!Number.isFinite(part.mass)||
-      typeof part.cp!=='number'||!Number.isFinite(part.cp)
-    ))throw new RangeError('Invalid thermal-part mass or specific heat.');
-    const partCapacity=hasCapacity?part.capacity:part.mass*part.cp;
-    if(!Number.isFinite(partCapacity)||partCapacity<0)throw new RangeError('Invalid thermal-part capacity.');
-    if(partCapacity===0)continue;
-    energy+=partCapacity*Number(part.temperature);
-    capacity+=partCapacity;
-  }
-  if(!Number.isFinite(energy)||!Number.isFinite(capacity)||capacity<=0)throw new RangeError('Invalid total thermal capacity.');
-  return {temperature:energy/capacity,capacity};
-}
-
-function thermalEndTemperature(startTemp,environmentTemp,hours,tauHours){
-  const values=[startTemp,environmentTemp,hours,tauHours];
-  if(values.some(x=>!Number.isFinite(x))||values[2]<0||values[3]<=0)throw new RangeError('Invalid thermal phase.');
-  return values[1]+(values[0]-values[1])*Math.exp(-values[2]/values[3]);
-}
-
-// Praktische thuiskalibratie, geen natuurwet. Doorgetrokken boven 35 graden
-// zodat een warme rijskast of proofbox niet als "even snel als 35 graden"
-// wordt gemodelleerd; boven ~45 graden loopt gist snel dood.
-const YEAST_TEMP_CURVE=[
-  [0,0.01],[4,0.04],[8,0.09],[12,0.20],[16,0.42],[18,0.62],
-  [21,1.00],[24,1.55],[27,2.35],[30,3.35],[32,3.55],[35,3.00],
-  [38,2.20],[42,0.90],[46,0.10],[50,0.02]
-];
-
-function interpolateCurve(points,x){
-  if(x<=points[0][0])return points[0][1];
-  if(x>=points[points.length-1][0])return points[points.length-1][1];
-  for(let i=0;i<points.length-1;i++){
-    const [x1,y1]=points[i],[x2,y2]=points[i+1];
-    if(x>=x1&&x<=x2){const f=(x-x1)/(x2-x1);return y1+(y2-y1)*f;}
-  }
-  return 1;
-}
-
-function yeastTempActivity(t){
-  return interpolateCurve(YEAST_TEMP_CURVE,clamp(t,0,50));
-}
-
-// Een aparte, mildere klok voor enzymatische/rheologische rijping.
-// Dit is bewust een index en geen directe labmeting.
-function maturationActivity(t){
-  return clamp(Math.pow(2,(clamp(t,0,35)-21)/10),0.15,2.6);
-}
-
-function thermalTauHours(massKg,asBalls=false,ballWeight=250){
-  if(asBalls){
-    return clamp(1.10*Math.pow(Math.max(100,ballWeight)/250,1/3),0.7,2.0);
-  }
-  return clamp(2.40*Math.pow(Math.max(0.25,massKg),1/3),1.5,4.5);
-}
-
-function simulateThermalPhase(startTemp,envTemp,hours,tau,name,kind){
-  if(hours<=0)return {name,kind,hours:0,envTemp,startTemp,endTemp:startTemp,gas:0,maturity:0};
-  const step=Math.min(.10,Math.max(.025,hours/200));
-  const n=Math.max(1,Math.ceil(hours/step)),dt=hours/n;
-  let t=startTemp,gas=0,maturity=0;
-  for(let i=0;i<n;i++){
-    const next=thermalEndTemperature(t,envTemp,dt,tau);
-    const mid=(t+next)/2;
-    gas+=yeastTempActivity(mid)*dt;
-    maturity+=maturationActivity(mid)*dt;
-    t=next;
-  }
-  return {name,kind,hours,envTemp,startTemp,endTemp:t,gas,maturity,tau};
-}
+// Preserve the public numerical API; all arithmetic lives in the pure core.
+const {CP_FLOUR,CP_WATER,CP_SALT,CP_OIL,AUTOLYSE_REST_HOURS,DIRECT_REST_HOURS,EFFECTIVE_REST_TAU_HOURS,YEAST_TEMP_CURVE,thermalEquilibrium,thermalEndTemperature,interpolateCurve,yeastTempActivity,maturationActivity,thermalTauHours,simulateThermalPhase}=DoughCore;
 
 function simulateFermentation(c){
-  const massKg=Math.max(.25,c.total/1000);
-  const ballWeight=Math.max(100,c.actualBall);
-  const bulkTau=thermalTauHours(massKg,false,ballWeight);
-  const ballTau=thermalTauHours(ballWeight/1000,true,ballWeight);
-  let t=c.doughTemp,phases=[];
-
-  const add=(env,hours,tau,name,kind)=>{
-    const p=simulateThermalPhase(t,env,hours,tau,name,kind);phases.push(p);t=p.endTemp;
-  };
-
-  add(c.room,c.bulk,bulkTau,L('Bulk buiten','Bulk at room temp'),'bulk');
-  if(c.ferm==='hybrid'){
-    add(c.fridge,c.cold,bulkTau,L('Koelkast • bulk','Fridge • bulk'),'coldBulk');
-    add(c.room,c.ball,ballTau,L('Bolrijs / opwarming','Ball proof / warm-up'),'ballWarm');
-  }else if(c.ferm==='coldBalls'){
-    add(c.fridge,c.cold,ballTau,L('Koelkast • bollen','Fridge • balls'),'coldBalls');
-    add(c.room,c.ball,ballTau,L('Laatste opwarming','Final warm-up'),'ballWarm');
-  }else{
-    add(c.room,c.ball,ballTau,L('Bolrijs buiten','Ball proof at room temp'),'ballRoom');
-  }
-
-  return {
-    phases,
-    gas:phases.reduce((a,p)=>a+p.gas,0),
-    maturity:phases.reduce((a,p)=>a+p.maturity,0),
-    endTemp:t,
-    bulkTau,ballTau,massKg,ballWeight
-  };
+  const sim=DoughCore.simulateFermentation(c);
+  const names={bulk:L('Bulk buiten','Bulk at room temp'),coldBulk:L('Koelkast • bulk','Fridge • bulk'),coldBalls:L('Koelkast • bollen','Fridge • balls'),ballRoom:L('Bolrijs buiten','Ball proof at room temp'),ballWarm:c.ferm==='coldBalls'?L('Laatste opwarming','Final warm-up'):L('Bolrijs / opwarming','Ball proof / warm-up')};
+  return {...sim,phases:sim.phases.map(p=>({...p,name:names[p.kind]}))};
 }
 
 function riseTarget(style){
@@ -309,15 +199,7 @@ function flourRisk(c,sim){
 
 
 // Het empirische thuismodel, losgetrokken zodat de AVPN-tak er ook mee kan vergelijken.
-function genericYeastModel(c,sim){
-  const eq=Math.max(2,sim.gas);
-  const styleFactor={neapolitan:1,avpn:1,canotto:1.08,ny:.95,thin:.86}[ $('doughStyle').value ]||1;
-  const saltFactor=Math.exp((c.s-2.5)*0.09);
-  let idy=0.68/Math.pow(eq,0.80);
-  idy*=saltFactor*styleFactor;
-  idy=clamp(idy,0.015,0.55);
-  return {eq,idy,saltFactor,styleFactor};
-}
+function genericYeastModel(c,sim){return DoughCore.genericYeastModel(c,sim);}
 
 function avpnMidpointYeastAdvice(c){
   const sim=simulateFermentation(c);

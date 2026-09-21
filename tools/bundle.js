@@ -9,6 +9,7 @@ const SOURCE_ROOT=path.join(PROJECT_ROOT,'src');
 const OUTPUT_PATH=path.join(PROJECT_ROOT,'index.html');
 const STYLE_LINK='<link href="assets/css/app.css" rel="stylesheet"/>';
 const EXPECTED_SCRIPTS=[
+  'assets/js/calculation-core.js',
   'assets/js/foundation.js',
   'assets/js/translations.js',
   'assets/js/i18n.js',
