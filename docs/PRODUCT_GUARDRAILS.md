@@ -248,6 +248,6 @@ The user explicitly requested this implementation after review, including cleane
 
 | Candidate artefact | SHA-256 |
 |---|---|
-| singleFile | `dec52a68f6a64a8354040733ef55af537e0e7a5a7aa2bf758ef8c6bf7c8f784f` |
+| singleFile | `d7a3a815154b350a9ccf521cefd3f7bdf5120359df798b58945e5ecb502807c5` |
 | css | `621e314eaf01e7f9dd29804007f78747cf1c86886f12c4e446a908766c4d3508` |
-| javascript | `ea41231586664052616a57b2744d79190da30a19b8ed1b2d477792152a6af531` |
+| javascript | `3e490d6d7d85a32e28b7bdc62b4b7ae7a97b8ccba61a7a3648c3674ef478aff7` |
