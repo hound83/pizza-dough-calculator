@@ -290,4 +290,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(restored && _restoredWizardPage>0 && wizardPages().includes(_restoredWizardPage)) showPage(_restoredWizardPage);
   else showModeChooser();
   initI18n();
+  refreshBakeDayClock();
+  window.addEventListener('focus',refreshBakeDayClock);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible')refreshBakeDayClock();
+  });
 });

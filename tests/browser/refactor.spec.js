@@ -107,6 +107,33 @@ for(const publication of PUBLICATIONS){
       });
     }
 
+    test('bake weekdays follow the local date, midnight, DST and language without changing the selection',async({browser})=>{
+      const context=await browser.newContext({timezoneId:'Europe/Amsterdam',locale:'nl-NL'});
+      const page=await context.newPage();
+      try{
+        await page.clock.install({time:new Date('2026-09-21T21:50:00Z')});
+        await page.goto('http://127.0.0.1:4173'+publication.path,{waitUntil:'load'});
+        await page.locator('[data-mode-card="dough"]').click();
+        await expect(page.locator('#bakeDay option[value="1"]')).toHaveText('Morgen – dinsdag');
+        await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
+        await page.locator('#bakeDay').selectOption('2');
+        await page.locator('#langEn').click();
+        await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('In 2 days – Wednesday');
+        await page.locator('#langNl').click();
+        await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
+        await page.clock.fastForward(11*60_000);
+        await expect(page.locator('#bakeDay option[value="1"]')).toHaveText('Morgen – woensdag');
+        await expect(page.locator('#bakeDay')).toHaveValue('2');
+        // Amsterdam is already Sunday here while UTC is still Saturday.
+        // Adding 24 elapsed hours would also fail across this 25-hour day.
+        await page.clock.setSystemTime(new Date('2026-10-24T22:30:00Z'));
+        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+        await expect(page.locator('#bakeDay option[value="0"]')).toHaveText('Vandaag – zondag');
+        await expect(page.locator('#bakeDay option[value="1"]')).toHaveText('Morgen – maandag');
+        await expect(page.locator('#bakeDay')).toHaveValue('2');
+      }finally{await context.close();}
+    });
+
     test('switches Basic and Full without changing recipe values',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
       await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');

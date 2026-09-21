@@ -4,6 +4,43 @@ function niceDate(d){
   return new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'nl-NL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(d);
 }
 
+function bakeDayLabels(now=new Date()){
+  const relative=currentLang==='en'
+    ? ['Today','Tomorrow','In 2 days','In 3 days']
+    : ['Vandaag','Morgen','Overmorgen','Over drie dagen'];
+  const weekday=new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'nl-NL',{weekday:'long'});
+  return relative.map((label,offset)=>{
+    // Local calendar arithmetic also handles month/year and DST boundaries.
+    const day=new Date(now);
+    day.setDate(day.getDate()+offset);
+    return `${label} – ${weekday.format(day)}`;
+  });
+}
+
+function renderBakeDayLabels(now=new Date()){
+  const labels=bakeDayLabels(now);
+  for(const option of $('bakeDay')?.options||[]){
+    if(!/^[0-3]$/.test(option.value))continue;
+    const label=labels[Number(option.value)];
+    if(option.textContent!==label)option.textContent=label;
+  }
+}
+
+let _bakeDayTimer=null;
+let _bakeDayClockKey=null;
+function refreshBakeDayClock(){
+  clearTimeout(_bakeDayTimer);
+  const now=new Date(),key=now.toDateString();
+  const changed=_bakeDayClockKey!==null&&key!==_bakeDayClockKey;
+  _bakeDayClockKey=key;
+  renderBakeDayLabels(now);
+  // Relative bake deadlines also follow the new local date after midnight.
+  if(changed)update();
+  const midnight=new Date(now);
+  midnight.setHours(24,0,0,100);
+  _bakeDayTimer=setTimeout(refreshBakeDayClock,Math.max(100,midnight-now));
+}
+
 // Op de nacht van de zomertijd bestaat 02:30 niet; setHours schuift dan
 // stilzwijgend een uur op. Dat signaleren we in plaats van te verbergen.
 let _bakeTimeShifted=false;

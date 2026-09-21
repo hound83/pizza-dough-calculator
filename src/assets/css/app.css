@@ -603,12 +603,12 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 }
 .bake-plan-grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:minmax(0,2fr) minmax(100px,1fr);
   gap:12px;
   margin-top:0;
 }
 @media(max-width:560px){
-  .bake-plan-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .bake-plan-grid{grid-template-columns:1fr;gap:8px}
 }
 
 

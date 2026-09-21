@@ -8,6 +8,8 @@ This candidate is independent of the parked feedback/Cloudflare PR #12. It does 
 
 ## Decisions and product changes
 
+Follow-up usability request: bake-day options now include the weekday using the device's local calendar, for example `Morgen – dinsdag`. They refresh on language changes, after local midnight and when returning to the page. Calendar arithmetic respects month/year changes and daylight-saving transitions. On narrow screens, day and time are stacked to give the longer labels room. Option values and stored relative offsets remain unchanged; this does not introduce a fixed-date running-batch mode.
+
 | Review finding | Candidate behavior |
 |---|---|
 | Deadline advice could retain the AVPN identity while proposing a different schedule | A proposed deadline recipe carries explicit `presetKey: 'custom'`; generic advice belongs to that proposed recipe. The original AVPN preset retains its official range and arithmetic midpoint. |
@@ -109,3 +111,19 @@ Follow-up work, kept out of this candidate:
 The intended checks are the full `npm test` gate: standalone/source equality, historical baseline records, DOM-independent numerical invariants, regression suites for both publications, and Chromium tests at 320, 390, 430, 760, 1024 and 1280 px. Browser checks cover Basic planning, explicit fridge-out, timeline order, accessible checkbox names, method state, and overflow as well as the existing persistence, keyboard and recipe-picker suite.
 
 The candidate's current hashes are recorded separately in `PRODUCT_GUARDRAILS.md`; released hashes are immutable. Test output and pull-request checks establish actual run status. A candidate is not released merely because tests pass. Merging, tagging, deployment and feedback infrastructure remain separate decisions.
+
+## Additional product recommendations
+
+These are recommendations requested by the user, not additional implemented features or claims that earlier reviewers never considered them.
+
+| Priority | Recommendation | Problem it addresses |
+|---|---|---|
+| First | Explicit **Start this batch**, capturing an immutable recipe, concrete bake date and actual start time | The current app plans backwards from a target, but does not track what physically happened. Actual measurements only guard the yeast/deadline apply actions; they do not freeze all ingredient controls or establish an execution timeline. |
+| First | Keep the bake date fixed for a running batch; track actual fridge-in, fridge-out and completed phases | Relative choices such as “tomorrow” are useful while planning, but their calendar date changes after midnight. A running batch should preserve its selected calendar target and never reschedule a completed phase. Dynamic weekday labels alone do not solve this. |
+| Next | A compact **What if the dough differs?** guide | Current instructions include windowpane and visual checks, but little branching guidance. Distinguish immediate tearing after relaxation, strong recoil, cold dough and progressive loss of structure before suggesting an intervention; no single symptom proves a diagnosis. |
+| Next | User scale resolution and realistic small-yeast dosing | The current app warns about practical 0.1 g rounding, but does not know whether the user's scale resolves 1 g, 0.1 g or 0.01 g. A dose should be assessed against the actual measuring tool. Any later dilution aid must account for added water and explain immediate, even mixing. |
+| Later | Log a repeatable mixer/attachment/batch profile and compare actual temperatures across bakes | Brand name alone hides hook, load and programme differences. Start by recording observations; fit or automatically change model constants only after sufficient repeatable evidence and held-out validation. |
+| Later | Explain feasible cold-storage choices and capacity | Batch mass alone does not describe dough depth, stacked boxes or refrigerator load. First expose the assumptions and practical container constraints; do not invent new cooling constants for unmeasured box profiles. |
+| Optional | Named recipes and comparison of two saved plans without losing the active batch | The existing current-state persistence and bake log are not a full library of named alternatives. Saved comparisons can make deliberate iteration easier; exclude private notes from any future shareable recipe link by default. |
+
+The running-batch boundary is the most important next functional step. Better temperature and yeast mathematics cannot compensate for an unknown actual start, an accidentally changed recipe or a moving calendar target. Implement it as a separately reviewed state/persistence change with tests for reload, midnight, language, time zones, and edits after mixing.

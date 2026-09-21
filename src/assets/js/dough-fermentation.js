@@ -283,6 +283,7 @@ function yeastRecommendation(c){
 }
 
 function update(){
+  renderBakeDayLabels();
   refreshFermentationUI();
   refreshAvpnPresetInfo();
   applyAppModeUI();

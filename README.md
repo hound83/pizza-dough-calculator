@@ -3,7 +3,7 @@
 [English](README.md) | [Nederlands](README.nl.md)
 
 [![Version](https://img.shields.io/badge/version-v1.2.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
-[![Tests](https://img.shields.io/badge/regression_tests-97_cases-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regression_tests-98_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -134,9 +134,9 @@ Current result:
 ```text
 15 refactor-structure tests passed
 5 numerical-core tests passed
-97 bundle regression tests passed
-97 source regression tests passed
-41 Chromium browser/layout tests passed
+98 bundle regression tests passed
+98 source regression tests passed
+43 Chromium browser/layout tests passed
 ```
 
 The suite covers, among other things:

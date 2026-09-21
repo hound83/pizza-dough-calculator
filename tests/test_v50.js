@@ -1126,4 +1126,18 @@ test('a late measurement also prevents deadline advice from rewriting an already
   assert(x.before===x.after,JSON.stringify(x));
 });
 
+test('bake-day labels use local calendar days across week, month and year boundaries',()=>{
+  const x=run(`(()=>{
+    currentLang='nl';const monday=bakeDayLabels(new Date(2026,8,21,0,15));
+    const yearEnd=bakeDayLabels(new Date(2026,11,31,23,55));
+    const leapDay=bakeDayLabels(new Date(2028,1,28,12));
+    currentLang='en';const en=bakeDayLabels(new Date(2026,8,21,0,15));
+    return {monday,yearEnd,leapDay,en};
+  })()`);
+  assert(x.monday[1]==='Morgen – dinsdag'&&x.monday[2]==='Overmorgen – woensdag'&&x.monday[3]==='Over drie dagen – donderdag',JSON.stringify(x));
+  assert(x.yearEnd[1]==='Morgen – vrijdag'&&x.yearEnd[3]==='Over drie dagen – zondag',JSON.stringify(x));
+  assert(x.leapDay[1]==='Morgen – dinsdag'&&x.leapDay[2]==='Overmorgen – woensdag',JSON.stringify(x));
+  assert(x.en[1]==='Tomorrow – Tuesday'&&x.en[2]==='In 2 days – Wednesday'&&x.en[3]==='In 3 days – Thursday',JSON.stringify(x));
+});
+
 console.log(`\n${passed} regression tests passed`);

@@ -241,6 +241,7 @@ The user explicitly requested this implementation after review, including cleane
 - Show the recipe dose to weigh, a distinct model starting point, and the heuristic nature of its range. Retain distinct official AVPN range semantics.
 - Planned target temperatures are not labelled measured. No empirical accuracy or confidence-interval claim is added.
 - Basic includes a phase summary and approximate time until cold fermentation. The timeline and relevant steps expose fridge-in/out using shared offsets, with dates if a bake time is selected and elapsed offsets otherwise.
+- Bake-day labels include the local weekday and refresh after midnight, on return to the page and on language changes. Relative option values and schema 51 remain unchanged; an immutable calendar target for a running batch is separate future work. Use calendar-day arithmetic, not fixed 24-hour additions.
 - The AVPN identity belongs only to the actual AVPN preset. A proposed custom deadline recipe uses its own identity and explicit style.
 - Subgram gram quantities keep 0.01 g resolution and zero remains zero; catalogue reference quantities and existing whole-gram rules are unchanged.
 - Step checkboxes have unique heading-based accessible names; method buttons expose selected state; primary-button text meets normal-text contrast.
@@ -248,6 +249,6 @@ The user explicitly requested this implementation after review, including cleane
 
 | Candidate artefact | SHA-256 |
 |---|---|
-| singleFile | `d7a3a815154b350a9ccf521cefd3f7bdf5120359df798b58945e5ecb502807c5` |
-| css | `621e314eaf01e7f9dd29804007f78747cf1c86886f12c4e446a908766c4d3508` |
-| javascript | `3e490d6d7d85a32e28b7bdc62b4b7ae7a97b8ccba61a7a3648c3674ef478aff7` |
+| singleFile | `78851e2d059925f3dd1cebebbcc556060b75331db4aa03a259df8a7545b09335` |
+| css | `e7c20ac74ca79d1a2229ebc649e2c2b9d90dd5362b0e4d855cea05f94dfef619` |
+| javascript | `ce6967176b18787250e768d14899cab8b7bb5c5303c3c245c1757a6a657b1896` |
