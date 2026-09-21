@@ -261,6 +261,7 @@ function yeastRecommendation(c){
 }
 
 function update(){
+  enforceBatchRecipe();
   renderBakeDayLabels();
   refreshFermentationUI();
   refreshAvpnPresetInfo();
@@ -324,7 +325,7 @@ function update(){
   const recGrams=estFlour*advice.selected/100;
   const lowG=estFlour*advice.low/100, highG=estFlour*advice.high/100;
   $('yeastAdvice').textContent=L(`Afwegen voor dit recept: ${fmt(c.yeast,2)} g ${yt.short}`,`Weigh for this recipe: ${fmt(c.yeast,2)} g ${yt.short}`);
-  const mixed=liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
+  const mixed=!!activeBatch()||liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
   if(advice.avpnOfficial){
     $('yeastAdviceDetail').textContent=L(
       `Officiële AVPN-band: ${fmt(lowG,2)}–${fmt(highG,2)} g. Rekenkundig midden: ${fmt(recGrams,2)} g; geen verplicht AVPN-doel.`,
@@ -353,6 +354,7 @@ function update(){
   buildMixerCapacityNote(c);
   buildTimeline(c);
   renderBakeLog(c);
+  renderWorkshop(c);
   buildShopping(c);
   buildStoneAdvice(c);
   // De ingrediëntenmodal werd bij elke toetsaanslag herbouwd, ook dicht.
@@ -477,6 +479,7 @@ function buildFermentationScience(c,a){
 }
 
 function applyYeastAdvice(){
+  if(activeBatch())return;
   if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const c=calc();
   const a=yeastRecommendation(c);
@@ -488,6 +491,7 @@ function applyYeastAdvice(){
 }
 
 function applyPreset(key){
+  if(activeBatch())return;
   if(key==='custom') return;
   const p=presets[key]; if(!p)return;
   liveMeasurements={doughTemp:null,fridgeTemp:null};

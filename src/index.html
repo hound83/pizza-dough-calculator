@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v1.3.0</title>
+<title>Pizzadeegcalculator v1.4.0</title>
 <link href="assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
@@ -218,6 +218,8 @@
 </div>
 </div>
 <div class="schedule-summary" id="scheduleSummary"></div>
+<div class="workshop-panel" id="batchPlanner"></div>
+<div class="workshop-panel" id="coldStoragePlanner"></div>
 <div class="advisor">
 <div class="advisor-result">
 <b id="yeastAdvice">Gistadvies berekenen</b>
@@ -228,6 +230,8 @@
 <span class="input-help" id="yeastApplyHelp">Past alleen de berekende hoeveelheid gist aan.</span>
 </div>
 </div>
+<div class="workshop-panel" id="scalePlanner"></div>
+<div class="workshop-panel" id="recipeWorkbench"></div>
 <div class="yeast-range experience-full-only" id="yeastRangeBar"></div>
 <div class="ferment-dashboard experience-full-only" id="fermentDashboard"></div>
 <div id="fermentWarnings"></div>
@@ -420,6 +424,7 @@
 <button class="method" data-method="pro" aria-pressed="false" onclick="setMethod('pro')">Spiraalkneder</button>
 </div>
 <div id="mixerCapacityNote"></div>
+<div class="workshop-panel" id="mixerProfiles"></div>
 <div class="badges" id="recipeBadges"></div>
 <div class="btnrow">
 <button class="btn secondary" onclick="previousWizardPage(4)">← Vorige</button>
@@ -428,6 +433,7 @@
 </div>
 </div>
 <div class="card">
+<div class="workshop-panel batch-runner" id="batchRunner"></div>
 <h2>Jouw tijdlijn</h2>
 <p class="hint">Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen. Zonder baktijd zie je de totale doorlooptijd en wat er achter elkaar gebeurt.</p>
 <div class="timeline" id="timeline"></div>
@@ -441,6 +447,7 @@
 <button class="btn ghost step-progress-reset" onclick="clearStepProgress()" type="button">Vinkjes wissen</button>
 <div class="steps-progress-track"><span id="stepsProgressBar"></span></div>
 </div>
+<div class="workshop-panel" id="doughHelp"></div>
 <div class="step-list" id="stepsList"></div>
 </div>
 </div>
@@ -454,10 +461,10 @@
 <div id="ovenCard"></div>
 </div>
 <div class="card">
-<h2>Deeglogboek &amp; kalibratie</h2>
-<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.3.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
+<h2>Deeglogboek &amp; vergelijkingen</h2>
+<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.4.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
 <div class="form-grid align-fields">
-<label>Werkelijke watertemperatuur (°C)
+<label>Werkelijke hoofdwatertemperatuur (°C)
   <input class="field" id="logWaterTemp" max="50" min="0" step="0.5" type="number" placeholder="bijv. 18"/>
 </label>
 <label>Einddeegtemperatuur • uit stappenplan
@@ -473,6 +480,9 @@
     <option value="fast">Te snel / overrijs</option>
   </select>
 </label>
+<label><span id="actualMixMinutesLabel">Werkelijke machinetijd / actief kneden (min)</span>
+<input class="field" id="logMixMinutes" min="0" max="120" step="0.5" type="number"/>
+</label>
 <label>Notitie
   <textarea class="field" id="logNotes" rows="2" placeholder="bijv. mooi luchtig, iets slap, bodem perfect..."></textarea>
 </label>
@@ -482,6 +492,7 @@
   <button class="btn ghost" onclick="clearBakeLog()" type="button">Logboek wissen</button>
 </div>
 <div id="bakeLogSummary"></div>
+<div class="workshop-panel" id="bakeComparison"></div>
 </div>
 <div class="card">
 <h2>Wanneer zijn de bollen klaar?</h2>
@@ -493,6 +504,7 @@
 </section>
 </div>
 <script src="assets/js/calculation-core.js"></script>
+<script src="assets/js/workflow-core.js"></script>
 <script src="assets/js/foundation.js"></script>
 <script src="assets/js/translations.js"></script>
 <script src="assets/js/i18n.js"></script>
@@ -503,6 +515,8 @@
 <script src="assets/js/fermentation-live.js"></script>
 <script src="assets/js/planning-shopping.js"></script>
 <script src="assets/js/navigation-logbook.js"></script>
+<script src="assets/js/batch-workflow.js"></script>
+<script src="assets/js/workshop-tools.js"></script>
 <script src="assets/js/persistence-bootstrap.js"></script>
 <div class="float-actions hidden" id="floatingActions">
 <button class="float-next" id="floatNext" onclick="nextWizardPage(currentWizardPage)">Volgende →</button>

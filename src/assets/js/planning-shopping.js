@@ -19,6 +19,13 @@ function bakeDayLabels(now=new Date()){
 
 function renderBakeDayLabels(now=new Date()){
   const labels=bakeDayLabels(now);
+  const b=activeBatch();
+  if(b){
+    for(const option of $('bakeDay')?.options||[])if(option.selected)option.textContent=L('Vast: ','Fixed: ')+niceDate(new Date(b.bakeAt));
+    return;
+  }
+  const blank=Array.from($('bakeDay')?.options||[]).find(option=>option.value==='');
+  if(blank)blank.textContent=L('Geen planning','No schedule');
   for(const option of $('bakeDay')?.options||[]){
     if(!/^[0-3]$/.test(option.value))continue;
     const label=labels[Number(option.value)];
@@ -45,6 +52,7 @@ function refreshBakeDayClock(){
 // stilzwijgend een uur op. Dat signaleren we in plaats van te verbergen.
 let _bakeTimeShifted=false;
 function selectedBakeDate(){
+  if(activeBatch())return new Date(activeBatch().bakeAt);
   const dayRaw=$('bakeDay')?.value||'';
   const timeRaw=$('bakeTime')?.value||'';
   if(!dayRaw||!timeRaw)return null;
@@ -143,6 +151,7 @@ function deadlineRecommendation(c,bake){
 }
 
 function buildDeadlineAdvice(c){
+  if(activeBatch()){$('deadlineAdvice').classList.add('hidden');return;}
   const box=$('deadlineAdvice');
   const bake=selectedBakeDate();
   if(!box)return;
@@ -222,6 +231,7 @@ function buildDeadlineAdvice(c){
 }
 
 function applyDeadlinePlan(){
+  if(activeBatch())return;
   if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const bake=selectedBakeDate();
   if(!bake)return;
@@ -293,12 +303,23 @@ function timelineTotalHours(c){
 }
 
 function scheduleView(c,bake=selectedBakeDate()){
+  if(activeBatch()){
+    const b=activeBatch(),view=WorkflowCore.timeline(b),start=b.events.start;
+    const offsets={...DoughCore.scheduleOffsets(c,prepHours()),...Object.fromEntries(Object.entries(view.times).map(([key,at])=>[key,(at-start)/3600000]))};
+    offsets.preparation=offsets.bulkStart;offsets.beforeFridge=offsets.fridgeIn??null;
+    return {offsets,date:key=>view.times[key]==null?null:new Date(view.times[key])};
+  }
   const offsets=DoughCore.scheduleOffsets(c,prepHours());
   const start=bake?bake.getTime()-offsets.bake*3600000:null;
   return {offsets,date:key=>start===null||offsets[key]===null?null:new Date(start+offsets[key]*3600000)};
 }
 
 function scheduleMoment(c,key){
+  if(activeBatch()){
+    const b=activeBatch(),view=WorkflowCore.timeline(b);
+    const at=key==='stone'?view.times.bake-c.preheat*60000:view.times[key];
+    return at==null?'':niceDate(new Date(at));
+  }
   const view=scheduleView(c);
   const offset=key==='stone'?view.offsets.bake-c.preheat/60:view.offsets[key];
   if(offset==null)return '';
@@ -326,6 +347,11 @@ function buildScheduleSummary(c){
 }
 
 function buildTimeline(c){
+  if(activeBatch()){
+    const t=WorkflowCore.timeline(activeBatch());
+    $('timeline').innerHTML=renderBatchTimeline()+`<div class="timeitem"><b>${L('Start voorverwarmen','Start preheating')}</b><span>${niceDate(new Date(t.times.bake-c.preheat*60000))}</span></div>`;
+    return;
+  }
   const live=liveFermentationPlan(c);
   const plannedC=c;
   c=live.effective;

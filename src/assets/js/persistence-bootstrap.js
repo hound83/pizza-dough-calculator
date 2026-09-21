@@ -1,6 +1,6 @@
-const SAVE_KEY='pizzaCalcV51';
-const SAVE_VERSION=51;
-const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${50-i}`);
+const SAVE_KEY='pizzaCalcV52';
+const SAVE_VERSION=52;
+const LEGACY_KEYS=Array.from({length:26},(_,i)=>`pizzaCalcV${51-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
 // Only these controls override the technical dough profile owned by a preset.
@@ -39,8 +39,9 @@ function scheduleSave(){
 }
 
 function saveState(){
+  if(activeBatch())workshop.batch.progress={...completedSteps};
   const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
-    currentWizardPage,
+    currentWizardPage,workshop,
     practical:$('practical').checked,autolyse:$('autolyse').checked,
     sizeFromDiameter:$('sizeFromDiameter').checked,includeSauce:$('includeSauce').checked,
     autoSauceFromPizzas:$('autoSauceFromPizzas').checked,pizzaSelections,pizzaCustomizations,recipeAllSelection,preset:$('preset').value};
@@ -92,7 +93,9 @@ function sanitizeBakeLog(v){
       fridgeTempActual:numOrNull(x.fridgeTempActual,0,15),
       ddtCorrection:numOrNull(x.ddtCorrection,-12,30),
       rating:['good','slow','fast'].includes(x.rating)?x.rating:'good',
-      notes:typeof x.notes==='string'?x.notes.slice(0,500):''
+      notes:typeof x.notes==='string'?x.notes.slice(0,500):'',
+      profile:WorkflowCore.profile(x.profile),batchId:typeof x.batchId==='string'?x.batchId.slice(0,80):null,
+      totalDough:numOrNull(x.totalDough,0,30000),mixMinutes:numOrNull(x.mixMinutes,0,120),autolyse:typeof x.autolyse==='boolean'?x.autolyse:null
     };
   }).filter(Boolean);
 }
@@ -120,14 +123,17 @@ function loadState(){
       else if(k==='previousYeastType')previousYeastType=yeastTypes[v]?v:'idy';
       else if(k==='currentWizardPage')_restoredWizardPage=Number.isFinite(Number(v))?Math.max(0,Math.round(Number(v))):0;
       else if(k==='completedSteps')completedSteps=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+      else if(k==='workshop')workshop=WorkflowCore.sanitize(v);
       else if(k==='bakeLog')bakeLog=sanitizeBakeLog(v);
       else if(k==='liveMeasurements')liveMeasurements=(v&&typeof v==='object')?{doughTemp:validMeasured(v.doughTemp,10,40),fridgeTemp:validMeasured(v.fridgeTemp,0,15)}:{doughTemp:null,fridgeTemp:null};
       else if(k==='pizzaSelections')pizzaSelections=Array.isArray(v)?v.filter(x=>typeof x==='string').map(x=>recipeById(x).id):[];
       else if(k==='pizzaCustomizations')pizzaCustomizations=Array.isArray(v)?v:[];
       else if(k==='recipeAllSelection')recipeAllSelection=recipeById(v).id;
       else if(['practical','autolyse','sizeFromDiameter','includeSauce','autoSauceFromPizzas'].includes(k)){ if($(k))$(k).checked=!!v; }
-      else if($(k))$(k).value=v;
+      else if((SAVE_IDS.includes(k)||k==='preset')&&$(k))$(k).value=v;
     });
+
+    if(activeBatch()){restoreRecipe(activeBatch().recipe);liveMeasurements={...activeBatch().measurements};completedSteps={...activeBatch().progress};}
 
     // Migratie van vóór v39: koude fermentatie stond als eigen methode opgeslagen.
     if($('fermentationMethod').value==='coldBalls'){
@@ -164,8 +170,8 @@ function loadState(){
     suppressCustom=false;
     document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===currentMethod;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
     // Oude versiesleutels opruimen zodat ze niet jaren later terugkomen.
-    LEGACY_KEYS.forEach(k=>SAFE.del(k));
-    saveState();
+    // Keep the last valid legacy copy if writing the migrated state fails.
+    if(saveState())LEGACY_KEYS.forEach(k=>SAFE.del(k));
     return true;
   }catch(e){return false}
 }
@@ -271,6 +277,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   initRecipeOptions();
   wireEvents();
+  wireWorkshopEvents();
 
   const wizardNav=$('stepsNav');
   if(wizardNav){

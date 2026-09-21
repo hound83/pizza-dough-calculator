@@ -1,4 +1,6 @@
 function setMethod(m){
+  if(activeBatch())return;
+  if(currentMixerProfile()&&currentMixerProfile().method!==m)workshop.profileId='';
   currentMethod=m;
   document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===m;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
   update();
@@ -299,11 +301,15 @@ function saveBakeLogEntry(){
     flour:c.flour,hydration:c.h,yeastType:c.yeastType,yeastPct:c.y,
     room:c.room,fridgePlanned:c.fridge,fridgeTempActual:actualFridge,bulk:c.bulk,cold:c.cold,ball:c.ball,
     waterTemp:Number.isFinite(water)?water:null,finalDoughTemp:Number.isFinite(finalT)?finalT:null,
-    ddtCorrection,rating,notes
+    ddtCorrection,rating,notes,
+    profile:currentMixerProfile()?WorkflowCore.clone(currentMixerProfile()):null,
+    batchId:activeBatch()?.id||null,totalDough:c.total,autolyse:c.autolyse,
+    mixMinutes:validMeasured($('logMixMinutes')?.value,0,120)
   });
   if(bakeLog.length>30)bakeLog=bakeLog.slice(-30);
   saveState();
   renderBakeLog(c);
+  renderBakeComparison();
   $('logNotes').value='';
 }
 function clearBakeLog(){
@@ -311,8 +317,12 @@ function clearBakeLog(){
   bakeLog=[];
   saveState();
   renderBakeLog(calc());
+  renderBakeComparison();
 }
 function renderBakeLog(c){
+  if($('bakeLogHint'))$('bakeLogHint').textContent=L(
+    `De einddeeg- en koelkasttemperatuur komen uit het stappenplan. Voeg je werkelijke hoofdwatertemperatuur, actieve mengtijd en beoordeling toe. Je mixerprofiel wordt bij ieder resultaat bewaard. v${APP_VERSION} verandert geen DDT-, gist- of tijdmodel automatisch op basis van vorige bakes.`,
+    `Final dough and fridge temperatures come from the workflow. Add your actual main-water temperature, active mixing time and assessment. Your mixer profile is saved with each result. v${APP_VERSION} does not automatically change the DDT, yeast or timing model based on previous bakes.`);
   const box=$('bakeLogSummary');
   if(!box)return;
   if($('logFinalDoughTemp')) $('logFinalDoughTemp').value=liveMeasurementValue('doughTemp')==null?'':`${fmt(liveMeasurementValue('doughTemp'),1)} °C`;
@@ -331,7 +341,7 @@ function renderBakeLog(c){
     const dt=new Date(x.ts);
     const d=dt.toLocaleDateString(currentLang==='en'?'en-GB':'nl-NL',{day:'2-digit',month:'short'});
     const temp=(x.waterTemp!=null&&x.finalDoughTemp!=null)?` • ${fmt(x.waterTemp,1)}→${fmt(x.finalDoughTemp,1)} °C`:'';
-    const fridge=x.fridgeTempActual!=null?` • koelkast ${fmt(x.fridgeTempActual,1)} °C`:'';
+    const fridge=x.fridgeTempActual!=null?` • ${L('koelkast','fridge')} ${fmt(x.fridgeTempActual,1)} °C`:'';
     const corr=x.ddtCorrection!=null?` • ${L('DDT-index','DDT index')} ${fmt(x.ddtCorrection,1)} °C`:'';
     return `<div class="list-row"><span>${d} • ${ratingLabel(x.rating)}${temp}${fridge}${corr}</span><span>${x.notes?esc(x.notes):'—'}</span></div>`;
   }).join('')}</div>`:L('<div class="hint" style="margin-top:10px">Nog geen bakresultaten opgeslagen.</div>','<div class="hint" style="margin-top:10px">No bake results saved yet.</div>');

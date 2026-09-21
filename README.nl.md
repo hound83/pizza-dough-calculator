@@ -17,9 +17,9 @@ De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De
 
 > Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.2.1 is de huidige publieke release en behoudt opslagschema 51.
 
-**Deze branch: v1.3.0-kandidaat.** Duidelijker schema en gistadvies, expliciete koelkastmomenten, correcties uit de review en een afzonderlijke rekenkern. De publieke versie blijft v1.2.1 tot een bewuste release. Mixtijden, preset-tijden en modelconstanten blijven behouden. [Review, wetenschappelijke beperkingen en codeplan](docs/V1_3_0_REVIEW_AND_ROADMAP.md).
+**Deze branch: v1.4.0-kandidaat.** Vaste batches en bakdatums, werkelijke momenten, eigen deegrecepten en vergelijkingen, weegschaal- en koelkastadvies, mixerprofielen en gerichte deeghulp. Gebouwd op de 1.3-review; mixtijden en modelconstanten blijven behouden. Schema 51 migreert met behoud van gegevens naar 52. [Implementatie en review voor Claude](docs/V1_4_0_IMPLEMENTATION_REVIEW.md). De publieke versie blijft v1.2.1 tot een expliciete release.
 
-**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v130-review-start-here). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
+**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v140-implementation-start-here). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
 
 ## Wat kan de calculator?
 
@@ -131,14 +131,14 @@ Voer daarna de complete suite uit:
 npm test
 ```
 
-Huidige uitslag:
+Controles voor de kandidaat (zie de Actions-uitslag bij de PR voor de uitvoerstatus):
 
 ```text
-15 refactor-structure tests passed
-5 numerical-core tests passed
-98 bundle regression tests passed
-98 source regression tests passed
-43 Chromium browser/layout tests passed
+15 refactor-structure tests
+16 pure-core tests
+102 bundle regression tests
+102 source regression tests
+67 Chromium browser/layout tests
 ```
 
 De suite controleert onder meer:
@@ -154,7 +154,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de twaalf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de afzonderlijke v1.3.0-kandidaatbaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de vijftien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de afzonderlijke v1.3.0- en v1.4.0-kandidaatbaselines. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -186,7 +186,7 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 | [`index.html`](index.html) | Gegenereerde standalone publicatie voor Pages en lokaal gebruik |
 | [`src/index.html`](src/index.html) | Semantische bron-HTML en de vaste laadvolgorde van de statische assets |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Volledige presentatie en responsive layout |
-| [`src/assets/js/`](src/assets/js/) | Elf geordende modules per verantwoordelijkheid |
+| [`src/assets/js/`](src/assets/js/) | Vijftien geordende modules per verantwoordelijkheid |
 | [`tools/bundle.js`](tools/bundle.js) | Dependencyvrije standalone bundler en driftcontrole |
 | [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architectuur-, integriteits- en golden-equivalentietests |

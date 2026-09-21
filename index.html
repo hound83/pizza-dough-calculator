@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v1.3.0</title>
+<title>Pizzadeegcalculator v1.4.0</title>
 <style>
 :root{
   --bg:#0e1011; --panel:#181b1d; --panel2:#202427; --panel3:#111416;
@@ -1124,6 +1124,29 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 .step-moment{font-size:14px;font-weight:700;color:var(--accent);margin:5px 0 10px}
 .btn:disabled{cursor:default;opacity:.65}
 @media(max-width:430px){.schedule-phases{grid-template-columns:1fr}.live-measure .field{font-size:16px}}
+.workshop-panel{margin:16px 0;padding:16px;border:1px solid var(--line,#394048);border-radius:14px;min-width:0;background:rgba(255,255,255,.025)}
+.workshop-panel h3{margin:0 0 10px;font-size:1rem}
+.workshop-panel details>summary{cursor:pointer;font-weight:700;line-height:1.5;padding:4px 0}
+.workshop-panel details[open]>summary{margin-bottom:12px}
+.workshop-panel details details{margin:14px 0}
+.workshop-panel label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:.88rem}
+.workshop-panel .field{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.workshop-panel .btn{white-space:normal;overflow-wrap:anywhere;margin-top:8px;min-height:42px}
+.workshop-panel .hint{line-height:1.6}
+.workshop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.workshop-list{display:grid;gap:12px;margin:16px 0}
+.workshop-list>div{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line,#394048);overflow-wrap:anywhere}
+.workshop-list>div>span{min-width:0}
+.workshop-table-wrap{max-width:100%;margin:14px 0;overflow-x:auto}
+.workshop-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.84rem}
+.workshop-table th,.workshop-table td{text-align:left;vertical-align:top;padding:10px 7px;border-bottom:1px solid var(--line,#394048);overflow-wrap:anywhere}
+.workshop-table th:first-child{width:34%}
+.batch-target{display:flex;flex-direction:column;gap:6px;border-left:3px solid var(--accent,#e4aa63);padding:10px 14px;margin:12px 0}
+.batch-next{line-height:1.6}
+.timeitem small{display:block;font-weight:400;font-size:.75rem;opacity:.8;margin-top:4px}
+button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
+@media(max-width:560px){.workshop-grid{grid-template-columns:minmax(0,1fr)}.workshop-panel{padding:12px}.workshop-table{font-size:.78rem}.workshop-table th,.workshop-table td{padding:8px 4px}}
+@media print{.workshop-panel details:not([open]){display:none}.batch-runner button{display:none}}
 </style>
 </head>
 <body>
@@ -1337,6 +1360,8 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 </div>
 </div>
 <div class="schedule-summary" id="scheduleSummary"></div>
+<div class="workshop-panel" id="batchPlanner"></div>
+<div class="workshop-panel" id="coldStoragePlanner"></div>
 <div class="advisor">
 <div class="advisor-result">
 <b id="yeastAdvice">Gistadvies berekenen</b>
@@ -1347,6 +1372,8 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 <span class="input-help" id="yeastApplyHelp">Past alleen de berekende hoeveelheid gist aan.</span>
 </div>
 </div>
+<div class="workshop-panel" id="scalePlanner"></div>
+<div class="workshop-panel" id="recipeWorkbench"></div>
 <div class="yeast-range experience-full-only" id="yeastRangeBar"></div>
 <div class="ferment-dashboard experience-full-only" id="fermentDashboard"></div>
 <div id="fermentWarnings"></div>
@@ -1539,6 +1566,7 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 <button class="method" data-method="pro" aria-pressed="false" onclick="setMethod('pro')">Spiraalkneder</button>
 </div>
 <div id="mixerCapacityNote"></div>
+<div class="workshop-panel" id="mixerProfiles"></div>
 <div class="badges" id="recipeBadges"></div>
 <div class="btnrow">
 <button class="btn secondary" onclick="previousWizardPage(4)">← Vorige</button>
@@ -1547,6 +1575,7 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 </div>
 </div>
 <div class="card">
+<div class="workshop-panel batch-runner" id="batchRunner"></div>
 <h2>Jouw tijdlijn</h2>
 <p class="hint">Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen. Zonder baktijd zie je de totale doorlooptijd en wat er achter elkaar gebeurt.</p>
 <div class="timeline" id="timeline"></div>
@@ -1560,6 +1589,7 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 <button class="btn ghost step-progress-reset" onclick="clearStepProgress()" type="button">Vinkjes wissen</button>
 <div class="steps-progress-track"><span id="stepsProgressBar"></span></div>
 </div>
+<div class="workshop-panel" id="doughHelp"></div>
 <div class="step-list" id="stepsList"></div>
 </div>
 </div>
@@ -1573,10 +1603,10 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 <div id="ovenCard"></div>
 </div>
 <div class="card">
-<h2>Deeglogboek &amp; kalibratie</h2>
-<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.3.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
+<h2>Deeglogboek &amp; vergelijkingen</h2>
+<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.4.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
 <div class="form-grid align-fields">
-<label>Werkelijke watertemperatuur (°C)
+<label>Werkelijke hoofdwatertemperatuur (°C)
   <input class="field" id="logWaterTemp" max="50" min="0" step="0.5" type="number" placeholder="bijv. 18"/>
 </label>
 <label>Einddeegtemperatuur • uit stappenplan
@@ -1592,6 +1622,9 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
     <option value="fast">Te snel / overrijs</option>
   </select>
 </label>
+<label><span id="actualMixMinutesLabel">Werkelijke machinetijd / actief kneden (min)</span>
+<input class="field" id="logMixMinutes" min="0" max="120" step="0.5" type="number"/>
+</label>
 <label>Notitie
   <textarea class="field" id="logNotes" rows="2" placeholder="bijv. mooi luchtig, iets slap, bodem perfect..."></textarea>
 </label>
@@ -1601,6 +1634,7 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
   <button class="btn ghost" onclick="clearBakeLog()" type="button">Logboek wissen</button>
 </div>
 <div id="bakeLogSummary"></div>
+<div class="workshop-panel" id="bakeComparison"></div>
 </div>
 <div class="card">
 <h2>Wanneer zijn de bollen klaar?</h2>
@@ -1795,6 +1829,196 @@ function scheduleOffsets(c,preparation){
 return Object.freeze({doughQuantities,CP_FLOUR,CP_WATER,CP_SALT,CP_OIL,AUTOLYSE_REST_HOURS,DIRECT_REST_HOURS,EFFECTIVE_REST_TAU_HOURS,YEAST_TEMP_CURVE,thermalEquilibrium,thermalEndTemperature,interpolateCurve,yeastTempActivity,maturationActivity,thermalTauHours,simulateThermalPhase,simulateFermentation,genericYeastModel,preparationHours,scheduleOffsets});
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=DoughCore;
+/* Immutable recipe snapshots, batch chronology and practical planning helpers. */
+const WorkflowCore=(()=>{
+  'use strict';
+  const HOUR=3600000;
+  const METHODS=['hand','kitchenaid','kenwood','pro'];
+  const NUMBER_FIELDS={pizzas:[1,24],diameter:[20,40],ballWeight:[100,1000],hydration:[45,85],saltPct:[0,5],yeastPct:[0,3],oilPct:[0,10],stoneTemp:[180,520],preheatMinutes:[5,120],bulkHours:[0,48],coldHours:[0,120],ballHours:[0,48],roomTemp:[10,35],fridgeTemp:[0,15],finalDoughTemp:[10,35],flourW:[90,450]};
+  const SELECT_FIELDS={doughStyle:['neapolitan','avpn','canotto','ny','thin'],yeastType:['idy','ady','fresh'],fermentationMethod:['room','hybrid'],coldStorageMode:['bulk','balls'],flourType:['caputoPizzeria','tipo00','manitoba','tarwebloem','speltWit','speltVolkoren','volkorenTarwe','custom']};
+  const CHECK_FIELDS=['practical','autolyse','sizeFromDiameter'];
+  const FIELD_IDS=[...Object.keys(NUMBER_FIELDS),...Object.keys(SELECT_FIELDS)];
+  const clone=value=>JSON.parse(JSON.stringify(value));
+  const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+  const bounded=(value,low,high)=>typeof value==='number'&&Number.isFinite(value)&&value>=low&&value<=high;
+  const cleanText=(value,length=80)=>typeof value==='string'?value.trim().slice(0,length):'';
+  const validTime=value=>bounded(value,0,8640000000000000);
+  const id=value=>typeof value==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(value)?value:'';
+
+  // Reject incomplete imports rather than quietly inventing missing ingredients.
+  function recipe(value){
+    if(!object(value)||!object(value.fields)||!object(value.checks)||!METHODS.includes(value.method))return null;
+    const fields={};
+    for(const [key,[low,high]] of Object.entries(NUMBER_FIELDS)){
+      const raw=value.fields[key];
+      if((key==='flourW'||key==='finalDoughTemp')&&raw===''){fields[key]='';continue;}
+      if((typeof raw!=='string'&&typeof raw!=='number')||String(raw).trim()===''||!bounded(Number(raw),low,high))return null;
+      fields[key]=String(raw);
+    }
+    if(!Number.isInteger(Number(fields.pizzas)))return null;
+    for(const [key,options] of Object.entries(SELECT_FIELDS)){
+      if(!options.includes(value.fields[key]))return null;
+      fields[key]=value.fields[key];
+    }
+    const checks={};
+    for(const key of CHECK_FIELDS){if(typeof value.checks[key]!=='boolean')return null;checks[key]=value.checks[key];}
+    const exact={};
+    for(const [key,low,high] of [['h',45,85],['s',0,5],['o',0,10],['ySelected',0,3]]){
+      if(object(value.exact)&&bounded(value.exact[key],low,high))exact[key]=value.exact[key];
+    }
+    return {fields,checks,method:value.method,exact:Object.keys(exact).length?exact:null,preset:cleanText(value.preset)||'custom'};
+  }
+
+  function summary(snapshot,factors,core){
+    const r=recipe(snapshot);
+    if(!r)throw new TypeError('Invalid recipe.');
+    const f=r.fields,e=r.exact||{},pizzas=Number(f.pizzas),factor=factors[f.doughStyle];
+    if(!bounded(factor,.01,10))throw new TypeError('Missing dough-style factor.');
+    const targetBall=r.checks.sizeFromDiameter?Math.round(Math.PI*(Number(f.diameter)/2)**2*factor/5)*5:Math.min(Number(f.ballWeight),Math.round(Math.PI*20**2*factor/5)*5);
+    const h=e.h??Number(f.hydration),s=e.s??Number(f.saltPct),y=e.ySelected??Number(f.yeastPct),o=e.o??Number(f.oilPct);
+    const ferm=f.fermentationMethod==='room'?'room':f.coldStorageMode==='balls'?'coldBalls':'hybrid';
+    return {...core.doughQuantities({pizzas,targetBall,h,s,y,o,practical:r.checks.practical}),pizzas,targetBall,h,s,y,o,practical:r.checks.practical,style:f.doughStyle,presetKey:r.preset,yeastType:f.yeastType,ferm,bulk:Number(f.bulkHours),cold:ferm==='room'?0:Number(f.coldHours),ball:Number(f.ballHours),room:Number(f.roomTemp),fridge:Number(f.fridgeTemp),doughTemp:f.finalDoughTemp===''?24:Number(f.finalDoughTemp),autolyse:r.checks.autolyse,preparation:core.preparationHours(r.checks.autolyse,r.method)};
+  }
+
+  function profile(value){
+    if(!object(value)||!id(value.id)||!cleanText(value.name)||!METHODS.includes(value.method))return null;
+    return {id:value.id,name:cleanText(value.name),method:value.method,model:cleanText(value.model),hook:cleanText(value.hook),programme:cleanText(value.programme,300)};
+  }
+  function storage(value){
+    const v=object(value)?value:{};
+    return {ballsPerBox:bounded(v.ballsPerBox,1,24)?Math.floor(v.ballsPerBox):6,boxes:bounded(v.boxes,1,24)?Math.floor(v.boxes):1,depth:bounded(v.depth,1,30)?v.depth:5,layout:['single','stacked'].includes(v.layout)?v.layout:'single',load:['normal','full'].includes(v.load)?v.load:'normal'};
+  }
+  function capacity(pizzas,settings){
+    const s=storage(settings),needed=Math.ceil(pizzas/s.ballsPerBox);
+    return {needed,available:s.boxes,missing:Math.max(0,needed-s.boxes),fits:needed<=s.boxes};
+  }
+  // Resolution is display granularity, not a certified accuracy specification.
+  function weighing(grams,resolution){
+    const step=[1,.1,.01].includes(resolution)?resolution:.1;
+    if(!bounded(grams,0,1000))throw new RangeError('Invalid yeast dose.');
+    const nearest=Number((Math.round((grams+Number.EPSILON)/step)*step).toFixed(2));
+    return {step,nearest,delta:nearest-grams,halfStep:step/2,relativeHalfStep:grams>0?step/2/grams:null,tooCoarse:grams>0&&(nearest===0||step/2/grams>.1)};
+  }
+
+  const eventKeys=route=>route==='room'?['start','bulkStart','shape','bake']:['start','bulkStart','fridgeIn','fridgeOut','bake'];
+  function durations(value,route){
+    if(!object(value))return null;
+    const limits={preparation:12,bulk:48,cold:120,ball:48},out={};
+    for(const [key,max] of Object.entries(limits)){if(!bounded(value[key],0,max))return null;out[key]=value[key];}
+    if(route==='room')out.cold=0;
+    return out;
+  }
+  function createBatch({id:batchId,recipe:snapshot,bakeAt,startedAt,profile:mixer,storage:boxes,scale,plan}){
+    const r=recipe(snapshot),route=r?.fields.fermentationMethod==='room'?'room':r?.fields.coldStorageMode==='balls'?'coldBalls':'hybrid';
+    if(!r||!id(batchId)||!validTime(startedAt)||!validTime(bakeAt)||bakeAt<=startedAt||!durations(plan,route))throw new RangeError('Invalid batch.');
+    return {id:batchId,recipe:r,route,bakeAt,startedAt,initial:durations(plan,route),timings:durations(plan,route),events:{start:startedAt},profile:profile(mixer),storage:storage(boxes),scale:[1,.1,.01].includes(scale)?scale:.1,readings:[],measurements:{doughTemp:null,fridgeTemp:null},progress:{},revisions:[],status:'active'};
+  }
+  function recordEvent(batch,key,at,now=Date.now()){
+    const keys=eventKeys(batch.route),index=keys.indexOf(key);
+    if(index<0||!validTime(at)||at>now+60000)throw new RangeError('future');
+    const previous=index>0?batch.events[keys[index-1]]:null,next=batch.events[keys[index+1]];
+    if(index>0&&previous==null)throw new RangeError('missing-previous');
+    if((previous!=null&&at<previous)||(next!=null&&at>next))throw new RangeError('order');
+    if(key==='start'&&at>=batch.bakeAt)throw new RangeError('order');
+    const out=clone(batch),old=out.events[key];
+    out.events[key]=at;
+    if(old!=null&&old!==at)out.revisions=[...out.revisions,{key,from:old,to:at,recordedAt:now}].slice(-40);
+    return out;
+  }
+  function phaseDone(batch,key){
+    return key==='preparation'?batch.events.bulkStart!=null:key==='bulk'?(batch.events[batch.route==='room'?'shape':'fridgeIn']!=null):key==='cold'?batch.events.fridgeOut!=null:batch.events.bake!=null;
+  }
+  function timeline(batch){
+    const keys=eventKeys(batch.route),d=batch.timings;
+    const lengths=batch.route==='room'?[d.preparation,d.bulk,d.ball]:[d.preparation,d.bulk,d.cold,d.ball];
+    let previous=batch.events.start;
+    const times={start:previous},actual={start:true};
+    keys.slice(1).forEach((key,index)=>{
+      actual[key]=batch.events[key]!=null;
+      times[key]=actual[key]?batch.events[key]:previous+lengths[index]*HOUR;
+      previous=times[key];
+    });
+    times.ballStart=times[batch.route==='room'?'shape':'fridgeOut'];
+    if(batch.route!=='room')times.shape=times[batch.route==='coldBalls'?'fridgeIn':'fridgeOut'];
+    return {times,actual,delta:(times.bake-batch.bakeAt)/HOUR};
+  }
+  function reviseTimings(batch,changes,now=Date.now()){
+    const next=durations({...batch.timings,...changes},batch.route);
+    if(!next)throw new RangeError('duration');
+    const starts={preparation:'start',bulk:'bulkStart',cold:'fridgeIn',ball:batch.route==='room'?'shape':'fridgeOut'};
+    for(const key of Object.keys(next)){
+      if(next[key]===batch.timings[key])continue;
+      if(phaseDone(batch,key))throw new RangeError('completed');
+      const began=batch.events[starts[key]];
+      if(began!=null&&next[key]<(now-began)/HOUR)throw new RangeError('elapsed');
+    }
+    return {...clone(batch),timings:next};
+  }
+  function actualSchedule(batch){
+    const t=timeline(batch).times,e=batch.events;
+    return {bulk:(t[batch.route==='room'?'shape':'fridgeIn']-t.bulkStart)/HOUR,cold:batch.route==='room'?0:(t.fridgeOut-t.fridgeIn)/HOUR,ball:(t.bake-t.ballStart)/HOUR,preparation:(t.bulkStart-e.start)/HOUR};
+  }
+  // A proposal changes only unfinished final proof. Actual anchors and the
+  // requested bake time never move, and elapsed proof cannot be removed.
+  function finalProofProposal(batch,c,measurements,core,now=Date.now()){
+    if(batch.events.bake!=null)return {ok:false,reason:'completed'};
+    const md=measurements.doughTemp,mf=measurements.fridgeTemp;
+    if(md==null&&mf==null)return {ok:false,reason:'no-measurement'};
+    if(batch.route==='room'&&md!=null&&Math.abs(md-c.doughTemp)<=1)return {ok:false,reason:'deadband'};
+    const actual=actualSchedule(batch),e=batch.events;
+    const keys=eventKeys(batch.route),next=keys.find(key=>e[key]==null),view=timeline(batch);
+    if(next&&next!=='bake'&&view.times[next]<now)return {ok:false,reason:'checkpoint-needed'};
+    const bulk=Math.max(actual.bulk,e.bulkStart!=null&&!phaseDone(batch,'bulk')?(now-e.bulkStart)/HOUR:0);
+    const cold=Math.max(actual.cold,e.fridgeIn!=null&&e.fridgeOut==null?(now-e.fridgeIn)/HOUR:0);
+    const began=e[batch.route==='room'?'shape':'fridgeOut'];
+    const minimum=Math.max(0,began==null?0:(now-began)/HOUR);
+    const target=core.simulateFermentation(c).gas;
+    const candidate=ball=>({...c,bulk,cold,ball,doughTemp:md??c.doughTemp,fridge:mf??c.fridge});
+    const gas=ball=>core.simulateFermentation(candidate(ball)).gas;
+    if(minimum>48||gas(minimum)>target*1.01)return {ok:false,reason:'past-target'};
+    if(gas(48)<target)return {ok:false,reason:'unreachable'};
+    let low=minimum,high=48;
+    for(let i=0;i<28;i++){const middle=(low+high)/2;if(gas(middle)<target)low=middle;else high=middle;}
+    const ball=Math.ceil(high*60)/60;
+    return {ok:true,ball,remaining:Math.max(0,ball-minimum),gasRatio:gas(ball)/Math.max(.001,target),maturityRatio:core.simulateFermentation(candidate(ball)).maturity/Math.max(.001,core.simulateFermentation(c).maturity)};
+  }
+
+  function sanitizeBatch(value){
+    try{
+      if(!object(value)||!object(value.events))return null;
+      let out=createBatch({...value,plan:value.initial});
+      if(value.route!==out.route)return null;
+      out.timings=durations(value.timings,out.route);if(!out.timings)return null;
+      for(const key of eventKeys(out.route)){
+        if(value.events[key]!=null)out=recordEvent(out,key,value.events[key]);
+      }
+      out.status=value.status==='finished'?'finished':'active';
+      out.readings=(Array.isArray(value.readings)?value.readings:[]).filter(x=>object(x)&&['doughTemp','fridgeTemp'].includes(x.kind)&&validTime(x.at)&&bounded(x.value,x.kind==='doughTemp'?10:0,x.kind==='doughTemp'?40:15)).slice(-60).map(x=>({kind:x.kind,value:x.value,at:x.at}));
+      for(const kind of ['doughTemp','fridgeTemp'])out.measurements[kind]=bounded(value.measurements?.[kind],kind==='doughTemp'?10:0,kind==='doughTemp'?40:15)?value.measurements[kind]:null;
+      out.progress=object(value.progress)?Object.fromEntries(Object.entries(value.progress).filter(([key,checked])=>key.length<=200&&key.startsWith('s-')&&checked===true).slice(0,200)):{};
+      out.revisions=(Array.isArray(value.revisions)?value.revisions:[]).filter(x=>object(x)&&eventKeys(out.route).includes(x.key)&&validTime(x.from)&&validTime(x.to)&&validTime(x.recordedAt)).slice(-40).map(x=>({key:x.key,from:x.from,to:x.to,recordedAt:x.recordedAt}));
+      return out;
+    }catch{return null;}
+  }
+  function sanitize(value){
+    const v=object(value)?value:{};
+    const unique=list=>list.filter((item,index)=>list.findIndex(other=>other.id===item.id)===index);
+    const recipes=unique((Array.isArray(v.recipes)?v.recipes:[]).slice(0,30).map(x=>object(x)&&id(x.id)&&cleanText(x.name)&&recipe(x.recipe)?{id:x.id,name:cleanText(x.name),recipe:recipe(x.recipe)}:null).filter(Boolean));
+    const profiles=unique((Array.isArray(v.profiles)?v.profiles:[]).slice(0,20).map(profile).filter(Boolean));
+    const current=sanitizeBatch(v.batch);
+    return {recipes,profiles,profileId:profiles.some(p=>p.id===v.profileId)?v.profileId:'',scale:[1,.1,.01].includes(v.scale)?v.scale:.1,storage:storage(v.storage),batch:current?.status==='active'?current:null,history:unique((Array.isArray(v.history)?v.history:[]).slice(-20).map(sanitizeBatch).filter(Boolean))};
+  }
+  function exportRecipe(name,snapshot){
+    const r=recipe(snapshot);if(!r)throw new TypeError('Invalid recipe.');
+    return {format:'pizza-dough-recipe',version:1,name:cleanText(name)||'Pizza',recipe:r};
+  }
+  function importRecipe(value){
+    if(!object(value)||value.format!=='pizza-dough-recipe'||value.version!==1||!cleanText(value.name)||!recipe(value.recipe))return null;
+    return {name:cleanText(value.name),recipe:{...recipe(value.recipe),preset:'custom'}};
+  }
+  return Object.freeze({HOUR,FIELD_IDS,CHECK_FIELDS,METHODS,recipe,summary,profile,storage,capacity,weighing,eventKeys,createBatch,recordEvent,phaseDone,timeline,reviseTimings,actualSchedule,finalProofProposal,sanitizeBatch,sanitize,exportRecipe,importRecipe,clone});
+})();
+if(typeof module!=='undefined'&&module.exports)module.exports=WorkflowCore;
 
 const $ = id => document.getElementById(id);
 
@@ -1982,7 +2206,7 @@ let _livePlanCache={key:null,value:null};
 // van "20") nooit recepten of afgevinkte stappen vernietigen.
 let _deferDependentStatePrune=false;
 // Publieke productversie staat bewust los van opslag-/migratieschema 51.
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.4.0';
 
 // Keep subgram herbs legible across recipe, shopping and copy surfaces.
 function ingredientAmount(qty){return fmt(qty,qty<1?2:qty<2?1:0);}
@@ -2021,6 +2245,11 @@ Object.assign(EN_TEXT,{
   "planning / nog niet gemeten":"planned / not measured yet",
   "bijv. mooi luchtig, iets slap, bodem perfect...":"e.g. nicely airy, slightly slack, perfect base...",
   "alleen invullen als bekend":"only enter if known"
+});
+
+Object.assign(EN_TEXT,{
+  "Deeglogboek & vergelijkingen":"Dough log & comparisons",
+  "Werkelijke hoofdwatertemperatuur (°C)":"Actual main-water temperature (°C)"
 });
 const _i18nOriginalText=new WeakMap();
 const _i18nOriginalAttrs=new WeakMap();
@@ -2262,8 +2491,8 @@ function _observeI18n(){
 function resetCalculator(){
   const nl=currentLang!=='en';
   const message=nl
-    ? 'Weet je het zeker?\n\nAlle ingevulde waarden, pizzakeuzes, aanpassingen en planning worden gewist. De calculator keert terug naar het beginscherm met de standaardwaarden.\n\nJe taalkeuze blijft behouden.'
-    : 'Are you sure?\n\nAll entered values, pizza choices, customizations and planning will be cleared. The calculator will return to the start screen with the default values.\n\nYour language choice will be kept.';
+    ? 'Weet je het zeker?\n\nAlle ingevulde waarden, pizzakeuzes, eigen deegrecepten, mixerprofielen, batches, logboeken en planning worden gewist. De calculator keert terug naar het beginscherm met de standaardwaarden.\n\nJe taalkeuze blijft behouden.'
+    : 'Are you sure?\n\nAll entered values, pizza choices, saved dough recipes, mixer profiles, batches, logs and planning will be cleared. The calculator will return to the start screen with the default values.\n\nYour language choice will be kept.';
 
   if(!window.confirm(message))return;
 
@@ -4245,6 +4474,7 @@ function yeastRecommendation(c){
 }
 
 function update(){
+  enforceBatchRecipe();
   renderBakeDayLabels();
   refreshFermentationUI();
   refreshAvpnPresetInfo();
@@ -4308,7 +4538,7 @@ function update(){
   const recGrams=estFlour*advice.selected/100;
   const lowG=estFlour*advice.low/100, highG=estFlour*advice.high/100;
   $('yeastAdvice').textContent=L(`Afwegen voor dit recept: ${fmt(c.yeast,2)} g ${yt.short}`,`Weigh for this recipe: ${fmt(c.yeast,2)} g ${yt.short}`);
-  const mixed=liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
+  const mixed=!!activeBatch()||liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
   if(advice.avpnOfficial){
     $('yeastAdviceDetail').textContent=L(
       `Officiële AVPN-band: ${fmt(lowG,2)}–${fmt(highG,2)} g. Rekenkundig midden: ${fmt(recGrams,2)} g; geen verplicht AVPN-doel.`,
@@ -4337,6 +4567,7 @@ function update(){
   buildMixerCapacityNote(c);
   buildTimeline(c);
   renderBakeLog(c);
+  renderWorkshop(c);
   buildShopping(c);
   buildStoneAdvice(c);
   // De ingrediëntenmodal werd bij elke toetsaanslag herbouwd, ook dicht.
@@ -4461,6 +4692,7 @@ function buildFermentationScience(c,a){
 }
 
 function applyYeastAdvice(){
+  if(activeBatch())return;
   if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const c=calc();
   const a=yeastRecommendation(c);
@@ -4472,6 +4704,7 @@ function applyYeastAdvice(){
 }
 
 function applyPreset(key){
+  if(activeBatch())return;
   if(key==='custom') return;
   const p=presets[key]; if(!p)return;
   liveMeasurements={doughTemp:null,fridgeTemp:null};
@@ -4984,9 +5217,10 @@ function setLiveMeasurement(kind,value){
   const raw=String(value??'').trim();
   if(kind==='doughTemp') liveMeasurements.doughTemp=raw===''?null:validMeasured(parseFloat(raw),10,40);
   if(kind==='fridgeTemp') liveMeasurements.fridgeTemp=raw===''?null:validMeasured(parseFloat(raw),0,15);
+  recordBatchMeasurement(kind,liveMeasurementValue(kind));
   _livePlanCache={key:null,value:null};
   update();
-  scheduleSave();
+  saveState();
 }
 function liveMeasureDisplay(kind){
   const v=liveMeasurementValue(kind);
@@ -5113,6 +5347,7 @@ function solveRoomEquivalentTotal(c,startTemp){
 }
 
 function liveFermentationPlan(c){
+  if(activeBatch())return batchLivePlan(c);
   const md=liveMeasurementValue('doughTemp');
   const mf=c.ferm==='room'?null:liveMeasurementValue('fridgeTemp');
   const deadlineKey=[String($('bakeDay')?.value||''),String($('bakeTime')?.value||'')].join('@');
@@ -5179,6 +5414,7 @@ function livePlanChangesHtml(c,live){
   return `<div class="live-plan-changes">${out}</div>`;
 }
 function livePlanSummaryHtml(c,live,context='dough'){
+  if(live.batch)return `<div class="info">${L('Meting opgeslagen voor deze batch. Je geregistreerde momenten en gist blijven vaststaan. Beoordeel bovenaan bij “Resterende tijden beoordelen” het voorstel voordat je het toepast.','Measurement saved for this batch. Recorded checkpoints and yeast stay fixed. Review the proposal under “Review remaining times” above before applying it.')}</div>`;
   if(!live.active)return '';
   const cls=livePlanClass(live,c);
   const d=live.measuredDough;
@@ -5271,7 +5507,7 @@ function step(n,title,text,detail='',id=null){
       <span class="step-check-mark"></span>
     </label>
     <div class="num">${n}</div>
-    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${L('Gepland','Planned')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
+    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${activeBatch()&&activeBatch().events[momentKey]!=null?L('Werkelijk','Actual'):L('Verwacht','Expected')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
   </div>`;
 }
 
@@ -5594,6 +5830,13 @@ function bakeDayLabels(now=new Date()){
 
 function renderBakeDayLabels(now=new Date()){
   const labels=bakeDayLabels(now);
+  const b=activeBatch();
+  if(b){
+    for(const option of $('bakeDay')?.options||[])if(option.selected)option.textContent=L('Vast: ','Fixed: ')+niceDate(new Date(b.bakeAt));
+    return;
+  }
+  const blank=Array.from($('bakeDay')?.options||[]).find(option=>option.value==='');
+  if(blank)blank.textContent=L('Geen planning','No schedule');
   for(const option of $('bakeDay')?.options||[]){
     if(!/^[0-3]$/.test(option.value))continue;
     const label=labels[Number(option.value)];
@@ -5620,6 +5863,7 @@ function refreshBakeDayClock(){
 // stilzwijgend een uur op. Dat signaleren we in plaats van te verbergen.
 let _bakeTimeShifted=false;
 function selectedBakeDate(){
+  if(activeBatch())return new Date(activeBatch().bakeAt);
   const dayRaw=$('bakeDay')?.value||'';
   const timeRaw=$('bakeTime')?.value||'';
   if(!dayRaw||!timeRaw)return null;
@@ -5718,6 +5962,7 @@ function deadlineRecommendation(c,bake){
 }
 
 function buildDeadlineAdvice(c){
+  if(activeBatch()){$('deadlineAdvice').classList.add('hidden');return;}
   const box=$('deadlineAdvice');
   const bake=selectedBakeDate();
   if(!box)return;
@@ -5797,6 +6042,7 @@ function buildDeadlineAdvice(c){
 }
 
 function applyDeadlinePlan(){
+  if(activeBatch())return;
   if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const bake=selectedBakeDate();
   if(!bake)return;
@@ -5868,12 +6114,23 @@ function timelineTotalHours(c){
 }
 
 function scheduleView(c,bake=selectedBakeDate()){
+  if(activeBatch()){
+    const b=activeBatch(),view=WorkflowCore.timeline(b),start=b.events.start;
+    const offsets={...DoughCore.scheduleOffsets(c,prepHours()),...Object.fromEntries(Object.entries(view.times).map(([key,at])=>[key,(at-start)/3600000]))};
+    offsets.preparation=offsets.bulkStart;offsets.beforeFridge=offsets.fridgeIn??null;
+    return {offsets,date:key=>view.times[key]==null?null:new Date(view.times[key])};
+  }
   const offsets=DoughCore.scheduleOffsets(c,prepHours());
   const start=bake?bake.getTime()-offsets.bake*3600000:null;
   return {offsets,date:key=>start===null||offsets[key]===null?null:new Date(start+offsets[key]*3600000)};
 }
 
 function scheduleMoment(c,key){
+  if(activeBatch()){
+    const b=activeBatch(),view=WorkflowCore.timeline(b);
+    const at=key==='stone'?view.times.bake-c.preheat*60000:view.times[key];
+    return at==null?'':niceDate(new Date(at));
+  }
   const view=scheduleView(c);
   const offset=key==='stone'?view.offsets.bake-c.preheat/60:view.offsets[key];
   if(offset==null)return '';
@@ -5901,6 +6158,11 @@ function buildScheduleSummary(c){
 }
 
 function buildTimeline(c){
+  if(activeBatch()){
+    const t=WorkflowCore.timeline(activeBatch());
+    $('timeline').innerHTML=renderBatchTimeline()+`<div class="timeitem"><b>${L('Start voorverwarmen','Start preheating')}</b><span>${niceDate(new Date(t.times.bake-c.preheat*60000))}</span></div>`;
+    return;
+  }
   const live=liveFermentationPlan(c);
   const plannedC=c;
   c=live.effective;
@@ -6371,6 +6633,8 @@ document.addEventListener('keydown',e=>{
   trapFocus(e,root);
 });
 function setMethod(m){
+  if(activeBatch())return;
+  if(currentMixerProfile()&&currentMixerProfile().method!==m)workshop.profileId='';
   currentMethod=m;
   document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===m;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
   update();
@@ -6671,11 +6935,15 @@ function saveBakeLogEntry(){
     flour:c.flour,hydration:c.h,yeastType:c.yeastType,yeastPct:c.y,
     room:c.room,fridgePlanned:c.fridge,fridgeTempActual:actualFridge,bulk:c.bulk,cold:c.cold,ball:c.ball,
     waterTemp:Number.isFinite(water)?water:null,finalDoughTemp:Number.isFinite(finalT)?finalT:null,
-    ddtCorrection,rating,notes
+    ddtCorrection,rating,notes,
+    profile:currentMixerProfile()?WorkflowCore.clone(currentMixerProfile()):null,
+    batchId:activeBatch()?.id||null,totalDough:c.total,autolyse:c.autolyse,
+    mixMinutes:validMeasured($('logMixMinutes')?.value,0,120)
   });
   if(bakeLog.length>30)bakeLog=bakeLog.slice(-30);
   saveState();
   renderBakeLog(c);
+  renderBakeComparison();
   $('logNotes').value='';
 }
 function clearBakeLog(){
@@ -6683,8 +6951,12 @@ function clearBakeLog(){
   bakeLog=[];
   saveState();
   renderBakeLog(calc());
+  renderBakeComparison();
 }
 function renderBakeLog(c){
+  if($('bakeLogHint'))$('bakeLogHint').textContent=L(
+    `De einddeeg- en koelkasttemperatuur komen uit het stappenplan. Voeg je werkelijke hoofdwatertemperatuur, actieve mengtijd en beoordeling toe. Je mixerprofiel wordt bij ieder resultaat bewaard. v${APP_VERSION} verandert geen DDT-, gist- of tijdmodel automatisch op basis van vorige bakes.`,
+    `Final dough and fridge temperatures come from the workflow. Add your actual main-water temperature, active mixing time and assessment. Your mixer profile is saved with each result. v${APP_VERSION} does not automatically change the DDT, yeast or timing model based on previous bakes.`);
   const box=$('bakeLogSummary');
   if(!box)return;
   if($('logFinalDoughTemp')) $('logFinalDoughTemp').value=liveMeasurementValue('doughTemp')==null?'':`${fmt(liveMeasurementValue('doughTemp'),1)} °C`;
@@ -6703,15 +6975,347 @@ function renderBakeLog(c){
     const dt=new Date(x.ts);
     const d=dt.toLocaleDateString(currentLang==='en'?'en-GB':'nl-NL',{day:'2-digit',month:'short'});
     const temp=(x.waterTemp!=null&&x.finalDoughTemp!=null)?` • ${fmt(x.waterTemp,1)}→${fmt(x.finalDoughTemp,1)} °C`:'';
-    const fridge=x.fridgeTempActual!=null?` • koelkast ${fmt(x.fridgeTempActual,1)} °C`:'';
+    const fridge=x.fridgeTempActual!=null?` • ${L('koelkast','fridge')} ${fmt(x.fridgeTempActual,1)} °C`:'';
     const corr=x.ddtCorrection!=null?` • ${L('DDT-index','DDT index')} ${fmt(x.ddtCorrection,1)} °C`:'';
     return `<div class="list-row"><span>${d} • ${ratingLabel(x.rating)}${temp}${fridge}${corr}</span><span>${x.notes?esc(x.notes):'—'}</span></div>`;
   }).join('')}</div>`:L('<div class="hint" style="margin-top:10px">Nog geen bakresultaten opgeslagen.</div>','<div class="hint" style="margin-top:10px">No bake results saved yet.</div>');
   box.innerHTML=calText+modelText+list;
 }
-const SAVE_KEY='pizzaCalcV51';
-const SAVE_VERSION=51;
-const LEGACY_KEYS=Array.from({length:25},(_,i)=>`pizzaCalcV${50-i}`);
+let workshop=WorkflowCore.sanitize(null);
+let workshopNotice='';
+const workshopDrafts={};
+const workshopPanels=['batchPlanner','batchRunner','scalePlanner','coldStoragePlanner','recipeWorkbench','mixerProfiles','bakeComparison','doughHelp'];
+
+function activeBatch(){return workshop.batch;}
+function workshopId(){return `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;}
+function snapshotRecipe(){
+  const fields={},checks={};
+  for(const key of WorkflowCore.FIELD_IDS)fields[key]=$(key).value;
+  for(const key of WorkflowCore.CHECK_FIELDS)checks[key]=$(key).checked;
+  return WorkflowCore.recipe({fields,checks,method:currentMethod,exact:exactOverride,preset:$('preset').value});
+}
+function restoreRecipe(snapshot){
+  const r=WorkflowCore.recipe(snapshot);if(!r)return false;
+  suppressCustom=true;
+  for(const [key,value] of Object.entries(r.fields))$(key).value=value;
+  for(const [key,value] of Object.entries(r.checks))$(key).checked=value;
+  currentMethod=r.method;exactOverride=r.exact?{...r.exact}:null;
+  $('preset').value=presets[r.preset]?r.preset:'custom';previousYeastType=r.fields.yeastType;
+  suppressCustom=false;
+  document.querySelectorAll('.method').forEach(button=>{const selected=button.dataset.method===currentMethod;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));});
+  return true;
+}
+function enforceBatchRecipe(){
+  const b=activeBatch();if(b)restoreRecipe(b.recipe);
+  for(const id of [...WorkflowCore.FIELD_IDS,...WorkflowCore.CHECK_FIELDS,'preset','bakeDay','bakeTime']){
+    const el=$(id);if(el)el.disabled=!!b;
+  }
+  document.querySelectorAll('.method').forEach(button=>{button.disabled=!!b;});
+}
+function localDateTime(value=Date.now()){
+  const date=new Date(value),pad=n=>String(n).padStart(2,'0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+function parseLocalDateTime(value){
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return null;
+  const at=new Date(value).getTime();
+  // A spring-forward nonexistent wall-clock time is not accepted as another hour.
+  return Number.isFinite(at)&&localDateTime(at)===value?at:null;
+}
+function batchEventName(key){
+  const b=activeBatch(),balls=b?.route==='coldBalls';
+  return ({start:L('Deeg gestart','Dough started'),bulkStart:L('Kneden klaar · bulk gestart','Kneading done · bulk started'),fridgeIn:balls?L('Opgebold · koelkast in','Shaped · into the fridge'):L('Koelkast in · bulk','Into the fridge · bulk'),fridgeOut:balls?L('Koelkast uit · opwarmen','Out of the fridge · warm up'):L('Koelkast uit · verdelen en opbollen','Out of the fridge · divide and shape'),shape:L('Opgebold · eindrijs gestart','Shaped · final proof started'),bake:L('Eerste pizza in de oven','First pizza in the oven')})[key]||key;
+}
+function currentMixerProfile(){const b=activeBatch();return b?b.profile:workshop.profiles.find(p=>p.id===workshop.profileId)||null;}
+function saveWorkshop(){saveState();update();}
+function workshopError(error){
+  const messages={future:L('Kies een werkelijk moment, uiterlijk nu.','Choose an actual time, no later than now.'),'missing-previous':L('Registreer eerst het voorafgaande moment.','Record the preceding checkpoint first.'),order:L('Dit moment moet tussen de vorige en volgende geregistreerde stap liggen.','This time must lie between the previous and next recorded checkpoint.'),duration:L('Gebruik geldige tijden: bulk en eindrijs 0–48 uur, koelkast 0–120 uur.','Use valid durations: bulk and final proof 0–48 hours, fridge 0–120 hours.'),completed:L('Een afgeronde fase blijft vaststaan. Corrigeer zo nodig het geregistreerde moment.','A completed phase stays fixed. Correct its recorded checkpoint if necessary.'),elapsed:L('De nieuwe totale faseduur is korter dan de tijd die al verstreken is.','The new total phase duration is shorter than the time already elapsed.')};
+  workshopNotice=messages[error.message]||error.message;renderWorkshop(calc());
+}
+function startBatch(){
+  if(activeBatch())return;
+  normalizeStoredNumberInputs();
+  const r=snapshotRecipe(),c=calc(),entered=$('batchStartAt')?.value||'';
+  const startedAt=entered?parseLocalDateTime(entered):Date.now();
+  if(startedAt==null||startedAt>Date.now()+60000)throw new Error('future');
+  const bake=selectedBakeDate(),plan={preparation:prepHours(),bulk:c.bulk,cold:c.cold,ball:c.ball};
+  const bakeAt=bake?.getTime()??startedAt+timelineTotalHours(c)*WorkflowCore.HOUR;
+  if(bakeAt<=startedAt)throw new Error(L('Kies een baktijd ná je werkelijke start.','Choose a bake time after your actual start.'));
+  if(!entered){liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};}
+  workshop.batch=WorkflowCore.createBatch({id:workshopId(),recipe:r,startedAt,bakeAt,plan,profile:currentMixerProfile(),storage:workshop.storage,scale:workshop.scale});
+  // Existing measurements/check marks can belong to an already-started batch.
+  // Preserve them when the user records their actual start retrospectively.
+  for(const kind of ['doughTemp','fridgeTemp']){
+    const value=liveMeasurementValue(kind);workshop.batch.measurements[kind]=value;if(value!=null)workshop.batch.readings.push({kind,value,at:Date.now()});
+  }
+  workshopNotice='';resetBatchEventDraft();
+  saveWorkshop();showPage(4);$('batchRunnerTitle')?.focus({preventScroll:true});
+}
+function resetBatchEventDraft(){
+  const b=activeBatch(),key=WorkflowCore.eventKeys(b.route).find(x=>b.events[x]==null)||'bake';
+  workshopDrafts.batchEventKey=key;workshopDrafts.batchEventAt=localDateTime(b.events[key]??Date.now());
+  if($('batchEventKey'))$('batchEventKey').value=key;
+  if($('batchEventAt'))$('batchEventAt').value=workshopDrafts.batchEventAt;
+}
+function recordBatchEvent(key,at){
+  if(!activeBatch())return;
+  workshop.batch=WorkflowCore.recordEvent(activeBatch(),key,at);
+  workshopNotice='';resetBatchEventDraft();
+  saveWorkshop();
+}
+function closeBatch(){
+  const b=activeBatch();if(!b)return;
+  workshop.history=[...workshop.history,{...WorkflowCore.clone(b),status:'finished'}].slice(-20);
+  workshop.batch=null;liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};_livePlanCache={key:null,value:null};
+  delete workshopDrafts.batchStartAt;
+  $('bakeDay').value='';workshopNotice=L('Batch bewaard. Je kunt een nieuw plan maken.','Batch saved. You can make a new plan.');
+  saveWorkshop();showPage(1);
+}
+function resumeBatch(id){
+  if(activeBatch())return;
+  const b=workshop.history.find(x=>x.id===id);if(!b)return;
+  workshop.batch={...WorkflowCore.clone(b),status:'active'};workshop.history=workshop.history.filter(x=>x.id!==id);
+  restoreRecipe(b.recipe);liveMeasurements={doughTemp:null,fridgeTemp:null};
+  liveMeasurements={...b.measurements};
+  completedSteps={...b.progress};resetBatchEventDraft();workshopNotice='';saveWorkshop();showPage(4);
+}
+function batchLivePlan(c){
+  const b=activeBatch(),d=WorkflowCore.actualSchedule(b);
+  const md=liveMeasurementValue('doughTemp'),mf=liveMeasurementValue('fridgeTemp');
+  return {batch:true,active:md!=null||mf!=null,orig:{bulk:c.bulk,cold:c.cold,ball:c.ball},effective:{...c,bulk:d.bulk,cold:d.cold,ball:d.ball,doughTemp:md??c.doughTemp,fridge:mf??c.fridge},measuredDough:md,measuredFridge:mf,gasRatio:1,maturityRatio:1,gasError:0,changed:d.bulk!==c.bulk||d.cold!==c.cold||d.ball!==c.ball,stage:'tracked'};
+}
+function recordBatchMeasurement(kind,value){
+  const b=activeBatch();if(!b)return;
+  b.measurements[kind]=value;
+  if(value!=null)b.readings=[...b.readings,{kind,value,at:Date.now()}].slice(-60);
+}
+function batchProposal(){return WorkflowCore.finalProofProposal(activeBatch(),calc(),{doughTemp:liveMeasurementValue('doughTemp'),fridgeTemp:liveMeasurementValue('fridgeTemp')},DoughCore);}
+function batchProposalHtml(){
+  const p=batchProposal();
+  const reasons={'checkpoint-needed':L('Een verwacht overgangsmoment is verstreken. Registreer de werkelijke overgang, of verleng eerst de huidige fase; daarna kan het model de resterende eindrijs voorstellen.','An expected phase transition has passed. Record the actual transition, or extend the current phase first; the model can then propose remaining final proof.'),'no-measurement':L('Vul eerst een werkelijke deeg- of koelkasttemperatuur in het stappenplan in.','First enter an actual dough or fridge temperature in the workflow.'),deadband:L('De deegtemperatuur ligt binnen ±1 °C van het doel; het kamertemperatuurschema blijft staan.','Dough temperature is within ±1 °C of the target; the room-temperature schedule stays unchanged.'),'past-target':L('Het modeldoel lijkt al bereikt. Eerder verstreken tijd kan niet worden teruggedraaid: beoordeel het deeg nu.','The model target appears to have been reached already. Elapsed time cannot be undone: inspect the dough now.'),unreachable:L('Geen modeloplossing binnen 48 uur eindrijs. Gebruik dit niet als betrouwbaar tijdadvies.','No model solution within 48 hours of final proof. Do not treat this as reliable timing advice.'),completed:L('De bakstart is geregistreerd; het schema wordt niet meer aangepast.','The bake checkpoint is recorded; the schedule will no longer be adjusted.')};
+  if(!p.ok)return `<p class="hint">${reasons[p.reason]}</p>`;
+  return `<p>${L('Modelvoorstel voor de totale eindrijs','Model proposal for total final proof')}: <b>${durationLabel(p.ball)}</b> · ${L('nog ongeveer','roughly remaining')} ${durationLabel(p.remaining)}.</p><p class="hint">${L('Gebaseerd op gemeten temperaturen en geregistreerde fases. Dit evenaart alleen de geschatte gasontwikkeling, niet automatisch glutensterkte of smaak. Bulk en koelkast worden niet ingekort. De vaste baktijd blijft zichtbaar; vergelijk het deeg met de gereedheidskenmerken.','Based on measured temperatures and recorded phases. This only matches estimated gas development, not automatically gluten strength or flavour. Bulk and refrigeration are not shortened. The fixed bake target stays visible; compare the dough with the readiness cues.')}</p><button type="button" class="btn secondary" data-workshop-action="apply-proof">${L('Dit voorstel voor eindrijs gebruiken','Use this final-proof proposal')}</button>`;
+}
+function renderBatchTimeline(){
+  const b=activeBatch();if(!b)return '';
+  const t=WorkflowCore.timeline(b);
+  const rows=WorkflowCore.eventKeys(b.route).map(key=>`<div class="timeitem"><b>${batchEventName(key)}<small>${t.actual[key]?L('Werkelijk geregistreerd','Actually recorded'):L('Verwacht','Expected')}</small></b><span>${niceDate(new Date(t.times[key]))}</span></div>`).join('');
+  const offset=Math.abs(t.delta);
+  return `<div class="batch-target"><span>${L('Vaste gewenste bakstart','Fixed requested bake time')}</span><strong>${niceDate(new Date(b.bakeAt))}</strong></div>${offset>1/60?`<p class="warning">${L('De huidige verwachting ligt','The current estimate is')} ${durationLabel(offset)} ${t.delta>0?L('ná','after'):L('vóór','before')} ${L('je gewenste bakstart. Er worden geen rust- of kneedstappen automatisch ingekort.','your requested bake time. No rest or kneading stages are automatically shortened.')}</p>`:''}${rows}<p class="hint">${L('Verwachte tijden schuiven mee met je werkelijke momenten. Een verstreken tijd betekent niet dat de stap is uitgevoerd. Afvinkvakjes registreren geen tijdstip.','Expected times follow your actual checkpoints. A time passing does not mean the step has happened. Checkboxes do not record timestamps.')}</p>`;
+}
+function renderBatchPanels(){
+  const b=activeBatch(),notice=workshopNotice?`<p class="info" role="status">${esc(workshopNotice)}</p>`:'';
+  if(!b){
+    const history=workshop.history.slice().reverse();
+    const archive=history.length?`<details id="batchArchive"><summary>${L('Opgeslagen batches','Saved batches')} (${history.length})</summary><div class="workshop-list">${history.map(x=>`<div><span>${niceDate(new Date(x.events.start))} · ${x.events.bake?L('bakstart vastgelegd','bake checkpoint recorded'):L('nog niet afgebakken','not yet baked')}</span><button class="btn ghost" type="button" data-workshop-action="resume-batch" data-id="${esc(x.id)}">${L('Openen','Open')}</button></div>`).join('')}</div></details>`:'';
+    replaceWorkshopPanel('batchPlanner',`<h3>${L('Van plan naar jouw batch','From plan to your batch')}</h3><p class="hint">${L('Start zodra je deeg gaat maken. Recept, mixer en bakdatum worden vastgezet. Een nieuwe batch begint met lege metingen en vinkjes; via “Al begonnen?” neem je ze juist over.','Start when you begin making dough. Recipe, mixer and bake date are fixed. A new batch clears measurements and checkmarks; use “Already started?” to retain them instead.')}</p><details id="batchStartDetails"><summary>${L('Al begonnen? Vul je werkelijke start in','Already started? Enter your actual start')}</summary><label for="batchStartAt">${L('Werkelijke start (lokale tijd; leeg = nu)','Actual start (local time; blank = now)')}</label><input class="field" type="datetime-local" id="batchStartAt" data-draft value="${esc(workshopDrafts.batchStartAt||'')}"></details><button class="btn" type="button" data-workshop-action="start-batch">${L('Start deze batch','Start this batch')}</button>${notice}${archive}`);
+    replaceWorkshopPanel('batchRunner',`<h2 id="batchRunnerTitle" tabindex="-1">${L('Houd je batch bij','Track your batch')}</h2><p>${L('Zet dit recept vast om echte start-, koelkast- en bakmomenten te bewaren.','Fix this recipe to save actual start, fridge and bake checkpoints.')}</p><button class="btn" type="button" data-workshop-action="start-batch">${L('Start deze batch','Start this batch')}</button>${notice}`);
+    return;
+  }
+  const keys=WorkflowCore.eventKeys(b.route),next=keys.find(key=>b.events[key]==null);
+  const options=keys.filter(key=>b.events[key]!=null||key===next);
+  const selected=options.includes(workshopDrafts.batchEventKey)?workshopDrafts.batchEventKey:(next||'bake');
+  const phases=[['bulk',L('Bulk buiten','Bulk at room temperature')],...(b.route==='room'?[]:[['cold',L('Koelkast','Fridge')]]),['ball',L('Eindrijs / opwarmen','Final proof / warm-up')]];
+  const note=`<p class="hint">${L('De deegvelden staan vast voor deze batch. Sluit de batch af om een nieuw recept te plannen.','Dough fields are fixed for this batch. Close the batch to plan a new recipe.')}</p>`;
+  replaceWorkshopPanel('batchPlanner',`<h3>${L('Batch loopt · recept staat vast','Batch in progress · recipe fixed')}</h3><p><b>${L('Bakken','Bake')}: ${niceDate(new Date(b.bakeAt))}</b></p>${note}<button class="btn secondary" type="button" data-workshop-action="go-batch">${L('Naar de werkelijke momenten','Go to actual checkpoints')}</button>${notice}`);
+  replaceWorkshopPanel('batchRunner',`<h2 id="batchRunnerTitle" tabindex="-1">${L('Jouw lopende batch','Your current batch')}</h2>${note}${notice}${next?`<p class="batch-next">${L('Volgende moment','Next checkpoint')}: <b>${batchEventName(next)}</b></p><button class="btn" type="button" data-workshop-action="record-now" data-key="${next}">${L('Dit moment nu vastleggen','Record this checkpoint now')}</button>`:`<p class="info">${L('Alle momenten zijn geregistreerd. Sla je bakresultaat hieronder op en sluit daarna de batch af.','All checkpoints are recorded. Save your bake result below, then close the batch.')}</p>`}<details id="batchEventDetails"><summary>${L('Eerder moment invullen of corrigeren','Enter or correct an earlier checkpoint')}</summary><div class="workshop-grid"><label>${L('Moment','Checkpoint')}<select class="field" id="batchEventKey" data-draft>${options.map(key=>`<option value="${key}" ${key===selected?'selected':''}>${batchEventName(key)}</option>`).join('')}</select></label><label>${L('Datum en tijd (lokaal)','Date and time (local)')}<input class="field" type="datetime-local" id="batchEventAt" data-draft value="${esc(workshopDrafts.batchEventAt||localDateTime(b.events[selected]??Date.now()))}"></label></div><button type="button" class="btn secondary" data-workshop-action="record-time">${L('Opgegeven moment bewaren','Save entered checkpoint')}</button><p class="hint">${L('Bij een dubbel uur tijdens de wintertijd kiest je browser de eerste voorkomst. Gebruik “nu vastleggen” voor het huidige moment.','During a repeated daylight-saving hour your browser chooses the first occurrence. Use “record now” for the current instant.')}</p></details><details id="batchTimingDetails"><summary>${L('Resterende tijden beoordelen','Review remaining times')}</summary>${batchProposalHtml()}<div class="workshop-grid">${phases.map(([key,label])=>`<label>${label} · ${L('totale fase (uur)','total phase (hours)')}<input class="field" type="number" id="batchHours-${key}" min="0" max="${key==='cold'?120:48}" step="0.25" value="${fieldNum(WorkflowCore.phaseDone(b,key)?WorkflowCore.actualSchedule(b)[key]:b.timings[key])}" ${WorkflowCore.phaseDone(b,key)?'disabled':''}></label>`).join('')}</div><p class="hint">${L('Dit zijn totale faseduren, inclusief reeds verstreken tijd. Afgeronde fases kun je hier niet wijzigen.','These are total phase durations, including elapsed time. Completed phases cannot be changed here.')}</p><button class="btn secondary" type="button" data-workshop-action="save-times">${L('Mijn resterende planning bewaren','Save my remaining plan')}</button></details><div class="btnrow"><button class="btn ghost" type="button" data-workshop-action="close-batch">${L('Batch bewaren en afsluiten','Save and close batch')}</button></div>`);
+}
+
+function replaceWorkshopPanel(id,html){
+  const root=$(id);if(!root||root._workshopHtml===html)return;
+  const open=[...root.querySelectorAll('details[open]')].map(el=>el.id);
+  const focused=document.activeElement,focusId=root.contains?.(focused)?focused.id:null;
+  const focusValue=focusId&&focused.tagName==='INPUT'?focused.value:null;
+  root.innerHTML=html;root._workshopHtml=html;
+  for(const key of open){const el=$(key);if(el)el.open=true;}
+  if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
+}
+function collectWorkshopDrafts(){
+  for(const id of workshopPanels)for(const el of $(id)?.querySelectorAll('[data-draft]')||[])workshopDrafts[el.id]=el.value;
+}
+function renderWorkshop(c){
+  if($('actualMixMinutesLabel'))$('actualMixMinutesLabel').textContent=L('Werkelijke machinetijd / actief kneden (min)','Actual machine time / active kneading (min)');
+  collectWorkshopDrafts();renderBatchPanels();renderScalePlanner(c);renderColdStoragePlanner(c);renderRecipeWorkbench();renderMixerProfiles();renderBakeComparison();renderDoughHelp();
+}
+function wireWorkshopEvents(){
+  for(const id of workshopPanels){
+    const root=$(id);if(!root)continue;
+    root.addEventListener('click',event=>{
+      const button=event.target.closest('[data-workshop-action]');if(!button||button.disabled)return;
+      collectWorkshopDrafts();workshopNotice='';
+      try{
+        const action=button.dataset.workshopAction;
+        if(action==='start-batch')startBatch();
+        else if(action==='go-batch')showPage(4);
+        else if(action==='record-now')recordBatchEvent(button.dataset.key,Date.now());
+        else if(action==='record-time'){
+          const at=parseLocalDateTime($('batchEventAt').value);if(at==null)throw new Error(L('Vul een bestaande lokale datum en tijd in.','Enter an existing local date and time.'));
+          recordBatchEvent($('batchEventKey').value,at);
+        }else if(action==='close-batch')closeBatch();
+        else if(action==='resume-batch')resumeBatch(button.dataset.id);
+        else if(action==='save-times'){
+          const changes={};for(const key of ['bulk','cold','ball']){const input=$(`batchHours-${key}`);if(input&&!input.disabled&&String(input.value).trim()!=='')changes[key]=Number(input.value);}
+          workshop.batch=WorkflowCore.reviseTimings(activeBatch(),changes);saveWorkshop();
+        }else if(action==='apply-proof'){
+          const p=batchProposal();if(!p.ok)throw new Error(L('Het voorstel is vervallen; beoordeel de actuele tijden opnieuw.','The proposal has expired; review the current times again.'));
+          workshop.batch=WorkflowCore.reviseTimings(activeBatch(),{ball:p.ball});saveWorkshop();
+        }else handleWorkshopAction(action,button);
+      }catch(error){workshopError(error);}
+    });
+    root.addEventListener('change',event=>{
+      const el=event.target;if(el.dataset.draft!==undefined)workshopDrafts[el.id]=el.value;
+      if(el.id==='batchEventKey'){delete workshopDrafts.batchEventAt;const b=activeBatch();$('batchEventAt').value=localDateTime(b?.events[el.value]??Date.now());return;}
+      try{handleWorkshopChange(el);}catch(error){workshopError(error);}
+    });
+  }
+}
+function workshopInput(id,label,value,{type='text',min='',max='',step='',draft=true,disabled=false}={}){
+  return `<label>${label}<input class="field" id="${id}" type="${type}" value="${esc(value??'')}" ${min!==''?`min="${min}"`:''} ${max!==''?`max="${max}"`:''} ${step!==''?`step="${step}"`:''} ${draft?'data-draft':''} ${disabled?'disabled':''} ${type==='text'?'maxlength="300"':''}></label>`;
+}
+function workshopSelect(id,label,options,value,{draft=false,disabled=false}={}){
+  return `<label>${label}<select class="field" id="${id}" ${draft?'data-draft':''} ${disabled?'disabled':''}>${options.map(([key,text])=>`<option value="${esc(key)}" ${String(key)===String(value)?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;
+}
+function recipePlanSummary(recipe){return WorkflowCore.summary(recipe,Object.fromEntries(Object.entries(doughStyles).map(([key,value])=>[key,value.factor])),DoughCore);}
+function mixerMethodName(method){return ({hand:L('Met de hand','By hand'),kitchenaid:'KitchenAid',kenwood:'Kenwood',pro:L('Spiraalkneder','Spiral mixer')})[method]||method;}
+
+function renderScalePlanner(c){
+  const scale=activeBatch()?.scale??workshop.scale,w=WorkflowCore.weighing(c.yeast,scale);
+  const mixed=!!activeBatch()||liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
+  replaceWorkshopPanel('scalePlanner',`<details id="scaleDetails"><summary>${L('Kan ik deze hoeveelheid gist goed afwegen?','Can I weigh this yeast dose reliably?')}</summary>${workshopSelect('yeastScale',L('Kleinste stap van je weegschaal','Smallest step on your scale'),[[1,'1 g'],[.1,`${fmt(.1,1)} g`],[.01,`${fmt(.01,2)} g`]],scale,{disabled:!!activeBatch()})}<p class="${w.tooCoarse?'warning':'info'}">${L('Recept','Recipe')}: <b>${fmt(c.yeast,2)} g</b>. ${L('Dichtstbijzijnde schaalstap','Nearest scale step')}: <b>${fmt(w.nearest,2)} g</b>${c.yeast>0?` (${L('verschil','difference')} ${fmt(w.delta,2)} g; ${L('een halve schaalstap is','half a scale step is')} ${fmt((w.relativeHalfStep||0)*100,0)}% ${L('van deze dosis','of this dose')})`:''}.</p><p class="hint">${w.tooCoarse?L('Deze schaal is grof voor deze kleine dosis. Gebruik bij voorkeur een fijnere weegschaal; met verse gist is de af te wegen hoeveelheid groter.','This scale is coarse for this small dose. Prefer a finer scale; fresh yeast requires a larger weighed amount.'):L('De schaalverdeling is bruikbaar voor deze hoeveelheid. Controleer ook de minimumlast en nauwkeurigheid van je eigen weegschaal.','The scale resolution is usable for this amount. Also check your scale’s minimum load and accuracy.')} ${L('Schaalverdeling is geen garantie op nauwkeurigheid. Dit advies verandert je recept niet automatisch.','Resolution does not guarantee accuracy. This advice does not automatically change your recipe.')}</p>${c.yeastType!=='fresh'?`<button class="btn secondary" type="button" data-workshop-action="fresh-yeast" ${mixed?'disabled':''}>${L('Recept omrekenen naar verse gist','Convert recipe to fresh yeast')}</button>`:''}</details>`);
+}
+function renderColdStoragePlanner(c){
+  const s=activeBatch()?.storage||workshop.storage,capacity=WorkflowCore.capacity(c.pizzas,s),locked=!!activeBatch();
+  replaceWorkshopPanel('coldStoragePlanner',`<details id="coldStorageDetails"><summary>${L('Past mijn deeg in de koelkast?','Will my dough fit in the fridge?')}</summary>${c.ferm==='room'?`<p class="hint">${L('Dit recept rijst volledig buiten de koelkast. De bakindeling blijft beschikbaar voor je volgende koude batch.','This recipe proofs entirely outside the fridge. Container settings remain available for your next cold batch.')}</p>`:''}<div class="workshop-grid">${workshopSelect('workshopColdRoute',L('Koude fermentatie in','Cold fermentation in'),[['bulk',L('Bulk · één deegmassa','Bulk · one dough mass')],['balls',L('Losse bollen','Individual balls')]],c.ferm==='coldBalls'?'balls':'bulk',{disabled:locked||c.ferm==='room'})}${workshopInput('storage-ballsPerBox',L('Bollen die ruim in één bak passen','Balls fitting comfortably in one box'),s.ballsPerBox,{type:'number',min:1,max:24,step:1,draft:false,disabled:locked})}${workshopInput('storage-boxes',L('Beschikbare bakken die in je koelkast passen','Available boxes that fit in your fridge'),s.boxes,{type:'number',min:1,max:24,step:1,draft:false,disabled:locked})}${workshopInput('storage-depth',L('Hoogte van je deegmassa (cm)','Depth of your dough mass (cm)'),s.depth,{type:'number',min:1,max:30,step:.5,draft:false,disabled:locked})}${workshopSelect('storage-layout',L('Plaatsing','Placement'),[['single',L('Naast elkaar','Side by side')],['stacked',L('Gestapeld','Stacked')]],s.layout,{disabled:locked})}${workshopSelect('storage-load',L('Koelkastbezetting','Fridge load'),[['normal',L('Ruimte rond de bakken','Space around the boxes')],['full',L('Vrij vol','Quite full')]],s.load,{disabled:locked})}</div><p class="${capacity.fits?'info':'warning'}">${L('Voor','For')} ${c.pizzas} ${L('bollen heb je','balls you need')} <b>${capacity.needed}</b> ${L('bak(ken) nodig','box(es)')}. ${capacity.fits?L('Volgens jouw invulling past dat.','According to your entries, they fit.'):L(`Je komt ${capacity.missing} bak(ken) tekort. Verklein de batch of regel meer passende bakken.`,`You are ${capacity.missing} box(es) short. Reduce the batch or arrange more boxes that fit.`)}</p><p class="hint">${L(`Bulkhoogte: ${fmt(s.depth,1)} cm. Het temperatuurmodel onderscheidt bulk en bollen, maar is niet gekalibreerd op jouw bakdiepte, stapeling of koelkastbelasting. Geef bollen ruimte om te rijzen en laat lucht rond de bakken circuleren. De temperatuur in het midden van deeg loopt achter op de koelkastlucht.`,`Bulk depth: ${fmt(s.depth,1)} cm. The temperature model distinguishes bulk and balls, but is not calibrated for your container depth, stacking or fridge load. Leave room for balls to rise and for air around the boxes. Dough core temperature lags behind fridge air.`)}</p>${s.layout==='stacked'||s.load==='full'?`<p class="warning">${L('Gestapelde bakken of een volle koelkast maken de geschatte koeltijd minder overdraagbaar. Meet de koelkast bij het deeg; gebruik de geplande koelkasttijd niet als bewijs dat de deegkern al op temperatuur is.','Stacked boxes or a full fridge make the estimated cooling time less transferable. Measure the fridge near the dough; planned refrigeration time does not prove the dough core has reached that temperature.')}</p>`:''}</details>`);
+}
+function renderRecipeWorkbench(){
+  const recipes=workshop.recipes,current=snapshotRecipe();if(!current)return;
+  const options=[['current',L('Huidig plan','Current plan')],...recipes.map(r=>[r.id,r.name])];
+  const find=key=>recipes.find(r=>r.id===key)?.recipe||current;
+  const a=options.some(([key])=>key===workshopDrafts.comparePlanA)?workshopDrafts.comparePlanA:'current';
+  const b=options.some(([key])=>key===workshopDrafts.comparePlanB)?workshopDrafts.comparePlanB:(recipes[0]?.id||'current');
+  const sa=recipePlanSummary(find(a)),sb=recipePlanSummary(find(b));
+  const method=r=>mixerMethodName(r.method);
+  const route=s=>s.ferm==='room'?L('Kamer','Room'):s.ferm==='coldBalls'?L('Koelkast · bollen','Fridge · balls'):L('Koelkast · bulk','Fridge · bulk');
+  const rows=[
+    [L('Aantal bollen','Dough balls'),sa.pizzas,sb.pizzas],
+    [L('Bloem','Flour'),`${fmt(sa.flour,1)} g`,`${fmt(sb.flour,1)} g`],
+    [L('Water','Water'),`${fmt(sa.water,1)} g`,`${fmt(sb.water,1)} g`],
+    [L('Zout','Salt'),`${fmt(sa.salt,1)} g`,`${fmt(sb.salt,1)} g`],
+    [L('Gist','Yeast'),`${fmt(sa.yeast,2)} g ${yeastName(sa.yeastType)}`,`${fmt(sb.yeast,2)} g ${yeastName(sb.yeastType)}`],
+    [L('Werkelijke hydratatie','Actual hydration'),`${fmt(sa.actualH,2)}%`,`${fmt(sb.actualH,2)}%`],
+    [L('Methode','Method'),method(find(a)),method(find(b))],
+    [L('Koelkastroute','Fridge route'),route(sa),route(sb)],
+    [L('Kamer / koelkast','Room / fridge'),`${fmt(sa.room,1)} / ${fmt(sa.fridge,1)} °C`,`${fmt(sb.room,1)} / ${fmt(sb.fridge,1)} °C`],
+    ...[['preparation',L('Bereiding','Preparation')],['bulk',L('Bulk','Bulk')],['cold',L('Koelkast','Fridge')],['ball',L('Eindrijs','Final proof')]].map(([key,label])=>[label,durationLabel(sa[key]),durationLabel(sb[key])]),
+    [L('Totale doorlooptijd','Total lead time'),durationLabel(sa.preparation+sa.bulk+sa.cold+sa.ball),durationLabel(sb.preparation+sb.bulk+sb.cold+sb.ball)]
+  ];
+  replaceWorkshopPanel('recipeWorkbench',`<details id="recipeWorkbenchDetails"><summary>${L('Eigen deegrecepten & plannen vergelijken','My dough recipes & plan comparison')}</summary><p class="hint">${L('Bewaar een deegrecept met mengmethode en fermentatieschema. De bakdatum, temperatuurmetingen, privénotities en pizzatoppings worden niet meegenomen.','Save a dough recipe with its mixing method and fermentation schedule. Bake date, temperature readings, private notes and pizza toppings are not included.')}</p>${workshopInput('savedRecipeName',L('Naam voor dit deegrecept','Name for this dough recipe'),workshopDrafts.savedRecipeName||'')}<div class="btnrow"><button class="btn secondary" type="button" data-workshop-action="save-recipe">${L('Huidig recept bewaren','Save current recipe')}</button><button class="btn ghost" type="button" data-workshop-action="export-recipe">${L('Receptbestand downloaden','Download recipe file')}</button></div><label>${L('Receptbestand importeren (.json, max. 50 kB)','Import recipe file (.json, max. 50 kB)')}<input class="field" type="file" accept=".json,application/json" id="importRecipeFile"></label>${recipes.length?`<div class="workshop-list">${recipes.map(r=>`<div><b>${esc(r.name)}</b><span><button type="button" class="btn secondary" data-workshop-action="load-recipe" data-id="${esc(r.id)}" ${activeBatch()?'disabled':''}>${L('Als nieuw plan laden','Load as new plan')}</button><button type="button" class="btn ghost" data-workshop-action="delete-recipe" data-id="${esc(r.id)}" aria-label="${esc(L('Verwijder','Delete')+' '+r.name)}">${L('Verwijderen','Delete')}</button></span></div>`).join('')}</div>`:''}<p class="hint">${L('Laden begint een nieuwe planning en wist de huidige metingen en vinkjes. Opgeslagen bakresultaten blijven behouden.','Loading starts a new plan and clears current measurements and checkmarks. Saved bake results are retained.')}</p><h3>${L('Twee plannen naast elkaar','Two plans side by side')}</h3><div class="workshop-grid">${workshopSelect('comparePlanA',L('Plan A','Plan A'),options,a,{draft:true})}${workshopSelect('comparePlanB',L('Plan B','Plan B'),options,b,{draft:true})}</div>${workshopTable([L('Eigenschap','Property'),'A','B'],rows)}<p class="hint">${L('Vergelijking van de opgeslagen recepten vóór temperatuurcorrecties. Gelijke tijden en gist betekenen niet automatisch een gelijk bakresultaat.','Comparison of stored recipes before temperature corrections. Equal times and yeast do not automatically mean an equal bake result.')}</p></details>`);
+}
+function workshopTable(headings,rows){
+  return `<div class="workshop-table-wrap"><table class="workshop-table"><thead><tr>${headings.map(x=>`<th scope="col">${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map((x,index)=>index===0?`<th scope="row">${esc(x)}</th>`:`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderMixerProfiles(){
+  const selected=currentMixerProfile(),locked=!!activeBatch();
+  const options=[['',L('Geen profiel gekozen','No profile selected')],...workshop.profiles.map(p=>[p.id,p.name])];
+  replaceWorkshopPanel('mixerProfiles',`<details id="mixerProfileDetails"><summary>${L('Mijn mixer, haak & programma','My mixer, hook & programme')}</summary>${workshopSelect('mixerProfileChoice',L('Opgeslagen profiel','Saved profile'),options,locked?(selected?.id||''):workshop.profileId,{disabled:locked})}${selected?`<p class="info"><b>${esc(selected.name)}</b> · ${esc(selected.model||mixerMethodName(selected.method))} · ${esc(selected.hook||L('Haak niet ingevuld','Hook not entered'))}<br>${esc(selected.programme||L('Programma volgens het stappenplan','Programme follows the workflow'))}</p>`:''}<p class="hint">${L('Een spiraalhaak op een KitchenAid blijft de KitchenAid-methode. Alleen een echte spiraalkneder gebruikt de spiraalkneder-methode. Dit profiel registreert je materiaal; het verandert geen mixtijden of warmteconstanten.','A spiral hook on a KitchenAid still uses the KitchenAid method. Only an actual spiral mixer uses the spiral-mixer method. This profile records your equipment; it does not change mixing times or thermal constants.')}</p><div class="workshop-grid">${workshopInput('profileName',L('Profielnaam','Profile name'),workshopDrafts.profileName||'',{disabled:locked})}${workshopInput('profileModel',L('Exact mixermodel','Exact mixer model'),workshopDrafts.profileModel||'',{disabled:locked})}${workshopInput('profileHook',L('Haak / hulpstuk','Hook / attachment'),workshopDrafts.profileHook||'',{disabled:locked})}${workshopInput('profileProgramme',L('Programmanotitie (referentie)','Programme note (reference)'),workshopDrafts.profileProgramme||'',{disabled:locked})}</div><p class="hint">${L('Het nieuwe profiel hoort bij de hierboven gekozen methode','The new profile belongs to the method selected above')}: <b>${mixerMethodName(currentMethod)}</b>.</p><button class="btn secondary" type="button" data-workshop-action="save-profile" ${locked?'disabled':''}>${L('Als nieuw profiel bewaren','Save as a new profile')}</button>${selected&&!locked?`<button class="btn ghost" type="button" data-workshop-action="delete-profile">${L('Dit profiel verwijderen','Delete this profile')}</button>`:''}</details>`);
+}
+function renderBakeComparison(){
+  const entries=bakeLog.map((value,index)=>({value,index})).reverse();
+  const options=entries.map(({value,index})=>[String(index),`${new Date(value.ts).toLocaleDateString(currentLang==='en'?'en-GB':'nl-NL')} · ${value.profile?.name||mixerMethodName(value.method)} · ${fmt(value.flour||0,0)} g`]);
+  let compare=`<p class="hint">${L('Sla minstens twee bakresultaten op om ze te vergelijken.','Save at least two bake results to compare them.')}</p>`;
+  if(entries.length>=2){
+    const a=options.some(([key])=>key===workshopDrafts.compareBakeA)?workshopDrafts.compareBakeA:options[0][0];
+    const b=options.some(([key])=>key===workshopDrafts.compareBakeB)?workshopDrafts.compareBakeB:options[1][0];
+    const av=bakeLog[Number(a)],bv=bakeLog[Number(b)];
+    const value=(x,key,unit,dec=1)=>x[key]==null?'—':`${fmt(x[key],dec)}${unit}`;
+    const rows=[
+      [L('Mixerprofiel','Mixer profile'),av.profile?.name||mixerMethodName(av.method),bv.profile?.name||mixerMethodName(bv.method)],
+      [L('Model / haak','Model / hook'),[av.profile?.model,av.profile?.hook].filter(Boolean).join(' · ')||'—',[bv.profile?.model,bv.profile?.hook].filter(Boolean).join(' · ')||'—'],
+      ...[['flour',L('Bloem','Flour'),' g'],['totalDough',L('Deegmassa','Dough mass'),' g'],['hydration',L('Hydratatie','Hydration'),'%'],['mixMinutes',L('Werkelijk gemixt','Actually mixed'),' min'],['waterTemp',L('Werkelijk hoofdwater','Actual main water'),' °C'],['finalDoughTemp',L('Gemeten na kneden','Measured after kneading'),' °C'],['room',L('Kamer','Room'),' °C'],['fridgeTempActual',L('Gemeten koelkast','Measured fridge'),' °C']].map(([key,label,unit])=>[label,value(av,key,unit),value(bv,key,unit)]),
+      [L('Uitkomst','Outcome'),ratingLabel(av.rating),ratingLabel(bv.rating)]
+    ];
+    compare=`<div class="workshop-grid">${workshopSelect('compareBakeA',L('Bake A','Bake A'),options,a,{draft:true})}${workshopSelect('compareBakeB',L('Bake B','Bake B'),options,b,{draft:true})}</div>${workshopTable([L('Meting','Measurement'),'A','B'],rows)}`;
+  }
+  replaceWorkshopPanel('bakeComparison',`<details id="bakeComparisonDetails"><summary>${L('Bakes en mixerprofielen vergelijken','Compare bakes and mixer profiles')}</summary>${compare}<p class="hint">${L('Vergelijk bij voorkeur dezelfde bloem, hydratatie, batchgrootte, rustroute en mengstappen. Verschillen zijn waarnemingen, geen automatische kalibratie of bewijs dat langer kneden beter is.','Prefer comparisons with the same flour, hydration, batch size, rest route and mixing stages. Differences are observations, not automatic calibration or evidence that longer kneading is better.')}</p></details>`);
+}
+
+function renderDoughHelp(){
+  const stage=['mix','proof','open'].includes(workshopDrafts.helpStage)?workshopDrafts.helpStage:'mix';
+  const symptom=['tear','recoil','cold','slack','slow'].includes(workshopDrafts.helpSymptom)?workshopDrafts.helpSymptom:'tear';
+  const advice={
+    tear:stage==='mix'?L('Laat na het bestaande kneedprogramma 5 minuten afgedekt rusten en probeer opnieuw een windowpane. Is het deeg daarna nog duidelijk zwak? Gebruik het bestaande herstelpad: 6–10 rustige duw-vouw-draaibewegingen, 5–10 minuten rust, opnieuw beoordelen. Voeg niet automatisch extra machinetijd toe.','After the existing kneading programme, rest covered for 5 minutes and try a windowpane again. Still clearly weak? Use the existing recovery path: 6–10 gentle push-fold-turn movements, rest 5–10 minutes, reassess. Do not automatically add machine time.'):L('Controleer eerst of de bol nog koud of strak is en geef zo nodig afgedekte ontspanning. Open rustig vanuit het midden. Een rijpe, gasrijke bol opnieuw lang kneden herstelt niet automatisch zijn structuur. Scheuren alleen bewijst geen onvoldoende kneden.','First check whether the ball is still cold or tight and allow covered relaxation if needed. Open gently from the centre. Long kneading of a mature, gas-filled ball does not automatically restore its structure. Tearing alone does not prove insufficient kneading.'),
+    recoil:L('Sterk terugveren kan bij een koud of nog strak deeg passen. Geef afgedekte ontspanning en controleer de deegtemperatuur voordat je harder trekt. Extra kneden is hier geen vanzelfsprekende oplossing. Kijk daarnaast naar luchtigheid en de totale rijsontwikkeling.','Strong recoil can fit cold or still-tight dough. Allow covered relaxation and check dough temperature before pulling harder. Extra kneading is not an automatic solution. Also assess aeration and overall proof development.'),
+    cold:L('Koelkastlucht en deegkern zijn niet direct even warm. Laat afgedekt opwarmen en controleer zowel de kerntemperatuur als soepelheid en rijs. “Warm genoeg” alleen betekent niet “voldoende gerezen”; een vaste universele opwarmtijd is niet betrouwbaar. Pas zo nodig alleen de resterende eindrijs aan.','Fridge air and dough core do not immediately share a temperature. Warm covered and check core temperature, pliability and proof development. “Warm enough” alone does not mean “proofed enough”; a universal fixed warm-up time is unreliable. Adjust only remaining final proof if needed.'),
+    slack:L('Wordt het deeg tijdens de rijs steeds slapper en houdt het weinig spanning? Dat kan passen bij te ver gerezen of verzwakt deeg, maar ook bloem en hydratatie spelen mee. Voeg niet automatisch meer warme rust of machinetijd toe. Beoordeel het deeg nu, behandel voorzichtig en bak eventueel eerder of gebruik een bakvorm. Noteer het verloop voor je volgende batch.','Does dough become progressively slacker during proof and hold little tension? This can fit overproofed or weakened dough, while flour and hydration also matter. Do not automatically add warm rest or machine time. Inspect it now, handle gently and consider baking earlier or using a pan. Record the progression for your next batch.'),
+    slow:L('Weinig volume kan passen bij koud deeg, weinig gistactiviteit of een deeg dat gas minder goed vasthoudt. Controleer temperatuur, gistsoort en de werkelijk afgewogen hoeveelheid. Voeg geen gist toe aan deze gemengde batch. Geef alleen meer eindrijs als de deegsterkte dat toelaat en controleer opnieuw op luchtigheid en ontspanning.','Low volume can fit cold dough, low yeast activity or dough that retains gas poorly. Check temperature, yeast type and the actual weighed dose. Do not add yeast to this mixed batch. Allow more final proof only if dough strength permits, then reassess aeration and relaxation.')
+  };
+  replaceWorkshopPanel('doughHelp',`<details id="doughHelpDetails"><summary>${L('Mijn deeg reageert anders — wat nu?','My dough behaves differently — what now?')}</summary><div class="workshop-grid">${workshopSelect('helpStage',L('Waar ben je?','Which stage are you at?'),[['mix',L('Na kneden','After kneading')],['proof',L('Tijdens rijs / opwarmen','During proof / warm-up')],['open',L('Tijdens openen','While opening')]],stage,{draft:true})}${workshopSelect('helpSymptom',L('Wat zie je vooral?','What do you mainly see?'),[['tear',L('Het scheurt snel','It tears easily')],['recoil',L('Het veert sterk terug','It recoils strongly')],['cold',L('Het voelt nog koud','It still feels cold')],['slack',L('Het wordt steeds slapper','It becomes progressively slack')],['slow',L('Er is weinig volumeontwikkeling','There is little volume increase')]],symptom,{draft:true})}</div><div class="info" id="doughHelpAdvice">${advice[symptom]}</div><p class="hint">${L('Dit helpt je beoordelen; één symptoom geeft geen zekere diagnose. Het bestaande kneedprogramma blijft staan. Bij sterke machinebelasting of oververhitting pauzeren en de handleiding volgen.','This helps assessment; one symptom does not give a certain diagnosis. The existing kneading programme is retained. Pause for excessive mixer load or overheating and follow the manual.')}</p></details>`);
+}
+
+function handleWorkshopAction(action,button){
+  if(action==='save-recipe'){
+    const name=String($('savedRecipeName').value||'').trim().slice(0,80);
+    if(!name)throw new Error(L('Geef je recept eerst een naam.','Give your recipe a name first.'));
+    if(workshop.recipes.length>=30)throw new Error(L('Er passen 30 recepten in je verzameling. Verwijder eerst een recept.','Your collection holds 30 recipes. Delete a recipe first.'));
+    const recipe=snapshotRecipe();if(!recipe)throw new Error(L('Controleer de deegvelden voordat je opslaat.','Check the dough fields before saving.'));
+    workshop.recipes.push({id:workshopId(),name,recipe});workshopNotice=L('Deegrecept opgeslagen.','Dough recipe saved.');saveWorkshop();
+  }else if(action==='load-recipe'){
+    if(activeBatch())return;
+    const saved=workshop.recipes.find(r=>r.id===button.dataset.id);if(!saved)return;
+    restoreRecipe(saved.recipe);liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};_livePlanCache={key:null,value:null};$('bakeDay').value='';
+    if(currentMixerProfile()?.method!==currentMethod)workshop.profileId='';
+    workshopNotice=L('Recept als nieuwe planning geladen.','Recipe loaded as a new plan.');saveWorkshop();
+  }else if(action==='delete-recipe'){
+    workshop.recipes=workshop.recipes.filter(r=>r.id!==button.dataset.id);saveWorkshop();
+  }else if(action==='export-recipe'){
+    const content=WorkflowCore.exportRecipe($('savedRecipeName').value||L('Mijn pizzadeeg','My pizza dough'),snapshotRecipe());
+    const url=URL.createObjectURL(new Blob([JSON.stringify(content,null,2)],{type:'application/json'}));
+    const link=document.createElement('a');link.href=url;link.download='pizza-dough-recipe.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }else if(action==='fresh-yeast'){
+    if(activeBatch()||liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
+    const old=$('yeastType').value;$('yeastType').value='fresh';applyYeastTypeConversion(old,'fresh');markCustom(false);saveWorkshop();
+  }else if(action==='save-profile'){
+    if(activeBatch())return;
+    const profile=WorkflowCore.profile({id:workshopId(),name:$('profileName').value,method:currentMethod,model:$('profileModel').value,hook:$('profileHook').value,programme:$('profileProgramme').value});
+    if(!profile)throw new Error(L('Geef je mixerprofiel een naam.','Give your mixer profile a name.'));
+    if(workshop.profiles.length>=20)throw new Error(L('Verwijder eerst een profiel; je kunt er 20 bewaren.','Delete a profile first; you can save 20.'));
+    workshop.profiles.push(profile);workshop.profileId=profile.id;saveWorkshop();
+  }else if(action==='delete-profile'){
+    if(activeBatch())return;
+    workshop.profiles=workshop.profiles.filter(p=>p.id!==workshop.profileId);workshop.profileId='';saveWorkshop();
+  }
+}
+function handleWorkshopChange(el){
+  if(el.id==='yeastScale'){
+    if(activeBatch())return;workshop.scale=Number(el.value);saveWorkshop();
+  }else if(el.id==='workshopColdRoute'){
+    if(activeBatch())return;$('coldStorageMode').value=el.value;markCustom(false);saveWorkshop();
+  }else if(el.id.startsWith('storage-')){
+    if(activeBatch())return;
+    const key=el.id.slice(8),numeric=['depth','boxes','ballsPerBox'].includes(key),value=numeric?Number(el.value):el.value;
+    if(numeric&&(!el.value.trim()||!Number.isFinite(value)||value<Number(el.min)||value>Number(el.max)))throw new Error(L('Vul een waarde binnen de aangegeven grenzen in.','Enter a value within the indicated bounds.'));
+    workshop.storage=WorkflowCore.storage({...workshop.storage,[key]:value});saveWorkshop();
+  }else if(el.id==='mixerProfileChoice'){
+    if(activeBatch())return;
+    workshop.profileId=el.value;const profile=currentMixerProfile();if(profile)setMethod(profile.method);saveWorkshop();
+  }else if(['comparePlanA','comparePlanB','compareBakeA','compareBakeB','helpStage','helpSymptom'].includes(el.id))renderWorkshop(calc());
+  else if(el.id==='importRecipeFile'){
+    const file=el.files?.[0];if(!file)return;
+    if(file.size>50000)throw new Error(L('Receptbestand is groter dan 50 kB.','Recipe file is larger than 50 kB.'));
+    file.text().then(text=>{
+      try{
+        const imported=WorkflowCore.importRecipe(JSON.parse(text));
+        if(!imported)throw new Error(L('Dit is geen geldig deegreceptbestand voor deze versie.','This is not a valid dough recipe file for this version.'));
+        if(workshop.recipes.length>=30)throw new Error(L('Je hebt al 30 opgeslagen recepten.','You already have 30 saved recipes.'));
+        workshop.recipes.push({id:workshopId(),...imported});workshopNotice=L('Recept als eigen profiel geïmporteerd. Je kunt het vergelijken of als nieuw plan laden.','Recipe imported as a custom profile. You can compare it or load it as a new plan.');saveWorkshop();
+      }catch(error){workshopError(error);}
+    }).catch(()=>workshopError(new Error(L('Het bestand kon niet worden gelezen.','The file could not be read.'))));
+  }
+}
+const SAVE_KEY='pizzaCalcV52';
+const SAVE_VERSION=52;
+const LEGACY_KEYS=Array.from({length:26},(_,i)=>`pizzaCalcV${51-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
 // Only these controls override the technical dough profile owned by a preset.
@@ -6750,8 +7354,9 @@ function scheduleSave(){
 }
 
 function saveState(){
+  if(activeBatch())workshop.batch.progress={...completedSteps};
   const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
-    currentWizardPage,
+    currentWizardPage,workshop,
     practical:$('practical').checked,autolyse:$('autolyse').checked,
     sizeFromDiameter:$('sizeFromDiameter').checked,includeSauce:$('includeSauce').checked,
     autoSauceFromPizzas:$('autoSauceFromPizzas').checked,pizzaSelections,pizzaCustomizations,recipeAllSelection,preset:$('preset').value};
@@ -6803,7 +7408,9 @@ function sanitizeBakeLog(v){
       fridgeTempActual:numOrNull(x.fridgeTempActual,0,15),
       ddtCorrection:numOrNull(x.ddtCorrection,-12,30),
       rating:['good','slow','fast'].includes(x.rating)?x.rating:'good',
-      notes:typeof x.notes==='string'?x.notes.slice(0,500):''
+      notes:typeof x.notes==='string'?x.notes.slice(0,500):'',
+      profile:WorkflowCore.profile(x.profile),batchId:typeof x.batchId==='string'?x.batchId.slice(0,80):null,
+      totalDough:numOrNull(x.totalDough,0,30000),mixMinutes:numOrNull(x.mixMinutes,0,120),autolyse:typeof x.autolyse==='boolean'?x.autolyse:null
     };
   }).filter(Boolean);
 }
@@ -6831,14 +7438,17 @@ function loadState(){
       else if(k==='previousYeastType')previousYeastType=yeastTypes[v]?v:'idy';
       else if(k==='currentWizardPage')_restoredWizardPage=Number.isFinite(Number(v))?Math.max(0,Math.round(Number(v))):0;
       else if(k==='completedSteps')completedSteps=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+      else if(k==='workshop')workshop=WorkflowCore.sanitize(v);
       else if(k==='bakeLog')bakeLog=sanitizeBakeLog(v);
       else if(k==='liveMeasurements')liveMeasurements=(v&&typeof v==='object')?{doughTemp:validMeasured(v.doughTemp,10,40),fridgeTemp:validMeasured(v.fridgeTemp,0,15)}:{doughTemp:null,fridgeTemp:null};
       else if(k==='pizzaSelections')pizzaSelections=Array.isArray(v)?v.filter(x=>typeof x==='string').map(x=>recipeById(x).id):[];
       else if(k==='pizzaCustomizations')pizzaCustomizations=Array.isArray(v)?v:[];
       else if(k==='recipeAllSelection')recipeAllSelection=recipeById(v).id;
       else if(['practical','autolyse','sizeFromDiameter','includeSauce','autoSauceFromPizzas'].includes(k)){ if($(k))$(k).checked=!!v; }
-      else if($(k))$(k).value=v;
+      else if((SAVE_IDS.includes(k)||k==='preset')&&$(k))$(k).value=v;
     });
+
+    if(activeBatch()){restoreRecipe(activeBatch().recipe);liveMeasurements={...activeBatch().measurements};completedSteps={...activeBatch().progress};}
 
     // Migratie van vóór v39: koude fermentatie stond als eigen methode opgeslagen.
     if($('fermentationMethod').value==='coldBalls'){
@@ -6875,8 +7485,8 @@ function loadState(){
     suppressCustom=false;
     document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===currentMethod;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
     // Oude versiesleutels opruimen zodat ze niet jaren later terugkomen.
-    LEGACY_KEYS.forEach(k=>SAFE.del(k));
-    saveState();
+    // Keep the last valid legacy copy if writing the migrated state fails.
+    if(saveState())LEGACY_KEYS.forEach(k=>SAFE.del(k));
     return true;
   }catch(e){return false}
 }
@@ -6982,6 +7592,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   initRecipeOptions();
   wireEvents();
+  wireWorkshopEvents();
 
   const wizardNav=$('stepsNav');
   if(wizardNav){

@@ -252,3 +252,26 @@ The user explicitly requested this implementation after review, including cleane
 | singleFile | `78851e2d059925f3dd1cebebbcc556060b75331db4aa03a259df8a7545b09335` |
 | css | `e7c20ac74ca79d1a2229ebc649e2c2b9d90dd5362b0e4d855cea05f94dfef619` |
 | javascript | `ce6967176b18787250e768d14899cab8b7bb5c5303c3c245c1757a6a657b1896` |
+
+
+## v1.4.0 batch-workflow candidate contract
+
+The user explicitly authorized implementing all additional recommendations in a new version. This contract supersedes historical exclusions of mixer profiles, container inputs and schema changes for this feature candidate. See `V1_4_0_IMPLEMENTATION_REVIEW.md` for scope, rationale, limits and verification.
+
+- All original kneading times, catalogue recipes, preset numerical values, thermal/yeast constants and the inclusive ±1 °C room deadband remain intact.
+- Starting a batch fixes its dough recipe, method, equipment/storage snapshot and absolute desired bake time. Actual events must remain chronological. Unperformed phases are forecasts, never automatically completed.
+- A tracked batch records temperature observations. Only an explicit final-proof proposal or manual unfinished-phase edit can revise its future timing. It cannot erase elapsed time, rewrite actual checkpoints, change incorporated yeast or silently shift the desired bake date.
+- Mixer/hook profiles and bake observations never update the physical model automatically. Box settings calculate practical capacity but do not invent new thermal coefficients.
+- Scale guidance quantifies resolution separately from accuracy and never silently changes the recipe dose.
+- Saved dough recipes and JSON exchange exclude private measurements, notes and batch dates. Imported recipes become custom profiles and cannot claim official AVPN identity through file metadata alone.
+- Persistence migrates from schema 51 to 52 with regression coverage. Remove old keys only after a successful replacement write. Keep legacy recipes/logs and ignore malformed new entries individually.
+- Source remains authoritative; the generated standalone bundle is self-contained. New controls use event listeners, Dutch/English labels, and responsive/keyboard coverage.
+- The following hashes pin the explicitly requested v1.4.0 candidate. They are neither a release nor empirical physical validation. Previous hashes above remain immutable.
+
+<!-- v1.4.0 candidate hashes -->
+
+| Candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `31e6ba1ffee0df6cdd8a32db5d2f474a4528ac2a66f6bd468d13ad9a4e538212` |
+| css | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
+| javascript | `f47b733068b192880f50bc64a71dd5d405a2c44b3e2b58b0a0927a1e8edb7737` |

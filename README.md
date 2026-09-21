@@ -3,7 +3,7 @@
 [English](README.md) | [Nederlands](README.nl.md)
 
 [![Version](https://img.shields.io/badge/version-v1.2.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
-[![Tests](https://img.shields.io/badge/regression_tests-98_cases-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regression_tests-102_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -15,9 +15,9 @@ The downloadable application remains one self-contained `index.html`. The reposi
 
 > Tag **v1.0.0** remains the immutable golden behavior baseline. v1.2.1 is the current public release and keeps storage schema 51.
 
-**This branch: v1.3.0 candidate.** Clearer schedule and yeast guidance, explicit fridge events, review fixes and an independent numerical core. The public version remains v1.2.1 until an explicit release. Mixing times, preset durations and model constants are preserved. [Review, scientific limits and code roadmap](docs/V1_3_0_REVIEW_AND_ROADMAP.md).
+**This branch: v1.4.0 candidate.** Fixed batches and bake dates, actual checkpoints, saved dough recipes and comparisons, scale/container guidance, mixer profiles and targeted dough help. Built on the 1.3 review; mixing times and model constants remain unchanged. Schema 51 migrates to 52 while retaining existing data. [Implementation and Claude review handoff](docs/V1_4_0_IMPLEMENTATION_REVIEW.md). The public version remains v1.2.1 until an explicit release.
 
-**For Claude/reviewers:** [start here](CLAUDE.md#v130-review-start-here). The [full original review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) and current implementation roadmap are stored in this branch; separate attachments are unnecessary.
+**For Claude/reviewers:** [start here](CLAUDE.md#v140-implementation-start-here). The [full original review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) and current implementation roadmap are stored in this branch; separate attachments are unnecessary.
 
 ## Features
 
@@ -129,14 +129,14 @@ Then run the complete suite:
 npm test
 ```
 
-Current result:
+Candidate verification suite (see the PR Actions result for execution status):
 
 ```text
-15 refactor-structure tests passed
-5 numerical-core tests passed
-98 bundle regression tests passed
-98 source regression tests passed
-43 Chromium browser/layout tests passed
+15 refactor-structure tests
+16 pure-core tests
+102 bundle regression tests
+102 source regression tests
+67 Chromium browser/layout tests
 ```
 
 The suite covers, among other things:
@@ -152,7 +152,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the twelve fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, and the separate v1.3.0 candidate baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the fifteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, and the separate v1.3.0 and v1.4.0 candidate baselines. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 
@@ -184,7 +184,7 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`index.html`](index.html) | Generated standalone publication for Pages and offline use |
 | [`src/index.html`](src/index.html) | Semantic source HTML and fixed asset-loading order |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Complete presentation and responsive layout |
-| [`src/assets/js/`](src/assets/js/) | Eleven ordered responsibility-based modules |
+| [`src/assets/js/`](src/assets/js/) | Fifteen ordered responsibility-based modules |
 | [`tools/bundle.js`](tools/bundle.js) | Dependency-free standalone bundler and drift check |
 | [`tests/test_v50.js`](tests/test_v50.js) | Fast Node/VM functional regression suite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architecture, integrity, and golden-equivalence tests |

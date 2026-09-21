@@ -75,7 +75,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.3.0');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.4.0');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -84,7 +84,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.3.0',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.4.0',hasCalculator:true,horizontalOverflow:0});
         await page.locator('[data-mode-card="dough"]').click();
         await expect(page.locator('#scheduleSummary')).toBeVisible();
         await expect(page.locator('#scheduleSummary')).toContainText('1 u 54 min');
@@ -174,7 +174,7 @@ for(const publication of PUBLICATIONS){
       await page.locator('#experienceBasic').click();
       await page.waitForTimeout(350);
       expect(await page.evaluate(()=>localStorage.getItem('pizzaCalcV50'))).toBeNull();
-      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV51')).version)).toBe(51);
+      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV52')).version)).toBe(52);
       await page.reload({waitUntil:'load'});
       await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
       await page.locator('[data-mode-card="dough"]').click();

@@ -176,9 +176,10 @@ function setLiveMeasurement(kind,value){
   const raw=String(value??'').trim();
   if(kind==='doughTemp') liveMeasurements.doughTemp=raw===''?null:validMeasured(parseFloat(raw),10,40);
   if(kind==='fridgeTemp') liveMeasurements.fridgeTemp=raw===''?null:validMeasured(parseFloat(raw),0,15);
+  recordBatchMeasurement(kind,liveMeasurementValue(kind));
   _livePlanCache={key:null,value:null};
   update();
-  scheduleSave();
+  saveState();
 }
 function liveMeasureDisplay(kind){
   const v=liveMeasurementValue(kind);
@@ -305,6 +306,7 @@ function solveRoomEquivalentTotal(c,startTemp){
 }
 
 function liveFermentationPlan(c){
+  if(activeBatch())return batchLivePlan(c);
   const md=liveMeasurementValue('doughTemp');
   const mf=c.ferm==='room'?null:liveMeasurementValue('fridgeTemp');
   const deadlineKey=[String($('bakeDay')?.value||''),String($('bakeTime')?.value||'')].join('@');
@@ -371,6 +373,7 @@ function livePlanChangesHtml(c,live){
   return `<div class="live-plan-changes">${out}</div>`;
 }
 function livePlanSummaryHtml(c,live,context='dough'){
+  if(live.batch)return `<div class="info">${L('Meting opgeslagen voor deze batch. Je geregistreerde momenten en gist blijven vaststaan. Beoordeel bovenaan bij “Resterende tijden beoordelen” het voorstel voordat je het toepast.','Measurement saved for this batch. Recorded checkpoints and yeast stay fixed. Review the proposal under “Review remaining times” above before applying it.')}</div>`;
   if(!live.active)return '';
   const cls=livePlanClass(live,c);
   const d=live.measuredDough;
@@ -463,7 +466,7 @@ function step(n,title,text,detail='',id=null){
       <span class="step-check-mark"></span>
     </label>
     <div class="num">${n}</div>
-    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${L('Gepland','Planned')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
+    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${activeBatch()&&activeBatch().events[momentKey]!=null?L('Werkelijk','Actual'):L('Verwacht','Expected')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
   </div>`;
 }
 
