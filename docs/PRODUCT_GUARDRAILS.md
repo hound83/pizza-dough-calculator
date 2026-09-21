@@ -230,3 +230,24 @@ Before changing a rule above:
 5. verify persistence and migration impact;
 6. obtain explicit approval before implementation;
 7. update this document and the audit handoff.
+
+## v1.3.0 planning-review candidate contract
+
+The user explicitly requested this implementation after review, including cleaner code, clearer planning and yeast guidance, preserving mixing times and aiming for roughly two hours until cold fermentation when quality permits. This is a candidate based on released v1.2.1, separate from parked feedback PR #12. See `V1_3_0_REVIEW_AND_ROADMAP.md` for rationale, model limits and the next coding steps.
+
+- Retain all existing mixing durations, preset phase durations, baker's percentages, thermal/yeast constants, the ±1 °C room deadband and schema 51. The approximately two-hour target does not automatically shorten rests or development.
+- Superseding the historical v1.1.0 wording: reaching the temperature target or merely appearing glossy/sticky is not proof of adequate development. Pause for excessive heat/load; evaluate cohesion and a rested windowpane. Retain the existing recovery pathway.
+- Measure immediately after the kneading stage, before recovery rest. Actual measurements lock yeast/deadline recipe-apply actions; live timing correction remains available.
+- Show the recipe dose to weigh, a distinct model starting point, and the heuristic nature of its range. Retain distinct official AVPN range semantics.
+- Planned target temperatures are not labelled measured. No empirical accuracy or confidence-interval claim is added.
+- Basic includes a phase summary and approximate time until cold fermentation. The timeline and relevant steps expose fridge-in/out using shared offsets, with dates if a bake time is selected and elapsed offsets otherwise.
+- The AVPN identity belongs only to the actual AVPN preset. A proposed custom deadline recipe uses its own identity and explicit style.
+- Subgram gram quantities keep 0.01 g resolution and zero remains zero; catalogue reference quantities and existing whole-gram rules are unchanged.
+- Step checkboxes have unique heading-based accessible names; method buttons expose selected state; primary-button text meets normal-text contrast.
+- Historical released hash records remain immutable. The hashes below identify this deliberate, user-requested candidate baseline, not a published release or physical model validation.
+
+| Candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `dec52a68f6a64a8354040733ef55af537e0e7a5a7aa2bf758ef8c6bf7c8f784f` |
+| css | `621e314eaf01e7f9dd29804007f78747cf1c86886f12c4e446a908766c4d3508` |
+| javascript | `ea41231586664052616a57b2744d79190da30a19b8ed1b2d477792152a6af531` |

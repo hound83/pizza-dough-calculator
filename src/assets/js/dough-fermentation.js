@@ -212,7 +212,7 @@ function avpnMidpointYeastAdvice(c){
   const selected=c.yeastType==='fresh'?freshMidPct:idyMidPct;
   const low=c.yeastType==='fresh'?freshLowPct:idyLowPct;
   const high=c.yeastType==='fresh'?freshHighPct:idyHighPct;
-  const risk=flourRisk(c,sim),rise=riseTarget($('doughStyle').value);
+  const risk=flourRisk(c,sim),rise=riseTarget(c.style);
   const gen=genericYeastModel(c,sim);
   const mult=yeastTypes[c.yeastType].mult;
   const modelSelected=clamp(gen.idy*mult,low,high);      // modelvoorstel binnen de officiële range
@@ -251,7 +251,7 @@ function avpnMidpointYeastAdvice(c){
 }
 
 function yeastRecommendation(c){
-  if($('preset').value==='avpnMid')return avpnMidpointYeastAdvice(c);
+  if(c.presetKey==='avpnMid')return avpnMidpointYeastAdvice(c);
   const sim=simulateFermentation(c);
 
   // Empirisch gekalibreerde thuiscurve. Tijd/temperatuur zit in de geïntegreerde gas-klok;
@@ -266,7 +266,7 @@ function yeastRecommendation(c){
   const mult=yeastTypes[c.yeastType].mult;
   const selected=idy*mult;
   const low=selected*(1-uncertainty),high=selected*(1+uncertainty);
-  const risk=flourRisk(c,sim),rise=riseTarget($('doughStyle').value);
+  const risk=flourRisk(c,sim),rise=riseTarget(c.style);
 
   const warnings=[];
   if(c.fridge>=8&&c.ferm!=='room')warnings.push({cls:'warn',text:L(`Je koelkast staat op ${fmt(c.fridge,1)} °C. Dat is een actieve koude fermentatie, geen sterke retardatie; controleer het deeg eerder.`,`Your refrigerator is at ${fmt(c.fridge,1)} °C. That is active cold fermentation rather than strong retardation; check the dough earlier.`)});
@@ -344,20 +344,24 @@ function update(){
   const estFlour=c.flour||600;
   const recGrams=estFlour*advice.selected/100;
   const lowG=estFlour*advice.low/100, highG=estFlour*advice.high/100;
-  // De bandbreedte is nu het hoofdgetal. Een enkel getal suggereert een
-  // precisie die dit model niet heeft.
-  const nlAdv=currentLang!=='en';
-  $('yeastAdvice').textContent=`${fmt(lowG,2)} – ${fmt(highG,2)} g ${yt.short}`;
+  $('yeastAdvice').textContent=L(`Afwegen voor dit recept: ${fmt(c.yeast,2)} g ${yt.short}`,`Weigh for this recipe: ${fmt(c.yeast,2)} g ${yt.short}`);
+  const mixed=liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
   if(advice.avpnOfficial){
-    const modelG=estFlour*advice.modelRaw/100;
-    $('yeastAdviceDetail').textContent=nlAdv
-      ? `Officiële AVPN-range • rekenkundig midden ${fmt(recGrams,2)} g • dit model stelt ${fmt(modelG,2)} g voor bij 18 u @ 19 °C`
-      : `Official AVPN range • arithmetic midpoint ${fmt(recGrams,2)} g • this model suggests ${fmt(modelG,2)} g for 18 h @ 19 °C`;
+    $('yeastAdviceDetail').textContent=L(
+      `Officiële AVPN-band: ${fmt(lowG,2)}–${fmt(highG,2)} g. Rekenkundig midden: ${fmt(recGrams,2)} g; geen verplicht AVPN-doel.`,
+      `Official AVPN range: ${fmt(lowG,2)}–${fmt(highG,2)} g. Arithmetic midpoint: ${fmt(recGrams,2)} g; not a required AVPN target.`);
   }else{
-    $('yeastAdviceDetail').textContent=nlAdv
-      ? `Midden ${fmt(recGrams,2)} g • onzekerheid ±${fmt(advice.uncertainty*100,0)}% • ${fmt(advice.eq,1)} gistactiviteitsuren @ 21 °C`
-      : `Midpoint ${fmt(recGrams,2)} g • uncertainty ±${fmt(advice.uncertainty*100,0)}% • ${fmt(advice.eq,1)} yeast-activity hours @ 21 °C`;
+    $('yeastAdviceDetail').textContent=L(
+      `Modelstartpunt: circa ${fmt(recGrams,2)} g. Praktische band: ${fmt(lowG,2)}–${fmt(highG,2)} g (±${fmt(advice.uncertainty*100,0)}%). Dit is een vuistregelmarge, geen gemeten betrouwbaarheidsinterval of garantie op hetzelfde resultaat.`,
+      `Model starting point: roughly ${fmt(recGrams,2)} g. Practical range: ${fmt(lowG,2)}–${fmt(highG,2)} g (±${fmt(advice.uncertainty*100,0)}%). This is a heuristic margin, not a measured confidence interval or a guarantee of the same result.`);
   }
+  const applyButton=$('applyYeastAdviceButton');
+  if(applyButton){
+    applyButton.disabled=mixed;
+    applyButton.textContent=mixed?L('Deeg al gemengd · gist staat vast','Dough already mixed · yeast fixed'):L('Gebruik dit gistadvies','Use this yeast advice');
+  }
+  if(mixed)$('yeastAdviceDetail').textContent+=' '+L('De metingen wijzigen alleen toekomstige tijden; de afgewogen gist blijft gelijk.','Measurements only adjust future times; the weighed yeast remains unchanged.');
+  buildScheduleSummary(c);
   renderYeastRangeBar(c,advice,estFlour,yt);
   buildFermentationScience(c,advice);
   buildDeadlineAdvice(c);
@@ -435,11 +439,11 @@ function buildFermentationScience(c,a){
 
   const tempSourceText=currentLang==='en'
     ? (c.doughTempDefault
-        ? 'starting dough: default 24 °C; temperature path estimated'
-        : `starting dough: measured ${fmt(c.doughTemp,1)} °C; subsequent path estimated`)
+        ? 'starting dough: default target 24 °C; temperature path estimated'
+        : `starting dough: planned target ${fmt(c.doughTemp,1)} °C; subsequent path estimated`)
     : (c.doughTempDefault
-        ? 'startdeeg: standaard 24 °C; temperatuurverloop geschat'
-        : `startdeeg: gemeten ${fmt(c.doughTemp,1)} °C; verloop daarna geschat`);
+        ? 'startdeeg: standaarddoel 24 °C; temperatuurverloop geschat'
+        : `startdeeg: ingesteld doel ${fmt(c.doughTemp,1)} °C; verloop daarna geschat`);
   const flourSourceText=currentLang==='en'
     ? (c.flourWKnown
         ? `${esc(c.flourName)} • ${c.flourOfficial&&c.flourWDefault?'manufacturer specification':(c.flourWDefault?'known default':'entered W value')}`
@@ -467,23 +471,23 @@ function buildFermentationScience(c,a){
   </div>`).join('');
   const technicalModelText=currentLang==='en'
     ? `<div class="tech-note">
-        <b>Model values:</b> starting dough ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'default':'measured'}); room ${fmt(c.room,1)} °C; refrigerator ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W unknown'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', manufacturer specification':', known default'):', entered manually'):', no numerical W-risk score'}).
+        <b>Model values:</b> starting dough ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'default target':'planned target'}); room ${fmt(c.room,1)} °C; refrigerator ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W unknown'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', manufacturer specification':', known default'):', entered manually'):', no numerical W-risk score'}).
         Practical thermal model constant: bulk ${fmt(a.sim.bulkTau,2)} h, dough ball ${fmt(a.sim.ballTau,2)} h.
         ${a.avpnOfficial
           ? `AVPN midpoint yeast: IDY-equivalent ${fmt(a.idy,3)}% flour; based on the official 0.1–3 g fresh yeast per litre water range.`
           : `IDY-equivalent guidance ${fmt(a.idy,3)}% flour; salt correction ×${fmt(a.saltFactor,2)}; style correction ×${fmt(a.styleFactor,2)}.`}
         In this model hydration mainly affects the structural/maturation warning and does not directly change yeast activity.
       </div>
-      <div class="tech-note"><b>Evidence & limits:</b> AVPN 2024/2026 is used for traditional dough, timing and yeast reference ranges; Covino et al. (2023) and Di Stasio et al. (2025) for time-dependent changes in pizza dough; general <i>S. cerevisiae</i> literature for the direction of temperature effects; and Caputo for the W260–280 specification of Pizzeria flour. The exact yeast curve, thermal model constants, maturation index and W-risk score are practical home calibrations and have not been validated together as one predictive laboratory model. Yeast conversion: ADY uses a practical 1.25 × IDY default, but manufacturer guidance varies from roughly 1:1 to 1.25:1; fresh yeast ≈ 3 × IDY.</div>`
+      <div class="tech-note"><b>Evidence & limits:</b> AVPN 2024 is used for traditional dough, timing and yeast reference ranges; Covino et al. (2023) and Di Stasio et al. (2025) for time-dependent changes in pizza dough; general <i>S. cerevisiae</i> literature for the direction of temperature effects; and Caputo for the W260–280 specification of Pizzeria flour. The exact yeast curve, thermal model constants, maturation index and W-risk score are practical model assumptions and have not been validated together as one predictive laboratory model. Yeast conversion: ADY uses a practical 1.25 × IDY default, but manufacturer guidance varies from roughly 1:1 to 1.25:1; fresh yeast ≈ 3 × IDY.</div>`
     : `<div class="tech-note">
-        <b>Modelwaarden:</b> startdeeg ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'standaard':'gemeten'}); kamer ${fmt(c.room,1)} °C; koelkast ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W onbekend'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', fabrieksspecificatie':', bekende standaard'):', zelf ingevuld'):', geen numerieke W-risicoscore'}).
+        <b>Modelwaarden:</b> startdeeg ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'standaarddoel':'ingesteld doel'}); kamer ${fmt(c.room,1)} °C; koelkast ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W onbekend'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', fabrieksspecificatie':', bekende standaard'):', zelf ingevuld'):', geen numerieke W-risicoscore'}).
         Praktische thermische modelconstante: bulk ${fmt(a.sim.bulkTau,2)} u, bol ${fmt(a.sim.ballTau,2)} u.
         ${a.avpnOfficial
           ? `AVPN-middengist: IDY-equivalent ${fmt(a.idy,3)}% bloem; gebaseerd op de officiële range 0,1–3 g verse gist per liter water.`
           : `IDY-equivalent advies ${fmt(a.idy,3)}% bloem; zoutcorrectie ×${fmt(a.saltFactor,2)}; stijlcorrectie ×${fmt(a.styleFactor,2)}.`}
         Hydratatie beïnvloedt in dit model vooral de structurele/rijpingswaarschuwing en niet rechtstreeks de gistactiviteit.
       </div>
-      <div class="tech-note"><b>Onderbouwing & grenzen:</b> AVPN 2024/2026 voor traditionele deeg-, tijd- en gistkaders; Covino et al. (2023) en Di Stasio et al. (2025) voor tijdsafhankelijke veranderingen in pizzadeeg; algemene <i>S. cerevisiae</i>-literatuur voor de richting van temperatuureffecten; Caputo voor W260–280 van Pizzeria. De exacte gistcurve, thermische modelconstanten, rijpingsindex en W-risicoscore zijn praktische thuis-kalibraties en niet als één voorspellend model laboratorium-gevalideerd. Gistconversie: ADY gebruikt praktisch 1,25 × IDY als standaard, maar fabrikantadvies varieert grofweg van 1:1 tot 1,25:1; verse gist ≈ 3 × IDY.</div>`;
+      <div class="tech-note"><b>Onderbouwing & grenzen:</b> AVPN 2024 voor traditionele deeg-, tijd- en gistkaders; Covino et al. (2023) en Di Stasio et al. (2025) voor tijdsafhankelijke veranderingen in pizzadeeg; algemene <i>S. cerevisiae</i>-literatuur voor de richting van temperatuureffecten; Caputo voor W260–280 van Pizzeria. De exacte gistcurve, thermische modelconstanten, rijpingsindex en W-risicoscore zijn praktische modelaannames en niet als één voorspellend model laboratorium-gevalideerd. Gistconversie: ADY gebruikt praktisch 1,25 × IDY als standaard, maar fabrikantadvies varieert grofweg van 1:1 tot 1,25:1; verse gist ≈ 3 × IDY.</div>`;
 
   $('fermentationTechnical').innerHTML=`
     <div class="phase-grid">
@@ -494,6 +498,7 @@ function buildFermentationScience(c,a){
 }
 
 function applyYeastAdvice(){
+  if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const c=calc();
   const a=yeastRecommendation(c);
   exactOverride=exactOverride||{h:selectedHydration(),s:selectedSalt(),o:selectedOil(),ySelected:selectedYeastPct()};

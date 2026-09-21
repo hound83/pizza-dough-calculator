@@ -450,17 +450,20 @@ function stepStorageKey(title){
 // aangevinkt als je bol 1 een ander recept gaf. Stappen hebben nu een stabiel
 // semantisch id waarin het recept of saustype verwerkt zit.
 let _stepKeys=[];
+let _stepSchedule=null;
 function step(n,title,text,detail='',id=null){
   const key=id?('s-'+id):stepStorageKey(title);
   _stepKeys.push(key);
   const checked=!!completedSteps[key];
+  const momentKey={weigh:'start',bulk:'bulkStart',cold:'fridgeIn',shape:'shape',ballproof:'ballStart',stone:'stone',bake:'bake'}[id];
+  const moment=_stepSchedule&&momentKey?scheduleMoment(_stepSchedule,momentKey):'';
   return `<div class="step-card${checked?' completed':''}" data-step-key="${key}">
     <label class="step-check" title="${currentLang==='en'?'Mark step complete':'Stap afvinken'}">
-      <input type="checkbox" data-step-key="${key}" ${checked?'checked':''} onchange="toggleStepComplete(this)">
+      <input type="checkbox" aria-labelledby="step-title-${key}" data-step-key="${key}" ${checked?'checked':''} onchange="toggleStepComplete(this)">
       <span class="step-check-mark"></span>
     </label>
     <div class="num">${n}</div>
-    <div class="step-content"><h3>${title}</h3><p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
+    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${L('Gepland','Planned')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
   </div>`;
 }
 
@@ -539,7 +542,7 @@ function fermentationSteps(c,startIndex,live){
             `Skip the warm bulk and refrigerate the dough mass immediately for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`)
         : coldBulkTxt,
       `${skipBulk?skipBulkReason:''}${phaseAdjustmentDetail(c,live,'cold')}${fridgeControl}`,'cold'));
-    arr.push(step(i++,L('Verdelen en opbollen','Divide and shape'),shapeTxt,'','shape'));
+    arr.push(step(i++,L('Koelkast uit · verdelen en opbollen','Out of the fridge · divide and shape'),L('Haal het deeg uit de koelkast. ','Take the dough out of the fridge. ')+shapeTxt,'','shape'));
     arr.push(step(i++,L('Bolrijs','Ball proof'),L(`Laat ${ballSubject} ongeveer <b>${smartHours(p.ball)}</b> bij ongeveer ${fmt(c.room,1)} °C verder rijzen.`,`Let ${ballSubject} continue proofing for about <b>${smartHours(p.ball)}</b> at roughly ${fmt(c.room,1)} °C.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
   }else if(c.ferm==='room'){
     if(!skipBulk)arr.push(step(i++,L('Bulkrijs op kamertemperatuur','Bulk proof at room temperature'),bulkTxt,phaseAdjustmentDetail(c,live,'bulk'),'bulk'));
@@ -647,6 +650,7 @@ function buildSteps(c){
   const oilText=c.o>0?L(` Voeg <b>${fmt(c.oil,0)} g olijfolie</b> pas tegen het einde van het kneden toe.`,` Add <b>${fmt(c.oil,0)} g olive oil</b> only towards the end of the kneading.`):'';
   let i=1,steps=[];
   _stepKeys=[];
+  _stepSchedule=live.effective;
   const wt=waterTempAdvice(c);
   const waterText=waterTemperatureGuidance(c,wt);
   steps.push(step(i++,L('Weeg de ingrediënten','Weigh the ingredients'),
@@ -667,16 +671,16 @@ function buildSteps(c){
       : L('De gist zit al in het deeg; dit is dus geen klassieke autolyse.','The yeast is already in the dough, so this is not a classic autolyse.'),
     'rest'
   ));
-  steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+' '+m.knead+oilText,m.note,'knead'));
+  steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+'<br><br>'+m.knead+oilText,m.note,'knead'));
+  const sci=yeastRecommendation(c);
+  steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
+    L(`Doel-einddeegtemperatuur na het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden, vóór de herstelrust of handmatige finish, in het midden van de deegmassa.`,
+      `Target final dough temperature after kneading: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (default target)':''}. Measure now, immediately after kneading and before the recovery rest or manual finish, in the centre of the dough mass.`),
+    `${L('De gist zit nu al in het deeg. Een afwijkende meting verandert daarom <b>niet</b> achteraf de gistdosering; de calculator past alleen de nog toekomstige fermentatietijden aan.','The yeast is already in the dough. A different measurement therefore does <b>not</b> retroactively change the yeast dose; the calculator only adjusts the future fermentation timings.')}${doughMeasurementControl(c,live)}`,'doughtemp'));
   if(m.finish)steps.push(step(i++,L('Korte handmatige finish','Short manual finish'),m.finish,m.finishNote,'manualfinish'));
   steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
     L('Laat een klein stukje eerst 1–2 min ontspannen en rek het dan rustig uit. Stop wanneer het deeg glad, soepel en elastisch is en voldoende dun kan uitrekken zonder direct te scheuren.','Let a small piece relax for 1–2 min, then stretch it gently. Stop when the dough is smooth, supple and elastic, and can stretch sufficiently thin without tearing immediately.'),
-    L('Tijd, deegtemperatuur, gevoel en windowpane tellen samen. Een maximaal flinterdunne windowpane is niet verplicht; langer mengen is niet automatisch beter.','Time, dough temperature, feel, and windowpane work together. A maximally paper-thin windowpane is not mandatory; longer mixing is not automatically better.'),'devcheck'));
-  const sci=yeastRecommendation(c);
-  steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
-    L(`Doel-einddeegtemperatuur na het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden in het midden van de deegmassa.`,
-      `Target final dough temperature after kneading: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (default target)':''}. Now measure directly after kneading in the centre of the dough mass.`),
-    `${L('De gist zit nu al in het deeg. Een afwijkende meting verandert daarom <b>niet</b> achteraf de gistdosering; de calculator past alleen de nog toekomstige fermentatietijden aan.','The yeast is already in the dough. A different measurement therefore does <b>not</b> retroactively change the yeast dose; the calculator only adjusts the future fermentation timings.')}${doughMeasurementControl(c,live)}`,'doughtemp'));
+    L('Tijd, deegtemperatuur, gevoel en windowpane tellen samen. De doeltemperatuur bereiken bewijst niet dat de gluten voldoende ontwikkeld zijn. Scheurt een ontspannen stukje direct? Neem het herstelpad en beoordeel opnieuw; sterk maar strak deeg heeft vooral rust nodig.','Time, dough temperature, feel, and windowpane work together. Reaching the target temperature does not prove sufficient gluten development. Does a relaxed piece tear immediately? Use the recovery steps and assess again; strong but tight dough mainly needs rest.'),'devcheck'));
   const fs=fermentationSteps(c,i,live);steps.push(...fs.html);i=fs.next;
   steps.push(step(i++,L('Kijk naar het deeg, niet alleen naar de klok','Watch the dough, not just the clock'),
     L(`Richtwaarde bulk: <b>${sci.rise.bulk}</b>. Voor het bakken: <b>${sci.rise.final}</b>.`,

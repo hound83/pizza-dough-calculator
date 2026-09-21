@@ -75,7 +75,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.2.1');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.3.0');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -84,7 +84,25 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.2.1',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.3.0',hasCalculator:true,horizontalOverflow:0});
+        await page.locator('[data-mode-card="dough"]').click();
+        await expect(page.locator('#scheduleSummary')).toBeVisible();
+        await expect(page.locator('#scheduleSummary')).toContainText('1 u 54 min');
+        await expect(page.locator('#yeastAdviceDetail')).toContainText('vuistregelmarge');
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+        await page.screenshot({path:test.info().outputPath('basic-planning.png'),fullPage:true});
+        await page.locator('#bakeDay').selectOption('3');
+        await page.evaluate(()=>showPage(4));
+        await expect(page.locator('#timeline')).toContainText('Koelkast uit');
+        const timeline=await page.locator('#timeline').boundingBox(),steps=await page.locator('#stepsList').boundingBox();
+        expect(timeline.y).toBeLessThan(steps.y);
+        await expect(page.getByRole('checkbox',{name:'Meet de werkelijke deegtemperatuur',exact:true})).toHaveCount(1);
+        await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','true');
+        await page.locator('[data-method="hand"]').click();
+        await expect(page.locator('[data-method="hand"]')).toHaveAttribute('aria-pressed','true');
+        await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','false');
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+        await page.screenshot({path:test.info().outputPath('workflow.png'),fullPage:true});
         expect(failures).toEqual([]);
       });
     }

@@ -3,7 +3,7 @@
 [English](README.md) | [Nederlands](README.nl.md)
 
 [![Version](https://img.shields.io/badge/version-v1.2.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
-[![Tests](https://img.shields.io/badge/regression_tests-89%2F89_passing-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regression_tests-97_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -14,6 +14,8 @@ The downloadable application remains one self-contained `index.html`. The reposi
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [View the v1.2.1 release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
 
 > Tag **v1.0.0** remains the immutable golden behavior baseline. v1.2.1 is the current public release and keeps storage schema 51.
+
+**This branch: v1.3.0 candidate.** Clearer schedule and yeast guidance, explicit fridge events, review fixes and an independent numerical core. The public version remains v1.2.1 until an explicit release. Mixing times, preset durations and model constants are preserved. [Review, scientific limits and code roadmap](docs/V1_3_0_REVIEW_AND_ROADMAP.md).
 
 ## Features
 
@@ -129,8 +131,9 @@ Current result:
 
 ```text
 15 refactor-structure tests passed
-89 bundle regression tests passed
-89 source regression tests passed
+5 numerical-core tests passed
+97 bundle regression tests passed
+97 source regression tests passed
 41 Chromium browser/layout tests passed
 ```
 
@@ -147,7 +150,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eleven fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, and the released v1.2.1 baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the twelve fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, and the separate v1.3.0 candidate baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 
@@ -198,7 +201,7 @@ The standalone root `index.html` remains the downloadable and directly published
 ## Status and roadmap
 
 - **Release:** v1.2.1 is current; tag v1.0.0 remains the immutable historical golden baseline.
-- **Current architecture:** static source HTML, CSS, and eleven JavaScript modules generate the tested standalone publication used by GitHub Pages.
+- **Current architecture:** static source HTML, CSS, and twelve JavaScript modules generate the tested standalone publication used by GitHub Pages.
 - **Audit:** Claude's final v1.2.1 re-audit approved the release after the Marinara fidelity correction and both browser-coverage additions; all 15 + 89 + 89 + 41 checks passed independently.
 - **Small follow-up:** a non-blocking accessibility improvement remains possible for seven extended field labels.
 - **v1.1.0:** a clear **Basic/Full** toggle without creating two separate calculation models.

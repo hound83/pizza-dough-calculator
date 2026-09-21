@@ -1,6 +1,6 @@
 function setMethod(m){
   currentMethod=m;
-  document.querySelectorAll('.method').forEach(b=>b.classList.toggle('active',b.dataset.method===m));
+  document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===m;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
   update();
 }
 
@@ -149,8 +149,8 @@ function renderExperienceMode(){
     ? 'Past alleen de berekende hoeveelheid gist aan.'
     : 'Only changes the calculated yeast amount.';
   if(note)note.textContent=nl
-    ? 'Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.'
-    : 'Basic uses reliable preset values and keeps technical settings out of view. Switching does not change your recipe.';
+    ? 'Basis gebruikt vaste presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.'
+    : 'Basic uses fixed preset values and keeps technical settings out of view. Switching does not change your recipe.';
   if(badge){
     badge.textContent=nl?'Eigen instellingen actief':'Custom settings active';
     badge.classList.toggle('hidden',experienceMode!=='basic'||!hasCustomDoughSettings());

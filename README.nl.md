@@ -5,7 +5,7 @@
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
 [![Versie](https://img.shields.io/badge/versie-v1.2.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
-[![Tests](https://img.shields.io/badge/regressietests-89%2F89_groen-76c990)](tests/test_v50.js)
+[![Tests](https://img.shields.io/badge/regressietests-97_tests-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
@@ -16,6 +16,8 @@ De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.2.1-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
 
 > Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.2.1 is de huidige publieke release en behoudt opslagschema 51.
+
+**Deze branch: v1.3.0-kandidaat.** Duidelijker schema en gistadvies, expliciete koelkastmomenten, correcties uit de review en een afzonderlijke rekenkern. De publieke versie blijft v1.2.1 tot een bewuste release. Mixtijden, preset-tijden en modelconstanten blijven behouden. [Review, wetenschappelijke beperkingen en codeplan](docs/V1_3_0_REVIEW_AND_ROADMAP.md).
 
 ## Wat kan de calculator?
 
@@ -131,8 +133,9 @@ Huidige uitslag:
 
 ```text
 15 refactor-structure tests passed
-89 bundle regression tests passed
-89 source regression tests passed
+5 numerical-core tests passed
+97 bundle regression tests passed
+97 source regression tests passed
 41 Chromium browser/layout tests passed
 ```
 
@@ -149,7 +152,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de elf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de uitgebrachte v1.2.1-baseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de twaalf vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de afzonderlijke v1.3.0-kandidaatbaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -200,7 +203,7 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 ## Status en roadmap
 
 - **Release:** v1.2.1 is de huidige release; tag v1.0.0 blijft de onveranderlijke historische golden baseline.
-- **Huidige architectuur:** statische bron-HTML, CSS en elf JavaScriptmodules genereren de geteste standalone publicatie voor GitHub Pages.
+- **Huidige architectuur:** statische bron-HTML, CSS en twaalf JavaScriptmodules genereren de geteste standalone publicatie voor GitHub Pages.
 - **Audit:** Claude keurde v1.2.1 in de definitieve heraudit goed na de Marinara-fideliteitscorrectie en beide browserdekkingsaanvullingen; alle 15 + 89 + 89 + 41 controles slaagden onafhankelijk.
 - **Kleine follow-up:** voor zeven uitgebreide veldlabels blijft een niet-blokkerende toegankelijkheidsverbetering mogelijk.
 - **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.

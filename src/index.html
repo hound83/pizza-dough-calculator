@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v1.2.1</title>
+<title>Pizzadeegcalculator v1.3.0</title>
 <link href="assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
@@ -217,6 +217,7 @@
 <div class="deadline-advice hidden" id="deadlineAdvice"></div>
 </div>
 </div>
+<div class="schedule-summary" id="scheduleSummary"></div>
 <div class="advisor">
 <div class="advisor-result">
 <b id="yeastAdvice">Gistadvies berekenen</b>
@@ -413,10 +414,10 @@
 <h2>Kneedmethode</h2>
 <p class="hint">De ingrediënten blijven hetzelfde; de meng- en kneedstappen passen zich aan.</p>
 <div class="method-tabs">
-<button class="method" data-method="hand" onclick="setMethod('hand')">✋ Hand</button>
-<button class="method active" data-method="kitchenaid" onclick="setMethod('kitchenaid')">KitchenAid</button>
-<button class="method" data-method="kenwood" onclick="setMethod('kenwood')">Kenwood</button>
-<button class="method" data-method="pro" onclick="setMethod('pro')">Spiraalkneder</button>
+<button class="method" data-method="hand" aria-pressed="false" onclick="setMethod('hand')">✋ Hand</button>
+<button class="method active" data-method="kitchenaid" aria-pressed="true" onclick="setMethod('kitchenaid')">KitchenAid</button>
+<button class="method" data-method="kenwood" aria-pressed="false" onclick="setMethod('kenwood')">Kenwood</button>
+<button class="method" data-method="pro" aria-pressed="false" onclick="setMethod('pro')">Spiraalkneder</button>
 </div>
 <div id="mixerCapacityNote"></div>
 <div class="badges" id="recipeBadges"></div>
@@ -425,6 +426,11 @@
 <button class="btn secondary" onclick="window.print()">Print stappen</button>
 <button class="btn ghost" onclick="copyRecipe()">Kopieer recept</button>
 </div>
+</div>
+<div class="card">
+<h2>Jouw tijdlijn</h2>
+<p class="hint">Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen. Zonder baktijd zie je de totale doorlooptijd en wat er achter elkaar gebeurt.</p>
+<div class="timeline" id="timeline"></div>
 </div>
 <div class="card">
 <h2>Alle stappen</h2><div class="steps-progress" id="stepsProgress">
@@ -439,11 +445,6 @@
 </div>
 </div>
 <div>
-<div class="card">
-<h2>Jouw tijdlijn</h2>
-<p class="hint">Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen. Zonder baktijd zie je de totale doorlooptijd en wat er achter elkaar gebeurt.</p>
-<div class="timeline" id="timeline"></div>
-</div>
 <div class="card mode-sauce" id="shoppingCard">
 <h2 id="shoppingHeading">Ingrediënten voor de pizza's</h2>
 <div id="shoppingList"></div>
@@ -454,7 +455,7 @@
 </div>
 <div class="card">
 <h2>Deeglogboek &amp; kalibratie</h2>
-<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.2.1 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
+<p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.3.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
 <div class="form-grid align-fields">
 <label>Werkelijke watertemperatuur (°C)
   <input class="field" id="logWaterTemp" max="50" min="0" step="0.5" type="number" placeholder="bijv. 18"/>

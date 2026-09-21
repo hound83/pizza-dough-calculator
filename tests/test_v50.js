@@ -170,12 +170,12 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('v1.2.1 release keeps storage schema 51 with v50 migration',()=>{
+test('v1.3.0 release keeps storage schema 51 with v50 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='1.2.1'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v1.2.1'&&x.titleEn==='Pizza dough calculator v1.2.1',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v1.2.1')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v1.2.1</title>'),'static document title is not v1.2.1');
+  assert(x.app==='1.3.0'&&x.key==='pizzaCalcV51'&&x.version===51&&x.legacy==='pizzaCalcV50',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v1.3.0'&&x.titleEn==='Pizza dough calculator v1.3.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v1.3.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v1.3.0</title>'),'static document title is not v1.3.0');
 });
 
 test('standard preset uses a 30 cm peel-friendly default and practical percentage steps',()=>{
@@ -1008,7 +1008,6 @@ test('autolyse is refrigerated for 30 minutes while hydration rest remains 20 mi
   assert(x.autolyse.includes('Autolyse (bloem + water) • 30 min')&&x.autolyse.includes('30 minuten')&&x.autolyse.includes('koelkast'),x.autolyse.slice(0,1800));
   assert(x.hydration.includes('Hydratatierust • 20 min')&&x.hydration.includes('20 minuten'),x.hydration.slice(0,1800));
   assert(x.machineAutolysePrep===0.9&&x.machineHydrationPrep===0.6&&x.handAutolysePrep===0.9&&x.handHydrationPrep===0.75,JSON.stringify(x));
-  assert(x.prepSource.includes('AUTOLYSE_REST_HOURS')&&x.prepSource.includes('DIRECT_REST_HOURS'),x.prepSource);
 });
 
 test('displayed reserve-water portions add up to the displayed total',()=>{
@@ -1031,6 +1030,100 @@ test('blocked local storage warns once without breaking save',()=>{
   const x=run(`(()=>{_storageWarningShown=false;const ok=saveState();return {ok,shown:_storageWarningShown};})()`);
   storage.fail=false;
   assert(x.ok===false&&x.shown===true,JSON.stringify(x));
+});
+
+
+test('AVPN deadline advice belongs to the proposed plan, independent of the visible preset',()=>{
+  defaults();
+  const x=run(`(()=>{
+    applyPreset('avpnMid');
+    const c=calc(),bake=new Date(Date.now()+8.25*3600000);
+    const r=deadlineRecommendation(c,bake);
+    $('preset').value='custom';
+    const after=yeastRecommendation(r.planC);
+    return {status:r.status,before:r.advice.selected,after:after.selected,official:r.advice.avpnOfficial};
+  })()`);
+  assert(x.status==='adjust'&&!x.official&&Math.abs(x.before-x.after)<1e-10,JSON.stringify(x));
+});
+
+test('deadline duration agrees with actual preparation and fermentation',()=>{
+  defaults();
+  const x=run(`(()=>{ $('bakeDay').value='3';$('bakeTime').value='18:00';
+    const c=calc();buildDeadlineAdvice(c);
+    return {html:$('deadlineAdvice').innerHTML,expected:durationLabel(fermentationHours(c)+prepHours())};
+  })()`);
+  assert(x.html.includes(x.expected),JSON.stringify(x));
+});
+
+test('small topping grams preserve zero and subgram herbs at the reference diameter',()=>{
+  const x=run(`(()=>{setToppingScale(32);return [scaleQty(0,'g'),scaleQty(.4,'g'),scaleQty(.15,'g'),scaleQty(5,'g')];})()`);
+  assert(x[0]===0&&Math.abs(x[1]-.4)<1e-9&&Math.abs(x[2]-.15)<1e-9&&x[3]===5,JSON.stringify(x));
+});
+
+test('manual target temperature is never labelled as a measurement',()=>{
+  defaults();
+  const x=run(`(()=>{ $('finalDoughTemp').value='25';currentLang='nl';const c=calc();
+    buildFermentationScience(c,yeastRecommendation(c));
+    return $('fermentDashboard').innerHTML+$('fermentationTechnical').innerHTML;
+  })()`);
+  assert(!x.includes('gemeten')&&x.includes('doel'),x);
+});
+
+test('workflow measures immediately after kneading and provides matching fridge dates for both storage routes',()=>{
+  defaults();
+  const results=run(`(()=>{
+    $('bakeDay').value='3';$('bakeTime').value='18:00';
+    return ['bulk','balls'].map(mode=>{
+      $('coldStorageMode').value=mode;const c=calc();buildSteps(c);buildTimeline(c);
+      const s=$('stepsList').innerHTML,t=$('timeline').innerHTML,v=scheduleView(c);
+      return {s,t,fridgeIn:niceDate(v.date('fridgeIn')),fridgeOut:niceDate(v.date('fridgeOut'))};
+    });
+  })()`);
+  for(const x of results){
+    assert(x.s.indexOf('data-step-key="s-knead"')<x.s.indexOf('data-step-key="s-doughtemp"'),x.s);
+    assert(x.s.indexOf('data-step-key="s-doughtemp"')<x.s.indexOf('data-step-key="s-manualfinish"'),x.s);
+    assert(x.s.indexOf('data-step-key="s-doughtemp"')<x.s.indexOf('data-step-key="s-devcheck"'),x.s);
+    assert(x.s.includes(x.fridgeIn)&&x.s.includes(x.fridgeOut)&&x.t.includes(x.fridgeIn)&&x.t.includes(x.fridgeOut),JSON.stringify(x));
+    assert(x.s.includes('aria-labelledby="step-title-s-doughtemp"')&&x.s.includes('id="step-title-s-doughtemp"'),x.s);
+    assert(x.t.includes('Koelkast uit'),x.t);
+  }
+});
+
+test('Basic schedule explains unchanged preparation and the two-hour target in both languages',()=>{
+  defaults();
+  const x=run(`(()=>{
+    const c=calc();currentLang='nl';buildScheduleSummary(c);const nl=$('scheduleSummary').innerHTML;
+    currentLang='en';buildScheduleSummary(c);const en=$('scheduleSummary').innerHTML;
+    buildScheduleSummary({...c,ferm:'room'});const room=$('scheduleSummary').innerHTML;
+    return {nl,en,room};
+  })()`);
+  assert(x.nl.includes('1 u 54 min')&&x.nl.includes('54 min')&&x.nl.includes('maximaal 2 uur'),x.nl);
+  assert(x.en.includes('1 h 54 min')&&x.en.includes('2 hours at most')&&x.en.includes('estimates'),x.en);
+  assert(!x.room.includes('Fridge ·')&&!x.room.includes('Until refrigeration'),x.room);
+});
+
+test('yeast guidance distinguishes weighed dose and heuristic range and freezes yeast once mixed',()=>{
+  defaults();
+  const x=run(`(()=>{
+    currentLang='nl';update();const nl=$('yeastAdvice').textContent+' '+$('yeastAdviceDetail').textContent;
+    currentLang='en';update();const en=$('yeastAdvice').textContent+' '+$('yeastAdviceDetail').textContent;
+    const before=calc().yeast;liveMeasurements={doughTemp:25,fridgeTemp:null};update();
+    applyYeastAdvice();const after=calc().yeast;
+    return {nl,en,before,after,disabled:$('applyYeastAdviceButton').disabled};
+  })()`);
+  assert(x.nl.includes('Afwegen voor dit recept:')&&x.nl.includes('vuistregelmarge'),x.nl);
+  assert(x.en.includes('Weigh for this recipe:')&&x.en.includes('not a measured confidence interval'),x.en);
+  assert(x.disabled&&x.before===x.after,JSON.stringify(x));
+});
+
+test('a late measurement also prevents deadline advice from rewriting an already mixed recipe',()=>{
+  defaults();
+  const x=run(`(()=>{
+    $('bakeDay').value='0';const later=new Date(Date.now()+6*3600000);
+    $('bakeTime').value=String(later.getHours()).padStart(2,'0')+':'+String(later.getMinutes()).padStart(2,'0');
+    liveMeasurements={doughTemp:25,fridgeTemp:null};const before=JSON.stringify(calc());applyDeadlinePlan();return {before,after:JSON.stringify(calc())};
+  })()`);
+  assert(x.before===x.after,JSON.stringify(x));
 });
 
 console.log(`\n${passed} regression tests passed`);

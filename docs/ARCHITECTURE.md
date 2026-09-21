@@ -7,14 +7,14 @@ This architecture makes golden v1.0.0 easier to maintain without changing produc
 1. Tag `v1.0.0` remains the immutable functional reference; `main` may advance through behavior-equivalent architecture and documentation changes.
 2. The shipped application requires no framework, package dependency, transpiler, or production build at runtime.
 3. GitHub Pages serves the generated standalone root `index.html` directly.
-4. Maintainable sources live under `src/`; eleven classic browser scripts load there in a fixed order.
+4. Maintainable sources live under `src/`; twelve classic browser scripts load there in a fixed order.
 5. Historical v1.0.0 hashes remain immutable evidence. Approved feature versions may change the current bundle with focused regression coverage and an explicit migration path.
 
 Classic scripts are a deliberate intermediate architecture. They preserve the existing inline HTML handlers and shared global lexical runtime without rewriting hundreds of calls at once. Fixed load order and ownership tests make this shared runtime explicit instead of merely implicit.
 
 ## Distribution model
 
-`src/` is the source of truth for application code. `tools/bundle.js` reads `src/index.html`, inlines the stylesheet and the eleven scripts without changing their bytes, and writes the standalone root `index.html`. The generated root file is committed so GitHub Pages and downloaded offline use require no build step.
+`src/` is the source of truth for application code. `tools/bundle.js` reads `src/index.html`, inlines the stylesheet and the twelve scripts without changing their bytes, and writes the standalone root `index.html`. The generated root file is committed so GitHub Pages and downloaded offline use require no build step.
 
 ```text
 src/index.html + src/assets/css/app.css + src/assets/js/*.js
@@ -31,26 +31,28 @@ src/index.html + src/assets/css/app.css + src/assets/js/*.js
 
 | Order | File | Owned responsibility |
 |---:|---|---|
-| 1 | `foundation.js` | safe browser-storage wrapper, numeric fields, global UI state, and product version |
-| 2 | `translations.js` | static Dutch/English dictionary and targeted additions |
-| 3 | `i18n.js` | translation engine, language switching, and localized text helpers |
-| 4 | `catalog.js` | yeast, flour, dough-style, sauce, temperature, ingredient, and pizza data |
-| 5 | `pizza-picker.js` | per-ball customizations, filters, search, modal controls, and explicit picker selection |
-| 6 | `dough-fermentation.js` | baker's percentages, ball sizing, thermal model, yeast advice, presets, and main update cycle |
-| 7 | `sauce-recipes.js` | sauce aggregation, recipe summaries, pizza customization, and kneading instructions |
-| 8 | `fermentation-live.js` | DDT/water advice, live temperature corrections, solver, and checkable fermentation steps |
-| 9 | `planning-shopping.js` | deadline planning, timeline, shopping, oven advice, copy output, and ingredients modal |
-| 10 | `navigation-logbook.js` | wizard navigation, app modes, recipe copying, and dough-log presentation |
-| 11 | `persistence-bootstrap.js` | schema-51 persistence with migration from schema 50, event registration, and the sole `DOMContentLoaded` bootstrap |
+| 1 | `calculation-core.js` | DOM-independent thermal exchange, phase simulation, generic yeast model, preparation and schedule offsets |
+| 2 | `foundation.js` | safe browser-storage wrapper, numeric fields, global UI state, and product version |
+| 3 | `translations.js` | static Dutch/English dictionary and targeted additions |
+| 4 | `i18n.js` | translation engine, language switching, and localized text helpers |
+| 5 | `catalog.js` | yeast, flour, dough-style, sauce, temperature, ingredient, and pizza data |
+| 6 | `pizza-picker.js` | per-ball customizations, filters, search, modal controls, and explicit picker selection |
+| 7 | `dough-fermentation.js` | baker's percentages, ball sizing, translated model presentation, yeast advice, presets, and main update cycle |
+| 8 | `sauce-recipes.js` | sauce aggregation, recipe summaries, pizza customization, and kneading instructions |
+| 9 | `fermentation-live.js` | DDT/water advice, live temperature corrections, solver, and checkable fermentation steps |
+| 10 | `planning-shopping.js` | deadline planning, timeline, shopping, oven advice, copy output, and ingredients modal |
+| 11 | `navigation-logbook.js` | wizard navigation, app modes, recipe copying, and dough-log presentation |
+| 12 | `persistence-bootstrap.js` | schema-51 persistence with migration from schema 50, event registration, and the sole `DOMContentLoaded` bootstrap |
 
-The order is a contract: later modules may use functions and state from earlier modules. Function declarations may also call later-loaded functions after user interaction, because all eleven scripts have loaded before the user can operate the application.
+The order is a contract: later modules may use functions and state from earlier modules. Function declarations may also call later-loaded functions after user interaction, because all twelve scripts have loaded before the user can operate the application.
 
 ## Ownership rules
 
 - Only `persistence-bootstrap.js` owns `SAVE_KEY`, `SAVE_VERSION`, migration, and `DOMContentLoaded`.
 - Only `foundation.js` owns `APP_VERSION`, language state, and generic DOM/numeric helpers; dictionary data and the translation engine have separate owners.
 - Recipe and ingredient data belong in `catalog.js`; picker interaction belongs in `pizza-picker.js`.
-- `dough-fermentation.js` contains dough and fermentation calculations **and** their form orchestration. Extracting a DOM-independent calculation core is a separate architecture step; this refactor only relocates existing code.
+- `calculation-core.js` owns the numerical core and reads no DOM, language or persistence state. `dough-fermentation.js` adapts form state into explicit inputs and presents translated results. DDT staging and live optimisation remain follow-up extraction work.
+- `planning-shopping.js` uses shared schedule offsets for the Basic summary, timeline and step timestamps. Recipe identity and style travel with each calculated or proposed recipe; they are not inferred from an unrelated visible preset.
 - `src/index.html` owns structure and script order only; presentation belongs in `src/assets/css/app.css`.
 - `navigation-logbook.js` owns the independent Basic/Full display state. This state controls visibility only and must never rewrite recipe values.
 - Remaining inline handlers form the existing public browser API. New interactions should use `addEventListener` in the owning module.
@@ -65,9 +67,9 @@ The order is a contract: later modules may use functions and state from earlier 
 | v1.0.0 CSS | `262e12b5356f5a50c63aa7cd7249b3c5c8b101d8954f076de1360efbc222b896` |
 | v1.0.0 JavaScript | `2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7` |
 
-The current release bundle is no longer expected to equal the historical hashes. The test reconstructs the current standalone file exactly from `src/`, keeps the historical v1.0.0 and released v1.1.0 hashes documented, pins the released v1.1.1, v1.2.0, and v1.2.1 baselines separately, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
+The current release bundle is no longer expected to equal the historical hashes. The test reconstructs the current standalone file exactly from `src/`, keeps the historical v1.0.0 and released v1.1.0 hashes documented, preserves the released v1.1.1, v1.2.0, and v1.2.1 baselines and pins the explicitly requested v1.3.0 candidate separately, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
 
-`tests/test_v50.js` runs all 89 functional regressions against both the modular source and the standalone bundle. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, the separate 30-minute cold-autolyse and 20-minute hydration-rest paths, the full hand/machine preparation-time matrix, exact two-minute KitchenAid speed-2 stage, rested-windowpane recovery without extra machine time, and displayed reserve-water portions that exactly sum to the displayed total. v1.2 calculation coverage adds the heat-capacity equilibrium, exact thermal stage order, shared rest constants, eight approved nominal outputs, affine prediction, room-temperature slope pins, honest unattainable metadata, bilingual main/reserved-water guidance, route-correct hot-water warnings, and a 1,920-case normal-kitchen DDT matrix. Basic-mode coverage distinguishes ordinary recipe inputs from intentional technical overrides. Patch coverage also protects the 30 cm / 220 g default without overwriting a saved 32 cm recipe, percentage spinner grids including the first off-grid preset snap, localized count grammar including rounded English hour labels, shared dough-ball-weight formatting, the repaired translation set, Marinara's distinct sauce and 5 g finishing-EVOO layers without duplicated garlic or oregano, and the complete two-group sauce-choice partition.
+`tests/test_v50.js` runs all 97 functional regressions against both the modular source and the standalone bundle. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, the separate 30-minute cold-autolyse and 20-minute hydration-rest paths, the full hand/machine preparation-time matrix, exact two-minute KitchenAid speed-2 stage, rested-windowpane recovery without extra machine time, and displayed reserve-water portions that exactly sum to the displayed total. v1.2 calculation coverage adds the heat-capacity equilibrium, exact thermal stage order, shared rest constants, eight approved nominal outputs, affine prediction, room-temperature slope pins, honest unattainable metadata, bilingual main/reserved-water guidance, route-correct hot-water warnings, and a 1,920-case normal-kitchen DDT matrix. Basic-mode coverage distinguishes ordinary recipe inputs from intentional technical overrides. Patch coverage also protects the 30 cm / 220 g default without overwriting a saved 32 cm recipe, percentage spinner grids including the first off-grid preset snap, localized count grammar including rounded English hour labels, shared dough-ball-weight formatting, the repaired translation set, Marinara's distinct sauce and 5 g finishing-EVOO layers without duplicated garlic or oregano, and the complete two-group sauce-choice partition.
 
 `tests/browser/refactor.spec.js` runs 41 Chromium checks. One infrastructure contract protects the implicit `/favicon.ico` request made by full Chromium. The remaining checks cover the standalone bundle and modular source: six viewport widths (320, 390, 430, 760, 1024, and 1280 px) verify initialization, page/console/request failures, and horizontal fit, while focused checks protect the Basic/Full contract, ordinary Basic input, explicit yeast-advice application, persistence, migration, real ArrowUp/ArrowDown percentage grids without loss of manually typed precision, bilingual main/reserved-water output, cold-tap versus ice-water guidance, route-correct hot-water warnings, both native collapsed sauce-disclosure surfaces, and keyboard activation of the summary and sauce choice. The spinner test starts from the untouched 0.17% default yeast value, verifies the browser's first alignment to 0.175%, and then verifies the full 0.025-point step to 0.2%. The three phone sizes additionally protect the full-height single-pane recipe catalogue, non-autofocused search, the horizontally scrollable filter row, the catalogue-to-customization transition, back navigation, modal fit, and explicit click selection that cannot be changed by hover.
 
@@ -82,8 +84,10 @@ Playwright is a development-only dependency. It is not bundled into `index.html`
 5. Do not automatically update golden hashes after an intentional behavioral change; first document why the branch is no longer behavior-neutral and establish the reviewed new baseline.
 6. Test layout, keyboard behavior, and native browser signals in Chromium at the relevant viewports.
 
+`tests/calculation-core.test.cjs` adds five Node tests for physical invariants, invalid-input handling, explicit style context, route-consistent schedule offsets and zero-duration behavior. These check numerical correctness, not real-world model accuracy. Responsive browser cases also exercise the actual planning and workflow screens, fridge-out, timeline placement, checkbox names and method-button state.
+
 ## Deliberate follow-ups
 
-ES modules, removal of the remaining inline handlers, and extraction of a DOM-independent calculation core may be valuable later, but each is a separate architecture step. They change name resolution, coupling, or the public browser API and must not be hidden in unrelated feature work. The remaining low-severity accessibility improvement from the golden audit is also a separate follow-up.
+Further extraction of DDT staging and live optimisation, removal of remaining inline handlers, explicit validated recipe state, and eventual translation consolidation are staged in [the v1.3.0 roadmap](V1_3_0_REVIEW_AND_ROADMAP.md). Do not combine a storage migration or numerical recalibration with these changes without independent evidence.
 
-Claude's first v1.2.1 audit also reproduced a pre-existing unguarded `deadlineRecommendation()` path for a bake time roughly 48 hours ahead. The same behavior exists in released v1.2.0 and is outside this localization/recipe/UI patch. It must be handled as a separate planning fix with its own functional matrix rather than being folded silently into v1.2.1.
+The earlier handoff mentioned a roughly 48-hour deadline crash. This review did not reproduce that report and does not claim to fix it. The reproduced deadline defects are the inherited AVPN identity in a proposed custom schedule and inconsistent preparation allowances; both have regression coverage.

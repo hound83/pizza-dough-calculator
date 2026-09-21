@@ -162,7 +162,7 @@ function loadState(){
     });
 
     suppressCustom=false;
-    document.querySelectorAll('.method').forEach(b=>b.classList.toggle('active',b.dataset.method===currentMethod));
+    document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===currentMethod;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
     // Oude versiesleutels opruimen zodat ze niet jaren later terugkomen.
     LEGACY_KEYS.forEach(k=>SAFE.del(k));
     saveState();
