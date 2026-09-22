@@ -10,6 +10,8 @@ Treat `docs/PRODUCT_GUARDRAILS.md` as the canonical source for non-negotiable pr
 
 ## v2.0.0 review: current candidate
 
+Read [the response to your PR #16 crosscheck](docs/V2_0_0_CLAUDE_FOLLOWUP.md) for the three corrections and Michael’s authorized Basic/Full refinement. The original [crosscheck](docs/Claude_v2.0.0_PR16_crosscheck.md) is preserved.
+
 Review [the implementation, acceptance map and verification](docs/V2_0_0_IMPLEMENTATION_REVIEW.md) first, then [the complete accepted design](docs/V2_0_0_ACCEPTED_DESIGN.md). Compare `feature/v2.0-kitchen-workflow` against released v1.4.1 / main `0674eed`. All six later workflow proposals are explicitly authorized for this single v2 candidate. Schema 53 and eighteen modules are intentional. The three additional numerical investigations remain separate research; app development and feedback remain parked. Main stays at 1.4.1 pending review.
 
 Prioritize state ownership and migration, rounded parent/child mass conservation, actual versus unknown chronology, undo dependencies, availability conflicts, stable pizza identities and first-launch linkage, transfer privacy, keyboard/mobile flow and retained numerical guardrails. Report current reproducible issues against the final branch HEAD; historical candidate findings below are context. Do not use the old six-proposals exclusion for this authorized candidate.

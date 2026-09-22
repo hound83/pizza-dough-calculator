@@ -104,6 +104,8 @@ ctx.window.window=ctx.window;ctx.window.document=document;ctx.window.navigator=c
 ctx.window.requestAnimationFrame=ctx.requestAnimationFrame;
 vm.createContext(ctx);
 vm.runInContext(script,ctx,{filename:'pizzadeeg_calculator_v50.html'});
+// This DOM harness does not bootstrap; browser tests cover real lock ownership.
+vm.runInContext('_storageWriter=true',ctx);
 
 function setField(id,value,{min='',max='',checked,type,defaultValue=value}={}){
   const el=get(id);el.value=String(value);el.min=String(min);el.max=String(max);
@@ -907,8 +909,8 @@ test('main-water guidance keeps the reserve at room temperature in both language
   const joined=JSON.stringify({nl:x.nl,en:x.en});
   assert(!joined.includes('nog verder drukken')&&!joined.includes('lower final dough temperature further'),joined);
   const steps=run(`(()=>{currentLang='en';buildSteps(calc());const en=$('stepsList').innerHTML;currentLang='nl';buildSteps(calc());return {en,nl:$('stepsList').innerHTML};})()`);
-  assert(steps.en.includes('Target final dough temperature after kneading')&&!steps.en.includes('Target before kneading'),steps.en.slice(0,3000));
-  assert(steps.nl.includes('Doel-einddeegtemperatuur na het kneden')&&!steps.nl.includes('Doel vóór het kneden'),steps.nl.slice(0,3000));
+  assert(steps.en.includes('Target after kneading:')&&!steps.en.includes('Target before kneading'),steps.en.slice(0,3000));
+  assert(steps.nl.includes('Doel na kneden:')&&!steps.nl.includes('Doel vóór het kneden'),steps.nl.slice(0,3000));
 });
 
 test('water handling separates cold tap, ice water, warm water, and room-range notes',()=>{
@@ -1081,11 +1083,11 @@ test('workflow measures immediately after kneading and provides matching fridge 
     });
   })()`);
   for(const x of results){
-    assert(x.s.indexOf('data-step-key="s-knead"')<x.s.indexOf('data-step-key="s-doughtemp"'),x.s);
-    assert(x.s.indexOf('data-step-key="s-doughtemp"')<x.s.indexOf('data-step-key="s-manualfinish"'),x.s);
-    assert(x.s.indexOf('data-step-key="s-doughtemp"')<x.s.indexOf('data-step-key="s-devcheck"'),x.s);
+    assert(x.s.indexOf('data-step-key="s-knead"')<x.s.indexOf('id="stepDoughMeasurement"'),x.s);
+    assert(x.s.indexOf('id="stepDoughMeasurement"')<x.s.indexOf('data-step-key="s-manualfinish"'),x.s);
+    assert(x.s.indexOf('id="stepDoughMeasurement"')<x.s.indexOf('data-step-key="s-devcheck"'),x.s);
     assert(x.s.includes(x.fridgeIn)&&x.s.includes(x.fridgeOut)&&x.t.includes(x.fridgeIn)&&x.t.includes(x.fridgeOut),JSON.stringify(x));
-    assert(x.s.includes('aria-labelledby="step-title-s-doughtemp"')&&x.s.includes('id="step-title-s-doughtemp"'),x.s);
+    assert(x.s.includes('id="stepDoughTemp"')&&x.s.includes('data-measurement-disclosure'),x.s);
     assert(x.t.includes('Koelkast uit'),x.t);
   }
 });

@@ -8,7 +8,8 @@
 <link href="assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
-<div class="app">
+<div id="startupStatus" class="startup-status" role="status">Calculator laden… / Loading calculator…</div>
+<div class="app" inert aria-busy="true">
 <div class="topbar">
 <div class="brand">
 <div class="logo">🍕</div>
@@ -31,17 +32,12 @@
 <button aria-label="Volgende navigatiestappen" class="nav-scroll-button nav-scroll-next" id="navScrollNext" onclick="scrollWizardNav(1)" type="button">›</button>
 </div>
 
-<section class="page active" id="page0">
+<section class="page" id="page0">
 <div class="mode-start">
 <div class="mode-intro">
 <h2>Wat wil je maken?</h2>
 <p>Kies hoe uitgebreid je wilt starten. Dezelfde deegcalculator zit onder alle drie de opties; extra onderdelen verschijnen alleen wanneer je ze nodig hebt.</p>
 </div>
-<div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
-<button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
-<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Uitgebreid</b><span>Alle instellingen en uitleg</span></button>
-</div>
-<p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
 <div class="mode-grid">
 <button class="mode-card" data-mode-card="dough" onclick="selectAppMode('dough')" type="button">
 <div class="mode-icon">🌾</div>
@@ -68,7 +64,13 @@
 <div class="mode-note">Je kunt later altijd wisselen via <b>← Keuze</b>; je ingevulde waarden blijven staan.</div>
 </div>
 </section>
-<section class="page" id="page1">
+<section class="page active" id="page1">
+<div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
+<button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
+<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Uitgebreid</b><span>Alle instellingen en uitleg</span></button>
+</div>
+<p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
+
 <div class="card evening-plan" id="eveningPlan"></div>
 <div class="grid">
 <div>

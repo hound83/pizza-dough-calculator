@@ -6,7 +6,7 @@ module.exports=defineConfig({
   testDir:'./tests/browser',
   fullyParallel:false,
   workers:process.env.CI?2:1,
-  retries:process.env.CI?1:0,
+  retries:0,
   timeout:30_000,
   expect:{timeout:5_000},
   reporter:process.env.CI?'line':'list',

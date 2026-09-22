@@ -15,7 +15,7 @@ const PRESET_TECHNICAL_FIELDS=new Set([
 
 let _saveTimer=null;
 let _storageWarningShown=false;
-let _storageWriter=true;
+let _storageWriter=false;
 let _storageRevision=0;
 let _storageCorrupt=false;
 let _releaseStorageWriter=null;
@@ -366,6 +366,7 @@ function wireEvents(){
 }
 
 document.addEventListener('DOMContentLoaded',async()=>{
+  try{
   await acquireStorageWriter();
   document.querySelectorAll('[data-experience]').forEach(button=>button.addEventListener('click',()=>setExperienceMode(button.dataset.experience)));
   const search=$('pizzaPickerSearch');
@@ -379,6 +380,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   }
   initRecipeOptions();
   wireEvents();
+  wirePanelInteractions();
   wireWorkshopEvents();
   wireEveningEvents();
 
@@ -406,4 +408,12 @@ document.addEventListener('DOMContentLoaded',async()=>{
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible')refreshBakeDayClock();
   });
+  document.querySelector('.app').inert=false;
+  document.querySelector('.app').setAttribute('aria-busy','false');
+  $('startupStatus').hidden=true;
+  document.documentElement.dataset.appReady='true';
+  }catch(error){
+    $('startupStatus').textContent='Laden mislukt. Herlaad de pagina. / Loading failed. Reload the page.';
+    console.error(error);
+  }
 });

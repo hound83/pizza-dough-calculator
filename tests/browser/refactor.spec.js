@@ -58,7 +58,7 @@ async function waitForStablePickerPreview(page){
 }
 
 async function openPicker(page,publication){
-  await page.goto(publication.path,{waitUntil:'load'});
+  await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
   await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="full"]').click();
   await page.evaluate(()=>showPage(3));
   await page.locator('#pizzaRecipeAllButton').click();
@@ -73,7 +73,7 @@ for(const publication of PUBLICATIONS){
       test(`loads without browser or horizontal-layout failures at ${viewport.name}`,async({page})=>{
         const failures=observeBrowserFailures(page);
         await page.setViewportSize({width:viewport.width,height:viewport.height});
-        await page.goto(publication.path,{waitUntil:'load'});
+        await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
 
         await expect(page).toHaveTitle('Pizzadeegcalculator v2.0.0');
         await expect(page.locator('#page1')).toHaveClass(/\bactive\b/);
@@ -98,7 +98,8 @@ for(const publication of PUBLICATIONS){
         await expect(page.locator('#timeline')).toContainText('Koelkast uit');
         const timeline=await page.locator('#timeline').boundingBox(),steps=await page.locator('#stepsList').boundingBox();
         expect(timeline.y).toBeLessThan(steps.y);
-        await expect(page.getByRole('checkbox',{name:'Meet de werkelijke deegtemperatuur',exact:true})).toHaveCount(1);
+        await expect(page.locator('#stepDoughMeasurement')).toBeVisible();
+        await expect(page.locator('#stepDoughTemp')).toBeHidden();
         await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','true');
         await page.evaluate(()=>showPage(1));await page.locator('[data-method="hand"]').click();
         await expect(page.locator('[data-method="hand"]')).toHaveAttribute('aria-pressed','true');
@@ -118,7 +119,7 @@ for(const publication of PUBLICATIONS){
       const page=await context.newPage();
       try{
         await page.clock.install({time:new Date('2026-09-21T21:50:00Z')});
-        await page.goto('http://127.0.0.1:4173'+publication.path,{waitUntil:'load'});
+        await page.goto('http://127.0.0.1:4173'+publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
         await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
         await expect(page.locator('#bakeDay option[value="1"]')).toHaveText('Morgen – dinsdag');
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
@@ -142,7 +143,7 @@ for(const publication of PUBLICATIONS){
     });
 
     test('switches Basic and Full without changing recipe values',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
       await expect(page.locator('#experienceFull b')).toHaveText('Uitgebreid');
       await page.locator('#langEn').click();
@@ -152,14 +153,14 @@ for(const publication of PUBLICATIONS){
       await expect(page.locator('#hydration')).not.toBeVisible();
       const before=await page.locator('#hydration').inputValue();
       await page.locator('.mode-choice-nav').click();
-      await page.evaluate(()=>showModeChooser());await page.locator('#experienceFull').click();
+      await page.locator('[data-workspace="plan"]').click();await page.locator('#experienceFull').click();
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#hydration')).toBeVisible();
       expect(await page.locator('#hydration').inputValue()).toBe(before);
     });
 
     test('keeps Custom hidden during routine Basic input',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       const cases=[
         ['#pizzas','6','input'],['#diameter','30','input'],['#roomTemp','22','input'],['#fridgeTemp','5','input'],
@@ -176,33 +177,33 @@ for(const publication of PUBLICATIONS){
 
     test('persists the display mode and migrates existing v1.0 users to Full',async({page})=>{
       await page.addInitScript(()=>localStorage.setItem('pizzaCalcV50',JSON.stringify({version:50,appMode:'dough',hydration:'67'})));
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await expect(page.locator('#experienceFull')).toHaveAttribute('aria-pressed','true');
-      await page.evaluate(()=>showModeChooser());await page.locator('#experienceBasic').click();
+      await page.locator('[data-workspace="plan"]').click();await page.locator('#experienceBasic').click();
       await page.waitForTimeout(350);
       expect(await page.evaluate(()=>localStorage.getItem('pizzaCalcV50'))).toBeNull();
       expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV53')).version)).toBe(53);
-      await page.reload({waitUntil:'load'});
+      await page.reload({waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       expect(await page.locator('#hydration').inputValue()).toBe('67');
     });
 
     test('shows a custom-settings badge in Basic after Full edits',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
-      await page.evaluate(()=>showModeChooser());await page.locator('#experienceFull').click();
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
+      await page.locator('[data-workspace="plan"]').click();await page.locator('#experienceFull').click();
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await page.locator('#hydration').fill('66');
       await page.locator('#hydration').blur();
       await page.locator('.mode-choice-nav').click();
-      await page.evaluate(()=>showModeChooser());await page.locator('#experienceBasic').click();
+      await page.locator('[data-workspace="plan"]').click();await page.locator('#experienceBasic').click();
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#experienceCustomBadge')).toBeVisible();
       await expect(page.locator('#experienceCustomBadge')).toHaveText('Eigen instellingen actief');
     });
 
     test('keeps explicit yeast advice usable and explained in Basic',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#yeastApplyHelp')).toHaveText('Past alleen de berekende hoeveelheid gist aan.');
       await page.locator('#roomTemp').fill('24');
@@ -215,7 +216,7 @@ for(const publication of PUBLICATIONS){
     });
 
     test('yeast status survives language and display switches without a redundant recipe change',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#applyYeastAdviceButton')).toHaveText('Staat al in je recept');
       await expect(page.locator('#applyYeastAdviceButton')).toBeDisabled();
@@ -238,7 +239,7 @@ for(const publication of PUBLICATIONS){
     });
 
     test('subgram recipe quantities stay localized in the picker, customization, ingredients and steps',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="full"]').click();
       for(const lang of ['nl','en'])for(const diameter of ['30','40']){
         await page.evaluate(({lang,diameter})=>{
@@ -255,8 +256,8 @@ for(const publication of PUBLICATIONS){
     });
 
     test('uses practical percentage spinner grids while preserving off-grid preset precision',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
-      await page.evaluate(()=>showModeChooser());await page.locator('#experienceFull').click();
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
+      await page.locator('[data-workspace="plan"]').click();await page.locator('#experienceFull').click();
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#diameter')).toHaveValue('30');
 
@@ -283,7 +284,7 @@ for(const publication of PUBLICATIONS){
     });
 
     test('renders staged main-water and room-temperature reserve guidance bilingually',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await page.evaluate(()=>{
         currentMethod='kitchenaid';
@@ -309,7 +310,7 @@ for(const publication of PUBLICATIONS){
     });
 
     test('shows practical water bands and route-correct hot-water warnings',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;});
       const weigh=page.locator('div.step-card[data-step-key="s-weigh"]');
@@ -382,7 +383,7 @@ for(const publication of PUBLICATIONS){
     });
 
     test('keeps per-ball sauce customization collapsed and functional',async({page})=>{
-      await page.goto(publication.path,{waitUntil:'load'});
+      await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="full"]').click();
       await page.evaluate(()=>showPage(3));
 

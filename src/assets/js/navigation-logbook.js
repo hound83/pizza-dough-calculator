@@ -162,6 +162,7 @@ function renderExperienceMode(){
 function setExperienceMode(mode){
   experienceMode=mode==='full'?'full':'basic';
   renderExperienceMode();
+  document.querySelectorAll('[data-measurement-disclosure]').forEach(el=>{el.open=experienceMode==='full';});
   scheduleSave();
 }
 

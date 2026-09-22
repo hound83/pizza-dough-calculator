@@ -423,12 +423,20 @@ function livePlanSummaryHtml(c,live,context='dough'){
   }
   return `<div class="live-plan-summary ${cls}">${intro}${residual}${mat}${livePlanChangesHtml(c,live)}</div>`;
 }
+function measurementDisclosure(id,html,kind){
+  const measured=liveMeasurementValue(kind);
+  const title=kind==='fridgeTemp'?L('Koelkasttemperatuur — optioneel','Fridge temperature — optional'):L('Temperatuur meten — optioneel','Measure temperature — optional');
+  return `<details id="${id}" class="measurement-disclosure" data-measurement-disclosure ${experienceMode==='full'?'open':''}><summary>${title}${measured==null?'':` · ${fmt(measured,1)} °C`}</summary>${html}</details>`;
+}
+function measurementPurpose(c){
+  return `<p class="hint">${L(`Doel na kneden: ${fmt(c.doughTemp,1)} °C. Meet één keer direct na het kneden, vóór de herstelrust. Vul hier geen latere kerntemperatuur in.`,`Target after kneading: ${fmt(c.doughTemp,1)} °C. Measure once directly after kneading, before recovery rest. Do not enter a later core temperature here.`)}</p><p class="hint">${L('Leeg laten mag: zonder meting blijft het oorspronkelijke temperatuurplan gelden. Tijden zijn richtlijnen; beoordeel ook volume, soepelheid en spanning. De gist in gemengd deeg blijft vast.','Leaving this blank is fine: without a reading, the original temperature plan remains in use. Times are guides; also assess volume, pliability and tension. Yeast in mixed dough stays fixed.')}</p>`;
+}
 function doughMeasurementControl(c,live){
-  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemeten direct na kneden (°C)','Actually measured directly after kneading (°C)')}<input class="field" type="number" min="10" max="40" step="0.5" value="${liveMeasureDisplay('doughTemp')}" placeholder="${fmt(c.doughTemp,1)}" onchange="setLiveMeasurement('doughTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Doel: ${fmt(c.doughTemp,1)} °C • leeg = oorspronkelijk plan.`,`Target: ${fmt(c.doughTemp,1)} °C • blank = original plan.`)}</div></div>${live.measuredDough!=null?livePlanSummaryHtml(c,live,'dough'):''}</div>`;
+  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemeten direct na kneden (°C)','Actually measured directly after kneading (°C)')}<input class="field" id="stepDoughTemp" type="number" min="10" max="40" step="0.5" value="${liveMeasureDisplay('doughTemp')}" placeholder="${fmt(c.doughTemp,1)}" onchange="setLiveMeasurement('doughTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Doel: ${fmt(c.doughTemp,1)} °C • leeg = oorspronkelijk plan.`,`Target: ${fmt(c.doughTemp,1)} °C • blank = original plan.`)}</div></div>${live.measuredDough!=null?livePlanSummaryHtml(c,live,'dough'):''}</div>`;
 }
 function fridgeMeasurementControl(c,live){
   if(c.ferm==='room')return '';
-  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemiddelde koelkasttemp. bij het deeg (°C)','Actual average refrigerator temp. where the dough sits (°C)')}<input class="field" type="number" min="0" max="15" step="0.5" value="${liveMeasureDisplay('fridgeTemp')}" placeholder="${fmt(c.fridge,1)}" onchange="setLiveMeasurement('fridgeTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Gepland: ${fmt(c.fridge,1)} °C • weet je het niet, laat leeg.`,`Planned: ${fmt(c.fridge,1)} °C • leave blank if unknown.`)}</div></div>${live.measuredFridge!=null?livePlanSummaryHtml(c,live,'fridge'):''}</div>`;
+  return measurementDisclosure('stepFridgeMeasurement',`<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemiddelde koelkasttemp. bij het deeg (°C)','Actual average refrigerator temp. where the dough sits (°C)')}<input class="field" id="stepFridgeTemp" type="number" min="0" max="15" step="0.5" value="${liveMeasureDisplay('fridgeTemp')}" placeholder="${fmt(c.fridge,1)}" onchange="setLiveMeasurement('fridgeTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Gepland: ${fmt(c.fridge,1)} °C • weet je het niet, laat leeg.`,`Planned: ${fmt(c.fridge,1)} °C • leave blank if unknown.`)}</div></div>${live.measuredFridge!=null?livePlanSummaryHtml(c,live,'fridge'):''}</div>`,'fridgeTemp');
 }
 function phaseAdjustmentDetail(c,live,key){
   if(!live.active)return '';
@@ -504,7 +512,8 @@ function pruneCompletedStepState(){
   const liveKeys=new Set(_stepKeys);
   let prunedAny=false;
   Object.keys(completedSteps).forEach(key=>{
-    if(!liveKeys.has(key)){
+    // Retain the historical optional-reading check in old sessions, without counting it.
+    if(key!=='s-doughtemp'&&!liveKeys.has(key)){
       delete completedSteps[key];
       prunedAny=true;
     }
@@ -676,10 +685,8 @@ function buildSteps(c){
   ));
   steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+'<br><br>'+m.knead+oilText,m.note,'knead'));
   const sci=yeastRecommendation(c);
-  steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
-    L(`Doel-einddeegtemperatuur na het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden, vóór de herstelrust of handmatige finish, in het midden van de deegmassa.`,
-      `Target final dough temperature after kneading: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (default target)':''}. Measure now, immediately after kneading and before the recovery rest or manual finish, in the centre of the dough mass.`),
-    `${L('De gist zit nu al in het deeg. Een afwijkende meting verandert daarom <b>niet</b> achteraf de gistdosering; de calculator past alleen de nog toekomstige fermentatietijden aan.','The yeast is already in the dough. A different measurement therefore does <b>not</b> retroactively change the yeast dose; the calculator only adjusts the future fermentation timings.')}${doughMeasurementControl(c,live)}`,'doughtemp'));
+  // A reading is optional information, not another required cooking step.
+  steps.push(`<div class="step-measurement">${measurementDisclosure('stepDoughMeasurement',doughMeasurementControl(c,live)+measurementPurpose(c),'doughTemp')}</div>`);
   if(m.finish)steps.push(step(i++,L('Korte handmatige finish','Short manual finish'),m.finish,m.finishNote,'manualfinish'));
   steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
     L('Laat een klein stukje eerst 1–2 min ontspannen en rek het dan rustig uit. Stop wanneer het deeg glad, soepel en elastisch is en voldoende dun kan uitrekken zonder direct te scheuren.','Let a small piece relax for 1–2 min, then stretch it gently. Stop when the dough is smooth, supple and elastic, and can stretch sufficiently thin without tearing immediately.'),
@@ -753,7 +760,7 @@ function buildSteps(c){
       `At this stone temperature, bake for roughly <b>${bake.time}</b> as a starting point and turn <b>${bake.turn}</b>.`),
     L(`Steentemperatuur is de basis; vlam/bovenwarmte en hoeveelheid beleg blijven mede bepalend. Voor ${pizzaCountLabel(c.pizzas)} achter elkaar: reken op ongeveer <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minuten</b> totale baksessie.`,
       `Stone temperature is the basis; flame/top heat and the amount of topping matter too. For ${pizzaCountLabel(c.pizzas)} in a row, allow roughly <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minutes</b> for the full baking session.`),'bake'));
-  $('stepsList').innerHTML=steps.join('');
+  replaceWorkshopPanel('stepsList',steps.join(''));
   // Vinkjes van stappen die niet meer bestaan opruimen, zodat ze niet
   // eeuwig in localStorage blijven staan en later verkeerd terugkomen.
   pruneCompletedStepState();

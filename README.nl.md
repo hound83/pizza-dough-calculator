@@ -31,7 +31,7 @@ De app heeft drie huidige gebruiksmodi:
 | **Deeg + saus** | Alles van Alleen deeg, plus een losse sausberekening |
 | **Volledige pizza’s** | Deeg, saus, recept per bol, toppings, boodschappenlijst en compleet stappenplan |
 
-Los van die uitvoermodi biedt het beginscherm de weergavemodi **Basis** en **Uitgebreid**. Basis houdt de praktische invoer en resultaten zichtbaar, terwijl presets de technische deegwaarden beheren. Uitgebreid toont alle bestaande instellingen. Wisselen is verliesvrij; bestaande v1.0-gebruikers migreren naar Uitgebreid en nieuwe gebruikers starten in Basis.
+Los van die uitvoermodi biedt Plan de weergavemodi **Basis** en **Uitgebreid**. Basis houdt de praktische invoer en resultaten zichtbaar, terwijl presets de technische deegwaarden beheren. Uitgebreid toont alle bestaande instellingen. In Basis staan temperatuurmetingen optioneel ingeklapt; Uitgebreid toont ze direct. Zonder meting kun je verder en wisselen bewaart bestaande metingen. Wisselen is verliesvrij; bestaande v1.0-gebruikers migreren naar Uitgebreid en nieuwe gebruikers starten in Basis.
 
 Belangrijkste mogelijkheden:
 
@@ -142,7 +142,7 @@ Releasecontroles (zie de Actions-uitslag bij de PR voor de uitvoerstatus):
 31 pure-core tests
 106 bundle regression tests
 106 source regression tests
-125 Chromium browser/layout tests
+139 Chromium browser/layout tests
 ```
 
 De suite controleert onder meer:

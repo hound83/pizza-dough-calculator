@@ -1,7 +1,7 @@
 'use strict';
 const {test,expect}=require('playwright/test');
 for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${path}`,()=>{
-  async function open(page){await page.goto(path);await expect(page.locator('#eveningPlan h2')).toContainText('4');}
+  async function open(page){await page.goto(path);await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');await expect(page.locator('#eveningPlan h2')).toContainText('4');}
   async function expand(page,id){if(!await page.locator(id).evaluate(el=>el.open))await page.locator(`${id} > summary`).click();}
   async function action(page,name){await page.waitForTimeout(550);await page.locator(`[data-evening-action="${name}"]`).click();}
   async function start(page){await page.locator('#eveningPlan [data-evening-action="start"]').click();await expect(page.locator('#kitchenWorkspace')).toContainText('Mengen, rusten en kneden');}
@@ -32,24 +32,24 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
     await open(page);await page.locator('#pizzas').fill('8');await page.locator('#pizzas').blur();
     await page.locator('#eveningSplitDetails summary').click();await page.locator('#splitCapacity').fill('900');await page.locator('#splitCapacity').blur();
     await expect(page.locator('#eveningSplitDetails')).toContainText('4 + 4');await start(page);
-    await page.locator('#kitchenDoughTemp').fill('25');await page.locator('#kitchenDoughTemp').blur();
+    await page.locator('#kitchenDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#kitchenDoughTemp').fill('25');await page.locator('#kitchenDoughTemp').blur();
     await page.locator('[data-evening-action="event-now"]').click();
-    await page.locator('[data-evening-action="start-run"]').click();await page.locator('#kitchenDoughTemp').fill('23');await page.locator('#kitchenDoughTemp').blur();
+    await page.locator('[data-evening-action="start-run"]').click();await page.locator('#kitchenDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#kitchenDoughTemp').fill('23');await page.locator('#kitchenDoughTemp').blur();
     const before=await page.evaluate(()=>({ids:activeEvening().runs.map(r=>r.id),temps:activeEvening().runs.map(r=>r.batch.measurements.doughTemp),events:activeEvening().runs.map(r=>r.batch.events),yeast:calc().yeast}));
     expect(before.temps).toEqual([25,23]);expect(before.events[0].bulkStart).toBeGreaterThan(0);expect(before.events[1].bulkStart).toBeUndefined();
-    await page.reload();await expect(page.locator('#kitchenWorkspace')).toContainText('Beurt 2/2');
+    await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');await expect(page.locator('#kitchenWorkspace')).toContainText('Beurt 2/2');
     expect(await page.evaluate(()=>({ids:activeEvening().runs.map(r=>r.id),temps:activeEvening().runs.map(r=>r.batch.measurements.doughTemp),events:activeEvening().runs.map(r=>r.batch.events),yeast:calc().yeast}))).toEqual(before);
     await page.locator('[data-evening-action="select-run"]').first().click();await expect(page.locator('#kitchenDoughTemp')).toHaveCount(0);
   });
   test('unknown history, correction and undo never invent times or discard measurements',async({page})=>{
-    await open(page);await start(page);await page.locator('#kitchenDoughTemp').fill('25');
+    await open(page);await start(page);await page.locator('#kitchenDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#kitchenDoughTemp').fill('25');
     // Repaint while still editing: native pending change state belongs to the old node.
     await page.evaluate(()=>{eveningNotice='Current phase refreshed';renderKitchen(calc());});
     await unknownThroughProof(page);
     expect(await page.evaluate(()=>({unknown:activeBatch().unknownEvents,temp:activeBatch().measurements.doughTemp,proposal:batchProposal().reason}))).toEqual({unknown:['bulkStart','fridgeIn','fridgeOut'],temp:25,proposal:'unknown-history'});
     await page.locator('[data-evening-action="undo"]').click();
     expect(await page.evaluate(()=>({unknown:activeBatch().unknownEvents,temp:activeBatch().measurements.doughTemp}))).toEqual({unknown:['bulkStart','fridgeIn'],temp:25});
-    await page.reload();expect(await page.evaluate(()=>activeBatch().events.fridgeIn)).toBeUndefined();await expect(page.locator('#kitchenWorkspace')).toContainText('Tijd onbekend');
+    await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');expect(await page.evaluate(()=>activeBatch().events.fridgeIn)).toBeUndefined();await expect(page.locator('#kitchenWorkspace')).toContainText('Tijd onbekend');
     await page.locator('[data-evening-action="finish"]').click();expect(await page.evaluate(()=>evenings.history.at(-1).runs[0].batch.measurements.doughTemp)).toBe(25);
   });
   test('pizza queue keeps names, toppings and first launch linked and preserves unbaked pizzas',async({page})=>{
@@ -63,7 +63,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
     await action(page,'pizza-out');await expect(page.locator('.pizza-finishing')).toContainText('Sam');
     await action(page,'pizza-in');await action(page,'pizza-out');
     await expect(page.locator('.pizza-finishing')).toContainText('Na het bakken');await expect(page.locator('.pizza-finishing')).toContainText('Parma');
-    await page.reload();await expect(page.locator('.pizza-finishing')).toContainText('Parma');
+    await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');await expect(page.locator('.pizza-finishing')).toContainText('Parma');
     await page.locator('[data-evening-action="finish"]').click();expect(await page.evaluate(()=>evenings.history.at(-1).pizzas.filter(p=>p.events.out==null).length)).toBe(2);
   });
   test('templates clear history while private backup restore preserves the running evening exactly',async({page})=>{
@@ -87,18 +87,18 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
   });
   test('a second tab cannot overwrite events and takes over only after the writer closes',async({page,context})=>{
     await open(page);await start(page);await page.locator('[data-evening-action="event-now"]').click();
-    const second=await context.newPage();await second.goto(path);await expect(second.locator('#storageOwnerNotice')).toBeVisible();
+    const second=await context.newPage();await second.goto(path);await expect(second.locator('html')).toHaveAttribute('data-app-ready','true');await expect(second.locator('#storageOwnerNotice')).toBeVisible();
     const before=await page.evaluate(()=>localStorage.getItem(SAVE_KEY));
     expect(await second.evaluate(()=>saveState())).toBe(false);await second.evaluate(()=>resetCalculator());expect(await page.evaluate(()=>localStorage.getItem(SAVE_KEY))).toBe(before);
-    await page.close();await second.reload();await expect(second.locator('#storageOwnerNotice')).toHaveCount(0);expect(await second.evaluate(()=>activeBatch().events.bulkStart)).toBeGreaterThan(0);await second.close();
+    await page.close();await second.reload();await expect(second.locator('html')).toHaveAttribute('data-app-ready','true');await expect(second.locator('#storageOwnerNotice')).toHaveCount(0);expect(await second.evaluate(()=>activeBatch().events.bulkStart)).toBeGreaterThan(0);await second.close();
   });
   test('schema 52 migrates one running batch without inventing past toppings',async({page})=>{
     await open(page);await start(page);await action(page,'event-now');
     const legacy=await page.evaluate(()=>{const d=stateSnapshot();d.version=52;d.workshop.batch=WorkflowCore.clone(activeBatch());d.workshop.history=[{...WorkflowCore.clone(activeBatch()),id:'old-archive',status:'finished'}];delete d.evenings;localStorage.setItem('pizzaCalcV52',JSON.stringify(d));localStorage.removeItem(SAVE_KEY);return d;});
-    await page.reload();await expect(page.locator('#kitchenWorkspace')).toContainText('Bulkrijs');
+    await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');await expect(page.locator('#kitchenWorkspace')).toContainText('Bulkrijs');
     expect(await page.evaluate(()=>activeBatch().events)).toEqual(legacy.workshop.batch.events);
     expect(await page.evaluate(()=>({count:activeEvening().runs.length,provenance:activeEvening().pizzas[0].provenance,archived:evenings.history[0].pizzas,old:localStorage.getItem('pizzaCalcV52')}))).toEqual({count:1,provenance:'legacy-current-choices',archived:[],old:null});
-    await page.reload();expect(await page.evaluate(()=>activeBatch().events)).toEqual(legacy.workshop.batch.events);
+    await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');expect(await page.evaluate(()=>activeBatch().events)).toEqual(legacy.workshop.batch.events);
     await page.locator('[data-workspace="plan"]').click();await expand(page,'#eveningCollectionDetails');await expand(page,'#eveningHistory');await page.locator('.evening-archive > summary').click();await expect(page.locator('.evening-archive')).toContainText('bulk gestart');expect(await page.evaluate(()=>activeBatch().events)).toEqual(legacy.workshop.batch.events);
   });
   test('quota failure during private restore preserves the previous evening',async({page})=>{
@@ -123,7 +123,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
   test('absolute timer survives reload and a refused wake lock stays off',async({page})=>{
     await page.clock.install({time:new Date('2026-09-22T12:00:00Z')});await open(page);await start(page);await expand(page,'#kitchenTimers');
     await page.locator('#restTimerMinutes').fill('5');await page.locator('[data-evening-action="start-timer"]').click();
-    const end=await page.evaluate(()=>activeEvening().timer.endAt);await page.clock.fastForward(2*60000);await page.reload();expect(await page.evaluate(()=>activeEvening().timer.endAt)).toBe(end);
+    const end=await page.evaluate(()=>activeEvening().timer.endAt);await page.clock.fastForward(2*60000);await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');expect(await page.evaluate(()=>activeEvening().timer.endAt)).toBe(end);
     await page.clock.fastForward(4*60000);await expect(page.locator('#eveningTimer')).toContainText('Timer klaar');expect(await page.evaluate(()=>activeBatch().events.bulkStart)).toBeUndefined();
     await page.evaluate(()=>Object.defineProperty(navigator,'wakeLock',{value:{request:async()=>{throw new Error('Refused');}},configurable:true}));
     await page.locator('[data-evening-action="wake"]').click();await expect(page.locator('[data-evening-action="wake"]')).toHaveAttribute('aria-pressed','false');await expect(page.locator('#kitchenWorkspace .info[role="status"]')).toContainText('geweigerd');

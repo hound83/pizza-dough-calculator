@@ -6,6 +6,38 @@ const BATCH_OVEN_FIELDS=new Set(['stoneTemp','preheatMinutes']);
 const workshopDrafts={};
 const workshopPanels=['batchPlanner','batchRunner','scalePlanner','coldStoragePlanner','recipeWorkbench','mixerProfiles','bakeComparison','doughHelp'];
 
+// Native change runs between pointerdown and click. Keep the pressed control
+// mounted until activation has finished; state and storage still update now.
+let panelInteraction=null,panelRenderTimer=null;
+const deferredPanels=new Set();
+function holdPanelRender(id){
+  if(panelInteraction?.id!==id)return false;
+  deferredPanels.add(id);return true;
+}
+function flushPanelRender(){
+  clearTimeout(panelRenderTimer);panelRenderTimer=null;panelInteraction=null;
+  if(deferredPanels.size){deferredPanels.clear();update();}
+}
+function wirePanelInteractions(){
+  const panelFor=node=>{
+    for(let el=node;el;el=el.parentElement)if([...workshopPanels,...eveningPanels,'stepsList'].includes(el.id))return el.id;
+    return null;
+  };
+  const later=delay=>{clearTimeout(panelRenderTimer);panelRenderTimer=setTimeout(flushPanelRender,delay);};
+  document.addEventListener('pointerdown',event=>{
+    flushPanelRender();const id=panelFor(event.target);
+    if(id)panelInteraction={id,pointerId:event.pointerId};
+  },true);
+  document.addEventListener('pointerup',event=>{if(panelInteraction?.pointerId===event.pointerId)later(250);},true);
+  document.addEventListener('click',()=>{if(panelInteraction)later(0);},true);
+  document.addEventListener('pointercancel',()=>{if(panelInteraction)later(0);},true);
+  window.addEventListener('blur',flushPanelRender);
+  document.addEventListener('keydown',event=>{
+    if(!['Tab','Enter',' '].includes(event.key)||panelInteraction)return;
+    const id=panelFor(event.target);if(id){panelInteraction={id};later(0);}
+  },true);
+}
+
 function activeBatch(){return workshop.batch;}
 function workshopId(){return `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;}
 function snapshotRecipe(){
@@ -171,6 +203,7 @@ function renderBatchPanels(){
 }
 
 function replaceWorkshopPanel(id,html){
+  if(holdPanelRender(id))return;
   const root=$(id),notice=id===workshopNoticeFor?workshopNotice:'';
   const noticeKey=JSON.stringify([notice,notice?workshopNoticeAnchor:'']);
   if(!root||(root._workshopHtml===html&&root._workshopNoticeKey===noticeKey))return;
@@ -178,6 +211,8 @@ function replaceWorkshopPanel(id,html){
   const open=[...root.querySelectorAll('details[open]')].map(el=>el.id);
   const focused=document.activeElement,focusId=root.contains?.(focused)?focused.id:null;
   const focusValue=focusId&&focused.tagName==='INPUT'?focused.value:null;
+  const actionSelector='[data-evening-action],[data-workshop-action]';
+  const actionData=root.contains?.(focused)&&focused.matches?.(actionSelector)?JSON.stringify(focused.dataset):null;
   root.innerHTML=html;root._workshopHtml=html;root._workshopNoticeKey=noticeKey;
   for(const key of open){const el=$(key);if(el)el.open=true;}
   if(notice){
@@ -191,6 +226,7 @@ function replaceWorkshopPanel(id,html){
     });
   }
   if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
+  else if(actionData){[...root.querySelectorAll(actionSelector)].find(el=>JSON.stringify(el.dataset)===actionData)?.focus({preventScroll:true});}
 }
 function collectWorkshopDrafts(){
   for(const id of workshopPanels)for(const el of $(id)?.querySelectorAll('[data-draft]')||[])workshopDrafts[el.id]=el.value;

@@ -152,6 +152,13 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 #eveningOptions details,#eveningCollection details,.kitchen-workspace details{margin:14px 0}
 #eveningOptions summary,#eveningCollection summary,.kitchen-workspace summary{cursor:pointer;padding:10px 0;line-height:1.5;min-height:44px}
 .storage-owner{margin:12px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.startup-status{max-width:1200px;margin:20px auto;padding:16px;color:var(--text)}
+.app[inert]{opacity:.55}
+.measurement-disclosure{margin:12px 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px}
+.measurement-disclosure>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;line-height:1.5}
+.measurement-disclosure>label{display:block;max-width:320px}
+.step-measurement{margin:0 0 14px}
+body[data-experience-mode="full"] .measurement-disclosure>summary{display:none}
 .workspace-nav~#page1 .card .card{margin-top:16px;padding:16px;background:transparent}
 @media(max-width:760px){.plan-heading,.kitchen-heading{gap:8px}.kitchen-workspace{padding:16px}.plan-shortcuts{display:block}.plan-shortcuts>.btnrow{margin-top:10px}.checkpoint-row>span,.queue-row>span{width:100%}.queue-controls{width:100%}.queue-controls input{max-width:none;width:100%}.kitchen-ingredients{gap:6px}.kitchen-ingredients span{padding:7px}.workspace-nav{margin:12px 0}.workshop-grid{min-width:0}.kitchen-workspace .field{width:100%;min-width:0}#kitchenInstructions{padding:10px}}
 @media print{.workspace-nav,.workspace-tab,.kitchen-workspace button,.storage-owner{display:none}#kitchenInstructions>summary{display:none}#kitchenInstructions{border:0}}

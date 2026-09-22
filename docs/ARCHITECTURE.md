@@ -112,3 +112,11 @@ The v1.4.0 review follow-up preserves stored event chronology independently of l
 Schema 53 migrates schema 52 only after a successful write. A same-origin Web Lock held for the page lifetime grants one writer; other tabs are read-only until the writer closes and they reload. Storage revision checks add stale-write detection. No server, worker or background alarm service is introduced. Restore validates before writing and asks one explicit confirmation. Shared templates and private backups have separate formats and privacy contracts.
 
 See [the v2 review contract](V2_0_0_IMPLEMENTATION_REVIEW.md) and [the accepted design](V2_0_0_ACCEPTED_DESIGN.md). The v2 browser suite adds split-run independence, unknown chronology, queue identities, migration, import/restore, cross-tab ownership, timers, dates, both languages and the same six viewport widths. All earlier release baselines remain immutable.
+
+## v2 review follow-up
+
+Bootstrap keeps the application inert until state recovery and Web Lock ownership have completed. Writer ownership defaults to false. `data-app-ready="true"` is the explicit browser-test readiness boundary. The first static view is Plan, not the old chooser.
+
+Panel rendering is held through pointer activation and keyboard focus transfer; data mutation and saving remain synchronous. Cancellation releases the hold. Deferred rendering uses current state and restores the focused action when it still exists. The baking queue moves only when its position changes.
+
+Basic/Full is directly available on Plan and changes disclosure visibility without recalculating the recipe. Optional reading disclosures share one control per surface; the classic step list does not count a reading as another cooking step. Existing legacy reading check flags remain stored but do not affect the current progress total.

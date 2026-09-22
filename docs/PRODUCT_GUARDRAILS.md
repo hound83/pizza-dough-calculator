@@ -385,3 +385,15 @@ A focused temperature value survives repaint and is committed before a phase/run
 | singleFile | `8d76bcffb423f365f5fd9091b2458fac303a1c55877cb5b421b119ce8d3144fd` |
 | css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
 | javascript | `235a660a51956c4cac84373e862ef41f36aad03b6c235b638268f7cd979b4bc3` |
+
+### v2.0.0 Claude review and optional Basic readings
+
+Michael explicitly authorized all reviewed corrections and the simpler Basic flow. This supersedes the earlier mandatory post-knead measurement presentation: readings are optional, collapsed in Basic and directly visible in Full, without a numbered measurement step. Both modes retain water/oven advice, model limitations and visual dough checks. Switching modes preserves recipe, readings and progress without recalculation. A post-knead reading still means immediately after kneading, not a later core reading.
+
+Startup remains inert until state recovery and writer ownership resolve; unknown writer ownership cannot save. Input is committed synchronously while native activation protects its button from replacement. Unknown-time actions follow checkpoint order. See V2_0_0_CLAUDE_FOLLOWUP.md; all historical hashes remain untouched.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `259d3cce0186604c3f47a19783d6a2f88b3cec5d79a98c13ac9973f500832bfe` |
+| css | `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9` |
+| javascript | `ca4537f62217ce7ec80dc398cf77342e63b03c9572d4ee8d632c1552a7a6f8ff` |

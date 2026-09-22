@@ -159,6 +159,13 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 #eveningOptions details,#eveningCollection details,.kitchen-workspace details{margin:14px 0}
 #eveningOptions summary,#eveningCollection summary,.kitchen-workspace summary{cursor:pointer;padding:10px 0;line-height:1.5;min-height:44px}
 .storage-owner{margin:12px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.startup-status{max-width:1200px;margin:20px auto;padding:16px;color:var(--text)}
+.app[inert]{opacity:.55}
+.measurement-disclosure{margin:12px 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px}
+.measurement-disclosure>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;line-height:1.5}
+.measurement-disclosure>label{display:block;max-width:320px}
+.step-measurement{margin:0 0 14px}
+body[data-experience-mode="full"] .measurement-disclosure>summary{display:none}
 .workspace-nav~#page1 .card .card{margin-top:16px;padding:16px;background:transparent}
 @media(max-width:760px){.plan-heading,.kitchen-heading{gap:8px}.kitchen-workspace{padding:16px}.plan-shortcuts{display:block}.plan-shortcuts>.btnrow{margin-top:10px}.checkpoint-row>span,.queue-row>span{width:100%}.queue-controls{width:100%}.queue-controls input{max-width:none;width:100%}.kitchen-ingredients{gap:6px}.kitchen-ingredients span{padding:7px}.workspace-nav{margin:12px 0}.workshop-grid{min-width:0}.kitchen-workspace .field{width:100%;min-width:0}#kitchenInstructions{padding:10px}}
 @media print{.workspace-nav,.workspace-tab,.kitchen-workspace button,.storage-owner{display:none}#kitchenInstructions>summary{display:none}#kitchenInstructions{border:0}}
@@ -1197,7 +1204,8 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 </style>
 </head>
 <body>
-<div class="app">
+<div id="startupStatus" class="startup-status" role="status">Calculator laden… / Loading calculator…</div>
+<div class="app" inert aria-busy="true">
 <div class="topbar">
 <div class="brand">
 <div class="logo">🍕</div>
@@ -1220,17 +1228,12 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 <button aria-label="Volgende navigatiestappen" class="nav-scroll-button nav-scroll-next" id="navScrollNext" onclick="scrollWizardNav(1)" type="button">›</button>
 </div>
 
-<section class="page active" id="page0">
+<section class="page" id="page0">
 <div class="mode-start">
 <div class="mode-intro">
 <h2>Wat wil je maken?</h2>
 <p>Kies hoe uitgebreid je wilt starten. Dezelfde deegcalculator zit onder alle drie de opties; extra onderdelen verschijnen alleen wanneer je ze nodig hebt.</p>
 </div>
-<div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
-<button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
-<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Uitgebreid</b><span>Alle instellingen en uitleg</span></button>
-</div>
-<p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
 <div class="mode-grid">
 <button class="mode-card" data-mode-card="dough" onclick="selectAppMode('dough')" type="button">
 <div class="mode-icon">🌾</div>
@@ -1257,7 +1260,13 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 <div class="mode-note">Je kunt later altijd wisselen via <b>← Keuze</b>; je ingevulde waarden blijven staan.</div>
 </div>
 </section>
-<section class="page" id="page1">
+<section class="page active" id="page1">
+<div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
+<button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
+<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Uitgebreid</b><span>Alle instellingen en uitleg</span></button>
+</div>
+<p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
+
 <div class="card evening-plan" id="eveningPlan"></div>
 <div class="grid">
 <div>
@@ -5813,12 +5822,20 @@ function livePlanSummaryHtml(c,live,context='dough'){
   }
   return `<div class="live-plan-summary ${cls}">${intro}${residual}${mat}${livePlanChangesHtml(c,live)}</div>`;
 }
+function measurementDisclosure(id,html,kind){
+  const measured=liveMeasurementValue(kind);
+  const title=kind==='fridgeTemp'?L('Koelkasttemperatuur — optioneel','Fridge temperature — optional'):L('Temperatuur meten — optioneel','Measure temperature — optional');
+  return `<details id="${id}" class="measurement-disclosure" data-measurement-disclosure ${experienceMode==='full'?'open':''}><summary>${title}${measured==null?'':` · ${fmt(measured,1)} °C`}</summary>${html}</details>`;
+}
+function measurementPurpose(c){
+  return `<p class="hint">${L(`Doel na kneden: ${fmt(c.doughTemp,1)} °C. Meet één keer direct na het kneden, vóór de herstelrust. Vul hier geen latere kerntemperatuur in.`,`Target after kneading: ${fmt(c.doughTemp,1)} °C. Measure once directly after kneading, before recovery rest. Do not enter a later core temperature here.`)}</p><p class="hint">${L('Leeg laten mag: zonder meting blijft het oorspronkelijke temperatuurplan gelden. Tijden zijn richtlijnen; beoordeel ook volume, soepelheid en spanning. De gist in gemengd deeg blijft vast.','Leaving this blank is fine: without a reading, the original temperature plan remains in use. Times are guides; also assess volume, pliability and tension. Yeast in mixed dough stays fixed.')}</p>`;
+}
 function doughMeasurementControl(c,live){
-  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemeten direct na kneden (°C)','Actually measured directly after kneading (°C)')}<input class="field" type="number" min="10" max="40" step="0.5" value="${liveMeasureDisplay('doughTemp')}" placeholder="${fmt(c.doughTemp,1)}" onchange="setLiveMeasurement('doughTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Doel: ${fmt(c.doughTemp,1)} °C • leeg = oorspronkelijk plan.`,`Target: ${fmt(c.doughTemp,1)} °C • blank = original plan.`)}</div></div>${live.measuredDough!=null?livePlanSummaryHtml(c,live,'dough'):''}</div>`;
+  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemeten direct na kneden (°C)','Actually measured directly after kneading (°C)')}<input class="field" id="stepDoughTemp" type="number" min="10" max="40" step="0.5" value="${liveMeasureDisplay('doughTemp')}" placeholder="${fmt(c.doughTemp,1)}" onchange="setLiveMeasurement('doughTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Doel: ${fmt(c.doughTemp,1)} °C • leeg = oorspronkelijk plan.`,`Target: ${fmt(c.doughTemp,1)} °C • blank = original plan.`)}</div></div>${live.measuredDough!=null?livePlanSummaryHtml(c,live,'dough'):''}</div>`;
 }
 function fridgeMeasurementControl(c,live){
   if(c.ferm==='room')return '';
-  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemiddelde koelkasttemp. bij het deeg (°C)','Actual average refrigerator temp. where the dough sits (°C)')}<input class="field" type="number" min="0" max="15" step="0.5" value="${liveMeasureDisplay('fridgeTemp')}" placeholder="${fmt(c.fridge,1)}" onchange="setLiveMeasurement('fridgeTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Gepland: ${fmt(c.fridge,1)} °C • weet je het niet, laat leeg.`,`Planned: ${fmt(c.fridge,1)} °C • leave blank if unknown.`)}</div></div>${live.measuredFridge!=null?livePlanSummaryHtml(c,live,'fridge'):''}</div>`;
+  return measurementDisclosure('stepFridgeMeasurement',`<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemiddelde koelkasttemp. bij het deeg (°C)','Actual average refrigerator temp. where the dough sits (°C)')}<input class="field" id="stepFridgeTemp" type="number" min="0" max="15" step="0.5" value="${liveMeasureDisplay('fridgeTemp')}" placeholder="${fmt(c.fridge,1)}" onchange="setLiveMeasurement('fridgeTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Gepland: ${fmt(c.fridge,1)} °C • weet je het niet, laat leeg.`,`Planned: ${fmt(c.fridge,1)} °C • leave blank if unknown.`)}</div></div>${live.measuredFridge!=null?livePlanSummaryHtml(c,live,'fridge'):''}</div>`,'fridgeTemp');
 }
 function phaseAdjustmentDetail(c,live,key){
   if(!live.active)return '';
@@ -5894,7 +5911,8 @@ function pruneCompletedStepState(){
   const liveKeys=new Set(_stepKeys);
   let prunedAny=false;
   Object.keys(completedSteps).forEach(key=>{
-    if(!liveKeys.has(key)){
+    // Retain the historical optional-reading check in old sessions, without counting it.
+    if(key!=='s-doughtemp'&&!liveKeys.has(key)){
       delete completedSteps[key];
       prunedAny=true;
     }
@@ -6066,10 +6084,8 @@ function buildSteps(c){
   ));
   steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+'<br><br>'+m.knead+oilText,m.note,'knead'));
   const sci=yeastRecommendation(c);
-  steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
-    L(`Doel-einddeegtemperatuur na het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden, vóór de herstelrust of handmatige finish, in het midden van de deegmassa.`,
-      `Target final dough temperature after kneading: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (default target)':''}. Measure now, immediately after kneading and before the recovery rest or manual finish, in the centre of the dough mass.`),
-    `${L('De gist zit nu al in het deeg. Een afwijkende meting verandert daarom <b>niet</b> achteraf de gistdosering; de calculator past alleen de nog toekomstige fermentatietijden aan.','The yeast is already in the dough. A different measurement therefore does <b>not</b> retroactively change the yeast dose; the calculator only adjusts the future fermentation timings.')}${doughMeasurementControl(c,live)}`,'doughtemp'));
+  // A reading is optional information, not another required cooking step.
+  steps.push(`<div class="step-measurement">${measurementDisclosure('stepDoughMeasurement',doughMeasurementControl(c,live)+measurementPurpose(c),'doughTemp')}</div>`);
   if(m.finish)steps.push(step(i++,L('Korte handmatige finish','Short manual finish'),m.finish,m.finishNote,'manualfinish'));
   steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
     L('Laat een klein stukje eerst 1–2 min ontspannen en rek het dan rustig uit. Stop wanneer het deeg glad, soepel en elastisch is en voldoende dun kan uitrekken zonder direct te scheuren.','Let a small piece relax for 1–2 min, then stretch it gently. Stop when the dough is smooth, supple and elastic, and can stretch sufficiently thin without tearing immediately.'),
@@ -6143,7 +6159,7 @@ function buildSteps(c){
       `At this stone temperature, bake for roughly <b>${bake.time}</b> as a starting point and turn <b>${bake.turn}</b>.`),
     L(`Steentemperatuur is de basis; vlam/bovenwarmte en hoeveelheid beleg blijven mede bepalend. Voor ${pizzaCountLabel(c.pizzas)} achter elkaar: reken op ongeveer <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minuten</b> totale baksessie.`,
       `Stone temperature is the basis; flame/top heat and the amount of topping matter too. For ${pizzaCountLabel(c.pizzas)} in a row, allow roughly <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minutes</b> for the full baking session.`),'bake'));
-  $('stepsList').innerHTML=steps.join('');
+  replaceWorkshopPanel('stepsList',steps.join(''));
   // Vinkjes van stappen die niet meer bestaan opruimen, zodat ze niet
   // eeuwig in localStorage blijven staan en later verkeerd terugkomen.
   pruneCompletedStepState();
@@ -7147,6 +7163,7 @@ function renderExperienceMode(){
 function setExperienceMode(mode){
   experienceMode=mode==='full'?'full':'basic';
   renderExperienceMode();
+  document.querySelectorAll('[data-measurement-disclosure]').forEach(el=>{el.open=experienceMode==='full';});
   scheduleSave();
 }
 
@@ -7342,6 +7359,38 @@ const BATCH_OVEN_FIELDS=new Set(['stoneTemp','preheatMinutes']);
 const workshopDrafts={};
 const workshopPanels=['batchPlanner','batchRunner','scalePlanner','coldStoragePlanner','recipeWorkbench','mixerProfiles','bakeComparison','doughHelp'];
 
+// Native change runs between pointerdown and click. Keep the pressed control
+// mounted until activation has finished; state and storage still update now.
+let panelInteraction=null,panelRenderTimer=null;
+const deferredPanels=new Set();
+function holdPanelRender(id){
+  if(panelInteraction?.id!==id)return false;
+  deferredPanels.add(id);return true;
+}
+function flushPanelRender(){
+  clearTimeout(panelRenderTimer);panelRenderTimer=null;panelInteraction=null;
+  if(deferredPanels.size){deferredPanels.clear();update();}
+}
+function wirePanelInteractions(){
+  const panelFor=node=>{
+    for(let el=node;el;el=el.parentElement)if([...workshopPanels,...eveningPanels,'stepsList'].includes(el.id))return el.id;
+    return null;
+  };
+  const later=delay=>{clearTimeout(panelRenderTimer);panelRenderTimer=setTimeout(flushPanelRender,delay);};
+  document.addEventListener('pointerdown',event=>{
+    flushPanelRender();const id=panelFor(event.target);
+    if(id)panelInteraction={id,pointerId:event.pointerId};
+  },true);
+  document.addEventListener('pointerup',event=>{if(panelInteraction?.pointerId===event.pointerId)later(250);},true);
+  document.addEventListener('click',()=>{if(panelInteraction)later(0);},true);
+  document.addEventListener('pointercancel',()=>{if(panelInteraction)later(0);},true);
+  window.addEventListener('blur',flushPanelRender);
+  document.addEventListener('keydown',event=>{
+    if(!['Tab','Enter',' '].includes(event.key)||panelInteraction)return;
+    const id=panelFor(event.target);if(id){panelInteraction={id};later(0);}
+  },true);
+}
+
 function activeBatch(){return workshop.batch;}
 function workshopId(){return `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;}
 function snapshotRecipe(){
@@ -7507,6 +7556,7 @@ function renderBatchPanels(){
 }
 
 function replaceWorkshopPanel(id,html){
+  if(holdPanelRender(id))return;
   const root=$(id),notice=id===workshopNoticeFor?workshopNotice:'';
   const noticeKey=JSON.stringify([notice,notice?workshopNoticeAnchor:'']);
   if(!root||(root._workshopHtml===html&&root._workshopNoticeKey===noticeKey))return;
@@ -7514,6 +7564,8 @@ function replaceWorkshopPanel(id,html){
   const open=[...root.querySelectorAll('details[open]')].map(el=>el.id);
   const focused=document.activeElement,focusId=root.contains?.(focused)?focused.id:null;
   const focusValue=focusId&&focused.tagName==='INPUT'?focused.value:null;
+  const actionSelector='[data-evening-action],[data-workshop-action]';
+  const actionData=root.contains?.(focused)&&focused.matches?.(actionSelector)?JSON.stringify(focused.dataset):null;
   root.innerHTML=html;root._workshopHtml=html;root._workshopNoticeKey=noticeKey;
   for(const key of open){const el=$(key);if(el)el.open=true;}
   if(notice){
@@ -7527,6 +7579,7 @@ function replaceWorkshopPanel(id,html){
     });
   }
   if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
+  else if(actionData){[...root.querySelectorAll(actionSelector)].find(el=>JSON.stringify(el.dataset)===actionData)?.focus({preventScroll:true});}
 }
 function collectWorkshopDrafts(){
   for(const id of workshopPanels)for(const el of $(id)?.querySelectorAll('[data-draft]')||[])workshopDrafts[el.id]=el.value;
@@ -7794,7 +7847,7 @@ function eveningFailure(error){
     'bowl-busy':L('Rond eerst het afwerken van de vorige mixerbeurt af; daarna is de kom vrij.','Finish the previous mixer run first; the bowl is then free.'),
     'oven-busy':L('Er staat al een pizza in de oven. Registreer eerst het uithalen.','A pizza is already in the oven. Record its removal first.'),
     'run-not-started':L('Start eerst de mixerbeurt van deze pizza.','Start this pizza’s mixer run first.'),
-    'missing-previous':L('Vul de ontbrekende momenten in, of kies “Gedaan, tijd onbekend”.','Enter the missing checkpoints, or choose “Done, time unknown”.'),
+    'missing-previous':L(`Registreer eerst “${batchEventName(kitchenCurrentKey())}”; de tijd mag onbekend zijn.`,`First record “${batchEventName(kitchenCurrentKey())}”; its time may be unknown.`),
     'order':L('Dit moment past niet tussen de andere werkelijke momenten.','This time does not fit between the other actual checkpoints.'),
     'future':L('Gebruik een werkelijke tijd, uiterlijk nu en vóór de gewenste bakstart.','Use an actual time, no later than now and before the requested bake time.'),
     'dependent':L('Er zijn latere handelingen. Corrigeer het tijdstip bij de geregistreerde momenten.','Later actions exist. Correct the time in the recorded checkpoints.'),
@@ -7848,6 +7901,7 @@ function eveningPanel(id,html){
   replaceWorkshopPanel(id,html);
 }
 function renderKitchen(c){
+  if(holdPanelRender('kitchenWorkspace'))return;
   const e=activeEvening(),b=activeBatch(),run=selectedRun();
   if(!e){eveningPanel('kitchenWorkspace',`<h2>${L('Keuken','Kitchen')}</h2><p>${L('Je hoeveelheden en alle instructies zijn klaar. Start wanneer je echt gaat mengen.','Your quantities and all instructions are ready. Start when you actually begin mixing.')}</p>${eveningButton('start',L('Start deeg','Start dough'),'','primary')}${eveningNotice?`<p class="info" role="status">${esc(eveningNotice)}</p>`:''}`);return;}
   const key=kitchenCurrentKey(b),view=WorkflowCore.timeline(b),rc=runCalculation(c),m=methodInstructions(rc),wt=waterTemperatureGuidance(rc,waterTempAdvice(rc));
@@ -7855,11 +7909,11 @@ function renderKitchen(c){
   const selected=e.runs.indexOf(run);
   const nextTime=key&&view.times[key]!=null?niceDate(new Date(view.times[key])):L('Tijd onbekend','Time unknown');
   const runNav=e.runs.length>1?`<div class="run-switch" role="group" aria-label="${L('Mixerbeurt','Mixer run')}">${e.runs.map((r,i)=>eveningButton(r.batch?'select-run':'start-run',L(`Beurt ${i+1} · ${r.balls} bollen${r.batch?'':' · starten'}`,`Run ${i+1} · ${r.balls} balls${r.batch?'':' · start'}`),`data-id="${esc(r.id)}" aria-pressed="${r.id===e.selectedRun}"`)).join('')}</div>`:'';
-  const mixing=key==='bulkStart'?`<div class="kitchen-ingredients">${['flour','water','salt','yeast','oil'].filter(k=>rc[k]>0).map(k=>`<span><b>${fmt(rc[k],k==='yeast'?runDoseDecimals(rc[k]):rc.practical?0:1)} g</b> ${{flour:L('bloem','flour'),water:L('water','water'),salt:L('zout','salt'),yeast:yeastName(c.yeastType),oil:L('olie','oil')}[k]}</span>`).join('')}</div><div class="kitchen-programme"><p>${wt.reserveLine} ${wt.mainLine}${wt.notes}</p><p>${m.mix}</p><p><b>${c.autolyse?L('30 min autolyse in de koelkast','30 min autolyse in the fridge'):L('20 min hydratatierust','20 min hydration rest')}</b></p><p>${m.add}</p><p>${m.knead}</p><p>${m.note||''}</p>${eveningField('kitchenDoughTemp',L('Direct na kneden gemeten (°C)','Measured directly after kneading (°C)'),liveMeasurements.doughTemp,'number','min="10" max="40" step="0.5"')}<p>${m.finish||''} ${m.finishNote||''}</p><p>${L('Beoordeel samenhang, elasticiteit en een ontspannen windowpane. Sterk maar strak deeg heeft vooral rust nodig.','Assess cohesion, elasticity and a rested windowpane. Strong but tight dough mainly needs rest.')}</p></div>`:'';
+  const mixing=key==='bulkStart'?`<div class="kitchen-ingredients">${['flour','water','salt','yeast','oil'].filter(k=>rc[k]>0).map(k=>`<span><b>${fmt(rc[k],k==='yeast'?runDoseDecimals(rc[k]):rc.practical?0:1)} g</b> ${{flour:L('bloem','flour'),water:L('water','water'),salt:L('zout','salt'),yeast:yeastName(c.yeastType),oil:L('olie','oil')}[k]}</span>`).join('')}</div><div class="kitchen-programme"><p>${wt.reserveLine} ${wt.mainLine}${wt.notes}</p><p>${m.mix}</p><p><b>${c.autolyse?L('30 min autolyse in de koelkast','30 min autolyse in the fridge'):L('20 min hydratatierust','20 min hydration rest')}</b></p><p>${m.add}</p><p>${m.knead}</p><p>${m.note||''}</p>${measurementDisclosure('kitchenDoughMeasurement',eveningField('kitchenDoughTemp',L('Direct na kneden gemeten (°C)','Measured directly after kneading (°C)'),liveMeasurements.doughTemp,'number','min="10" max="40" step="0.5"')+measurementPurpose(c),'doughTemp')}<p>${m.finish||''} ${m.finishNote||''}</p><p>${L('Beoordeel samenhang, elasticiteit en een ontspannen windowpane. Sterk maar strak deeg heeft vooral rust nodig.','Assess cohesion, elasticity and a rested windowpane. Strong but tight dough mainly needs rest.')}</p></div>`:'';
   const cues=key==='fridgeIn'?L('Bewaar deze beurt apart. Controleer of het deeg samenhangend en voldoende ontwikkeld is; de klok alleen beslist dat niet.','Keep this run separate. Check that the dough is cohesive and sufficiently developed; time alone does not decide this.'):
     key==='fridgeOut'?L('Het deeg rust in de koelkast. Volgende handeling: uit de koelkast. De kern kan warmer zijn dan de koelkastlucht.','The dough is resting in the fridge. Next action: take it out. The core can be warmer than the fridge air.'):
     L('Zoek luchtigheid, soepelheid en ontspanning. Nog koud of sterk terugverend? Laat afgedekt ontspannen en beoordeel opnieuw. Erg slap deeg vraagt voorzichtig behandelen.','Look for aeration, pliability and relaxation. Still cold or strongly recoiling? Rest covered and reassess. Very slack dough needs gentle handling.');
-  const moments=WorkflowCore.eventKeys(b.route).map(k=>`<div class="checkpoint-row"><span>${batchEventName(k)}<small>${b.events[k]!=null?niceDate(new Date(b.events[k])):WorkflowCore.eventDone(b,k)?L('Gedaan, tijd onbekend','Done, time unknown'):L('Nog niet geregistreerd','Not recorded yet')}</small></span>${k==='start'?'':`<div>${eveningButton('correct-event',L('Tijd aanpassen','Correct time'),`data-key="${k}"`)}${!WorkflowCore.eventDone(b,k)?eveningButton('unknown-event',L('Gedaan, tijd onbekend','Done, time unknown'),`data-key="${k}"`):''}</div>`}</div>`).join('');
+  const moments=WorkflowCore.eventKeys(b.route).map(k=>`<div class="checkpoint-row"><span>${batchEventName(k)}<small>${b.events[k]!=null?niceDate(new Date(b.events[k])):WorkflowCore.eventDone(b,k)?L('Gedaan, tijd onbekend','Done, time unknown'):L('Nog niet geregistreerd','Not recorded yet')}</small></span>${k==='start'?'':`<div>${eveningButton('correct-event',L('Tijd aanpassen','Correct time'),`data-key="${k}"`)}${k===key?eveningButton('unknown-event',L('Gedaan, tijd onbekend','Done, time unknown'),`data-key="${k}"`):''}</div>`}</div>`).join('');
   const correction=workshopDrafts.eveningCorrectKey?`<div class="workshop-grid">${eveningField('eveningEventAt',batchEventName(workshopDrafts.eveningCorrectKey),workshopDrafts.eveningEventAt||localDateTime(),'datetime-local')}<label>${L('Bij een dubbel uur','For a repeated hour')}<select class="field" id="eveningTimeFold"><option value="first">${L('Eerste voorkomst','First occurrence')}</option><option value="second">${L('Tweede voorkomst','Second occurrence')}</option></select></label></div>${eveningButton('save-event-time',L('Moment bewaren','Save checkpoint'))}`:'';
   const zone=e.zone&&e.zone!==Intl.DateTimeFormat().resolvedOptions().timeZone?`<p class="hint">${L('Oorspronkelijke tijdzone','Original time zone')}: ${esc(e.zone)} · ${new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'nl-NL',{dateStyle:'medium',timeStyle:'short',timeZone:e.zone}).format(e.bakeAt)}. ${L('Hierboven staat je lokale tijd.','Your local time is shown above.')}</p>`:'';
   eveningPanel('kitchenWorkspace',`<div class="kitchen-heading"><div><span class="eyebrow">${L('Keuken','Kitchen')}${e.runs.length>1?` · ${L('Beurt','Run')} ${selected+1}/${e.runs.length}`:''}</span><h2>${title}</h2><p>${pizzaCountLabel(c.pizzas)} · ${L('Geplande eerste pizza in de oven','Planned first pizza in the oven')}: <b>${niceDate(new Date(e.bakeAt))}</b></p>${zone}</div>${eveningButton('wake',eveningWakeLock&&!eveningWakeLock.released?L('Scherm blijft aan','Screen stays awake'):L('Scherm aanhouden','Keep screen awake'),'aria-pressed="'+String(!!eveningWakeLock&&!eveningWakeLock.released)+'"','ghost')}</div>${runNav}${eveningNotice?`<p class="info" role="status">${esc(eveningNotice)}</p>`:''}${mixing}${key!=='bulkStart'?`<p>${cues}</p>`:''}${key&&key!=='bake'?`<p>${L('Volgende handeling','Next action')}: <b>${batchEventName(key)}</b> · ${nextTime}</p>${eveningButton('event-now',batchEventName(key),`data-key="${key}"`,'primary')}`:''}<div class="btnrow">${e.undo?eveningButton('undo',L('Laatste handeling ongedaan maken','Undo latest action'),'','ghost'):''}${eveningButton('help',L('Deeg reageert anders?','Dough behaving differently?'),'','ghost')}</div><details id="kitchenHistory"><summary>${L('Momenten aanvullen of corrigeren','Complete or correct checkpoints')}</summary>${moments}${correction}${b.route==='hybrid'?`<p class="hint">${L('Uit de koelkast is geen geregistreerd opbolmoment. Opbollen blijft een aparte handeling binnen de bestaande eindrijstijd.','Fridge-out is not a recorded shaping time. Shaping remains a separate action within the existing final-proof allowance.')}</p>`:''}</details><details id="kitchenTimers"><summary>${L('Rusttimer en herinneringen','Rest timer and reminders')}</summary>${eveningField('restTimerMinutes',L('Timer (minuten)','Timer (minutes)'),workshopDrafts.restTimerMinutes||5,'number','min="1" max="1440"')}<div class="btnrow">${eveningButton('start-timer',L('Timer starten','Start timer'))}${eveningButton('calendar',L('Planning naar agenda (.ics)','Planning to calendar (.ics)'))}</div><p class="hint">${L('Een timer verandert je planning niet. Bij extra rust kun je de resterende tijden apart aanpassen. De pagina garandeert geen alarm als zij gesloten of gepauzeerd is. Een agenda-export is een momentopname.','A timer does not change the plan. For extra rest, adjust remaining times separately. The page cannot guarantee an alarm when closed or suspended. A calendar export is a snapshot.')}</p></details>${e.timer?`<p class="timer-status" id="eveningTimer" role="status"></p>${eveningButton('stop-timer',L('Timer stoppen','Stop timer'),'','ghost')}`:''}<details id="bakingWorkspace" ${key==='bake'||!key||e.pizzas.some(p=>p.events.in!=null)?'open':''}><summary>${L('Bakvolgorde','Baking queue')} · ${e.pizzas.length} ${L('pizza’s','pizzas')}</summary><div id="bakingQueue">${bakingQueueHtml(c,e)}</div></details><div class="btnrow">${eveningButton('finish',L('Avond bewaren en afsluiten','Save and finish evening'),'','ghost')}</div>`);
@@ -7867,7 +7921,7 @@ function renderKitchen(c){
   if(bakingNow){
     const panel=$('kitchenWorkspace'),queue=$('bakingWorkspace');
     const anchor=panel.querySelector('.run-switch')||panel.querySelector('.kitchen-heading');
-    if(anchor&&queue)anchor.after(queue);
+    if(anchor&&queue&&queue.previousElementSibling!==anchor)anchor.after(queue);
     if(kitchenQueueOpenedFor!==e.id)queue.open=true;
     kitchenQueueOpenedFor=e.id;
   }else kitchenQueueOpenedFor='';
@@ -8124,7 +8178,7 @@ const PRESET_TECHNICAL_FIELDS=new Set([
 
 let _saveTimer=null;
 let _storageWarningShown=false;
-let _storageWriter=true;
+let _storageWriter=false;
 let _storageRevision=0;
 let _storageCorrupt=false;
 let _releaseStorageWriter=null;
@@ -8475,6 +8529,7 @@ function wireEvents(){
 }
 
 document.addEventListener('DOMContentLoaded',async()=>{
+  try{
   await acquireStorageWriter();
   document.querySelectorAll('[data-experience]').forEach(button=>button.addEventListener('click',()=>setExperienceMode(button.dataset.experience)));
   const search=$('pizzaPickerSearch');
@@ -8488,6 +8543,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   }
   initRecipeOptions();
   wireEvents();
+  wirePanelInteractions();
   wireWorkshopEvents();
   wireEveningEvents();
 
@@ -8515,6 +8571,14 @@ document.addEventListener('DOMContentLoaded',async()=>{
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible')refreshBakeDayClock();
   });
+  document.querySelector('.app').inert=false;
+  document.querySelector('.app').setAttribute('aria-busy','false');
+  $('startupStatus').hidden=true;
+  document.documentElement.dataset.appReady='true';
+  }catch(error){
+    $('startupStatus').textContent='Laden mislukt. Herlaad de pagina. / Loading failed. Reload the page.';
+    console.error(error);
+  }
 });
 </script>
 <div class="float-actions hidden" id="floatingActions">

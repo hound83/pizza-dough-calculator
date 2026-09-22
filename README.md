@@ -29,7 +29,7 @@ The app currently offers three usage modes:
 | **Dough + sauce** | Everything in Dough only, plus a separate sauce calculator |
 | **Complete pizzas** | Dough, sauce, one recipe per dough ball, toppings, shopping list, and complete workflow |
 
-Independently of those output modes, the start screen offers **Basic** and **Full** display modes. Basic keeps the practical inputs and results visible while presets manage technical dough values. Full exposes every existing setting. Switching is lossless; existing v1.0 users migrate to Full and new users start in Basic.
+Independently of those output modes, Plan offers **Basic** and **Full** display modes. Basic keeps the practical inputs and results visible while presets manage technical dough values. Full exposes every existing setting. In Basic, temperature readings are optional and collapsed; Full shows them directly. No reading is required to continue, and switching preserves existing measurements. Switching is lossless; existing v1.0 users migrate to Full and new users start in Basic.
 
 Highlights:
 
@@ -140,7 +140,7 @@ Release verification suite (see the PR Actions result for execution status):
 31 pure-core tests
 106 bundle regression tests
 106 source regression tests
-125 Chromium browser/layout tests
+139 Chromium browser/layout tests
 ```
 
 The suite covers, among other things:

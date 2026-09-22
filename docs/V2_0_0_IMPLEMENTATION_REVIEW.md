@@ -41,7 +41,7 @@ Known actual events anchor downstream forecasts. An unknown checkpoint stays unk
 
 ## Verification and acceptance map
 
-The complete suite is `npm test`: 15 structure checks, 31 pure-core tests, 106 regressions against each publication, and 125 Chromium browser cases. Both source and standalone bundle are tested. Candidate hashes are pinned separately in `tests/baselines/v2.0.0-candidate.json` and `PRODUCT_GUARDRAILS.md`; all historical hashes remain intact.
+The complete suite is `npm test`: 15 structure checks, 31 pure-core tests, 106 regressions against each publication, and 139 Chromium browser cases. Both source and standalone bundle are tested. Candidate hashes are pinned separately in `tests/baselines/v2.0.0-candidate.json` and `PRODUCT_GUARDRAILS.md`; all historical hashes remain intact.
 
 | Accepted cases | Evidence |
 |---|---|
@@ -71,3 +71,7 @@ Final follow-ups add a read-only archived-checkpoint view, its schema-52 browser
 6. C1–C3 remain separate model investigations. Existing legacy temperature readings keep their existing meaning; this candidate does not infer retrospectively measured flour or phase temperatures.
 
 API references for optional browser capabilities: [Web Locks](https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request) and [Screen Wake Lock](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API).
+
+## Review follow-up
+
+The [Claude response](V2_0_0_CLAUDE_FOLLOWUP.md) supersedes the initial UI contract where noted: guarded activation, explicit startup readiness, chronological unknown-time choices and optional Basic readings. Historical successful runs above describe their original snapshots; use the PR checks for the current HEAD.
