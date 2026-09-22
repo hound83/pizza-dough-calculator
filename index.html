@@ -1655,11 +1655,11 @@ function thermalEndTemperature(startTemp,environmentTemp,hours,tauHours){
 
 // Versioned household yeast-activity assumptions, not a measured universal curve.
 // The warm tail models falling activity, not constant performance above 35 C.
-const YEAST_TEMP_CURVE=[
+const YEAST_TEMP_CURVE=Object.freeze([
   [0,0.01],[4,0.04],[8,0.09],[12,0.20],[16,0.42],[18,0.62],
   [21,1.00],[24,1.55],[27,2.35],[30,3.35],[32,3.55],[35,3.00],
   [38,2.20],[42,0.90],[46,0.10],[50,0.02]
-];
+].map(point=>Object.freeze(point)));
 
 function interpolateCurve(points,x){
   if(x<=points[0][0])return points[0][1];
@@ -1934,7 +1934,7 @@ function setToppingScale(diameter){
 function scaleQty(qty,unit){
   const q=Number(qty)*toppingScale;
   if(!Number.isFinite(q)||q<=0)return 0;
-  if(unit==='g'&&q<1)return Math.max(.01,roundTo(q,.01));
+  if(unit==='g'&&q<1)return Math.max(.01,Math.round(q*100)/100);
   if(unit==='g')return q>=20?roundTo(q,5):roundTo(q,1);
   return Math.max(1,Math.round(q));
 }
@@ -3807,7 +3807,7 @@ function renderPickerPreview(){
       <input type="checkbox" ${checked?'checked':''}
         onchange='setPickerIngredientIncluded(${JSON.stringify(key)},this.checked)'>
       <span class="picker-ingredient-name">${tItem(x[0])}</span>
-      <span class="picker-ingredient-qty">${x[1]} ${tUnit(x[2],x[1])}</span>
+      <span class="picker-ingredient-qty">${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span>
       ${afterSet.has(key)?`<span class="picker-after">${L('na bakken','after baking')}</span>`:''}
     </label>`;
   }).join('');
@@ -4311,11 +4311,8 @@ function update(){
       `Modelstartpunt: circa ${fmt(recGrams,2)} g. Praktische band: ${fmt(lowG,2)}–${fmt(highG,2)} g (±${fmt(advice.uncertainty*100,0)}%). Dit is een vuistregelmarge, geen gemeten betrouwbaarheidsinterval of garantie op hetzelfde resultaat.`,
       `Model starting point: roughly ${fmt(recGrams,2)} g. Practical range: ${fmt(lowG,2)}–${fmt(highG,2)} g (±${fmt(advice.uncertainty*100,0)}%). This is a heuristic margin, not a measured confidence interval or a guarantee of the same result.`);
   }
-  const applyButton=$('applyYeastAdviceButton');
-  if(applyButton){
-    applyButton.disabled=mixed;
-    applyButton.textContent=mixed?L('Deeg al gemengd · gist staat vast','Dough already mixed · yeast fixed'):L('Gebruik dit gistadvies','Use this yeast advice');
-  }
+  _yeastAdviceMatchesRecipe=yeastAdviceMatchesRecipe(c,advice);
+  renderYeastApplyButton();
   if(mixed)$('yeastAdviceDetail').textContent+=' '+L('De metingen wijzigen alleen toekomstige tijden; de afgewogen gist blijft gelijk.','Measurements only adjust future times; the weighed yeast remains unchanged.');
   buildScheduleSummary(c);
   renderYeastRangeBar(c,advice,estFlour,yt);
@@ -4453,10 +4450,28 @@ function buildFermentationScience(c,a){
     ${technicalModelText}`;
 }
 
+// Cache only presentation state: changing Basic/Full must not recalculate.
+let _yeastAdviceMatchesRecipe=false;
+function yeastAdviceMatchesRecipe(c,advice){
+  const flour=roundTo(c.pizzas*c.targetBall/(1+(c.h+c.s+c.o+advice.selected)/100),c.practical?5:.1);
+  const proposed=roundTo(flour*advice.selected/100,c.practical?.1:.01);
+  return Math.abs(proposed-c.yeast)<1e-9;
+}
+function renderYeastApplyButton(){
+  const button=$('applyYeastAdviceButton');
+  if(!button)return;
+  const mixed=liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
+  button.disabled=mixed||_yeastAdviceMatchesRecipe;
+  button.textContent=mixed?L('Deeg al gemengd · gist staat vast','Dough already mixed · yeast fixed')
+    :_yeastAdviceMatchesRecipe?L('Staat al in je recept','Already in your recipe')
+    :L('Gebruik dit gistadvies','Use this yeast advice');
+}
+
 function applyYeastAdvice(){
   if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const c=calc();
   const a=yeastRecommendation(c);
+  if(yeastAdviceMatchesRecipe(c,a))return;
   exactOverride=exactOverride||{h:selectedHydration(),s:selectedSalt(),o:selectedOil(),ySelected:selectedYeastPct()};
   exactOverride.ySelected=a.selected;
   $('yeastPct').value=fieldNum(a.selected,3);
@@ -4651,7 +4666,7 @@ function updateRecipeSummary(c){
   ensurePizzaCustomizations();
   $('pizzaSummary').innerHTML=pizzaSelections.map((id,idx)=>{
     const r=recipeById(id),custom=pizzaCustomizations[idx],items=includedItemsForBall(idx);
-    return `<div class="recipebox"><div class="titleline"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeNoteText(r)}</div></div><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)}</span></div><div class="list"><div class="list-row"><span>${L('Aanbevolen saus','Recommended sauce')}</span><span>${custom.noSauce?L('uitgevinkt','unchecked'):`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`}</span></div>${items.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]} ${tUnit(x[2],x[1])}</span></div>`).join('')}</div></div>`;
+    return `<div class="recipebox"><div class="titleline"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeNoteText(r)}</div></div><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)}</span></div><div class="list"><div class="list-row"><span>${L('Aanbevolen saus','Recommended sauce')}</span><span>${custom.noSauce?L('uitgevinkt','unchecked'):`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`}</span></div>${items.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span></div>`).join('')}</div></div>`;
   }).join('');
 }
 
@@ -4701,7 +4716,7 @@ function buildPizzaCustomize(c){
       const key=itemKey(x),checked=!custom.excluded[key];
       return `<label class="ingredient-check"><input type="checkbox" ${checked?'checked':''}
         onchange='setIngredientIncluded(${idx},${JSON.stringify(key)},this.checked)'>
-        <span>${tItem(x[0])} • ${x[1]} ${tUnit(x[2],x[1])}</span>${after.has(key)?`<span class="after">${currentLang==='en'?'after baking':'na bakken'}</span>`:''}</label>`;
+        <span>${tItem(x[0])} • ${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span>${after.has(key)?`<span class="after">${currentLang==='en'?'after baking':'na bakken'}</span>`:''}</label>`;
     }).join('');
 
     const cheeseNote=cheese.allowed
@@ -5434,7 +5449,7 @@ function waterTemperatureGuidance(c,wt){
     ' Het directe spiraalknederprogramma is modelafhankelijk; dit wateradvies gebruikt daarom een voorlopige verhouding en heeft extra onzekerheid.',
     ' The direct spiral-mixer programme depends on the machine; this water guidance therefore uses a provisional ratio and carries extra uncertainty.'
   ));
-  if($('preset').value==='avpnMid'&&!wt.avpnRange)notes.push(L(
+  if(c.presetKey==='avpnMid'&&!wt.avpnRange)notes.push(L(
     ' Voor de AVPN-preset blijft de officiële waterrange van 16–22 °C de primaire praktische referentie.',
     ' For the AVPN preset, the official 16–22 °C water range remains the primary practical reference.'
   ));
@@ -5538,11 +5553,11 @@ function buildSteps(c){
         : `${sauceName($('sauceType').value)} ${fmt(manualSaucePerPizza(),0)} g`;
       parts.push(sauceText);
     }
-    parts.push(...before.map(x=>`${tItem(x[0])} ${x[1]} ${tUnit(x[2],x[1])}`));
+    parts.push(...before.map(x=>`${tItem(x[0])} ${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}`));
     if(custom.extraCheese && cheese.allowed) parts.push(`${cheese.name} +${fmt(cheese.amount,0)} g extra`);
 
     let topping=`<b>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)} • ${pizzaStyleLabel(custom.pizzaStyle)}</b>: ${parts.length?parts.join(' • '):L('geen toppings vóór het bakken','no toppings before baking')}.`;
-    if(after.length)topping+=` <b>${L('Na het bakken:','After baking:')}</b> ${after.map(x=>`${tItem(x[0])} ${x[1]} ${tUnit(x[2],x[1])}`).join(' • ')}.`;
+    if(after.length)topping+=` <b>${L('Na het bakken:','After baking:')}</b> ${after.map(x=>`${tItem(x[0])} ${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}`).join(' • ')}.`;
     // Het recept-id zit in de sleutel, zodat een ander recept ook een vers vinkje krijgt.
     steps.push(step(i++,`${L('Beleggen • bol','Top • ball')} ${idx+1}`,topping,`${recipeNoteText(r)} • ${L('Temperatuuradvies','Temperature guidance')}: ${recipeTempFor(rid).low}–${recipeTempFor(rid).high} °C ${L('steen','stone')}.`,`top-${idx}-${rid}-${custom.pizzaStyle}`));
   });
@@ -5671,7 +5686,7 @@ function deadlineRecommendation(c,bake){
   // Onder 4 uur vanaf nu adviseren we geen vers pizzadeeg.
   // Dit is geen biologische absolute grens: gist kan sneller gas maken,
   // maar gasproductie is niet hetzelfde als een goed gerijpt pizzadeeg.
-  if(until<4)return {status:'tooShort',until,currentStart,usable:Math.max(0,until-0.75)};
+  if(until<4)return {status:'tooShort',until,currentStart,usable:Math.max(0,until-prepHours())};
 
   // Voorbereiding volgens kneedmethode + 15 min praktische startbuffer.
   const usable=floorQuarter(until-(prepHours()+0.25));
@@ -6333,7 +6348,7 @@ function buildIngredientsModal(c){
   const perPizza=`<div class="modal-section"><h3>Per pizza</h3>${pizzaSelections.map((id,idx)=>{
     const r=recipeById(id),custom=pizzaCustomizations[idx],cheese=extraCheeseAdvice(idx,c);
     const sauceLine=custom.noSauce?'uitgevinkt':($('autoSauceFromPizzas').checked?`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`:`${sauceName($('sauceType').value)} • ${fmt(manualSaucePerPizza(),0)} g`);
-    const rows=includedItemsForBall(idx).map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]} ${tUnit(x[2],x[1])}</span></div>`).join('');
+    const rows=includedItemsForBall(idx).map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span></div>`).join('');
     const extra=custom.extraCheese&&cheese.allowed?`<div class="list-row"><span>${cheese.name} • extra kaas</span><span>+${fmt(cheese.amount,0)} g</span></div>`:'';
     return `<div class="recipebox"><div class="titleline"><h3>Bol ${idx+1} • ${recipeNameText(r)}</h3><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)} • ${recipeTempFor(id).low}–${recipeTempFor(id).high} °C</span></div><div class="list"><div class="list-row"><span>Saus</span><span>${sauceLine}</span></div>${rows}${extra}</div></div>`;
   }).join('')}</div>`;
@@ -6509,7 +6524,7 @@ function renderExperienceMode(){
   if(basic){const title=basic.querySelector('b'),hint=basic.querySelector('span');if(title)title.textContent=nl?'Basis':'Basic';if(hint)hint.textContent=nl?'Alleen wat je nodig hebt':'Only what you need';}
   if(full){const title=full.querySelector('b'),hint=full.querySelector('span');if(title)title.textContent=nl?'Uitgebreid':'Full';if(hint)hint.textContent=nl?'Alle instellingen en uitleg':'All settings and explanations';}
   if($('experienceSwitch'))$('experienceSwitch').setAttribute('aria-label',nl?'Weergavemodus':'Display mode');
-  if($('applyYeastAdviceButton'))$('applyYeastAdviceButton').textContent=nl?'Advies toepassen':'Apply advice';
+  renderYeastApplyButton();
   if($('yeastApplyHelp'))$('yeastApplyHelp').textContent=nl
     ? 'Past alleen de berekende hoeveelheid gist aan.'
     : 'Only changes the calculated yeast amount.';

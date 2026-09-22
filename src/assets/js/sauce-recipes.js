@@ -98,7 +98,7 @@ function updateRecipeSummary(c){
   ensurePizzaCustomizations();
   $('pizzaSummary').innerHTML=pizzaSelections.map((id,idx)=>{
     const r=recipeById(id),custom=pizzaCustomizations[idx],items=includedItemsForBall(idx);
-    return `<div class="recipebox"><div class="titleline"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeNoteText(r)}</div></div><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)}</span></div><div class="list"><div class="list-row"><span>${L('Aanbevolen saus','Recommended sauce')}</span><span>${custom.noSauce?L('uitgevinkt','unchecked'):`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`}</span></div>${items.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]} ${tUnit(x[2],x[1])}</span></div>`).join('')}</div></div>`;
+    return `<div class="recipebox"><div class="titleline"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeNoteText(r)}</div></div><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)}</span></div><div class="list"><div class="list-row"><span>${L('Aanbevolen saus','Recommended sauce')}</span><span>${custom.noSauce?L('uitgevinkt','unchecked'):`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`}</span></div>${items.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span></div>`).join('')}</div></div>`;
   }).join('');
 }
 
@@ -148,7 +148,7 @@ function buildPizzaCustomize(c){
       const key=itemKey(x),checked=!custom.excluded[key];
       return `<label class="ingredient-check"><input type="checkbox" ${checked?'checked':''}
         onchange='setIngredientIncluded(${idx},${JSON.stringify(key)},this.checked)'>
-        <span>${tItem(x[0])} • ${x[1]} ${tUnit(x[2],x[1])}</span>${after.has(key)?`<span class="after">${currentLang==='en'?'after baking':'na bakken'}</span>`:''}</label>`;
+        <span>${tItem(x[0])} • ${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span>${after.has(key)?`<span class="after">${currentLang==='en'?'after baking':'na bakken'}</span>`:''}</label>`;
     }).join('');
 
     const cheeseNote=cheese.allowed

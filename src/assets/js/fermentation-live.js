@@ -633,7 +633,7 @@ function waterTemperatureGuidance(c,wt){
     ' Het directe spiraalknederprogramma is modelafhankelijk; dit wateradvies gebruikt daarom een voorlopige verhouding en heeft extra onzekerheid.',
     ' The direct spiral-mixer programme depends on the machine; this water guidance therefore uses a provisional ratio and carries extra uncertainty.'
   ));
-  if($('preset').value==='avpnMid'&&!wt.avpnRange)notes.push(L(
+  if(c.presetKey==='avpnMid'&&!wt.avpnRange)notes.push(L(
     ' Voor de AVPN-preset blijft de officiële waterrange van 16–22 °C de primaire praktische referentie.',
     ' For the AVPN preset, the official 16–22 °C water range remains the primary practical reference.'
   ));
@@ -737,11 +737,11 @@ function buildSteps(c){
         : `${sauceName($('sauceType').value)} ${fmt(manualSaucePerPizza(),0)} g`;
       parts.push(sauceText);
     }
-    parts.push(...before.map(x=>`${tItem(x[0])} ${x[1]} ${tUnit(x[2],x[1])}`));
+    parts.push(...before.map(x=>`${tItem(x[0])} ${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}`));
     if(custom.extraCheese && cheese.allowed) parts.push(`${cheese.name} +${fmt(cheese.amount,0)} g extra`);
 
     let topping=`<b>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)} • ${pizzaStyleLabel(custom.pizzaStyle)}</b>: ${parts.length?parts.join(' • '):L('geen toppings vóór het bakken','no toppings before baking')}.`;
-    if(after.length)topping+=` <b>${L('Na het bakken:','After baking:')}</b> ${after.map(x=>`${tItem(x[0])} ${x[1]} ${tUnit(x[2],x[1])}`).join(' • ')}.`;
+    if(after.length)topping+=` <b>${L('Na het bakken:','After baking:')}</b> ${after.map(x=>`${tItem(x[0])} ${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}`).join(' • ')}.`;
     // Het recept-id zit in de sleutel, zodat een ander recept ook een vers vinkje krijgt.
     steps.push(step(i++,`${L('Beleggen • bol','Top • ball')} ${idx+1}`,topping,`${recipeNoteText(r)} • ${L('Temperatuuradvies','Temperature guidance')}: ${recipeTempFor(rid).low}–${recipeTempFor(rid).high} °C ${L('steen','stone')}.`,`top-${idx}-${rid}-${custom.pizzaStyle}`));
   });

@@ -715,7 +715,7 @@ function renderPickerPreview(){
       <input type="checkbox" ${checked?'checked':''}
         onchange='setPickerIngredientIncluded(${JSON.stringify(key)},this.checked)'>
       <span class="picker-ingredient-name">${tItem(x[0])}</span>
-      <span class="picker-ingredient-qty">${x[1]} ${tUnit(x[2],x[1])}</span>
+      <span class="picker-ingredient-qty">${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span>
       ${afterSet.has(key)?`<span class="picker-after">${L('na bakken','after baking')}</span>`:''}
     </label>`;
   }).join('');

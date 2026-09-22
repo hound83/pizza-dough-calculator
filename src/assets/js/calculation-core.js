@@ -42,11 +42,11 @@ function thermalEndTemperature(startTemp,environmentTemp,hours,tauHours){
 
 // Versioned household yeast-activity assumptions, not a measured universal curve.
 // The warm tail models falling activity, not constant performance above 35 C.
-const YEAST_TEMP_CURVE=[
+const YEAST_TEMP_CURVE=Object.freeze([
   [0,0.01],[4,0.04],[8,0.09],[12,0.20],[16,0.42],[18,0.62],
   [21,1.00],[24,1.55],[27,2.35],[30,3.35],[32,3.55],[35,3.00],
   [38,2.20],[42,0.90],[46,0.10],[50,0.02]
-];
+].map(point=>Object.freeze(point)));
 
 function interpolateCurve(points,x){
   if(x<=points[0][0])return points[0][1];

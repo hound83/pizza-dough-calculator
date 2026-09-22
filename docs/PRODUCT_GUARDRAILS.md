@@ -252,3 +252,14 @@ The user explicitly requested this implementation after review, including cleane
 | singleFile | `78851e2d059925f3dd1cebebbcc556060b75331db4aa03a259df8a7545b09335` |
 | css | `e7c20ac74ca79d1a2229ebc649e2c2b9d90dd5362b0e4d855cea05f94dfef619` |
 | javascript | `ce6967176b18787250e768d14899cab8b7bb5c5303c3c245c1757a6a657b1896` |
+
+
+## v1.3.0 reviewed-candidate completion
+
+The user requested completion from current GitHub state and explicitly included Claude's crosscheck. The six corrections are described in `V1_3_0_CLAUDE_FOLLOWUP.md`. A matching weighed yeast dose displays a status and preserves its preset; display changes do not calculate or apply a recipe. Topping quantities use localized formatting on every surface. No numerical calibration, recipe catalogue, kneading time or storage change is authorized by these corrections. This patch retains v1.3.0 candidate metadata and preserves all original baseline records above.
+
+| Corrected candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `137c7fb047b1bcb6ec540cf53a43b5cf1a73c38185ab1e5e395a42dbd5c02c5a` |
+| css | `e7c20ac74ca79d1a2229ebc649e2c2b9d90dd5362b0e4d855cea05f94dfef619` |
+| javascript | `416b6139b19a2f293d08a61c6afa97f0ba8813062c360e05e2252abb1656dff4` |

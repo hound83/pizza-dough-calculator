@@ -144,7 +144,7 @@ function renderExperienceMode(){
   if(basic){const title=basic.querySelector('b'),hint=basic.querySelector('span');if(title)title.textContent=nl?'Basis':'Basic';if(hint)hint.textContent=nl?'Alleen wat je nodig hebt':'Only what you need';}
   if(full){const title=full.querySelector('b'),hint=full.querySelector('span');if(title)title.textContent=nl?'Uitgebreid':'Full';if(hint)hint.textContent=nl?'Alle instellingen en uitleg':'All settings and explanations';}
   if($('experienceSwitch'))$('experienceSwitch').setAttribute('aria-label',nl?'Weergavemodus':'Display mode');
-  if($('applyYeastAdviceButton'))$('applyYeastAdviceButton').textContent=nl?'Advies toepassen':'Apply advice';
+  renderYeastApplyButton();
   if($('yeastApplyHelp'))$('yeastApplyHelp').textContent=nl
     ? 'Past alleen de berekende hoeveelheid gist aan.'
     : 'Only changes the calculated yeast amount.';

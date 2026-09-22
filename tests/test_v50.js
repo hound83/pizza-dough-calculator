@@ -256,6 +256,7 @@ test('technical overrides and explicit yeast advice are visible as Custom in Bas
     $('hydration').value='66';$('hydration').dispatchEvent({type:'input'});renderExperienceMode();
     const manual={preset:$('preset').value};
     applyPreset('kodaNight');setExperienceMode('basic');
+    $('roomTemp').value='24';update();
     const before={h:$('hydration').value,s:$('saltPct').value,o:$('oilPct').value};
     applyYeastAdvice();renderExperienceMode();
     const after={h:$('hydration').value,s:$('saltPct').value,o:$('oilPct').value};
@@ -1138,6 +1139,66 @@ test('bake-day labels use local calendar days across week, month and year bounda
   assert(x.yearEnd[1]==='Morgen – vrijdag'&&x.yearEnd[3]==='Over drie dagen – zondag',JSON.stringify(x));
   assert(x.leapDay[1]==='Morgen – dinsdag'&&x.leapDay[2]==='Overmorgen – woensdag',JSON.stringify(x));
   assert(x.en[1]==='Tomorrow – Tuesday'&&x.en[2]==='In 2 days – Wednesday'&&x.en[3]==='In 3 days – Thursday',JSON.stringify(x));
+});
+
+
+test('Claude review: subgram toppings are clean and localized on every recipe surface',()=>{
+  defaults();
+  const results=run(`(()=>{
+    liveMeasurements={doughTemp:null,fridgeTemp:null};exactOverride=null;appMode='full';
+    const failures=[];
+    for(const lang of ['nl','en'])for(const diameter of [30,40]){
+      currentLang=lang;$('diameter').value=diameter;calc();
+      for(const recipe of pizzaRecipes){
+        pickerSelectedId=recipe.id;renderPickerPreview();
+        const preview=$('pizzaPickerPreview').innerHTML;
+        if(/\\d[.,]\\d{5,}/.test(preview))failures.push([lang,diameter,recipe.id]);
+      }
+      pizzaSelections=Array(4).fill('napoletana');pizzaCustomizations=[];
+      pickerSelectedId='napoletana';renderPickerPreview();
+      const c=calc();buildPizzaCustomize(c);buildIngredientsModal(c);buildSteps(c);
+      const amount=ingredientAmount(scaleQty(.4,'g'))+' g';
+      for(const id of ['pizzaPickerPreview','pizzaCustomize','ingredientsModalBody','stepsList']){
+        if(!$(id).innerHTML.includes(amount)||/\\d[.,]\\d{5,}/.test($(id).innerHTML))failures.push([lang,diameter,id,amount]);
+      }
+    }
+    setToppingScale(30);return {failures,scaled:scaleQty(.4,'g')};
+  })()`);
+  assert(results.failures.length===0,JSON.stringify(results));
+  assert(results.scaled===.35,JSON.stringify(results));
+});
+
+test('Claude review: yeast status survives display/language changes without changing a recipe',()=>{
+  defaults();
+  const result=run(`(()=>{
+    liveMeasurements={doughTemp:null,fridgeTemp:null};exactOverride=null;currentLang='nl';update();
+    const preset=$('preset').value;applyYeastAdvice();
+    const matching={label:$('applyYeastAdviceButton').textContent,disabled:$('applyYeastAdviceButton').disabled,preset:$('preset').value};
+    liveMeasurements={doughTemp:26,fridgeTemp:null};update();
+    const before=JSON.stringify(calc());
+    currentLang='en';renderExperienceMode();
+    const en=$('applyYeastAdviceButton').textContent;
+    currentLang='nl';setExperienceMode('full');setExperienceMode('basic');
+    return {matching,preset,en,nl:$('applyYeastAdviceButton').textContent,before,after:JSON.stringify(calc())};
+  })()`);
+  assert(result.matching.label==='Staat al in je recept'&&result.matching.disabled,JSON.stringify(result));
+  assert(result.matching.preset===result.preset,JSON.stringify(result));
+  assert(result.en==='Dough already mixed · yeast fixed'&&result.nl==='Deeg al gemengd · gist staat vast',JSON.stringify(result));
+  assert(result.before===result.after,JSON.stringify(result));
+});
+
+test('Claude review: a too-short deadline deducts the actual route preparation allowance',()=>{
+  defaults();
+  const failures=run(`(()=>{
+    liveMeasurements={doughTemp:null,fridgeTemp:null};const failures=[];
+    for(const method of ['hand','kitchenaid','kenwood','pro'])for(const autolyse of [true,false]){
+      currentMethod=method;$('autolyse').checked=autolyse;
+      const r=deadlineRecommendation(calc(),new Date(Date.now()+3*3600000));
+      if(r.status!=='tooShort'||Math.abs(r.usable-(r.until-prepHours()))>1e-9)failures.push({method,autolyse,r});
+    }
+    return failures;
+  })()`);
+  assert(failures.length===0,JSON.stringify(failures));
 });
 
 console.log(`\n${passed} regression tests passed`);

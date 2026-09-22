@@ -356,11 +356,8 @@ function update(){
       `Modelstartpunt: circa ${fmt(recGrams,2)} g. Praktische band: ${fmt(lowG,2)}–${fmt(highG,2)} g (±${fmt(advice.uncertainty*100,0)}%). Dit is een vuistregelmarge, geen gemeten betrouwbaarheidsinterval of garantie op hetzelfde resultaat.`,
       `Model starting point: roughly ${fmt(recGrams,2)} g. Practical range: ${fmt(lowG,2)}–${fmt(highG,2)} g (±${fmt(advice.uncertainty*100,0)}%). This is a heuristic margin, not a measured confidence interval or a guarantee of the same result.`);
   }
-  const applyButton=$('applyYeastAdviceButton');
-  if(applyButton){
-    applyButton.disabled=mixed;
-    applyButton.textContent=mixed?L('Deeg al gemengd · gist staat vast','Dough already mixed · yeast fixed'):L('Gebruik dit gistadvies','Use this yeast advice');
-  }
+  _yeastAdviceMatchesRecipe=yeastAdviceMatchesRecipe(c,advice);
+  renderYeastApplyButton();
   if(mixed)$('yeastAdviceDetail').textContent+=' '+L('De metingen wijzigen alleen toekomstige tijden; de afgewogen gist blijft gelijk.','Measurements only adjust future times; the weighed yeast remains unchanged.');
   buildScheduleSummary(c);
   renderYeastRangeBar(c,advice,estFlour,yt);
@@ -498,10 +495,28 @@ function buildFermentationScience(c,a){
     ${technicalModelText}`;
 }
 
+// Cache only presentation state: changing Basic/Full must not recalculate.
+let _yeastAdviceMatchesRecipe=false;
+function yeastAdviceMatchesRecipe(c,advice){
+  const flour=roundTo(c.pizzas*c.targetBall/(1+(c.h+c.s+c.o+advice.selected)/100),c.practical?5:.1);
+  const proposed=roundTo(flour*advice.selected/100,c.practical?.1:.01);
+  return Math.abs(proposed-c.yeast)<1e-9;
+}
+function renderYeastApplyButton(){
+  const button=$('applyYeastAdviceButton');
+  if(!button)return;
+  const mixed=liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
+  button.disabled=mixed||_yeastAdviceMatchesRecipe;
+  button.textContent=mixed?L('Deeg al gemengd · gist staat vast','Dough already mixed · yeast fixed')
+    :_yeastAdviceMatchesRecipe?L('Staat al in je recept','Already in your recipe')
+    :L('Gebruik dit gistadvies','Use this yeast advice');
+}
+
 function applyYeastAdvice(){
   if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const c=calc();
   const a=yeastRecommendation(c);
+  if(yeastAdviceMatchesRecipe(c,a))return;
   exactOverride=exactOverride||{h:selectedHydration(),s:selectedSalt(),o:selectedOil(),ySelected:selectedYeastPct()};
   exactOverride.ySelected=a.selected;
   $('yeastPct').value=fieldNum(a.selected,3);

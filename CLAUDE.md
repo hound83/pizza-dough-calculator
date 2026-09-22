@@ -17,3 +17,7 @@ The review documents are committed to this branch; no chat attachments are requi
 3. Review the current branch against released `v1.2.1`; the original review predates the implementation, so verify each finding against the current code before reporting it as unresolved.
 
 The user's later clarification takes precedence over the original shorter-rest proposal: aim for roughly two hours until cold fermentation, shorten only when equivalent quality is supported, and do not shorten mixing times. A replacement spiral hook still uses the KitchenAid method; sufficient gluten development and physical temperature-model accuracy remain unvalidated for the exact setup. Feedback/Cloudflare PR #12 remains parked; this candidate is PR #13 on `feature/v1.3.0-planning-review`.
+
+## Claude crosscheck completion
+
+Read [the original crosscheck](docs/Claude_v1.3.0_PR13_crosscheck.md) and [the response with corrections and regression evidence](docs/V1_3_0_CLAUDE_FOLLOWUP.md). The original review is preserved; its six follow-up findings are addressed in the current candidate.

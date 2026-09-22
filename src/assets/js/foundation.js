@@ -166,7 +166,7 @@ function setToppingScale(diameter){
 function scaleQty(qty,unit){
   const q=Number(qty)*toppingScale;
   if(!Number.isFinite(q)||q<=0)return 0;
-  if(unit==='g'&&q<1)return Math.max(.01,roundTo(q,.01));
+  if(unit==='g'&&q<1)return Math.max(.01,Math.round(q*100)/100);
   if(unit==='g')return q>=20?roundTo(q,5):roundTo(q,1);
   return Math.max(1,Math.round(q));
 }
