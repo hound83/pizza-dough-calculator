@@ -54,6 +54,7 @@ function refreshBakeDayClock(){
 let _bakeTimeShifted=false;
 function selectedBakeDate(){
   if(activeBatch())return new Date(activeBatch().bakeAt);
+  if(evenings.draft.date){const at=parseEveningTime(evenings.draft.date,evenings.draft.fold);return at===null?null:new Date(at);}
   const dayRaw=$('bakeDay')?.value||'';
   const timeRaw=$('bakeTime')?.value||'';
   if(!dayRaw||!timeRaw)return null;
@@ -306,7 +307,7 @@ function timelineTotalHours(c){
 function scheduleView(c,bake=selectedBakeDate()){
   if(activeBatch()){
     const b=activeBatch(),view=WorkflowCore.timeline(b),start=b.events.start;
-    const offsets={...DoughCore.scheduleOffsets(c,prepHours()),...Object.fromEntries(Object.entries(view.times).map(([key,at])=>[key,(at-start)/3600000]))};
+    const offsets={...DoughCore.scheduleOffsets(c,prepHours()),...Object.fromEntries(Object.entries(view.times).map(([key,at])=>[key,at==null?null:(at-start)/3600000]))};
     offsets.preparation=offsets.bulkStart;offsets.beforeFridge=offsets.fridgeIn??null;
     return {offsets,date:key=>view.times[key]==null?null:new Date(view.times[key])};
   }
@@ -350,7 +351,7 @@ function buildScheduleSummary(c){
 function buildTimeline(c){
   if(activeBatch()){
     const t=WorkflowCore.timeline(activeBatch());
-    $('timeline').innerHTML=renderBatchTimeline()+`<div class="timeitem"><b>${L('Start voorverwarmen','Start preheating')}</b><span>${niceDate(new Date(t.times.bake-c.preheat*60000))}</span></div>`;
+    $('timeline').innerHTML=renderBatchTimeline()+`<div class="timeitem"><b>${L('Start voorverwarmen','Start preheating')}</b><span>${(t.times.bake==null?L('Onbekend','Unknown'):niceDate(new Date(t.times.bake-c.preheat*60000)))}</span></div>`;
     return;
   }
   const live=liveFermentationPlan(c);

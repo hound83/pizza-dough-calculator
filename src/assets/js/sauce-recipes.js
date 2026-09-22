@@ -188,7 +188,7 @@ function buildPizzaCustomize(c){
 }
 
 function methodInstructions(c){
-  const displayedReserve=Math.round(c.reserve),firstReserve=Math.floor(displayedReserve/2),remainingReserve=displayedReserve-firstReserve;
+  const displayedReserve=c.runAllocation?c.reserve:Math.round(c.reserve),firstReserve=c.runAllocation?c.reserveFirst:Math.floor(displayedReserve/2),remainingReserve=c.runAllocation?c.reserveLast:displayedReserve-firstReserve;
   const f=fmt(c.flour,0),mw=fmt(c.mainWater,0),rw=fmt(displayedReserve,0),firstRw=fmt(firstReserve,0),remainingRw=fmt(remainingReserve,0),y=fmt(c.yeast,2),s=fmt(c.salt,0),yn=yeastName(c.yeastType).toLowerCase();
   const first=c.autolyse
     ? L(`Meng <b>${f} g bloem</b> met <b>${mw} g water</b>. <b>Nog geen gist of zout.</b>`,

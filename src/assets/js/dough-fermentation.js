@@ -348,11 +348,12 @@ function update(){
   updateSauceSummary(c);
   updateRecipeSummary(c);
   buildPizzaCustomize(c);
-  buildSteps(c);
+  buildSteps(runCalculation(c));
   buildMixerCapacityNote(c);
   buildTimeline(c);
   renderBakeLog(c);
   renderWorkshop(c);
+  renderEvening(c);
   buildShopping(c);
   buildStoneAdvice(c);
   // De ingrediëntenmodal werd bij elke toetsaanslag herbouwd, ook dicht.

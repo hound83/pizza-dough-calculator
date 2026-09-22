@@ -325,3 +325,13 @@ The user requested a small visible version label and publication as v1.4.1. A mu
 | v1.4.1 standalone | `25ac6adcaf69a71f4b660b54fff2405fecd664542f95e7556994ac1711f5b564` |
 | v1.4.1 CSS | `b5607c063a00325d4842e603590c3ed07cdee7a81e74bf9736c624018c17d8b8` |
 | v1.4.1 JavaScript | `c24fc9dddef97fee9a1e7d85d27cd398e06d233c0d62822187f9502219ecdf69` |
+
+## v2.0.0 evening-workflow candidate
+
+The user authorized the six workflow proposals as one v2.0 review candidate, based on released v1.4.1. See [the implementation contract](V2_0_0_IMPLEMENTATION_REVIEW.md). Schema 53 adds an evening, independent mixer runs, stable pizza identities, availability constraints and portable templates/private backups. Unknown timestamps remain unknown; no actual time or passed quality check is inferred. Allocation conserves the parent ingredients; the physical calculation model and mixing/rest durations remain unchanged. Browser locking coordinates one writer. The live release remains 1.4.1 while this candidate is reviewed. These hashes identify software, not empirical validation.
+
+| Candidate artifact | SHA-256 |
+|---|---|
+| singleFile | `5f9fb301e0a4b665d5691dc7b54bb59aa376a0009a832ae298c3e99ccf1ab6e9` |
+| css | `f7dc573c0149ff4e1a8ef23b6e2d814eb01cfe57ebac3e847ea990f79308af18` |
+| javascript | `22501fa77185b894ac0967f820184aa7af8effcdac20a1266ed65147e4d3d985` |

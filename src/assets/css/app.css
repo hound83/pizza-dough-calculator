@@ -115,6 +115,46 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 .recipebox h3{margin:0 0 4px}.tag{font-size:11px;padding:4px 8px;border-radius:99px;background:#282e31;color:#d9dddf;border:1px solid #3b4246;white-space:nowrap}
 .footer-note{color:var(--muted);font-size:12px;margin-top:15px}
 .app-version{padding-bottom:128px}
+/* v2: the normal route is Plan -> Kitchen; auxiliary forms remain optional. */
+.workspace-nav{display:flex;gap:8px;margin:16px 0;position:relative;z-index:1}
+.workspace-tab{flex:1;min-height:48px;border:1px solid var(--line,#343c48);border-radius:12px;background:var(--panel,#17202b);color:var(--text,#f4f5f7);font:inherit;font-weight:700;cursor:pointer}
+.workspace-tab.active{background:#bd460d;color:#fff;border-color:#ef9462}
+.workspace-tab:focus-visible,.kitchen-workspace button:focus-visible{outline:3px solid #f9ba7b;outline-offset:3px}
+.plan-heading,.kitchen-heading{display:flex;justify-content:space-between;gap:20px;align-items:start;flex-wrap:wrap}
+.plan-heading h2,.kitchen-heading h2{margin:4px 0 10px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#f9ba7b}
+.plan-shortcuts{display:flex;align-items:end;gap:16px;flex-wrap:wrap}
+.plan-shortcuts>label{min-width:180px;flex:1}
+.plan-shortcuts>.btnrow{flex:3;margin:0}
+.kitchen-workspace{border:1px solid #835032;background:linear-gradient(120deg,#252016,#161d26);margin-bottom:20px}
+.kitchen-workspace button{min-height:44px;white-space:normal}
+.kitchen-workspace input,.evening-plan input{min-height:44px}
+.kitchen-ingredients{display:flex;gap:12px;flex-wrap:wrap;padding:15px 0;border-bottom:1px solid #42434b}
+.kitchen-ingredients span{background:#111b23;padding:9px 12px;border-radius:10px}
+.kitchen-ingredients b{white-space:nowrap}
+.kitchen-programme{max-width:850px;line-height:1.65}
+.kitchen-programme>label{display:block;max-width:320px}
+.run-switch{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.run-switch [aria-pressed="true"]{border:2px solid #f0a06c;background:#473326}
+.checkpoint-row,.queue-row,.collection-row{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #343c48;flex-wrap:wrap}
+.checkpoint-row small,.queue-row small,.collection-row small,.timeitem small{display:block;color:#b5bfcb;margin-top:4px}
+.checkpoint-row>div,.collection-row>div,.queue-controls{display:flex;gap:8px;flex-wrap:wrap}
+.queue-controls input{flex:1;min-width:120px;max-width:220px}
+.pizza-current,.pizza-next,.pizza-finishing{padding:16px;margin:12px 0;border-radius:12px;background:#18252d;border:1px solid #36434b}
+.pizza-current{border-color:#e18a52}
+.pizza-finishing{background:#20302a;border-color:#47705a}
+.timer-status{padding:12px;background:#293147;border-radius:10px;font-variant-numeric:tabular-nums}
+.table-scroll{overflow-x:auto;max-width:100%}
+.legacy-batch-panel{display:none}
+#kitchenInstructions{padding:16px;border:1px solid #3b424c;border-radius:12px}
+#kitchenInstructions>summary{font-weight:700;cursor:pointer;min-height:44px;padding:8px}
+#page4 .wizard-page-intro{display:none}
+#eveningOptions details,#eveningCollection details,.kitchen-workspace details{margin:14px 0}
+#eveningOptions summary,#eveningCollection summary,.kitchen-workspace summary{cursor:pointer;padding:10px 0;line-height:1.5;min-height:44px}
+.storage-owner{margin:12px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.workspace-nav~#page1 .card .card{margin-top:16px;padding:16px;background:transparent}
+@media(max-width:760px){.plan-heading,.kitchen-heading{gap:8px}.kitchen-workspace{padding:16px}.plan-shortcuts{display:block}.plan-shortcuts>.btnrow{margin-top:10px}.checkpoint-row>span,.queue-row>span{width:100%}.queue-controls{width:100%}.queue-controls input{max-width:none;width:100%}.kitchen-ingredients{gap:6px}.kitchen-ingredients span{padding:7px}.workspace-nav{margin:12px 0}.workshop-grid{min-width:0}.kitchen-workspace .field{width:100%;min-width:0}#kitchenInstructions{padding:10px}}
+@media print{.workspace-nav,.workspace-tab,.kitchen-workspace button,.storage-owner{display:none}#kitchenInstructions>summary{display:none}#kitchenInstructions{border:0}}
 @media print{.app-version{padding-bottom:0}}
 .hidden{display:none!important}
 hr{border:0;border-top:1px solid var(--line);margin:18px 0}

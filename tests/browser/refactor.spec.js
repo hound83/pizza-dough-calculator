@@ -59,7 +59,7 @@ async function waitForStablePickerPreview(page){
 
 async function openPicker(page,publication){
   await page.goto(publication.path,{waitUntil:'load'});
-  await page.locator('[data-mode-card="full"]').click();
+  await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="full"]').click();
   await page.evaluate(()=>showPage(3));
   await page.locator('#pizzaRecipeAllButton').click();
   await expect(page.locator('#pizzaPickerOverlay')).toHaveClass(/\bopen\b/);
@@ -75,32 +75,32 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.4.1');
-        await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
-        await expect(page.locator('#appVersion')).toHaveText('v1.4.1');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v2.0.0');
+        await expect(page.locator('#page1')).toHaveClass(/\bactive\b/);
+        await expect(page.locator('#appVersion')).toHaveText('v2.0.0');
         await expect(page.locator('#appVersion')).toBeVisible();
-        await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
+        await expect(page.locator('#eveningPlan')).toBeVisible();
 
         const runtime=await page.evaluate(()=>({
           appVersion:APP_VERSION,
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.4.1',hasCalculator:true,horizontalOverflow:0});
-        await page.locator('[data-mode-card="dough"]').click();
+        expect(runtime).toEqual({appVersion:'2.0.0',hasCalculator:true,horizontalOverflow:0});
+        await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
         await expect(page.locator('#scheduleSummary')).toBeVisible();
         await expect(page.locator('#scheduleSummary')).toContainText('1 u 54 min');
         await expect(page.locator('#yeastAdviceDetail')).toContainText('vuistregelmarge');
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
         await page.screenshot({path:test.info().outputPath('basic-planning.png'),fullPage:true});
         await page.locator('#bakeDay').selectOption('3');
-        await page.evaluate(()=>showPage(4));
+        await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;$('kitchenInstructions').open=true;});
         await expect(page.locator('#timeline')).toContainText('Koelkast uit');
         const timeline=await page.locator('#timeline').boundingBox(),steps=await page.locator('#stepsList').boundingBox();
         expect(timeline.y).toBeLessThan(steps.y);
         await expect(page.getByRole('checkbox',{name:'Meet de werkelijke deegtemperatuur',exact:true})).toHaveCount(1);
         await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','true');
-        await page.locator('[data-method="hand"]').click();
+        await page.evaluate(()=>showPage(1));await page.locator('[data-method="hand"]').click();
         await expect(page.locator('[data-method="hand"]')).toHaveAttribute('aria-pressed','true');
         await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','false');
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
@@ -119,13 +119,13 @@ for(const publication of PUBLICATIONS){
       try{
         await page.clock.install({time:new Date('2026-09-21T21:50:00Z')});
         await page.goto('http://127.0.0.1:4173'+publication.path,{waitUntil:'load'});
-        await page.locator('[data-mode-card="dough"]').click();
+        await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
         await expect(page.locator('#bakeDay option[value="1"]')).toHaveText('Morgen – dinsdag');
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
         await page.locator('#bakeDay').selectOption('2');
         await page.locator('#langEn').click();
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('In 2 days – Wednesday');
-        await expect(page.locator('#appVersion')).toHaveText('v1.4.1');
+        await expect(page.locator('#appVersion')).toHaveText('v2.0.0');
         await page.locator('#langNl').click();
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
         await page.clock.fastForward(11*60_000);
@@ -148,19 +148,19 @@ for(const publication of PUBLICATIONS){
       await page.locator('#langEn').click();
       await expect(page.locator('#experienceFull b')).toHaveText('Full');
       await page.locator('#langNl').click();
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#hydration')).not.toBeVisible();
       const before=await page.locator('#hydration').inputValue();
       await page.locator('.mode-choice-nav').click();
       await page.locator('#experienceFull').click();
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#hydration')).toBeVisible();
       expect(await page.locator('#hydration').inputValue()).toBe(before);
     });
 
     test('keeps Custom hidden during routine Basic input',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       const cases=[
         ['#pizzas','6','input'],['#diameter','30','input'],['#roomTemp','22','input'],['#fridgeTemp','5','input'],
         ['#stoneTemp','450','input'],['#bakeDay','1','select'],['#bakeTime','19:30','input']
@@ -178,32 +178,32 @@ for(const publication of PUBLICATIONS){
       await page.addInitScript(()=>localStorage.setItem('pizzaCalcV50',JSON.stringify({version:50,appMode:'dough',hydration:'67'})));
       await page.goto(publication.path,{waitUntil:'load'});
       await expect(page.locator('#experienceFull')).toHaveAttribute('aria-pressed','true');
-      await page.locator('#experienceBasic').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('#experienceBasic').click();
       await page.waitForTimeout(350);
       expect(await page.evaluate(()=>localStorage.getItem('pizzaCalcV50'))).toBeNull();
-      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV52')).version)).toBe(52);
+      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV53')).version)).toBe(53);
       await page.reload({waitUntil:'load'});
       await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       expect(await page.locator('#hydration').inputValue()).toBe('67');
     });
 
     test('shows a custom-settings badge in Basic after Full edits',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
       await page.locator('#experienceFull').click();
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await page.locator('#hydration').fill('66');
       await page.locator('#hydration').blur();
       await page.locator('.mode-choice-nav').click();
-      await page.locator('#experienceBasic').click();
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('#experienceBasic').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#experienceCustomBadge')).toBeVisible();
       await expect(page.locator('#experienceCustomBadge')).toHaveText('Eigen instellingen actief');
     });
 
     test('keeps explicit yeast advice usable and explained in Basic',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#yeastApplyHelp')).toHaveText('Past alleen de berekende hoeveelheid gist aan.');
       await page.locator('#roomTemp').fill('24');
       await page.locator('#roomTemp').blur();
@@ -216,7 +216,7 @@ for(const publication of PUBLICATIONS){
 
     test('yeast status survives language and display switches without a redundant recipe change',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#applyYeastAdviceButton')).toHaveText('Staat al in je recept');
       await expect(page.locator('#applyYeastAdviceButton')).toBeDisabled();
       await expect(page.locator('#preset')).toHaveValue('kodaNight');
@@ -239,7 +239,7 @@ for(const publication of PUBLICATIONS){
 
     test('subgram recipe quantities stay localized in the picker, customization, ingredients and steps',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('[data-mode-card="full"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="full"]').click();
       for(const lang of ['nl','en'])for(const diameter of ['30','40']){
         await page.evaluate(({lang,diameter})=>{
           setLanguage(lang);$('diameter').value=diameter;update();
@@ -257,7 +257,7 @@ for(const publication of PUBLICATIONS){
     test('uses practical percentage spinner grids while preserving off-grid preset precision',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
       await page.locator('#experienceFull').click();
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#diameter')).toHaveValue('30');
 
       const controls=[
@@ -284,14 +284,14 @@ for(const publication of PUBLICATIONS){
 
     test('renders staged main-water and room-temperature reserve guidance bilingually',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await page.evaluate(()=>{
         currentMethod='kitchenaid';
         $('autolyse').checked=true;
         $('roomTemp').value='21';
         $('fridgeTemp').value='4';
         $('finalDoughTemp').value='24';
-        update();showPage(4);
+        update();showPage(4);$('kitchenInstructions').open=true;
       });
       const weigh=page.locator('div.step-card[data-step-key="s-weigh"]');
       await expect(weigh).toContainText('reservewater');
@@ -310,23 +310,23 @@ for(const publication of PUBLICATIONS){
 
     test('shows practical water bands and route-correct hot-water warnings',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('[data-mode-card="dough"]').click();
-      await page.evaluate(()=>showPage(4));
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
+      await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;$('kitchenInstructions').open=true;});
       const weigh=page.locator('div.step-card[data-step-key="s-weigh"]');
 
       await page.evaluate(()=>{
         currentLang='nl';currentMethod='kitchenaid';$('autolyse').checked=false;
-        $('roomTemp').value='24';$('finalDoughTemp').value='24';update();showPage(4);
+        $('roomTemp').value='24';$('finalDoughTemp').value='24';update();showPage(4);$('kitchenInstructions').open=true;
       });
       await expect(weigh).toContainText('Koud kraanwater kan hiervoor voldoende zijn');
       await expect(weigh).not.toContainText('ijswater nodig');
 
-      await page.evaluate(()=>{$('roomTemp').value='27';update();showPage(4);});
+      await page.evaluate(()=>{$('roomTemp').value='27';update();showPage(4);$('kitchenInstructions').open=true;});
       await expect(weigh).toContainText('Hiervoor is ijswater nodig');
       await expect(weigh).toContainText('weeg daarna opnieuw precies');
 
       await page.evaluate(()=>{
-        $('roomTemp').value='30';$('finalDoughTemp').value='20';update();showPage(4);
+        $('roomTemp').value='30';$('finalDoughTemp').value='20';update();showPage(4);$('kitchenInstructions').open=true;
       });
       await expect(weigh).toContainText('niet haalbaar');
       await expect(weigh).toContainText('1 °C hoofdwater');
@@ -335,7 +335,7 @@ for(const publication of PUBLICATIONS){
       await page.evaluate(()=>{
         currentMethod='hand';$('roomTemp').value='21';$('autolyse').checked=true;
         const c=calc();$('finalDoughTemp').value=String(predictFinalDoughTemp(41,c,'hand'));
-        update();showPage(4);
+        update();showPage(4);$('kitchenInstructions').open=true;
       });
       await expect(weigh).toContainText('handkneden met koude autolyse');
       await expect(weigh).not.toContainText('op deze directe route');
@@ -343,7 +343,7 @@ for(const publication of PUBLICATIONS){
       await page.evaluate(()=>{
         $('autolyse').checked=false;const c=calc();
         $('finalDoughTemp').value=String(predictFinalDoughTemp(41,c,'hand'));
-        update();showPage(4);
+        update();showPage(4);$('kitchenInstructions').open=true;
       });
       await expect(weigh).toContainText('op deze directe route');
       await expect(weigh).toContainText('≥40 °C bij de gist');
@@ -383,7 +383,7 @@ for(const publication of PUBLICATIONS){
 
     test('keeps per-ball sauce customization collapsed and functional',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('[data-mode-card="full"]').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="full"]').click();
       await page.evaluate(()=>showPage(3));
 
       const disclosure=page.locator('#pizzaCustomize .sauce-choice-disclosure').first();
