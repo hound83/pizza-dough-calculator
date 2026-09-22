@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v1.4.0</title>
+<title>Pizzadeegcalculator v1.4.1</title>
 <style>
 :root{
   --bg:#0e1011; --panel:#181b1d; --panel2:#202427; --panel3:#111416;
@@ -121,6 +121,8 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 .recipebox .titleline{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .recipebox h3{margin:0 0 4px}.tag{font-size:11px;padding:4px 8px;border-radius:99px;background:#282e31;color:#d9dddf;border:1px solid #3b4246;white-space:nowrap}
 .footer-note{color:var(--muted);font-size:12px;margin-top:15px}
+.app-version{padding-bottom:128px}
+@media print{.app-version{padding-bottom:0}}
 .hidden{display:none!important}
 hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 @media(max-width:860px){
@@ -1644,6 +1646,7 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 </div>
 </div>
 </section>
+<footer class="footer-note app-version" id="appVersion"></footer>
 </div>
 <script>// DOM-independent numerical core. No browser state, translation or persistence.
 const DoughCore=(()=>{
@@ -2208,7 +2211,7 @@ let _livePlanCache={key:null,value:null};
 // van "20") nooit recepten of afgevinkte stappen vernietigen.
 let _deferDependentStatePrune=false;
 // Publieke productversie staat bewust los van opslag-/migratieschema 51.
-const APP_VERSION='1.4.0';
+const APP_VERSION='1.4.1';
 
 // Keep subgram herbs legible across recipe, shopping and copy surfaces.
 function ingredientAmount(qty){return fmt(qty,qty<1?2:qty<2?1:0);}
@@ -2513,6 +2516,7 @@ function updateLanguageSwitch(){
   const nl=$('langNl'),en=$('langEn');
   if(nl)nl.classList.toggle('active',currentLang==='nl');
   if(en)en.classList.toggle('active',currentLang==='en');
+  $('appVersion').textContent=`v${APP_VERSION}`;
   document.documentElement.lang=currentLang;
   document.title=currentLang==='en'?`Pizza dough calculator v${APP_VERSION}`:`Pizzadeegcalculator v${APP_VERSION}`;
 }

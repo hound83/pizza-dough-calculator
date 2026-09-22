@@ -114,6 +114,8 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 .recipebox .titleline{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .recipebox h3{margin:0 0 4px}.tag{font-size:11px;padding:4px 8px;border-radius:99px;background:#282e31;color:#d9dddf;border:1px solid #3b4246;white-space:nowrap}
 .footer-note{color:var(--muted);font-size:12px;margin-top:15px}
+.app-version{padding-bottom:128px}
+@media print{.app-version{padding-bottom:0}}
 .hidden{display:none!important}
 hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 @media(max-width:860px){

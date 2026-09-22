@@ -315,3 +315,13 @@ No physical constants, yeast model, kneading duration or rest duration change in
 | v1.4.0 standalone | `d60e69bfd21ea60bbf41cab8e29cb245d2f768ae64f648d369d4c05345da20e9` |
 | v1.4.0 CSS | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
 | v1.4.0 JavaScript | `17a59e6b2aa22e0a45647755f1b9c94b815293ef1b3ccc5d8444e489de9a7ff6` |
+
+## v1.4.1 visible-version patch
+
+The user requested a small visible version label and publication as v1.4.1. A muted footer on every screen uses the same APP_VERSION value as the browser title; it remains readable in NL/EN and clears the floating actions on mobile. Package metadata and the static title also advance to 1.4.1. No recipe, calculation, timing or schema-52 storage behavior changes. Existing responsive/browser checks cover the footer; the complete npm test suite remains the publication gate. Earlier release and candidate baselines remain immutable.
+
+| Release artifact | SHA-256 |
+|---|---|
+| v1.4.1 standalone | `25ac6adcaf69a71f4b660b54fff2405fecd664542f95e7556994ac1711f5b564` |
+| v1.4.1 CSS | `b5607c063a00325d4842e603590c3ed07cdee7a81e74bf9736c624018c17d8b8` |
+| v1.4.1 JavaScript | `c24fc9dddef97fee9a1e7d85d27cd398e06d233c0d62822187f9502219ecdf69` |

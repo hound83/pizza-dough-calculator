@@ -2,7 +2,7 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.4.0-f0b45a)](docs/V1_4_0_RELEASE_REVIEW.md)
+[![Version](https://img.shields.io/badge/version-v1.4.1-f0b45a)](docs/PRODUCT_GUARDRAILS.md#v141-visible-version-patch)
 [![Tests](https://img.shields.io/badge/regression_tests-106_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
@@ -13,9 +13,11 @@ The downloadable application remains one self-contained `index.html`. The reposi
 
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v1.4.0 release notes](docs/V1_4_0_RELEASE_REVIEW.md)
 
-> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.4.0 uses storage schema 52 and automatically migrates existing schema-51 data.
+> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.4.1 uses storage schema 52 and automatically migrates existing schema-51 data.
 
 **New in v1.4.0:** fixed batches and bake dates, actual checkpoints, saved dough recipes and comparisons, scale/container guidance, mixer profiles and targeted dough help. Includes the improved 1.3 planning and dynamic weekday labels. All eight findings from Claude’s 1.4 crosscheck are addressed; mixing times and model constants remain unchanged. [Review response and release checks](docs/V1_4_0_RELEASE_REVIEW.md).
+
+**v1.4.1:** the version number now appears at the bottom of every screen, including mobile and both languages.
 
 **For Claude/reviewers:** [start here](CLAUDE.md#v140-release-review). The [full original review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) and current implementation roadmap are stored in this branch; separate attachments are unnecessary.
 
@@ -155,7 +157,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the fifteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, the historical v1.3.0 and v1.4.0 candidate baselines, and the separate v1.4.0 release baseline. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the fifteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, the historical v1.3.0 and v1.4.0 candidate baselines, and the separate v1.4.0/v1.4.1 release baselines. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 
@@ -206,7 +208,7 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Release:** v1.4.0; tag v1.0.0 and all earlier baselines remain preserved.
+- **Release:** v1.4.1; tag v1.0.0 and all earlier baselines remain preserved.
 - **Architecture:** static HTML, CSS and fifteen JavaScript modules generate the standalone publication for GitHub Pages.
 - **Review:** Claude's independent 1.4 crosscheck and the response to all eight findings are recorded in [the release review](docs/V1_4_0_RELEASE_REVIEW.md).
 - **Included:** improved 1.3 planning, dynamic weekdays, schema-52 migration and all seven workshop additions.
