@@ -4,7 +4,7 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v1.4.1-f0b45a)](docs/PRODUCT_GUARDRAILS.md#v141-visible-version-patch)
+[![Versie](https://img.shields.io/badge/versie-v2.0.0--candidate-f0b45a)](docs/V2_0_0_IMPLEMENTATION_REVIEW.md)
 [![Tests](https://img.shields.io/badge/regressietests-106_tests-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
@@ -15,13 +15,11 @@ De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v1.4.0-releasenotities](docs/V1_4_0_RELEASE_REVIEW.md)
 
-> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.4.1 gebruikt opslagschema 52 en migreert bestaande schema-51-gegevens automatisch.
+> **v2.0.0 reviewkandidaat.** De live pagina blijft op v1.4.1 tot de review is verwerkt. Tag v1.0.0 en alle eerdere baselines blijven behouden. Schema 53 migreert bestaande gegevens uit schema 52.
 
-**Nieuw in v1.4.0:** vaste batches en bakdatums, werkelijke momenten, eigen deegrecepten en vergelijkingen, weegschaal- en koelkastadvies, mixerprofielen en gerichte deeghulp. De verbeterde 1.3-planning is inbegrepen, met dynamische weekdagen. Alle acht bevindingen uit Claude’s 1.4-review zijn verwerkt; mixtijden en modelconstanten blijven behouden. [Review en releasecontroles](docs/V1_4_0_RELEASE_REVIEW.md).
+**Nieuw in v2:** vrij wisselen tussen Plan en Keuken, plannen rond beschikbaarheid, verdelen over aparte mixerbeurten, een bakvolgorde met echte in-/uithaaltijden, gerichte deeghulp en complete avondsjablonen plus privéback-ups. De versieweergave, dynamische weekdagen en eerdere verbeteringen blijven behouden. [Implementatie en review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
-**v1.4.1:** het versienummer staat nu onderaan elk scherm, ook op mobiel en in beide talen.
-
-**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v140-release-review). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
+**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v200-review-current-candidate). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
 
 ## Wat kan de calculator?
 
@@ -60,12 +58,12 @@ Belangrijkste mogelijkheden:
 
 ## Zo gebruik je hem
 
-1. Kies Basis of Uitgebreid en daarna hoeveel onderdelen je nodig hebt.
+1. Begin in Plan en kies wat je wilt maken. Basis/Uitgebreid blijft beschikbaar via de weergavekeuze.
 2. Selecteer een preset of vul je eigen deegwaarden in.
 3. Kies diameter of bolgewicht als leidende maat.
 4. Stel fermentatie, temperaturen en eventueel een gewenste baktijd in.
 5. Voeg in de modus Volledige pizza’s per deegbol een pizzarecept toe.
-6. Volg daarna het berekende stappenplan van mengen tot bakken.
+6. Open Keuken voor instructies of kies Start deeg om echte momenten, mixerbeurten en de bakvolgorde bij te houden.
 
 Alle berekeningen worden direct bijgewerkt. Ingevoerde waarden en voortgang worden lokaal in de browser bewaard, zodat een refresh je recept niet wist.
 
@@ -81,7 +79,8 @@ Dit is bewust **geen gevalideerd laboratoriummodel** en ook geen officiële AVPN
 
 - De interface kan direct wisselen tussen Nederlands en Engels.
 - Er is geen account of server nodig.
-- Receptinstellingen, voortgang en het deeglogboek worden alleen via `localStorage` in je eigen browser bewaard.
+- Recepten, avonden, voortgang en het deeglogboek blijven in je browser. Eén tabblad kan tegelijk opslaan; sluit dat tabblad en herlaad een ander om verder te gaan. Als vergrendeling of opslag ontbreekt, meldt de app dat opslaan niet lukt.
+- Deelbare avondsjablonen bevatten geen privénamen of echte geschiedenis. Privéback-ups bevatten die wel en vragen bevestiging voor het vervangen van lokale gegevens; het zijn momentopnamen, geen synchronisatie.
 - De app verstuurt geen recept- of logboekgegevens naar een backend.
 - `Reset` wist de lokaal opgeslagen calculatorstate; de taalkeuze blijft behouden.
 
@@ -140,10 +139,10 @@ Releasecontroles (zie de Actions-uitslag bij de PR voor de uitvoerstatus):
 
 ```text
 15 refactor-structure tests
-19 pure-core tests
+31 pure-core tests
 106 bundle regression tests
 106 source regression tests
-89 Chromium browser/layout tests
+125 Chromium browser/layout tests
 ```
 
 De suite controleert onder meer:
@@ -159,7 +158,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de vijftien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes, de historische v1.3.0- en v1.4.0-kandidaatbaselines en de afzonderlijke v1.4.0/v1.4.1-releasebaselines. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de achttien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes, de historische v1.3.0- en v1.4.0-kandidaatbaselines en de afzonderlijke v1.4.0/v1.4.1-releasebaselines. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -210,11 +209,11 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Release:** v1.4.1; tag v1.0.0 en alle eerdere baselines blijven behouden.
-- **Architectuur:** statische HTML, CSS en vijftien JavaScriptmodules genereren de standalone publicatie voor GitHub Pages.
+- **Reviewkandidaat:** v2.0.0; live blijft v1.4.1; tag v1.0.0 en alle eerdere baselines blijven behouden.
+- **Architectuur:** statische HTML, CSS en achttien JavaScriptmodules genereren de standalone publicatie voor GitHub Pages.
 - **Review:** Claude’s onafhankelijke 1.4-crosscheck en de reactie op alle acht bevindingen staan in [het releaseverslag](docs/V1_4_0_RELEASE_REVIEW.md).
-- **Inbegrepen:** de verbeterde 1.3-planning, dynamische weekdagen, schema-52-migratie en alle zeven workshopuitbreidingen.
-- **Volgende versie:** de zes besproken gebruiks- en keukenverbeteringen worden apart voorbereid; appontwikkeling is geparkeerd.
+- **Inbegrepen:** alle zes verbeteringen voor de pizza-avond, schema-53-migratie, dynamische weekdagen en de bestaande workshop- en rekenafspraken.
+- **Geparkeerd:** appontwikkeling en de drie voorgestelde onderzoeken naar het fysieke model.
 - **Feedback:** anonieme feedback/Cloudflare blijft afzonderlijk werk; PR #12 zit niet in deze release.
 
 ## Achtergrond

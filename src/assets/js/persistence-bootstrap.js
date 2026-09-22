@@ -29,7 +29,7 @@ async function acquireStorageWriter(){
   });
 }
 function showStorageOwnership(){
-  if(_storageWriter)return;
+  if(_storageWriter||$('storageOwnerNotice'))return;
   const box=document.createElement('div');box.className='warning storage-owner';box.id='storageOwnerNotice';box.setAttribute('role','status');
   box.textContent=navigator.locks?.request?L('Deze calculator is al actief in een ander tabblad. Dit tabblad kan bekijken, maar niet opslaan. Sluit het andere tabblad en herlaad om hier verder te gaan.','This calculator is active in another tab. This tab can view, but cannot save. Close the other tab and reload to continue here.'):L('Deze browser kan wijzigingen niet veilig tussen tabbladen coördineren. Je kunt rekenen, maar deze sessie wordt niet opgeslagen. Download een back-up om je werk te bewaren.','This browser cannot safely coordinate changes between tabs. You can calculate, but this session is not saved. Download a backup to retain your work.');
   const button=document.createElement('button');button.type='button';button.className='btn secondary';button.textContent=L('Opnieuw laden','Reload');button.addEventListener('click',()=>location.reload());box.appendChild(button);document.querySelector('.app').prepend(box);

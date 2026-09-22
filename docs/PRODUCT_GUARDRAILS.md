@@ -345,3 +345,13 @@ Import validation, recoverable migration, precise small-dose allocation and comp
 | singleFile | `feae446f7587041d5f8d2293c132b0024418b3c74959b9d00c2e5fbdfe56b9c1` |
 | css | `6b195a7b560f6dfe6c31b3484cdbe0edeb062429f6dabf383887f4779ad261b1` |
 | javascript | `5c8c7b0afa1f0a848af9759c8c251881125152cc426872390cd44fdfc6c58978` |
+
+### v2.0.0 review snapshot
+
+The final review candidate additionally protects read-only reset, reconciles the parent yeast display, previews private-data-free sharing and identifies the next pizza’s run forecast. No physical model or timing constants changed.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `d13159cabf093ea9d9ab9d653973b8ff9ea491b3a863b86126d6f23a60174f97` |
+| css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
+| javascript | `d22d3f64fcf3b21da23fbba3fb3525062f5ade90778441f6f7ddc9c4d912af38` |

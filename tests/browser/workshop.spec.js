@@ -76,7 +76,7 @@ for(const path of ['/index.html','/src/index.html']){
       await expect(page.locator('#stepsList .step-check input').first()).toBeChecked();
       await page.evaluate(()=>{setLiveMeasurement('doughTemp','25');setLiveMeasurement('doughTemp','');});
       await page.locator('[data-workshop-action="close-batch"]').click();
-      await page.locator('#eveningCollectionDetails summary').click();await page.locator('#eveningHistory summary').click();await page.locator('[data-evening-action="reopen-evening"]').first().click();await page.evaluate(()=>$('kitchenInstructions').open=true);
+      await page.locator('#eveningCollectionDetails > summary').click();await page.locator('#eveningHistory summary').click();await page.locator('[data-evening-action="reopen-evening"]').first().click();await page.evaluate(()=>$('kitchenInstructions').open=true);
       await expect(page.locator('#stepsList .step-check input').first()).toBeChecked();
       expect(await page.evaluate(()=>({at:activeBatch().events.fridgeIn,temp:liveMeasurementValue('doughTemp')}))).toEqual({at:anchor,temp:null});
     });
@@ -121,7 +121,7 @@ for(const path of ['/index.html','/src/index.html']){
       await expect(page.locator('#bakeComparison label').first()).toContainText('Bak A');
       expect(await page.evaluate(()=>waterTempAdvice(calc()).raw)).toBe(before);
       await page.reload();expect(await page.evaluate(()=>bakeLog[0].profile.hook)).toBe('Spiraalhaak');
-      await page.locator('#langEn').click();await page.locator('#bakeComparisonDetails summary').click();await expect(page.locator('#bakeComparison')).toContainText('Actual main water');
+      await page.locator('#kitchenInstructions > summary').click();await page.locator('#langEn').click();await page.locator('#bakeComparisonDetails > summary').click();await expect(page.locator('#bakeComparison')).toContainText('Actual main water');
     });
     test('dough troubleshooting branches by stage and symptom in both languages',async({page})=>{
       await open(page);await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;});await page.locator('#doughHelpDetails summary').click();
@@ -163,7 +163,7 @@ for(const path of ['/index.html','/src/index.html']){
       expect(await page.evaluate(()=>$('timeline').textContent.includes(niceDate(new Date(WorkflowCore.timeline(activeBatch()).times.bake-45*60000))))).toBe(true);
       await page.locator('[data-workshop-action="close-batch"]').click();
       await page.locator('#stoneTemp').fill('300');await page.locator('#stoneTemp').blur();
-      await page.locator('#eveningCollectionDetails summary').click();await page.locator('#eveningHistory summary').click();await page.locator('[data-evening-action="reopen-evening"]').first().click();await page.evaluate(()=>$('kitchenInstructions').open=true);
+      await page.locator('#eveningCollectionDetails > summary').click();await page.locator('#eveningHistory summary').click();await page.locator('[data-evening-action="reopen-evening"]').first().click();await page.evaluate(()=>$('kitchenInstructions').open=true);
       await page.evaluate(()=>showPage(1));await expect(page.locator('#stoneTemp')).toHaveValue('400');await expect(page.locator('#preheatMinutes')).toHaveValue('45');
     });
     for(const width of [320,390,760,1280])test(`workshop errors stay beside the action and inside the viewport at ${width}px`,async({page})=>{

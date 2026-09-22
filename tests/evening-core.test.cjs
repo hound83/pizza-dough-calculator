@@ -29,6 +29,10 @@ test('tiny positive yeast doses are not rounded to zero by splitting',()=>{
   assert.equal(a.ok,true);assert.equal(a.runs.length,24);
   assert.ok(a.runs.every(r=>r.display.yeast>0));assert.ok(Math.abs(a.runs.reduce((s,r)=>s+r.display.yeast,0)-.01)<1e-10);
 });
+test('split yeast adds up to the displayed parent amount at low non-rounded doses',()=>{
+  const a=E.allocate({...c(7),yeast:.07163},{unit:'dough',capacity:900});
+  assert.equal(a.totals.yeast,.07);assert.ok(Math.abs(a.runs.reduce((n,r)=>n+r.display.yeast,0)-.07)<1e-9);
+});
 test('persisted allocations must reproduce the frozen parent recipe, not merely contain valid numbers',()=>{
   const t=template(),quantities=W.summary(t.recipe,{neapolitan:.31},D),e=E.createEvening({id:'valid',template:t,allocation:E.allocate(quantities,t.split),startedAt:start,bakeAt:start+26*H,plan:{preparation:.9,bulk:1,cold:20,ball:4},zone:'Europe/Amsterdam'});
   assert.equal(E.validateAllocations(e,quantities),true);
@@ -62,9 +66,10 @@ test('availability alternatives are computed whole-plan shifts and retain task d
 });
 test('template sharing strips private names and actual data; future formats are rejected',()=>{
   const t=template();t.pizzas[0].events={in:start,out:start+60000};t.notes='private';t.bakeAt=start;
+  t.profile={id:'private-profile',name:'Private owner',method:'kitchenaid',model:'Artisan',hook:'Spiral',programme:'Private note'};
   const shared=E.exportTemplate(t),restored=E.importTemplate(shared);
   assert.equal(restored.pizzas[0].name,'');assert.deepEqual(restored.pizzas[0].events,{});assert.equal(restored.recipe.preset,'custom');
-  assert.equal(JSON.stringify(shared).includes('Private name'),false);assert.equal(JSON.stringify(shared).includes('bakeAt'),false);
+  assert.equal(JSON.stringify(shared).includes('Private'),false);assert.equal(shared.template.profile.model,'Artisan');assert.equal(JSON.stringify(shared).includes('bakeAt'),false);
   assert.equal(E.importTemplate({...shared,version:99}),null);
   const bad=structuredClone(shared);bad.template.pizzas[0].snapshot.before[0].quantity=-1;assert.equal(E.importTemplate(bad),null);
 });
@@ -74,7 +79,8 @@ test('baking queue has stable ownership, one oven slot and atomic first-launch c
   const b=e.runs[0].batch;
   for(const key of ['bulkStart','fridgeIn','fridgeOut'])e.runs[0].batch=W.recordUnknownEvent(e.runs[0].batch,key,start+26*H);
   const chosen=e.pizzas[2];e=E.movePizza(e,chosen.id,-2);assert.equal(e.pizzas[0].id,chosen.id);
-  e=E.bake(e,chosen.id,'in',start+26*H);assert.equal(e.runs[0].batch.events.bake,start+26*H);
+  e=E.bake(e,chosen.id,'in',start+26*H);assert.equal(e.runs[0].batch.events.bake,start+26*H);assert.ok(E.sanitizeEvening(e));
+  const forged=structuredClone(e);forged.undo.priorRunBake.start-=60000;assert.equal(E.sanitizeEvening(forged),null);
   assert.throws(()=>E.bake(e,e.pizzas[1].id,'in',start+26*H),/oven-busy/);
   e=E.bake(e,chosen.id,'out',start+26*H+90000);assert.equal(e.pizzas[0].snapshot.after[0].name,'Basilicum');
   assert.equal(E.close(e,start+27*H).pizzas.filter(x=>!x.events.out).length,6);

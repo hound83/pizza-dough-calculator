@@ -28,6 +28,10 @@ const EveningCore=(()=>{
     const yeastStep=c.yeast>0?Math.min(.01,10**(Math.floor(Math.log10(c.yeast/c.pizzas))-1)):.01;
     const steps=Object.fromEntries([...amountKeys,'reserve'].map(k=>[k,k==='yeast'?yeastStep:c.practical?1:.1]));
     const totals=Object.fromEntries([...amountKeys,'reserve'].map(k=>[k,Number((Math.round(c[k]/steps[k])*steps[k]).toFixed(8))]));
+    // Match the parent readout; use extra precision only for a dose that would
+    // otherwise disappear entirely, or to share its displayed total across runs.
+    const parentYeast=Math.round(c.yeast*100)/100;
+    if(parentYeast>0)totals.yeast=parentYeast;
     totals.mainWater=Number((totals.water-totals.reserve).toFixed(8));
     const parentMass=amountKeys.reduce((s,k)=>s+c[k],0),perBall=(unit==='flour'?c.flour:parentMass)/c.pizzas;
     if(capacity!==null&&perBall>capacity+1e-8)return {ok:false,reason:'one-ball'};
@@ -79,7 +83,12 @@ const EveningCore=(()=>{
     const split=value.split;if(!object(split)||!['flour','dough'].includes(split.unit)||(split.capacity!==null&&!number(split.capacity,1,50000)))return null;
     return {id:value.id,name:text(value.name),recipe,mode:value.mode,pizzas,sauce:{enabled:s.enabled,automatic:s.automatic,type:s.type,grams:s.grams},split:{unit:split.unit,capacity:split.capacity},storage:W.storage(value.storage),scale:[1,.1,.01].includes(value.scale)?value.scale:.1,profile:W.profile(value.profile)};
   }
-  function exportTemplate(value){const t=cleanTemplate(value,{privateNames:false});if(!t)throw new Error('template');return {format:'pizza-evening-template',version:1,template:t};}
+  function exportTemplate(value){
+    const t=cleanTemplate(value,{privateNames:false});if(!t)throw new Error('template');
+    t.name='Pizza evening';
+    if(t.profile){t.profile.name='Mixer';t.profile.programme='';}
+    return {format:'pizza-evening-template',version:1,template:t};
+  }
   function importTemplate(value){return object(value)&&value.format==='pizza-evening-template'&&value.version===1?cleanTemplate(value.template,{imported:true,privateNames:false}):null;}
 
   function createEvening({id:eveningId,template,allocation,startedAt,bakeAt,plan,zone}){

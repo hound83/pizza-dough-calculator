@@ -85,7 +85,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
     await open(page);await start(page);await page.locator('[data-evening-action="event-now"]').click();
     const second=await context.newPage();await second.goto(path);await expect(second.locator('#storageOwnerNotice')).toBeVisible();
     const before=await page.evaluate(()=>localStorage.getItem(SAVE_KEY));
-    expect(await second.evaluate(()=>saveState())).toBe(false);expect(await page.evaluate(()=>localStorage.getItem(SAVE_KEY))).toBe(before);
+    expect(await second.evaluate(()=>saveState())).toBe(false);await second.evaluate(()=>resetCalculator());expect(await page.evaluate(()=>localStorage.getItem(SAVE_KEY))).toBe(before);
     await page.close();await second.reload();await expect(second.locator('#storageOwnerNotice')).toHaveCount(0);expect(await second.evaluate(()=>activeBatch().events.bulkStart)).toBeGreaterThan(0);await second.close();
   });
   test('schema 52 migrates one running batch without inventing past toppings',async({page})=>{
@@ -121,7 +121,15 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
     const end=await page.evaluate(()=>activeEvening().timer.endAt);await page.clock.fastForward(2*60000);await page.reload();expect(await page.evaluate(()=>activeEvening().timer.endAt)).toBe(end);
     await page.clock.fastForward(4*60000);await expect(page.locator('#eveningTimer')).toContainText('Timer klaar');expect(await page.evaluate(()=>activeBatch().events.bulkStart)).toBeUndefined();
     await page.evaluate(()=>Object.defineProperty(navigator,'wakeLock',{value:{request:async()=>{throw new Error('Refused');}},configurable:true}));
-    await page.locator('[data-evening-action="wake"]').click();await expect(page.locator('[data-evening-action="wake"]')).toHaveAttribute('aria-pressed','false');await expect(page.locator('#kitchenWorkspace [role="status"]')).toContainText('geweigerd');
+    await page.locator('[data-evening-action="wake"]').click();await expect(page.locator('[data-evening-action="wake"]')).toHaveAttribute('aria-pressed','false');await expect(page.locator('#kitchenWorkspace .info[role="status"]')).toContainText('geweigerd');
+  });
+  test('sharing previews and downloads a template without private names or notes',async({page})=>{
+    await open(page);await expand(page,'#eveningCollectionDetails');
+    await page.evaluate(()=>{evenings.draft.pizzas[0].name='Secret guest';workshop.profiles=[{id:'my-mixer',name:'Secret owner',method:'kitchenaid',model:'Artisan',hook:'Spiral',programme:'Secret note'}];workshop.profileId='my-mixer';});
+    await page.locator('[data-evening-action="share-template"]').click();await expect(page.locator('#eveningSharePreview')).toBeVisible();
+    const [download]=await Promise.all([page.waitForEvent('download'),page.locator('[data-evening-action="download-shared"]').click()]);
+    const fs=require('node:fs/promises'),raw=await fs.readFile(await download.path(),'utf8'),file=JSON.parse(raw);
+    expect(raw).not.toContain('Secret');expect(file.format).toBe('pizza-evening-template');expect(file.template.pizzas).toHaveLength(4);expect(file.template.profile.model).toBe('Artisan');
   });
   test('fixed date stays fixed and availability alternatives require explicit application',async({page})=>{
     await page.clock.install({time:new Date('2026-09-22T08:00:00Z')});await open(page);
