@@ -312,6 +312,6 @@ No physical constants, yeast model, kneading duration or rest duration change in
 
 | Release artifact | SHA-256 |
 |---|---|
-| v1.4.0 standalone | `8d279726faa7862cb10120cc749149d496cf52bf4bd5a75f1cf5907b08cda657` |
+| v1.4.0 standalone | `d60e69bfd21ea60bbf41cab8e29cb245d2f768ae64f648d369d4c05345da20e9` |
 | v1.4.0 CSS | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
-| v1.4.0 JavaScript | `a824d3e6969071d08036933f84bce39bc3ef7d29301c7505ff1d57a7f38183d1` |
+| v1.4.0 JavaScript | `17a59e6b2aa22e0a45647755f1b9c94b815293ef1b3ccc5d8444e489de9a7ff6` |

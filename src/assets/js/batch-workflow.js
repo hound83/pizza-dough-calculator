@@ -178,7 +178,10 @@ function replaceWorkshopPanel(id,html){
     const trigger=workshopNoticeAnchor?root.querySelector(workshopNoticeAnchor):null;
     const anchor=trigger?.closest('.btnrow')||trigger?.closest('label')||trigger;
     if(anchor)anchor.insertAdjacentElement('afterend',status);else root.prepend(status);
-    if(newNotice)requestAnimationFrame(()=>status.scrollIntoView({block:'nearest'}));
+    if(newNotice)requestAnimationFrame(()=>{
+      const current=root.querySelector('.workshop-notice');
+      if(current)current.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+    });
   }
   if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
 }

@@ -229,6 +229,9 @@ function wireEvents(){
         markCustomField(el.id);
       }
       update();
+      // A committed oven edit belongs to the active batch immediately, even
+      // when the user reloads before the general 300 ms save debounce runs.
+      if(activeBatch()&&BATCH_OVEN_FIELDS.has(el.id))saveState();
     });
     el.addEventListener('blur',()=>{
       if(el.type!=='number')return;

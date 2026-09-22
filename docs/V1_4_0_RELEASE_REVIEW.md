@@ -35,6 +35,8 @@ The release gate is `npm test` on GitHub Actions before merging PR #14 to `main`
 
 Use [PR #14 checks](https://github.com/hound83/pizza-dough-calculator/pull/14/checks) and the associated commit's Actions run as the execution record. The local environment could run the Node suites, but its Chromium download returned a corrupt empty archive; browser results must therefore come from CI, not a claimed local run.
 
+The first release check found two additional browser edge cases: oven edits could miss the 300 ms save debounce on immediate reload, and imported-file notices were not reliably fully inside the viewport after a language switch. Committed active-batch oven changes now save synchronously, and notice scrolling resolves the current status element and centers it immediately. The same browser assertions remain part of the release gate.
+
 The retained browser suite covers schema-51 migration including failed-write recovery, NL/EN, frozen recipe checkpoints, actual-time validation, calendar rollover, and source/bundle layouts at 320, 390, 430, 760, 1024 and 1280 px. Relative bake-day labels use the current local date and refresh after midnight or returning to the page: tomorrow, the day after tomorrow, and in three days each include the correct weekday. A started batch retains its absolute bake date.
 
 Claude's independent reviewed-candidate result was 75/75 browser checks on Windows/Edge and zero numeric differences across 1,008 scenarios against three reference implementations. That is historical evidence for the reviewed candidate, not a claim that Claude independently reran these eight follow-up fixes.

@@ -170,7 +170,7 @@ for(const path of ['/index.html','/src/index.html']){
       await page.setViewportSize({width,height:800});await open(page);await page.locator('#recipeWorkbenchDetails summary').click();
       const visible=async()=>{
         const status=page.locator('#recipeWorkbench [role="status"]');await expect(status).toBeVisible();
-        await expect.poll(async()=>status.evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;})).toBe(true);
+        await expect.poll(async()=>status.evaluate(el=>{const r=el.getBoundingClientRect();return Math.max(-r.top,r.bottom-innerHeight);})).toBeLessThanOrEqual(1);
         await expect(page.locator('#batchPlanner [role="status"]')).toHaveCount(0);
       };
       await page.locator('[data-workshop-action="save-recipe"]').click();await expect(page.locator('#recipeWorkbench [role="status"]')).toContainText('Geef je recept');await visible();

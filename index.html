@@ -7183,7 +7183,10 @@ function replaceWorkshopPanel(id,html){
     const trigger=workshopNoticeAnchor?root.querySelector(workshopNoticeAnchor):null;
     const anchor=trigger?.closest('.btnrow')||trigger?.closest('label')||trigger;
     if(anchor)anchor.insertAdjacentElement('afterend',status);else root.prepend(status);
-    if(newNotice)requestAnimationFrame(()=>status.scrollIntoView({block:'nearest'}));
+    if(newNotice)requestAnimationFrame(()=>{
+      const current=root.querySelector('.workshop-notice');
+      if(current)current.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+    });
   }
   if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
 }
@@ -7609,6 +7612,9 @@ function wireEvents(){
         markCustomField(el.id);
       }
       update();
+      // A committed oven edit belongs to the active batch immediately, even
+      // when the user reloads before the general 300 ms save debounce runs.
+      if(activeBatch()&&BATCH_OVEN_FIELDS.has(el.id))saveState();
     });
     el.addEventListener('blur',()=>{
       if(el.type!=='number')return;
