@@ -355,3 +355,13 @@ The final review candidate additionally protects read-only reset, reconciles the
 | singleFile | `d13159cabf093ea9d9ab9d653973b8ff9ea491b3a863b86126d6f23a60174f97` |
 | css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
 | javascript | `d22d3f64fcf3b21da23fbba3fb3525062f5ade90778441f6f7ddc9c4d912af38` |
+
+### v2.0.0 kitchen visual check
+
+The oven queue now precedes optional history/timer tools during baking, opens on entry into that phase, and labels the desired target as planned. Recipe and calculation behavior are unchanged.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `7fcabae9c5243dacc48b6cf91c24fd4bd996b1bb0f95bf5ab7c798970994d42c` |
+| css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
+| javascript | `40afdc95d35fa6d4ad0be0b938c3118277d01d1dcb928a6fc6755c4e88dca3a4` |

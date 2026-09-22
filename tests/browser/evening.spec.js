@@ -53,6 +53,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
     await open(page);await page.evaluate(()=>{pizzaSelections=['parmaBurrata','margherita','marinara','diavola'];pizzaCustomizations=[];update();});await start(page);await unknownThroughProof(page);
     await expand(page,'#bakingWorkspace');await expand(page,'#queueDetails');await page.locator('[data-pizza-name]').nth(1).fill('Sam');await page.locator('[data-pizza-name]').nth(1).blur();
     await page.locator('[data-evening-action="pizza-up"]').nth(1).click();
+    expect(await page.locator('#bakingWorkspace').evaluate(el=>!!(el.compareDocumentPosition(document.getElementById('kitchenHistory'))&Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
     const first=await page.evaluate(()=>activeEvening().pizzas[0]);expect(first.name).toBe('Sam');expect(first.recipeId).toBe('margherita');
     await action(page,'pizza-in');
     expect(await page.evaluate(()=>activeBatch().events.bake)).toBe(await page.evaluate(()=>activeEvening().pizzas[0].events.in));
