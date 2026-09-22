@@ -4,10 +4,56 @@ function niceDate(d){
   return new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'nl-NL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(d);
 }
 
+function bakeDayLabels(now=new Date()){
+  const relative=currentLang==='en'
+    ? ['Today','Tomorrow','In 2 days','In 3 days']
+    : ['Vandaag','Morgen','Overmorgen','Over drie dagen'];
+  const weekday=new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'nl-NL',{weekday:'long'});
+  return relative.map((label,offset)=>{
+    // Local calendar arithmetic also handles month/year and DST boundaries.
+    const day=new Date(now);
+    day.setDate(day.getDate()+offset);
+    return `${label} – ${weekday.format(day)}`;
+  });
+}
+
+function renderBakeDayLabels(now=new Date()){
+  const labels=bakeDayLabels(now);
+  const b=activeBatch();
+  if(b){
+    for(const option of $('bakeDay')?.options||[])if(option.selected)option.textContent=L('Vast: ','Fixed: ')+niceDate(new Date(b.bakeAt));
+    return;
+  }
+  const blank=Array.from($('bakeDay')?.options||[]).find(option=>option.value==='');
+  if(blank)blank.textContent=L('Geen planning','No schedule');
+  for(const option of $('bakeDay')?.options||[]){
+    if(!/^[0-3]$/.test(option.value))continue;
+    const label=labels[Number(option.value)];
+    if(option.textContent!==label)option.textContent=label;
+  }
+}
+
+let _bakeDayTimer=null;
+let _bakeDayClockKey=null;
+function refreshBakeDayClock(){
+  clearTimeout(_bakeDayTimer);
+  const now=new Date(),key=now.toDateString();
+  const changed=_bakeDayClockKey!==null&&key!==_bakeDayClockKey;
+  _bakeDayClockKey=key;
+  renderBakeDayLabels(now);
+  // Refresh time-sensitive batch proposals on focus/visibility, even the same day.
+  // Relative unstarted deadlines still follow the new local date after midnight.
+  if(changed||activeBatch())update();
+  const midnight=new Date(now);
+  midnight.setHours(24,0,0,100);
+  _bakeDayTimer=setTimeout(refreshBakeDayClock,Math.max(100,midnight-now));
+}
+
 // Op de nacht van de zomertijd bestaat 02:30 niet; setHours schuift dan
 // stilzwijgend een uur op. Dat signaleren we in plaats van te verbergen.
 let _bakeTimeShifted=false;
 function selectedBakeDate(){
+  if(activeBatch())return new Date(activeBatch().bakeAt);
   const dayRaw=$('bakeDay')?.value||'';
   const timeRaw=$('bakeTime')?.value||'';
   if(!dayRaw||!timeRaw)return null;
@@ -66,7 +112,7 @@ function deadlineRecommendation(c,bake){
   // Onder 4 uur vanaf nu adviseren we geen vers pizzadeeg.
   // Dit is geen biologische absolute grens: gist kan sneller gas maken,
   // maar gasproductie is niet hetzelfde als een goed gerijpt pizzadeeg.
-  if(until<4)return {status:'tooShort',until,currentStart,usable:Math.max(0,until-0.75)};
+  if(until<4)return {status:'tooShort',until,currentStart,usable:Math.max(0,until-prepHours())};
 
   // Voorbereiding volgens kneedmethode + 15 min praktische startbuffer.
   const usable=floorQuarter(until-(prepHours()+0.25));
@@ -93,7 +139,7 @@ function deadlineRecommendation(c,bake){
   plan.cold=floorQuarter(plan.cold);
   plan.ball=floorQuarter(plan.ball);
 
-  const planC={...c,ferm:plan.ferm,bulk:plan.bulk,cold:plan.cold,ball:plan.ball,room:plan.room};
+  const planC={...c,presetKey:'custom',ferm:plan.ferm,bulk:plan.bulk,cold:plan.cold,ball:plan.ball,room:plan.room};
   const advice=yeastRecommendation(planC);
   const yeastGrams=(c.flour||600)*advice.selected/100;
   const planStart=deadlineScheduleStart(planC,bake);
@@ -106,6 +152,7 @@ function deadlineRecommendation(c,bake){
 }
 
 function buildDeadlineAdvice(c){
+  if(activeBatch()){$('deadlineAdvice').classList.add('hidden');return;}
   const box=$('deadlineAdvice');
   const bake=selectedBakeDate();
   if(!box)return;
@@ -135,7 +182,7 @@ function buildDeadlineAdvice(c){
       <div class="deadline-title"><b>${nl?'✅ Huidige planning past':'✅ Current schedule fits'}</b><span class="tag">${target}</span></div>
       <div class="deadline-metrics">
         <div class="deadline-mini"><span>${nl?'Beschikbaar':'Available'}</span><b>${durationLabel(r.until)}</b></div>
-        <div class="deadline-mini"><span>${nl?'Schema vraagt':'Schedule needs'}</span><b>${durationLabel(fermentationHours(c)+0.5)}</b></div>
+        <div class="deadline-mini"><span>${nl?'Schema vraagt':'Schedule needs'}</span><b>${durationLabel(timelineTotalHours(c))}</b></div>
         <div class="deadline-mini"><span>${nl?'Uiterlijk starten':'Latest start'}</span><b>${niceDate(r.currentStart)}</b></div>
       </div>
       <div class="deadline-plan">${nl?'Je huidige fermentatiemethode, tijden en gistadvies kunnen zo blijven.':'Your current fermentation method, timings and yeast guidance can remain unchanged.'}</div>`;
@@ -149,7 +196,7 @@ function buildDeadlineAdvice(c){
       <div class="deadline-metrics">
         <div class="deadline-mini"><span>${nl?'Beschikbaar':'Available'}</span><b>${durationLabel(r.until)}</b></div>
         <div class="deadline-mini"><span>${nl?'Na mengen nog over':'After mixing'}</span><b>${durationLabel(Math.max(0,r.usable))}</b></div>
-        <div class="deadline-mini"><span>${nl?'Huidig schema':'Current schedule'}</span><b>${durationLabel(fermentationHours(c)+0.5)}</b></div>
+        <div class="deadline-mini"><span>${nl?'Huidig schema':'Current schedule'}</span><b>${durationLabel(timelineTotalHours(c))}</b></div>
       </div>
       <div class="deadline-plan">${nl
         ? '<b>Plan B:</b> dit is korter dan de 4-uurs kwaliteitsvloer van deze calculator. Gist kan biologisch sneller gas maken, maar voor pizzadeeg willen we niet doen alsof “meer gist” hetzelfde is als rijping. 🏃 Tijd om naar de supermarkt te lopen voor vers pizzadeeg of een goede bodem — óf de baktijd later te zetten.'
@@ -180,11 +227,13 @@ function buildDeadlineAdvice(c){
         : 'this is a short same-day version and therefore a quality compromise. From roughly 8 hours onward, the schedule aligns better with common room-temperature pizza proofing; long cold fermentation develops differently.'}` : ''}
     </div>
     <div class="deadline-apply">
-      <button class="btn secondary" type="button" onclick="applyDeadlinePlan()">${nl?'Planning toepassen':'Apply schedule'}</button>
+      <button class="btn secondary" type="button" ${liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null?'disabled':''} onclick="applyDeadlinePlan()">${nl?'Planning toepassen':'Apply schedule'}</button>
     </div>`;
 }
 
 function applyDeadlinePlan(){
+  if(activeBatch())return;
+  if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const bake=selectedBakeDate();
   if(!bake)return;
   const c=calc();
@@ -210,8 +259,7 @@ function applyDeadlinePlan(){
 
 // Kritieke voorbereiding vóór de fermentatie: elapsed time, niet actieve arbeid.
 function prepHours(){
-  if($('autolyse')?.checked)return AUTOLYSE_REST_HOURS+0.4;
-  return DIRECT_REST_HOURS+(currentMethod==='hand'?5/12:4/15);
+  return DoughCore.preparationHours($('autolyse')?.checked,currentMethod);
 }
 
 // Actieve voorbereiding is iets anders dan doorlooptijd: wegen, mengen/kneden,
@@ -252,10 +300,59 @@ function timelineTotalHours(c){
   // Voorbereiding + de ingestelde fermentatiefasen.
   // Voorverwarmen loopt normaal parallel met de laatste rijs en telt dus
   // niet nogmaals bovenop de kritieke doorlooptijd.
-  return prepHours() + fermentationHours(c);
+  return DoughCore.scheduleOffsets(c,prepHours()).bake;
+}
+
+function scheduleView(c,bake=selectedBakeDate()){
+  if(activeBatch()){
+    const b=activeBatch(),view=WorkflowCore.timeline(b),start=b.events.start;
+    const offsets={...DoughCore.scheduleOffsets(c,prepHours()),...Object.fromEntries(Object.entries(view.times).map(([key,at])=>[key,(at-start)/3600000]))};
+    offsets.preparation=offsets.bulkStart;offsets.beforeFridge=offsets.fridgeIn??null;
+    return {offsets,date:key=>view.times[key]==null?null:new Date(view.times[key])};
+  }
+  const offsets=DoughCore.scheduleOffsets(c,prepHours());
+  const start=bake?bake.getTime()-offsets.bake*3600000:null;
+  return {offsets,date:key=>start===null||offsets[key]===null?null:new Date(start+offsets[key]*3600000)};
+}
+
+function scheduleMoment(c,key){
+  if(activeBatch()){
+    const b=activeBatch(),view=WorkflowCore.timeline(b);
+    const at=key==='stone'?view.times.bake-c.preheat*60000:view.times[key];
+    return at==null?'':niceDate(new Date(at));
+  }
+  const view=scheduleView(c);
+  const offset=key==='stone'?view.offsets.bake-c.preheat/60:view.offsets[key];
+  if(offset==null)return '';
+  const bake=selectedBakeDate();
+  if(bake)return niceDate(new Date(bake.getTime()+(offset-view.offsets.bake)*3600000));
+  if(offset<0)return L(`${durationLabel(-offset)} vóór de deegstart`,`${durationLabel(-offset)} before starting the dough`);
+  return offset===0?L('Bij de start','At the start'):L(`${durationLabel(offset)} na de start`,`${durationLabel(offset)} after starting`);
+}
+
+function buildScheduleSummary(c){
+  const box=$('scheduleSummary');
+  if(!box)return;
+  const live=liveFermentationPlan(c),p=live.effective;
+  const offsets=scheduleView(p).offsets;
+  const phases=[
+    [L('Mengen, rust & kneden','Mix, rest & knead'),`± ${durationLabel(offsets.preparation)}`],
+    [L('Bulk buiten','Bulk at room temperature'),`${durationLabel(p.bulk)} · ${fmt(p.room,1)} °C`]
+  ];
+  if(p.ferm!=='room')phases.push([p.ferm==='coldBalls'?L('Koelkast · bollen','Fridge · balls'):L('Koelkast · één massa','Fridge · one mass'),`${durationLabel(p.cold)} · ${fmt(p.fridge,1)} °C`]);
+  phases.push([p.ferm==='coldBalls'?L('Opwarmen & eindrijs','Warm-up & final proof'):L('Bolrijs buiten','Ball proof at room temperature'),`${durationLabel(p.ball)} · ${fmt(p.room,1)} °C`]);
+  box.innerHTML=`<b>${L('Jouw schema','Your schedule')}${live.active?L(' · met temperatuurcorrectie',' · with temperature correction'):''}</b>
+    <ol class="schedule-phases">${phases.map(([label,value])=>`<li><span>${label}</span><strong>${value}</strong></li>`).join('')}</ol>
+    <p class="hint">${p.ferm==='room'?L(`Tot eerste pizza: ongeveer ${durationLabel(offsets.bake)}.`,`Until the first pizza: roughly ${durationLabel(offsets.bake)}.`):L(`Tot de koelkast voor koude fermentatie: ongeveer <b>${durationLabel(offsets.beforeFridge)}</b>. Richttijd: rond maximaal 2 uur; voldoende deegontwikkeling blijft leidend.`,`Until refrigeration for cold fermentation: roughly <b>${durationLabel(offsets.beforeFridge)}</b>. Aim for around 2 hours at most; sufficient dough development remains essential.`)}</p>
+    <p class="hint">${L('Dit is een planning, geen meting. Afkoeling, opwarming en rijs zijn schattingen: bakvorm, batch, bloem en koelkast maken verschil. Extra herstelrust kan de start verschuiven.','This is a plan, not a measurement. Cooling, warming and proofing are estimates: container, batch, flour and refrigerator matter. Extra recovery rest may shift the start.')}</p>`;
 }
 
 function buildTimeline(c){
+  if(activeBatch()){
+    const t=WorkflowCore.timeline(activeBatch());
+    $('timeline').innerHTML=renderBatchTimeline()+`<div class="timeitem"><b>${L('Start voorverwarmen','Start preheating')}</b><span>${niceDate(new Date(t.times.bake-c.preheat*60000))}</span></div>`;
+    return;
+  }
   const live=liveFermentationPlan(c);
   const plannedC=c;
   c=live.effective;
@@ -318,34 +415,16 @@ function buildTimeline(c){
   const bakeMin=bakeRange.mid;
   const bakeDoneLow=new Date(bake.getTime()+bakeRange.low*60000);
   const bakeDoneHigh=new Date(bake.getTime()+bakeRange.high*60000);
-  let events=[],startTime;
-
-  if(c.ferm==='hybrid'){
-    const ballStart=new Date(bake.getTime()-c.ball*3600000);
-    const fridgeIn=new Date(ballStart.getTime()-c.cold*3600000);
-    startTime=new Date(fridgeIn.getTime()-c.bulk*3600000-prepMs);
-    events=[
-      [L('Begin met deeg','Start the dough'),startTime],
-      [L('Koelkast in • één massa','Into the fridge • one mass'),fridgeIn],
-      [L('Verdelen/opbollen','Divide/shape'),ballStart]
-    ];
-  }else if(c.ferm==='room'){
-    const ballStart=new Date(bake.getTime()-c.ball*3600000);
-    startTime=new Date(ballStart.getTime()-c.bulk*3600000-prepMs);
-    events=[
-      [L('Begin met deeg','Start the dough'),startTime],
-      [L('Verdelen/opbollen','Divide/shape'),ballStart]
-    ];
-  }else{
-    const fridgeOut=new Date(bake.getTime()-c.ball*3600000);
-    const fridgeIn=new Date(fridgeOut.getTime()-c.cold*3600000);
-    startTime=new Date(fridgeIn.getTime()-c.bulk*3600000-prepMs);
-    events=[
-      [L('Begin met deeg','Start the dough'),startTime],
-      [L('Opbollen + koelkast','Shape + fridge'),fridgeIn],
-      [L('Koelkast uit','Out of the fridge'),fridgeOut]
-    ];
-  }
+  const schedule=scheduleView(c,bake);
+  const startTime=schedule.date('start');
+  const events=[
+    [L('Begin met deeg','Start the dough'),startTime],
+    [L('Start bulkrijs','Start bulk proof'),schedule.date('bulkStart')]
+  ];
+  if(c.ferm!=='room'){
+    events.push([c.ferm==='coldBalls'?L('Opbollen + koelkast in','Shape + into the fridge'):L('Koelkast in • één massa','Into the fridge • one mass'),schedule.date('fridgeIn')]);
+    events.push([c.ferm==='hybrid'?L('Koelkast uit • verdelen en opbollen','Out of the fridge • divide and shape'):L('Koelkast uit • laatste opwarming','Out of the fridge • final warm-up'),schedule.date('fridgeOut')]);
+  }else events.push([L('Verdelen/opbollen','Divide/shape'),schedule.date('shape')]);
   events.push([L('Start voorverwarmen','Start preheating'),preheat]);
   events.push([L('Eerste pizza in de oven','First pizza in the oven'),bake]);
   // Chronologisch sorteren: bij een lange voorverwarmtijd en een korte bolrijs
@@ -456,7 +535,7 @@ function buildShopping(c){
     const r=recipeById(id);
     return `<div class="list-row"><span>${recipeNameText(r)}</span><span>${count}×</span></div>`;
   }).join('');
-  const ingredientRows=Object.values(totals).map(x=>`<div class="list-row"><span>${tItem(x.name)}</span><span>${fmt(x.qty,x.qty<2?1:0)} ${tUnit(x.unit,x.qty)}</span></div>`).join('');
+  const ingredientRows=Object.values(totals).map(x=>`<div class="list-row"><span>${tItem(x.name)}</span><span>${ingredientAmount(x.qty)} ${tUnit(x.unit,x.qty)}</span></div>`).join('');
   const sauceRows=aggSauce.enabled?aggSauce.groups.map(g=>`<div class="list-row"><span>${sauceName(g.type)}</span><span>${sauceAmountLabel(g,aggSauce)}</span></div>`).join(''):'';
   const tomatoPurchaseRow=tomatoPurchaseRowHtml(aggSauce);
   // De sub-ingrediënten van de saus (knoflook, oregano, zout, olie) stonden
@@ -539,7 +618,7 @@ function ingredientsCombinedHTML(c){
       totals[key].qty+=cheese.amount;
     }
   });
-  const toppingRows=Object.values(totals).map(x=>`<div class="list-row"><span>${tItem(x.name)}</span><span>${fmt(x.qty,x.qty<2?1:0)} ${tUnit(x.unit,x.qty)}</span></div>`).join('');
+  const toppingRows=Object.values(totals).map(x=>`<div class="list-row"><span>${tItem(x.name)}</span><span>${ingredientAmount(x.qty)} ${tUnit(x.unit,x.qty)}</span></div>`).join('');
   const sauceRows=aggSauce.enabled?aggSauce.groups.map(g=>`<div class="list-row"><span>${sauceName(g.type)}</span><span>${sauceAmountLabel(g,aggSauce)}</span></div>`).join(''):'';
   return `<div class="list">${sauceRows}${tomatoPurchaseRowHtml(aggSauce)}${toppingRows}</div>`;
 }
@@ -612,7 +691,7 @@ function ingredientsCopyText(c){
       lines.push(`*${copyLang('Bol','Dough ball')} ${idx+1} — ${recipeNameText(r)}*`);
       lines.push(`• ${copyLang('Saus','Sauce')}: ${sauceLine}`);
       includedItemsForBall(idx).forEach(x=>{
-        lines.push(`• ${copyIngredientName(x[0])}: ${fmt(x[1],x[1]<2?1:0)} ${copyUnit(x[2],x[1])}`);
+        lines.push(`• ${copyIngredientName(x[0])}: ${ingredientAmount(x[1])} ${copyUnit(x[2],x[1])}`);
       });
       if(custom.extraCheese&&cheese.allowed){
         lines.push(`• ${copyIngredientName(cheese.name)} (${copyLang('extra kaas','extra cheese')}): +${fmt(cheese.amount,0)} g`);
@@ -647,7 +726,7 @@ function ingredientsCopyText(c){
       if(purchaseLine)lines.push(purchaseLine);
     }
     Object.values(totals).forEach(x=>{
-      lines.push(`• ${copyIngredientName(x.name)}: ${fmt(x.qty,x.qty<2?1:0)} ${copyUnit(x.unit,x.qty)}`);
+      lines.push(`• ${copyIngredientName(x.name)}: ${ingredientAmount(x.qty)} ${copyUnit(x.unit,x.qty)}`);
     });
   }
 
@@ -713,7 +792,7 @@ function buildIngredientsModal(c){
   const perPizza=`<div class="modal-section"><h3>Per pizza</h3>${pizzaSelections.map((id,idx)=>{
     const r=recipeById(id),custom=pizzaCustomizations[idx],cheese=extraCheeseAdvice(idx,c);
     const sauceLine=custom.noSauce?'uitgevinkt':($('autoSauceFromPizzas').checked?`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`:`${sauceName($('sauceType').value)} • ${fmt(manualSaucePerPizza(),0)} g`);
-    const rows=includedItemsForBall(idx).map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]} ${tUnit(x[2],x[1])}</span></div>`).join('');
+    const rows=includedItemsForBall(idx).map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span></div>`).join('');
     const extra=custom.extraCheese&&cheese.allowed?`<div class="list-row"><span>${cheese.name} • extra kaas</span><span>+${fmt(cheese.amount,0)} g</span></div>`:'';
     return `<div class="recipebox"><div class="titleline"><h3>Bol ${idx+1} • ${recipeNameText(r)}</h3><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)} • ${recipeTempFor(id).low}–${recipeTempFor(id).high} °C</span></div><div class="list"><div class="list-row"><span>Saus</span><span>${sauceLine}</span></div>${rows}${extra}</div></div>`;
   }).join('')}</div>`;

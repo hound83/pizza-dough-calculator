@@ -77,6 +77,7 @@ function refreshSizeModeUI(){
 }
 
 function calc(){
+  if(activeBatch())restoreRecipe(activeBatch().recipe);
   refreshSizeModeUI();
   const byWeight=!$('sizeFromDiameter').checked;
   let targetBall, targetDiameter;
@@ -103,36 +104,15 @@ function calc(){
   const pizzasRaw=Math.round(num('pizzas'));
   const pizzas=clamp(Number.isFinite(pizzasRaw)&&pizzasRaw>0?pizzasRaw:1,1,MAX_PIZZAS);
   const h=selectedHydration(),s=selectedSalt(),y=selectedYeastPct(),o=selectedOil();
-  const totalTarget=pizzas*targetBall;
-  const factor=1+h/100+s/100+y/100+o/100;
-  const flourExact=totalTarget/factor;
   const practical=$('practical').checked;
-  let flour,water,salt,yeast,oil;
-  if(practical){
-    flour=roundTo(flourExact,5);
-    water=roundTo(flour*h/100,5);
-    salt=roundTo(flour*s/100,1);
-    yeast=roundTo(flour*y/100,0.1);
-    oil=roundTo(flour*o/100,1);
-  }else{
-    flour=roundTo(flourExact,0.1);
-    water=roundTo(flour*h/100,0.1);
-    salt=roundTo(flour*s/100,0.1);
-    yeast=roundTo(flour*y/100,0.01);
-    oil=roundTo(flour*o/100,0.1);
-  }
-  const total=flour+water+salt+yeast+oil;
-  const actualBall=total/pizzas;
-  const actualH=water/flour*100,actualS=salt/flour*100,actualY=yeast/flour*100,actualO=oil/flour*100;
-  let reserve=roundTo(water*(20/380),practical?5:0.1);
-  reserve=clamp(reserve,practical?5:1,Math.max(practical?5:1,water*0.10));
-  const mainWater=water-reserve;
+  const {flour,water,salt,yeast,oil,total,actualBall,actualH,actualS,actualY,actualO,reserve,mainWater}=DoughCore.doughQuantities({pizzas,targetBall,h,s,y,o,practical});
   const ferm=$('fermentationMethod').value==='room'
     ? 'room'
     : ($('coldStorageMode').value==='balls'?'coldBalls':'hybrid');
   const bulk=nonNegativeNum('bulkHours'),cold=ferm==='room'?0:nonNegativeNum('coldHours'),ball=nonNegativeNum('ballHours');
   return {
     pizzas,targetBall,targetDiameter,byWeight,h,s,y,o,flour,water,salt,yeast,oil,total,actualBall,actualH,actualS,actualY,actualO,practical,
+    style:$('doughStyle').value,presetKey:$('preset').value,
     reserve,mainWater,bulk,cold,ball,
     room:boundedNum('roomTemp',21),fridge:boundedNum('fridgeTemp',4),autolyse:$('autolyse').checked,ferm,
     yeastType:$('yeastType').value,stoneTemp:boundedNum('stoneTemp',430),preheat:boundedNum('preheatMinutes',30),
@@ -159,124 +139,13 @@ function fermentationHours(c){
   return c.bulk+c.cold+c.ball;
 }
 
-// Shared household thermal constants. These values describe the deliberately
-// simple v1.2 model boundary; mixer/bowl/handling losses remain inside the
-// effective stage rises in fermentation-live.js.
-const CP_FLOUR=1.850; // J/(g*K)
-const CP_WATER=4.186; // J/(g*K)
-const CP_SALT=0.900;  // J/(g*K), engineering approximation
-const CP_OIL=2.000;   // J/(g*K), engineering approximation
-const AUTOLYSE_REST_HOURS=0.5;
-const DIRECT_REST_HOURS=1/3;
-const EFFECTIVE_REST_TAU_HOURS=2.27;
-
-function thermalEquilibrium(parts){
-  if(!Array.isArray(parts)||!parts.length)throw new RangeError('Thermal equilibrium requires parts.');
-  let energy=0,capacity=0;
-  for(const part of parts){
-    if(!part||typeof part.temperature!=='number'||!Number.isFinite(part.temperature))throw new RangeError('Invalid thermal-part temperature.');
-    const hasCapacity=part.capacity!=null;
-    if(hasCapacity&&(typeof part.capacity!=='number'||!Number.isFinite(part.capacity)))throw new RangeError('Invalid thermal-part capacity.');
-    if(!hasCapacity&&(
-      typeof part.mass!=='number'||!Number.isFinite(part.mass)||
-      typeof part.cp!=='number'||!Number.isFinite(part.cp)
-    ))throw new RangeError('Invalid thermal-part mass or specific heat.');
-    const partCapacity=hasCapacity?part.capacity:part.mass*part.cp;
-    if(!Number.isFinite(partCapacity)||partCapacity<0)throw new RangeError('Invalid thermal-part capacity.');
-    if(partCapacity===0)continue;
-    energy+=partCapacity*Number(part.temperature);
-    capacity+=partCapacity;
-  }
-  if(!Number.isFinite(energy)||!Number.isFinite(capacity)||capacity<=0)throw new RangeError('Invalid total thermal capacity.');
-  return {temperature:energy/capacity,capacity};
-}
-
-function thermalEndTemperature(startTemp,environmentTemp,hours,tauHours){
-  const values=[startTemp,environmentTemp,hours,tauHours];
-  if(values.some(x=>!Number.isFinite(x))||values[2]<0||values[3]<=0)throw new RangeError('Invalid thermal phase.');
-  return values[1]+(values[0]-values[1])*Math.exp(-values[2]/values[3]);
-}
-
-// Praktische thuiskalibratie, geen natuurwet. Doorgetrokken boven 35 graden
-// zodat een warme rijskast of proofbox niet als "even snel als 35 graden"
-// wordt gemodelleerd; boven ~45 graden loopt gist snel dood.
-const YEAST_TEMP_CURVE=[
-  [0,0.01],[4,0.04],[8,0.09],[12,0.20],[16,0.42],[18,0.62],
-  [21,1.00],[24,1.55],[27,2.35],[30,3.35],[32,3.55],[35,3.00],
-  [38,2.20],[42,0.90],[46,0.10],[50,0.02]
-];
-
-function interpolateCurve(points,x){
-  if(x<=points[0][0])return points[0][1];
-  if(x>=points[points.length-1][0])return points[points.length-1][1];
-  for(let i=0;i<points.length-1;i++){
-    const [x1,y1]=points[i],[x2,y2]=points[i+1];
-    if(x>=x1&&x<=x2){const f=(x-x1)/(x2-x1);return y1+(y2-y1)*f;}
-  }
-  return 1;
-}
-
-function yeastTempActivity(t){
-  return interpolateCurve(YEAST_TEMP_CURVE,clamp(t,0,50));
-}
-
-// Een aparte, mildere klok voor enzymatische/rheologische rijping.
-// Dit is bewust een index en geen directe labmeting.
-function maturationActivity(t){
-  return clamp(Math.pow(2,(clamp(t,0,35)-21)/10),0.15,2.6);
-}
-
-function thermalTauHours(massKg,asBalls=false,ballWeight=250){
-  if(asBalls){
-    return clamp(1.10*Math.pow(Math.max(100,ballWeight)/250,1/3),0.7,2.0);
-  }
-  return clamp(2.40*Math.pow(Math.max(0.25,massKg),1/3),1.5,4.5);
-}
-
-function simulateThermalPhase(startTemp,envTemp,hours,tau,name,kind){
-  if(hours<=0)return {name,kind,hours:0,envTemp,startTemp,endTemp:startTemp,gas:0,maturity:0};
-  const step=Math.min(.10,Math.max(.025,hours/200));
-  const n=Math.max(1,Math.ceil(hours/step)),dt=hours/n;
-  let t=startTemp,gas=0,maturity=0;
-  for(let i=0;i<n;i++){
-    const next=thermalEndTemperature(t,envTemp,dt,tau);
-    const mid=(t+next)/2;
-    gas+=yeastTempActivity(mid)*dt;
-    maturity+=maturationActivity(mid)*dt;
-    t=next;
-  }
-  return {name,kind,hours,envTemp,startTemp,endTemp:t,gas,maturity,tau};
-}
+// Preserve the public numerical API; all arithmetic lives in the pure core.
+const {CP_FLOUR,CP_WATER,CP_SALT,CP_OIL,AUTOLYSE_REST_HOURS,DIRECT_REST_HOURS,EFFECTIVE_REST_TAU_HOURS,YEAST_TEMP_CURVE,thermalEquilibrium,thermalEndTemperature,interpolateCurve,yeastTempActivity,maturationActivity,thermalTauHours,simulateThermalPhase}=DoughCore;
 
 function simulateFermentation(c){
-  const massKg=Math.max(.25,c.total/1000);
-  const ballWeight=Math.max(100,c.actualBall);
-  const bulkTau=thermalTauHours(massKg,false,ballWeight);
-  const ballTau=thermalTauHours(ballWeight/1000,true,ballWeight);
-  let t=c.doughTemp,phases=[];
-
-  const add=(env,hours,tau,name,kind)=>{
-    const p=simulateThermalPhase(t,env,hours,tau,name,kind);phases.push(p);t=p.endTemp;
-  };
-
-  add(c.room,c.bulk,bulkTau,L('Bulk buiten','Bulk at room temp'),'bulk');
-  if(c.ferm==='hybrid'){
-    add(c.fridge,c.cold,bulkTau,L('Koelkast • bulk','Fridge • bulk'),'coldBulk');
-    add(c.room,c.ball,ballTau,L('Bolrijs / opwarming','Ball proof / warm-up'),'ballWarm');
-  }else if(c.ferm==='coldBalls'){
-    add(c.fridge,c.cold,ballTau,L('Koelkast • bollen','Fridge • balls'),'coldBalls');
-    add(c.room,c.ball,ballTau,L('Laatste opwarming','Final warm-up'),'ballWarm');
-  }else{
-    add(c.room,c.ball,ballTau,L('Bolrijs buiten','Ball proof at room temp'),'ballRoom');
-  }
-
-  return {
-    phases,
-    gas:phases.reduce((a,p)=>a+p.gas,0),
-    maturity:phases.reduce((a,p)=>a+p.maturity,0),
-    endTemp:t,
-    bulkTau,ballTau,massKg,ballWeight
-  };
+  const sim=DoughCore.simulateFermentation(c);
+  const names={bulk:L('Bulk buiten','Bulk at room temp'),coldBulk:L('Koelkast • bulk','Fridge • bulk'),coldBalls:L('Koelkast • bollen','Fridge • balls'),ballRoom:L('Bolrijs buiten','Ball proof at room temp'),ballWarm:c.ferm==='coldBalls'?L('Laatste opwarming','Final warm-up'):L('Bolrijs / opwarming','Ball proof / warm-up')};
+  return {...sim,phases:sim.phases.map(p=>({...p,name:names[p.kind]}))};
 }
 
 function riseTarget(style){
@@ -309,15 +178,7 @@ function flourRisk(c,sim){
 
 
 // Het empirische thuismodel, losgetrokken zodat de AVPN-tak er ook mee kan vergelijken.
-function genericYeastModel(c,sim){
-  const eq=Math.max(2,sim.gas);
-  const styleFactor={neapolitan:1,avpn:1,canotto:1.08,ny:.95,thin:.86}[ $('doughStyle').value ]||1;
-  const saltFactor=Math.exp((c.s-2.5)*0.09);
-  let idy=0.68/Math.pow(eq,0.80);
-  idy*=saltFactor*styleFactor;
-  idy=clamp(idy,0.015,0.55);
-  return {eq,idy,saltFactor,styleFactor};
-}
+function genericYeastModel(c,sim){return DoughCore.genericYeastModel(c,sim);}
 
 function avpnMidpointYeastAdvice(c){
   const sim=simulateFermentation(c);
@@ -330,7 +191,7 @@ function avpnMidpointYeastAdvice(c){
   const selected=c.yeastType==='fresh'?freshMidPct:idyMidPct;
   const low=c.yeastType==='fresh'?freshLowPct:idyLowPct;
   const high=c.yeastType==='fresh'?freshHighPct:idyHighPct;
-  const risk=flourRisk(c,sim),rise=riseTarget($('doughStyle').value);
+  const risk=flourRisk(c,sim),rise=riseTarget(c.style);
   const gen=genericYeastModel(c,sim);
   const mult=yeastTypes[c.yeastType].mult;
   const modelSelected=clamp(gen.idy*mult,low,high);      // modelvoorstel binnen de officiële range
@@ -369,7 +230,7 @@ function avpnMidpointYeastAdvice(c){
 }
 
 function yeastRecommendation(c){
-  if($('preset').value==='avpnMid')return avpnMidpointYeastAdvice(c);
+  if(c.presetKey==='avpnMid')return avpnMidpointYeastAdvice(c);
   const sim=simulateFermentation(c);
 
   // Empirisch gekalibreerde thuiscurve. Tijd/temperatuur zit in de geïntegreerde gas-klok;
@@ -384,7 +245,7 @@ function yeastRecommendation(c){
   const mult=yeastTypes[c.yeastType].mult;
   const selected=idy*mult;
   const low=selected*(1-uncertainty),high=selected*(1+uncertainty);
-  const risk=flourRisk(c,sim),rise=riseTarget($('doughStyle').value);
+  const risk=flourRisk(c,sim),rise=riseTarget(c.style);
 
   const warnings=[];
   if(c.fridge>=8&&c.ferm!=='room')warnings.push({cls:'warn',text:L(`Je koelkast staat op ${fmt(c.fridge,1)} °C. Dat is een actieve koude fermentatie, geen sterke retardatie; controleer het deeg eerder.`,`Your refrigerator is at ${fmt(c.fridge,1)} °C. That is active cold fermentation rather than strong retardation; check the dough earlier.`)});
@@ -401,6 +262,8 @@ function yeastRecommendation(c){
 }
 
 function update(){
+  enforceBatchRecipe();
+  renderBakeDayLabels();
   refreshFermentationUI();
   refreshAvpnPresetInfo();
   applyAppModeUI();
@@ -462,20 +325,21 @@ function update(){
   const estFlour=c.flour||600;
   const recGrams=estFlour*advice.selected/100;
   const lowG=estFlour*advice.low/100, highG=estFlour*advice.high/100;
-  // De bandbreedte is nu het hoofdgetal. Een enkel getal suggereert een
-  // precisie die dit model niet heeft.
-  const nlAdv=currentLang!=='en';
-  $('yeastAdvice').textContent=`${fmt(lowG,2)} – ${fmt(highG,2)} g ${yt.short}`;
+  $('yeastAdvice').textContent=L(`Afwegen voor dit recept: ${fmt(c.yeast,2)} g ${yt.short}`,`Weigh for this recipe: ${fmt(c.yeast,2)} g ${yt.short}`);
+  const mixed=!!activeBatch()||liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
   if(advice.avpnOfficial){
-    const modelG=estFlour*advice.modelRaw/100;
-    $('yeastAdviceDetail').textContent=nlAdv
-      ? `Officiële AVPN-range • rekenkundig midden ${fmt(recGrams,2)} g • dit model stelt ${fmt(modelG,2)} g voor bij 18 u @ 19 °C`
-      : `Official AVPN range • arithmetic midpoint ${fmt(recGrams,2)} g • this model suggests ${fmt(modelG,2)} g for 18 h @ 19 °C`;
+    $('yeastAdviceDetail').textContent=L(
+      `Officiële AVPN-band: ${fmt(lowG,2)}–${fmt(highG,2)} g. Rekenkundig midden: ${fmt(recGrams,2)} g; geen verplicht AVPN-doel.`,
+      `Official AVPN range: ${fmt(lowG,2)}–${fmt(highG,2)} g. Arithmetic midpoint: ${fmt(recGrams,2)} g; not a required AVPN target.`);
   }else{
-    $('yeastAdviceDetail').textContent=nlAdv
-      ? `Midden ${fmt(recGrams,2)} g • onzekerheid ±${fmt(advice.uncertainty*100,0)}% • ${fmt(advice.eq,1)} gistactiviteitsuren @ 21 °C`
-      : `Midpoint ${fmt(recGrams,2)} g • uncertainty ±${fmt(advice.uncertainty*100,0)}% • ${fmt(advice.eq,1)} yeast-activity hours @ 21 °C`;
+    $('yeastAdviceDetail').textContent=L(
+      `Modelstartpunt: circa ${fmt(recGrams,2)} g. Praktische band: ${fmt(lowG,2)}–${fmt(highG,2)} g (±${fmt(advice.uncertainty*100,0)}%). Dit is een vuistregelmarge, geen gemeten betrouwbaarheidsinterval of garantie op hetzelfde resultaat.`,
+      `Model starting point: roughly ${fmt(recGrams,2)} g. Practical range: ${fmt(lowG,2)}–${fmt(highG,2)} g (±${fmt(advice.uncertainty*100,0)}%). This is a heuristic margin, not a measured confidence interval or a guarantee of the same result.`);
   }
+  _yeastAdviceMatchesRecipe=yeastAdviceMatchesRecipe(c,advice);
+  renderYeastApplyButton();
+  if(mixed)$('yeastAdviceDetail').textContent+=' '+L('De metingen wijzigen alleen toekomstige tijden; de afgewogen gist blijft gelijk.','Measurements only adjust future times; the weighed yeast remains unchanged.');
+  buildScheduleSummary(c);
   renderYeastRangeBar(c,advice,estFlour,yt);
   buildFermentationScience(c,advice);
   buildDeadlineAdvice(c);
@@ -488,6 +352,7 @@ function update(){
   buildMixerCapacityNote(c);
   buildTimeline(c);
   renderBakeLog(c);
+  renderWorkshop(c);
   buildShopping(c);
   buildStoneAdvice(c);
   // De ingrediëntenmodal werd bij elke toetsaanslag herbouwd, ook dicht.
@@ -553,11 +418,11 @@ function buildFermentationScience(c,a){
 
   const tempSourceText=currentLang==='en'
     ? (c.doughTempDefault
-        ? 'starting dough: default 24 °C; temperature path estimated'
-        : `starting dough: measured ${fmt(c.doughTemp,1)} °C; subsequent path estimated`)
+        ? 'starting dough: default target 24 °C; temperature path estimated'
+        : `starting dough: planned target ${fmt(c.doughTemp,1)} °C; subsequent path estimated`)
     : (c.doughTempDefault
-        ? 'startdeeg: standaard 24 °C; temperatuurverloop geschat'
-        : `startdeeg: gemeten ${fmt(c.doughTemp,1)} °C; verloop daarna geschat`);
+        ? 'startdeeg: standaarddoel 24 °C; temperatuurverloop geschat'
+        : `startdeeg: ingesteld doel ${fmt(c.doughTemp,1)} °C; verloop daarna geschat`);
   const flourSourceText=currentLang==='en'
     ? (c.flourWKnown
         ? `${esc(c.flourName)} • ${c.flourOfficial&&c.flourWDefault?'manufacturer specification':(c.flourWDefault?'known default':'entered W value')}`
@@ -585,23 +450,23 @@ function buildFermentationScience(c,a){
   </div>`).join('');
   const technicalModelText=currentLang==='en'
     ? `<div class="tech-note">
-        <b>Model values:</b> starting dough ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'default':'measured'}); room ${fmt(c.room,1)} °C; refrigerator ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W unknown'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', manufacturer specification':', known default'):', entered manually'):', no numerical W-risk score'}).
+        <b>Model values:</b> starting dough ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'default target':'planned target'}); room ${fmt(c.room,1)} °C; refrigerator ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W unknown'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', manufacturer specification':', known default'):', entered manually'):', no numerical W-risk score'}).
         Practical thermal model constant: bulk ${fmt(a.sim.bulkTau,2)} h, dough ball ${fmt(a.sim.ballTau,2)} h.
         ${a.avpnOfficial
           ? `AVPN midpoint yeast: IDY-equivalent ${fmt(a.idy,3)}% flour; based on the official 0.1–3 g fresh yeast per litre water range.`
           : `IDY-equivalent guidance ${fmt(a.idy,3)}% flour; salt correction ×${fmt(a.saltFactor,2)}; style correction ×${fmt(a.styleFactor,2)}.`}
         In this model hydration mainly affects the structural/maturation warning and does not directly change yeast activity.
       </div>
-      <div class="tech-note"><b>Evidence & limits:</b> AVPN 2024/2026 is used for traditional dough, timing and yeast reference ranges; Covino et al. (2023) and Di Stasio et al. (2025) for time-dependent changes in pizza dough; general <i>S. cerevisiae</i> literature for the direction of temperature effects; and Caputo for the W260–280 specification of Pizzeria flour. The exact yeast curve, thermal model constants, maturation index and W-risk score are practical home calibrations and have not been validated together as one predictive laboratory model. Yeast conversion: ADY uses a practical 1.25 × IDY default, but manufacturer guidance varies from roughly 1:1 to 1.25:1; fresh yeast ≈ 3 × IDY.</div>`
+      <div class="tech-note"><b>Evidence & limits:</b> AVPN 2024 is used for traditional dough, timing and yeast reference ranges; Covino et al. (2023) and Di Stasio et al. (2025) for time-dependent changes in pizza dough; general <i>S. cerevisiae</i> literature for the direction of temperature effects; and Caputo for the W260–280 specification of Pizzeria flour. The exact yeast curve, thermal model constants, maturation index and W-risk score are practical model assumptions and have not been validated together as one predictive laboratory model. Yeast conversion: ADY uses a practical 1.25 × IDY default, but manufacturer guidance varies from roughly 1:1 to 1.25:1; fresh yeast ≈ 3 × IDY.</div>`
     : `<div class="tech-note">
-        <b>Modelwaarden:</b> startdeeg ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'standaard':'gemeten'}); kamer ${fmt(c.room,1)} °C; koelkast ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W onbekend'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', fabrieksspecificatie':', bekende standaard'):', zelf ingevuld'):', geen numerieke W-risicoscore'}).
+        <b>Modelwaarden:</b> startdeeg ${fmt(c.doughTemp,1)} °C (${c.doughTempDefault?'standaarddoel':'ingesteld doel'}); kamer ${fmt(c.room,1)} °C; koelkast ${fmt(c.fridge,1)} °C; ${c.flourWKnown?`W${fmt(c.flourW,0)}`:'W onbekend'} (${esc(c.flourName)}${c.flourWKnown?(c.flourWDefault?(c.flourOfficial?', fabrieksspecificatie':', bekende standaard'):', zelf ingevuld'):', geen numerieke W-risicoscore'}).
         Praktische thermische modelconstante: bulk ${fmt(a.sim.bulkTau,2)} u, bol ${fmt(a.sim.ballTau,2)} u.
         ${a.avpnOfficial
           ? `AVPN-middengist: IDY-equivalent ${fmt(a.idy,3)}% bloem; gebaseerd op de officiële range 0,1–3 g verse gist per liter water.`
           : `IDY-equivalent advies ${fmt(a.idy,3)}% bloem; zoutcorrectie ×${fmt(a.saltFactor,2)}; stijlcorrectie ×${fmt(a.styleFactor,2)}.`}
         Hydratatie beïnvloedt in dit model vooral de structurele/rijpingswaarschuwing en niet rechtstreeks de gistactiviteit.
       </div>
-      <div class="tech-note"><b>Onderbouwing & grenzen:</b> AVPN 2024/2026 voor traditionele deeg-, tijd- en gistkaders; Covino et al. (2023) en Di Stasio et al. (2025) voor tijdsafhankelijke veranderingen in pizzadeeg; algemene <i>S. cerevisiae</i>-literatuur voor de richting van temperatuureffecten; Caputo voor W260–280 van Pizzeria. De exacte gistcurve, thermische modelconstanten, rijpingsindex en W-risicoscore zijn praktische thuis-kalibraties en niet als één voorspellend model laboratorium-gevalideerd. Gistconversie: ADY gebruikt praktisch 1,25 × IDY als standaard, maar fabrikantadvies varieert grofweg van 1:1 tot 1,25:1; verse gist ≈ 3 × IDY.</div>`;
+      <div class="tech-note"><b>Onderbouwing & grenzen:</b> AVPN 2024 voor traditionele deeg-, tijd- en gistkaders; Covino et al. (2023) en Di Stasio et al. (2025) voor tijdsafhankelijke veranderingen in pizzadeeg; algemene <i>S. cerevisiae</i>-literatuur voor de richting van temperatuureffecten; Caputo voor W260–280 van Pizzeria. De exacte gistcurve, thermische modelconstanten, rijpingsindex en W-risicoscore zijn praktische modelaannames en niet als één voorspellend model laboratorium-gevalideerd. Gistconversie: ADY gebruikt praktisch 1,25 × IDY als standaard, maar fabrikantadvies varieert grofweg van 1:1 tot 1,25:1; verse gist ≈ 3 × IDY.</div>`;
 
   $('fermentationTechnical').innerHTML=`
     <div class="phase-grid">
@@ -611,9 +476,28 @@ function buildFermentationScience(c,a){
     ${technicalModelText}`;
 }
 
+// Cache only presentation state: changing Basic/Full must not recalculate.
+let _yeastAdviceMatchesRecipe=false;
+function yeastAdviceMatchesRecipe(c,advice){
+  const proposed=DoughCore.doughQuantities({...c,y:advice.selected}).yeast;
+  return Math.abs(proposed-c.yeast)<1e-9;
+}
+function renderYeastApplyButton(){
+  const button=$('applyYeastAdviceButton');
+  if(!button)return;
+  const mixed=!!activeBatch()||liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;
+  button.disabled=mixed||_yeastAdviceMatchesRecipe;
+  button.textContent=mixed?L('Deeg al gemengd · gist staat vast','Dough already mixed · yeast fixed')
+    :_yeastAdviceMatchesRecipe?L('Staat al in je recept','Already in your recipe')
+    :L('Gebruik dit gistadvies','Use this yeast advice');
+}
+
 function applyYeastAdvice(){
+  if(activeBatch())return;
+  if(liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
   const c=calc();
   const a=yeastRecommendation(c);
+  if(yeastAdviceMatchesRecipe(c,a))return;
   exactOverride=exactOverride||{h:selectedHydration(),s:selectedSalt(),o:selectedOil(),ySelected:selectedYeastPct()};
   exactOverride.ySelected=a.selected;
   $('yeastPct').value=fieldNum(a.selected,3);
@@ -622,6 +506,7 @@ function applyYeastAdvice(){
 }
 
 function applyPreset(key){
+  if(activeBatch())return;
   if(key==='custom') return;
   const p=presets[key]; if(!p)return;
   liveMeasurements={doughTemp:null,fridgeTemp:null};

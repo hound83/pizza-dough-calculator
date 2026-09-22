@@ -82,7 +82,7 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 .stat span{display:block;color:var(--muted);font-size:11px}.stat b{font-size:15px}
 .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .btn{border:0;border-radius:13px;padding:11px 15px;font-weight:800;cursor:pointer}
-.btn.primary{background:linear-gradient(135deg,var(--accent),#f08a55);color:#fff}
+.btn.primary{background:linear-gradient(135deg,var(--accent),#f08a55);color:#27160f}
 .btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:12px;background:#22272a;border:1px solid var(--line);color:#dce0e2}
@@ -603,12 +603,12 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 }
 .bake-plan-grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:minmax(0,2fr) minmax(100px,1fr);
   gap:12px;
   margin-top:0;
 }
 @media(max-width:560px){
-  .bake-plan-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .bake-plan-grid{grid-template-columns:1fr;gap:8px}
 }
 
 
@@ -1106,3 +1106,37 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 @media print{
   .step-progress-reset{display:none!important}
 }
+
+/* Planning remains visible in Basic and fits narrow screens. */
+.schedule-summary{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}
+.schedule-phases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0;padding:0;list-style:none}
+.schedule-phases li{min-width:0;border-left:3px solid var(--accent);padding-left:10px}
+.schedule-phases span{display:block;font-size:13px;color:var(--muted);line-height:1.5}
+.schedule-phases strong{display:block;font-size:16px;line-height:1.6}
+.schedule-summary .hint:last-child{margin-bottom:0}
+.step-moment{font-size:14px;font-weight:700;color:var(--accent);margin:5px 0 10px}
+.btn:disabled{cursor:default;opacity:.65}
+@media(max-width:430px){.schedule-phases{grid-template-columns:1fr}.live-measure .field{font-size:16px}}
+.workshop-panel{margin:16px 0;padding:16px;border:1px solid var(--line,#394048);border-radius:14px;min-width:0;background:rgba(255,255,255,.025)}
+.workshop-panel h3{margin:0 0 10px;font-size:1rem}
+.workshop-panel details>summary{cursor:pointer;font-weight:700;line-height:1.5;padding:4px 0}
+.workshop-panel details[open]>summary{margin-bottom:12px}
+.workshop-panel details details{margin:14px 0}
+.workshop-panel label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:.88rem}
+.workshop-panel .field{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.workshop-panel .btn{white-space:normal;overflow-wrap:anywhere;margin-top:8px;min-height:42px}
+.workshop-panel .hint{line-height:1.6}
+.workshop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.workshop-list{display:grid;gap:12px;margin:16px 0}
+.workshop-list>div{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line,#394048);overflow-wrap:anywhere}
+.workshop-list>div>span{min-width:0}
+.workshop-table-wrap{max-width:100%;margin:14px 0;overflow-x:auto}
+.workshop-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.84rem}
+.workshop-table th,.workshop-table td{text-align:left;vertical-align:top;padding:10px 7px;border-bottom:1px solid var(--line,#394048);overflow-wrap:anywhere}
+.workshop-table th:first-child{width:34%}
+.batch-target{display:flex;flex-direction:column;gap:6px;border-left:3px solid var(--accent,#e4aa63);padding:10px 14px;margin:12px 0}
+.batch-next{line-height:1.6}
+.timeitem small{display:block;font-weight:400;font-size:.75rem;opacity:.8;margin-top:4px}
+button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
+@media(max-width:560px){.workshop-grid{grid-template-columns:minmax(0,1fr)}.workshop-panel{padding:12px}.workshop-table{font-size:.78rem}.workshop-table th,.workshop-table td{padding:8px 4px}}
+@media print{.workshop-panel details:not([open]){display:none}.batch-runner button{display:none}}

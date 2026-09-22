@@ -38,6 +38,9 @@ const V1_2_1_RELEASE_BASELINE={
   css:'7140b86b8e3d0335ea5bc6e88c37e756aabb9713de011ded629c59266cb2df19',
   javascript:'dd69b2d1be8f912e15fcb4524642d27ea27a89d29dae2c5e76f00b9f3d0d73cd'
 };
+const V1_3_0_CANDIDATE_BASELINE=require('./baselines/v1.3.0-candidate.json');
+const V1_4_0_CANDIDATE_BASELINE=require('./baselines/v1.4.0-candidate.json');
+const V1_4_0_RELEASE_BASELINE=require('./baselines/v1.4.0-release.json');
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}
 
@@ -48,7 +51,7 @@ const css=built.css;
 const combinedJavaScript=built.javascript;
 const scripts=[...sourceHtml.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*><\/script>/gi)].map(match=>match[1]);
 assert(JSON.stringify(scripts)===JSON.stringify(EXPECTED_SCRIPTS),`Unexpected script order: ${scripts.join(', ')}`);
-pass('source HTML loads the eleven responsibility-based scripts in the documented order');
+pass('source HTML loads the fifteen responsibility-based scripts in the documented order');
 
 assert(!/<style(?:\s[^>]*)?>/i.test(sourceHtml),'Source HTML contains an inline stylesheet.');
 assert(!/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>/i.test(sourceHtml),'Source HTML contains inline JavaScript.');
@@ -76,9 +79,10 @@ for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.inclu
 pass('released v1.1.1 hashes remain documented');
 
 for(const hash of Object.values(V1_2_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.0 baseline hash is missing from product guardrails: ${hash}`);
-assert(sha256(bundledHtml)===V1_2_1_RELEASE_BASELINE.singleFile,'Standalone v1.2.1 release baseline changed without approval.');
-assert(sha256(css)===V1_2_1_RELEASE_BASELINE.css,'CSS v1.2.1 release baseline changed without approval.');
-assert(sha256(combinedJavaScript)===V1_2_1_RELEASE_BASELINE.javascript,'JavaScript v1.2.1 release baseline changed without approval.');
+assert(sha256(bundledHtml)===V1_4_0_RELEASE_BASELINE.singleFile,'Standalone differs from the documented v1.4.0 release baseline.');
+assert(sha256(css)===V1_4_0_RELEASE_BASELINE.css,'CSS differs from the documented v1.4.0 release baseline.');
+assert(sha256(combinedJavaScript)===V1_4_0_RELEASE_BASELINE.javascript,'JavaScript differs from the documented v1.4.0 release baseline.');
+for(const hash of [...Object.values(V1_3_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_RELEASE_BASELINE)])assert(guardrails.includes(hash),`Candidate/release hash is not documented: ${hash}`);
 for(const hash of Object.values(V1_2_1_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.1 baseline hash is missing from product guardrails: ${hash}`);
 pass('released v1.2.0 and v1.2.1 baselines are pinned and documented');
 
@@ -92,6 +96,10 @@ assert(reconstructed===built.html,'Source reconstruction differs from the genera
 pass('the complete modular source reconstructs the current feature bundle exactly');
 
 const contracts=[
+  ['calculation-core.js','const DoughCore'],
+  ['workflow-core.js','const WorkflowCore'],
+  ['batch-workflow.js','function startBatch'],
+  ['workshop-tools.js','function renderRecipeWorkbench'],
   ['foundation.js','const APP_VERSION'],
   ['translations.js','const EN_TEXT'],
   ['i18n.js','function setLanguage'],

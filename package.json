@@ -1,6 +1,6 @@
 {
   "name": "pizza-dough-calculator",
-  "version": "1.2.1",
+  "version": "1.4.0",
   "private": true,
   "description": "Pizza dough, fermentation, sauce and topping calculator",
   "scripts": {
@@ -9,10 +9,11 @@
     "test:structure": "node tests/test_refactor_structure.js",
     "test:bundle": "node tests/test_v50.js index.html",
     "test:source": "node tests/test_v50.js src/index.html",
-    "test:fast": "npm run check:bundle && npm run test:structure && npm run test:bundle && npm run test:source",
+    "test:fast": "npm run check:bundle && npm run test:structure && npm run test:core && npm run test:bundle && npm run test:source",
     "test:browser": "playwright test",
     "test:browser:headed": "playwright test --headed",
-    "test": "npm run test:fast && npm run test:browser"
+    "test": "npm run test:fast && npm run test:browser",
+    "test:core": "node --test tests/calculation-core.test.cjs tests/workflow-core.test.cjs"
   },
   "engines": {
     "node": ">=20"

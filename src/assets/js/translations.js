@@ -34,3 +34,8 @@ Object.assign(EN_TEXT,{
   "bijv. mooi luchtig, iets slap, bodem perfect...":"e.g. nicely airy, slightly slack, perfect base...",
   "alleen invullen als bekend":"only enter if known"
 });
+
+Object.assign(EN_TEXT,{
+  "Deeglogboek & vergelijkingen":"Dough log & comparisons",
+  "Werkelijke hoofdwatertemperatuur (°C)":"Actual main-water temperature (°C)"
+});

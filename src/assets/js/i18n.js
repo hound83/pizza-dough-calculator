@@ -238,8 +238,8 @@ function _observeI18n(){
 function resetCalculator(){
   const nl=currentLang!=='en';
   const message=nl
-    ? 'Weet je het zeker?\n\nAlle ingevulde waarden, pizzakeuzes, aanpassingen en planning worden gewist. De calculator keert terug naar het beginscherm met de standaardwaarden.\n\nJe taalkeuze blijft behouden.'
-    : 'Are you sure?\n\nAll entered values, pizza choices, customizations and planning will be cleared. The calculator will return to the start screen with the default values.\n\nYour language choice will be kept.';
+    ? 'Weet je het zeker?\n\nAlle ingevulde waarden, pizzakeuzes, eigen deegrecepten, mixerprofielen, batches, logboeken en planning worden gewist. De calculator keert terug naar het beginscherm met de standaardwaarden.\n\nJe taalkeuze blijft behouden.'
+    : 'Are you sure?\n\nAll entered values, pizza choices, saved dough recipes, mixer profiles, batches, logs and planning will be cleared. The calculator will return to the start screen with the default values.\n\nYour language choice will be kept.';
 
   if(!window.confirm(message))return;
 
@@ -286,6 +286,9 @@ function setLanguage(lang){
   _applyLanguageTree(document.body);
   updateLanguageSwitch();
   if(_storageWarningShown)showStorageWarningOnce();
+  // A language action is a commit boundary. Persist before an immediate reload
+  // can restore the older language from the main calculator state.
+  saveState();
   _observeI18n();
 }
 

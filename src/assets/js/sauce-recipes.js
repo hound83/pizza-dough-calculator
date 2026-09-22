@@ -98,7 +98,7 @@ function updateRecipeSummary(c){
   ensurePizzaCustomizations();
   $('pizzaSummary').innerHTML=pizzaSelections.map((id,idx)=>{
     const r=recipeById(id),custom=pizzaCustomizations[idx],items=includedItemsForBall(idx);
-    return `<div class="recipebox"><div class="titleline"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeNoteText(r)}</div></div><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)}</span></div><div class="list"><div class="list-row"><span>${L('Aanbevolen saus','Recommended sauce')}</span><span>${custom.noSauce?L('uitgevinkt','unchecked'):`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`}</span></div>${items.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]} ${tUnit(x[2],x[1])}</span></div>`).join('')}</div></div>`;
+    return `<div class="recipebox"><div class="titleline"><div><h3>${L('Bol','Ball')} ${idx+1} • ${recipeNameText(r)}</h3><div class="hint" style="margin:0">${recipeNoteText(r)}</div></div><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)}</span></div><div class="list"><div class="list-row"><span>${L('Aanbevolen saus','Recommended sauce')}</span><span>${custom.noSauce?L('uitgevinkt','unchecked'):`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`}</span></div>${items.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span></div>`).join('')}</div></div>`;
   }).join('');
 }
 
@@ -148,7 +148,7 @@ function buildPizzaCustomize(c){
       const key=itemKey(x),checked=!custom.excluded[key];
       return `<label class="ingredient-check"><input type="checkbox" ${checked?'checked':''}
         onchange='setIngredientIncluded(${idx},${JSON.stringify(key)},this.checked)'>
-        <span>${tItem(x[0])} • ${x[1]} ${tUnit(x[2],x[1])}</span>${after.has(key)?`<span class="after">${currentLang==='en'?'after baking':'na bakken'}</span>`:''}</label>`;
+        <span>${tItem(x[0])} • ${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span>${after.has(key)?`<span class="after">${currentLang==='en'?'after baking':'na bakken'}</span>`:''}</label>`;
     }).join('');
 
     const cheeseNote=cheese.allowed
@@ -220,8 +220,8 @@ function methodInstructions(c){
     knead:c.autolyse
       ? L('Meng na het zout nog <b>3 min op lage deegstand</b>; verleng alleen indien nodig tot maximaal ongeveer <b>4 min</b>.','After adding the salt, mix for another <b>3 min on a low dough speed</b>; extend only if needed to roughly <b>4 min maximum</b>.')
       : L('Kneed daarna ongeveer <b>4–6 min op lage deegstand</b>.','Then knead for roughly <b>4–6 min on a low dough speed</b>.'),
-    note:L(`Kenwood-modellen verschillen sterk. Volg altijd de modelspecifieke snelheidslimiet en stop eerder zodra het deeg glad en elastisch is, de windowpane voldoende is of de deegtemperatuur richting ${fmt(c.doughTemp,1)} °C gaat.`,
-      `Kenwood models differ substantially. Always follow the model-specific speed limit and stop earlier once the dough is smooth and elastic, the windowpane is sufficient, or dough temperature approaches ${fmt(c.doughTemp,1)} °C.`),
+    note:L(`Kenwood-modellen verschillen sterk. Volg altijd de modelspecifieke snelheidslimiet en controleer na de aangegeven kneedtijd de deegontwikkeling. Pauzeer bij overbelasting of te veel warmte; de doeltemperatuur ${fmt(c.doughTemp,1)} °C is geen bewijs van voldoende glutenontwikkeling.`,
+      `Kenwood models differ substantially. Always follow the model-specific speed limit and check dough development after the stated kneading time. Pause if the mixer strains or the dough overheats; the ${fmt(c.doughTemp,1)} °C target does not prove sufficient gluten development.`),
     autolyseCooling:coolTip('Kenwood'),
     finish:L('Is de windowpane na een korte rust nog zwak, geef het deeg dan één rustige ronde van <b>4 stretch-and-folds</b> in de kom. Sla dit over als het deeg al sterk of strak aanvoelt.','If the windowpane is still weak after a short rest, give the dough one gentle round of <b>4 stretch-and-folds</b> in the bowl. Skip this if the dough already feels strong or tight.'),
     finishNote:L('Dit is een optionele correctie, geen verplichte extra kneedfase.','This is an optional correction, not a mandatory extra kneading phase.')};
@@ -240,8 +240,8 @@ function methodInstructions(c){
     knead:c.autolyse
       ? L('Meng zout en water eerst <b>2 min op stand 1</b> door het deeg. Kneed daarna <b>2 min op stand 2</b> voor de eindontwikkeling.','First mix the salt and water into the dough for <b>2 min on speed 1</b>. Then knead for <b>2 min on speed 2</b> for final development.')
       : L('Meng zout en water na de hydratatierust <b>2 min op stand 1</b> door het deeg. Kneed daarna <b>2 min op stand 2</b> voor de eindontwikkeling.','After the hydration rest, mix the salt and water into the dough for <b>2 min on speed 1</b>. Then knead for <b>2 min on speed 2</b> for final development.'),
-    note:L(`Dit is een rustige, gefaseerde pizzamethode. KitchenAid schrijft voor gistdeeg officieel stand 2 voor; ga daarom nooit boven stand 2, blijf bij de machine en stop direct bij duidelijke belasting, sterke opwarming, glanzend/plakkerig deeg of zodra de deegtemperatuur richting ${fmt(c.doughTemp,1)} °C gaat.`,
-      `This is a gentle, staged pizza method. KitchenAid officially specifies speed 2 for yeasted dough; therefore never exceed speed 2, stay with the machine, and stop immediately if it strains, heats strongly, the dough turns glossy/sticky, or dough temperature approaches ${fmt(c.doughTemp,1)} °C.`),
+    note:L(`Ook met een spiraalvormige haak kies je de KitchenAid-methode. Dit is een gefaseerd receptschema; jouw modelhandleiding bepaalt de toegestane haak, belasting en gebruiksduur. KitchenAid schrijft voor gistdeeg officieel stand 2 voor; ga daarom nooit boven stand 2, blijf bij de machine en pauzeer direct bij duidelijke belasting of sterke opwarming. Alleen glanzend/plakkerig deeg of het bereiken van ${fmt(c.doughTemp,1)} °C bewijst niet dat het deeg klaar is. Controleer ook samenhang en windowpane; verlies van samenhang tijdens verder kneden is een reden om te stoppen.`,
+      `Choose the KitchenAid method even with a spiral-shaped hook. This is a staged recipe programme; your model manual governs the permitted hook, load and operating duration. KitchenAid officially specifies speed 2 for yeasted dough; therefore never exceed speed 2, stay with the machine, and pause immediately if it strains or heats strongly. Glossy/sticky dough alone or reaching ${fmt(c.doughTemp,1)} °C does not prove that the dough is ready. Also check cohesion and windowpane; a loss of cohesion during continued kneading is a reason to stop.`),
     autolyseCooling:coolTip('KitchenAid'),
     finish:L('Laat het deeg <b>5 min afgedekt ontspannen</b> en controleer daarna de windowpane. Is die nog zwak, duw het deeg dan op het werkblad rustig van je af, vouw terug en draai een kwartslag; herhaal ongeveer <b>6–10 keer</b>. Laat het vervolgens nog <b>5–10 min afgedekt ontspannen</b> en controleer opnieuw. Niet trekken of scheuren.','Let the dough <b>relax covered for 5 min</b> and then check the windowpane. If it is still weak, gently push the dough away from you on the worktop, fold it back, and turn it a quarter turn; repeat roughly <b>6–10 times</b>. Then let it relax covered for another <b>5–10 min</b> and check again. Do not pull or tear it.'),
     finishNote:L('Dit herstelpad gebruikt rust en vouwen, geen extra machinetijd. Sla de vouwen over als het deeg al een goede windowpane heeft of juist sterk en strak aanvoelt.','This recovery path uses rest and folds, with no extra machine time. Skip the folds if the dough already has a good windowpane or feels strong and tight.')};

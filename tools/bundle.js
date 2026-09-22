@@ -9,6 +9,8 @@ const SOURCE_ROOT=path.join(PROJECT_ROOT,'src');
 const OUTPUT_PATH=path.join(PROJECT_ROOT,'index.html');
 const STYLE_LINK='<link href="assets/css/app.css" rel="stylesheet"/>';
 const EXPECTED_SCRIPTS=[
+  'assets/js/calculation-core.js',
+  'assets/js/workflow-core.js',
   'assets/js/foundation.js',
   'assets/js/translations.js',
   'assets/js/i18n.js',
@@ -19,6 +21,8 @@ const EXPECTED_SCRIPTS=[
   'assets/js/fermentation-live.js',
   'assets/js/planning-shopping.js',
   'assets/js/navigation-logbook.js',
+  'assets/js/batch-workflow.js',
+  'assets/js/workshop-tools.js',
   'assets/js/persistence-bootstrap.js'
 ];
 const SCRIPT_TAGS=EXPECTED_SCRIPTS.map(src=>`<script src="${src}"></script>`).join('\n');

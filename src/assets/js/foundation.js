@@ -165,7 +165,9 @@ function setToppingScale(diameter){
 }
 function scaleQty(qty,unit){
   const q=Number(qty)*toppingScale;
-  if(unit==='g') return q>=20?roundTo(q,5):Math.max(1,roundTo(q,1));
+  if(!Number.isFinite(q)||q<=0)return 0;
+  if(unit==='g'&&q<1)return Math.max(.01,Math.round(q*100)/100);
+  if(unit==='g')return q>=20?roundTo(q,5):roundTo(q,1);
   return Math.max(1,Math.round(q));
 }
 
@@ -183,4 +185,7 @@ let _livePlanCache={key:null,value:null};
 // van "20") nooit recepten of afgevinkte stappen vernietigen.
 let _deferDependentStatePrune=false;
 // Publieke productversie staat bewust los van opslag-/migratieschema 51.
-const APP_VERSION='1.2.1';
+const APP_VERSION='1.4.0';
+
+// Keep subgram herbs legible across recipe, shopping and copy surfaces.
+function ingredientAmount(qty){return fmt(qty,qty<1?2:qty<2?1:0);}

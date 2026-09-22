@@ -75,7 +75,7 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.2.1');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.4.0');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
@@ -84,10 +84,55 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.2.1',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.4.0',hasCalculator:true,horizontalOverflow:0});
+        await page.locator('[data-mode-card="dough"]').click();
+        await expect(page.locator('#scheduleSummary')).toBeVisible();
+        await expect(page.locator('#scheduleSummary')).toContainText('1 u 54 min');
+        await expect(page.locator('#yeastAdviceDetail')).toContainText('vuistregelmarge');
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+        await page.screenshot({path:test.info().outputPath('basic-planning.png'),fullPage:true});
+        await page.locator('#bakeDay').selectOption('3');
+        await page.evaluate(()=>showPage(4));
+        await expect(page.locator('#timeline')).toContainText('Koelkast uit');
+        const timeline=await page.locator('#timeline').boundingBox(),steps=await page.locator('#stepsList').boundingBox();
+        expect(timeline.y).toBeLessThan(steps.y);
+        await expect(page.getByRole('checkbox',{name:'Meet de werkelijke deegtemperatuur',exact:true})).toHaveCount(1);
+        await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','true');
+        await page.locator('[data-method="hand"]').click();
+        await expect(page.locator('[data-method="hand"]')).toHaveAttribute('aria-pressed','true');
+        await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','false');
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+        await page.screenshot({path:test.info().outputPath('workflow.png'),fullPage:true});
         expect(failures).toEqual([]);
       });
     }
+
+    test('bake weekdays follow the local date, midnight, DST and language without changing the selection',async({browser})=>{
+      const context=await browser.newContext({timezoneId:'Europe/Amsterdam',locale:'nl-NL'});
+      const page=await context.newPage();
+      try{
+        await page.clock.install({time:new Date('2026-09-21T21:50:00Z')});
+        await page.goto('http://127.0.0.1:4173'+publication.path,{waitUntil:'load'});
+        await page.locator('[data-mode-card="dough"]').click();
+        await expect(page.locator('#bakeDay option[value="1"]')).toHaveText('Morgen – dinsdag');
+        await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
+        await page.locator('#bakeDay').selectOption('2');
+        await page.locator('#langEn').click();
+        await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('In 2 days – Wednesday');
+        await page.locator('#langNl').click();
+        await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
+        await page.clock.fastForward(11*60_000);
+        await expect(page.locator('#bakeDay option[value="1"]')).toHaveText('Morgen – woensdag');
+        await expect(page.locator('#bakeDay')).toHaveValue('2');
+        // Amsterdam is already Sunday here while UTC is still Saturday.
+        // Adding 24 elapsed hours would also fail across this 25-hour day.
+        await page.clock.setSystemTime(new Date('2026-10-24T22:30:00Z'));
+        await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+        await expect(page.locator('#bakeDay option[value="0"]')).toHaveText('Vandaag – zondag');
+        await expect(page.locator('#bakeDay option[value="1"]')).toHaveText('Morgen – maandag');
+        await expect(page.locator('#bakeDay')).toHaveValue('2');
+      }finally{await context.close();}
+    });
 
     test('switches Basic and Full without changing recipe values',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
@@ -129,7 +174,7 @@ for(const publication of PUBLICATIONS){
       await page.locator('#experienceBasic').click();
       await page.waitForTimeout(350);
       expect(await page.evaluate(()=>localStorage.getItem('pizzaCalcV50'))).toBeNull();
-      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV51')).version)).toBe(51);
+      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV52')).version)).toBe(52);
       await page.reload({waitUntil:'load'});
       await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
       await page.locator('[data-mode-card="dough"]').click();
@@ -153,11 +198,53 @@ for(const publication of PUBLICATIONS){
       await page.goto(publication.path,{waitUntil:'load'});
       await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#yeastApplyHelp')).toHaveText('Past alleen de berekende hoeveelheid gist aan.');
+      await page.locator('#roomTemp').fill('24');
+      await page.locator('#roomTemp').blur();
       await page.locator('#applyYeastAdviceButton').click();
       await expect(page.locator('#preset')).toHaveValue('custom');
       await expect(page.locator('#experienceCustomBadge')).toBeVisible();
       await expect(page.locator('#hydration')).toBeHidden();
       await expect(page.locator('#yeastPct')).toBeHidden();
+    });
+
+    test('yeast status survives language and display switches without a redundant recipe change',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#applyYeastAdviceButton')).toHaveText('Staat al in je recept');
+      await expect(page.locator('#applyYeastAdviceButton')).toBeDisabled();
+      await expect(page.locator('#preset')).toHaveValue('kodaNight');
+      await page.evaluate(()=>setLiveMeasurement('doughTemp','26'));
+      for(const lang of ['en','nl']){
+        await page.locator(lang==='en'?'#langEn':'#langNl').click();
+        for(const mode of ['full','basic']){
+          const before=await page.evaluate(()=>JSON.stringify(calc()));
+          // Changing display mode must not invoke the calculation pipeline.
+          await page.evaluate(mode=>{
+            const original=update;update=()=>{throw new Error('Unexpected recalculation');};
+            try{setExperienceMode(mode);}finally{update=original;}
+          },mode);
+          await expect(page.locator('#applyYeastAdviceButton')).toHaveText(lang==='en'?'Dough already mixed · yeast fixed':'Deeg al gemengd · gist staat vast');
+          await expect(page.locator('#applyYeastAdviceButton')).toBeDisabled();
+          expect(await page.evaluate(()=>JSON.stringify(calc()))).toBe(before);
+        }
+      }
+    });
+
+    test('subgram recipe quantities stay localized in the picker, customization, ingredients and steps',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="full"]').click();
+      for(const lang of ['nl','en'])for(const diameter of ['30','40']){
+        await page.evaluate(({lang,diameter})=>{
+          setLanguage(lang);$('diameter').value=diameter;update();
+          pizzaSelections=Array(4).fill('napoletana');pizzaCustomizations=[];update();
+          pickerSelectedId='napoletana';renderPickerPreview();buildIngredientsModal(calc());
+        },{lang,diameter});
+        const amount=diameter==='30'?(lang==='nl'?'0,35 g':'0.35 g'):(lang==='nl'?'0,63 g':'0.63 g');
+        for(const id of ['pizzaPickerPreview','pizzaCustomize','ingredientsModalBody','stepsList']){
+          await expect(page.locator('#'+id)).toContainText(amount);
+          expect(await page.locator('#'+id).innerText()).not.toMatch(/\d[.,]\d{5,}/);
+        }
+      }
     });
 
     test('uses practical percentage spinner grids while preserving off-grid preset precision',async({page})=>{

@@ -230,3 +230,88 @@ Before changing a rule above:
 5. verify persistence and migration impact;
 6. obtain explicit approval before implementation;
 7. update this document and the audit handoff.
+
+## v1.3.0 planning-review candidate contract
+
+The user explicitly requested this implementation after review, including cleaner code, clearer planning and yeast guidance, preserving mixing times and aiming for roughly two hours until cold fermentation when quality permits. This is a candidate based on released v1.2.1, separate from parked feedback PR #12. See `V1_3_0_REVIEW_AND_ROADMAP.md` for rationale, model limits and the next coding steps.
+
+- Retain all existing mixing durations, preset phase durations, baker's percentages, thermal/yeast constants, the ±1 °C room deadband and schema 51. The approximately two-hour target does not automatically shorten rests or development.
+- Superseding the historical v1.1.0 wording: reaching the temperature target or merely appearing glossy/sticky is not proof of adequate development. Pause for excessive heat/load; evaluate cohesion and a rested windowpane. Retain the existing recovery pathway.
+- Measure immediately after the kneading stage, before recovery rest. Actual measurements lock yeast/deadline recipe-apply actions; live timing correction remains available.
+- Show the recipe dose to weigh, a distinct model starting point, and the heuristic nature of its range. Retain distinct official AVPN range semantics.
+- Planned target temperatures are not labelled measured. No empirical accuracy or confidence-interval claim is added.
+- Basic includes a phase summary and approximate time until cold fermentation. The timeline and relevant steps expose fridge-in/out using shared offsets, with dates if a bake time is selected and elapsed offsets otherwise.
+- Bake-day labels include the local weekday and refresh after midnight, on return to the page and on language changes. Relative option values and schema 51 remain unchanged; an immutable calendar target for a running batch is separate future work. Use calendar-day arithmetic, not fixed 24-hour additions.
+- The AVPN identity belongs only to the actual AVPN preset. A proposed custom deadline recipe uses its own identity and explicit style.
+- Subgram gram quantities keep 0.01 g resolution and zero remains zero; catalogue reference quantities and existing whole-gram rules are unchanged.
+- Step checkboxes have unique heading-based accessible names; method buttons expose selected state; primary-button text meets normal-text contrast.
+- Historical released hash records remain immutable. The hashes below identify this deliberate, user-requested candidate baseline, not a published release or physical model validation.
+
+| Candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `78851e2d059925f3dd1cebebbcc556060b75331db4aa03a259df8a7545b09335` |
+| css | `e7c20ac74ca79d1a2229ebc649e2c2b9d90dd5362b0e4d855cea05f94dfef619` |
+| javascript | `ce6967176b18787250e768d14899cab8b7bb5c5303c3c245c1757a6a657b1896` |
+
+
+## v1.4.0 batch-workflow candidate contract
+
+The user explicitly authorized implementing all additional recommendations in a new version. This contract supersedes historical exclusions of mixer profiles, container inputs and schema changes for this feature candidate. See `V1_4_0_IMPLEMENTATION_REVIEW.md` for scope, rationale, limits and verification.
+
+- All original kneading times, catalogue recipes, preset numerical values, thermal/yeast constants and the inclusive ±1 °C room deadband remain intact.
+- Starting a batch fixes its dough recipe, method, equipment/storage snapshot and absolute desired bake time. Actual events must remain chronological. Unperformed phases are forecasts, never automatically completed.
+- A tracked batch records temperature observations. Only an explicit final-proof proposal or manual unfinished-phase edit can revise its future timing. It cannot erase elapsed time, rewrite actual checkpoints, change incorporated yeast or silently shift the desired bake date.
+- Mixer/hook profiles and bake observations never update the physical model automatically. Box settings calculate practical capacity but do not invent new thermal coefficients.
+- Scale guidance quantifies resolution separately from accuracy and never silently changes the recipe dose.
+- Saved dough recipes and JSON exchange exclude private measurements, notes and batch dates. Imported recipes become custom profiles and cannot claim official AVPN identity through file metadata alone.
+- Persistence migrates from schema 51 to 52 with regression coverage. Remove old keys only after a successful replacement write. Keep legacy recipes/logs and ignore malformed new entries individually.
+- Source remains authoritative; the generated standalone bundle is self-contained. New controls use event listeners, Dutch/English labels, and responsive/keyboard coverage.
+- The following hashes pin the explicitly requested v1.4.0 candidate. They are neither a release nor empirical physical validation. Previous hashes above remain immutable.
+
+<!-- v1.4.0 candidate hashes -->
+
+| Candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `71bce4fb867a5e642b15e1b8b553d591e874d0be50be0a0022b3fa7a8915c267` |
+| css | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
+| javascript | `2ed15032fc560020ab6865ad72292b13bf228cd058b156ef43cef6a65af4ca83` |
+
+
+## v1.3.0 reviewed-candidate completion
+
+The user requested completion from current GitHub state and explicitly included Claude's crosscheck. The six corrections are described in `V1_3_0_CLAUDE_FOLLOWUP.md`. A matching weighed yeast dose displays a status and preserves its preset; display changes do not calculate or apply a recipe. Topping quantities use localized formatting on every surface. No numerical calibration, recipe catalogue, kneading time or storage change is authorized by these corrections. This patch retains v1.3.0 candidate metadata and preserves all original baseline records above.
+
+| Corrected candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `137c7fb047b1bcb6ec540cf53a43b5cf1a73c38185ab1e5e395a42dbd5c02c5a` |
+| css | `e7c20ac74ca79d1a2229ebc649e2c2b9d90dd5362b0e4d855cea05f94dfef619` |
+| javascript | `416b6139b19a2f293d08a61c6afa97f0ba8813062c360e05e2252abb1656dff4` |
+
+## v1.4.0 recovery completion
+
+The existing feature candidate incorporates the reviewed 1.3 completion fixes. Active batches retain the yeast lock without measurements; matching-dose status uses the shared quantity core. See `V1_4_0_RECOVERY_VERIFICATION.md`. The earlier candidate records remain above; this table pins the corrected candidate. No further schema change or numerical calibration is introduced.
+
+| Corrected v1.4 candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `94e568b88e48312f7279d0d2fbc2694ede761092bcf608770befe5310ccc8c15` |
+| css | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
+| javascript | `cdbfefb2b0f92cf195df1c05f304072bd12456eceff5e4093ff460b7a2d4d5ce` |
+
+## v1.4.0 release follow-up
+
+The user authorized resolving Claude's eight PR #14 findings and publishing 1.4 when no major redesign was needed. The historical candidate baselines above stay intact. The release adds these contracts:
+
+- Loading valid saved checkpoints must not delete a batch after a device clock moves backwards. New checkpoints still reject future input and all checkpoints retain chronological validation.
+- Active-batch dough quantities, method and requested bake time remain fixed. Stone temperature and preheat minutes are editable baking preferences retained per batch across reload, archive and reopen.
+- Workshop validation appears beside its originating action; invalid JSON uses the selected interface language.
+- Remaining-proof advice refreshes on opening its disclosure and returning to the page; applying it still validates current elapsed time.
+- Untracked step times are Planned, recorded checkpoints Actual, and remaining tracked times Expected, localized in NL/EN.
+- Scale rounding must not display negative zero. Mixer comparisons use Bak A/B in Dutch.
+
+No physical constants, yeast model, kneading duration or rest duration change in this follow-up. The six later workflow proposals and app development are outside this release. LF checkout rules keep deterministic bundle hashes portable to Windows.
+
+| Release artifact | SHA-256 |
+|---|---|
+| v1.4.0 standalone | `d60e69bfd21ea60bbf41cab8e29cb245d2f768ae64f648d369d4c05345da20e9` |
+| v1.4.0 CSS | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
+| v1.4.0 JavaScript | `17a59e6b2aa22e0a45647755f1b9c94b815293ef1b3ccc5d8444e489de9a7ff6` |
