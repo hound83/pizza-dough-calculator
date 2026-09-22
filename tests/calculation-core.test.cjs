@@ -4,6 +4,13 @@ const assert=require('node:assert/strict');
 const core=require('../src/assets/js/calculation-core.js');
 const reference={total:880,actualBall:220,bulk:1,cold:20,ball:4,ferm:'hybrid',room:21,fridge:4,doughTemp:24,s:3,style:'neapolitan'};
 
+test('exported yeast assumptions cannot be mutated by an adapter',()=>{
+  assert.ok(Object.isFrozen(core.YEAST_TEMP_CURVE));
+  for(const point of core.YEAST_TEMP_CURVE)assert.ok(Object.isFrozen(point));
+  assert.throws(()=>{core.YEAST_TEMP_CURVE[6][1]=2;},TypeError);
+  assert.equal(core.yeastTempActivity(21),1);
+});
+
 test('thermal exchange is composable, approaches the environment and preserves equilibrium',()=>{
   for(const [start,ambient] of [[24,4],[4,21],[21,21]]){
     const once=core.thermalEndTemperature(start,ambient,4,1.1);

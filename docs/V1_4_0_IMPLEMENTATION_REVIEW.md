@@ -2,6 +2,8 @@
 
 The user explicitly requested implementation of all seven additional recommendations, rather than another suggestion-only document. This feature candidate builds on `feature/v1.3.0-planning-review` at `02920e4fee5b9e3ab8c5cf02fac229d2b50d573e`. The v1.3.0 branch and its complete original review remain available. The current public release remains v1.2.1; this work does not merge, tag, release or deploy itself.
 
+See also [the recovery verification and Claude follow-up](V1_4_0_RECOVERY_VERIFICATION.md) for the current candidate after the independent v1.3 crosscheck.
+
 ## Implemented scope
 
 | Recommendation | Working interface | Persisted result |

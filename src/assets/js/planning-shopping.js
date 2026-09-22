@@ -111,7 +111,7 @@ function deadlineRecommendation(c,bake){
   // Onder 4 uur vanaf nu adviseren we geen vers pizzadeeg.
   // Dit is geen biologische absolute grens: gist kan sneller gas maken,
   // maar gasproductie is niet hetzelfde als een goed gerijpt pizzadeeg.
-  if(until<4)return {status:'tooShort',until,currentStart,usable:Math.max(0,until-0.75)};
+  if(until<4)return {status:'tooShort',until,currentStart,usable:Math.max(0,until-prepHours())};
 
   // Voorbereiding volgens kneedmethode + 15 min praktische startbuffer.
   const usable=floorQuarter(until-(prepHours()+0.25));
@@ -791,7 +791,7 @@ function buildIngredientsModal(c){
   const perPizza=`<div class="modal-section"><h3>Per pizza</h3>${pizzaSelections.map((id,idx)=>{
     const r=recipeById(id),custom=pizzaCustomizations[idx],cheese=extraCheeseAdvice(idx,c);
     const sauceLine=custom.noSauce?'uitgevinkt':($('autoSauceFromPizzas').checked?`${sauceName(effectiveSauceTypeForBall(idx))} • ${effectiveSauceGramsForBall(idx)} g`:`${sauceName($('sauceType').value)} • ${fmt(manualSaucePerPizza(),0)} g`);
-    const rows=includedItemsForBall(idx).map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]} ${tUnit(x[2],x[1])}</span></div>`).join('');
+    const rows=includedItemsForBall(idx).map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${ingredientAmount(x[1])} ${tUnit(x[2],x[1])}</span></div>`).join('');
     const extra=custom.extraCheese&&cheese.allowed?`<div class="list-row"><span>${cheese.name} • extra kaas</span><span>+${fmt(cheese.amount,0)} g</span></div>`:'';
     return `<div class="recipebox"><div class="titleline"><h3>Bol ${idx+1} • ${recipeNameText(r)}</h3><span class="tag">${pizzaStyleLabel(custom.pizzaStyle)} • ${recipeTempFor(id).low}–${recipeTempFor(id).high} °C</span></div><div class="list"><div class="list-row"><span>Saus</span><span>${sauceLine}</span></div>${rows}${extra}</div></div>`;
   }).join('')}</div>`;

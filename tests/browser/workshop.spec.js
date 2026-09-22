@@ -7,6 +7,30 @@ for(const path of ['/index.html','/src/index.html']){
       await page.goto(path,{waitUntil:'load'});
       await page.locator('[data-mode-card="dough"]').click();
     }
+    for(const blocked of [false,true])test(`schema 51 upgrade ${blocked?'retains the original on write failure':'preserves the running recipe and observations'}`,async({page})=>{
+      const legacy={version:51,preset:'custom',pizzas:'6',diameter:'32',hydration:'66',yeastPct:'.17345',exactOverride:{h:66,ySelected:.17345},currentMethod:'kitchenaid',currentLang:'en',experienceMode:'full',appMode:'full',currentWizardPage:4,practical:false,autolyse:true,sizeFromDiameter:true,completedSteps:{'s-weigh':true},liveMeasurements:{doughTemp:25.5,fridgeTemp:4.5},pizzaSelections:Array(6).fill('napoletana'),pizzaCustomizations:[],bakeLog:[{ts:Date.UTC(2026,8,20),method:'kitchenaid',notes:'Legacy bake note',hydration:66,rating:'good'}]};
+      await page.addInitScript(({legacy,blocked})=>{
+        if(!sessionStorage.getItem('migration-seeded')){
+          localStorage.setItem('pizzaCalcV51',JSON.stringify(legacy));sessionStorage.setItem('migration-seeded','yes');
+        }
+        if(blocked){
+          const write=Storage.prototype.setItem;
+          Storage.prototype.setItem=function(key,value){if(key==='pizzaCalcV52')throw new DOMException('Test quota','QuotaExceededError');return write.call(this,key,value);};
+        }
+      },{legacy,blocked});
+      await page.goto(path,{waitUntil:'load'});
+      const read=()=>page.evaluate(()=>({diameter:$('diameter').value,pizzas:calc().pizzas,hydration:calc().h,yeastPct:calc().y,lang:currentLang,mode:experienceMode,temp:liveMeasurementValue('doughTemp'),fridge:liveMeasurementValue('fridgeTemp'),checked:completedSteps['s-weigh'],log:bakeLog[0].notes,recipes:pizzaSelections.length,old:localStorage.getItem('pizzaCalcV51'),version:JSON.parse(localStorage.getItem('pizzaCalcV52')||'null')?.version??null}));
+      const state=await read();
+      expect(state).toMatchObject({diameter:'32',pizzas:6,hydration:66,yeastPct:.17345,lang:'en',mode:'full',temp:25.5,fridge:4.5,checked:true,log:'Legacy bake note',recipes:6});
+      if(blocked){
+        expect(state.old).toBe(JSON.stringify(legacy));expect(state.version).toBeNull();
+        await expect(page.locator('#storageWarning')).toBeVisible();
+      }else{
+        expect(state.old).toBeNull();expect(state.version).toBe(52);
+        await page.reload();expect(await read()).toEqual(state);
+      }
+    });
+
     test('running batch fixes recipe and calendar date across midnight, language and reload',async({page})=>{
       const failures=[];page.on('pageerror',error=>failures.push(error.message));
       await page.clock.install({time:new Date('2026-09-21T23:50:00Z')});await open(page);
@@ -27,6 +51,9 @@ for(const path of ['/index.html','/src/index.html']){
       await page.evaluate(()=>{applyPreset('avpnMid');setMethod('hand');applyYeastAdvice();applyDeadlinePlan();});
       expect(await page.evaluate(()=>({yeast:calc().yeast,method:currentMethod}))).toEqual({yeast:before.yeast,method:'kitchenaid'});
       await expect(page.locator('#batchPlanner')).toContainText('recipe fixed');
+      await page.evaluate(()=>setExperienceMode('full'));
+      await expect(page.locator('#applyYeastAdviceButton')).toHaveText('Dough already mixed · yeast fixed');
+      await expect(page.locator('#applyYeastAdviceButton')).toBeDisabled();
       expect(failures).toEqual([]);
     });
     test('actual checkpoints validate chronology and archive/resume preserves progress and cleared measurements',async({page})=>{
@@ -110,12 +137,19 @@ for(const path of ['/index.html','/src/index.html']){
         await page.locator('#savedRecipeName').fill('Mijn lange weekendrecept met een duidelijke naam');await page.locator('[data-workshop-action="save-recipe"]').click();
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
         await page.screenshot({path:test.info().outputPath(`workshop-plan-${width}.png`),fullPage:true});
+        await page.locator('#langEn').click();
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+        await page.screenshot({path:test.info().outputPath(`workshop-plan-en-${width}.png`),fullPage:true});
+        await page.locator('#langNl').click();
         await page.locator('#batchPlanner [data-workshop-action="start-batch"]').click();
         for(const id of ['batchEventDetails','batchTimingDetails','mixerProfileDetails','doughHelpDetails'])await page.locator(`#${id}>summary`).click();
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
         await page.locator('#batchRunner [data-workshop-action="record-now"]').focus();await page.keyboard.press('Enter');
         expect(await page.evaluate(()=>activeBatch().events.bulkStart)).toBeGreaterThan(0);
-        await page.screenshot({path:test.info().outputPath(`workshop-batch-${width}.png`),fullPage:true});expect(failures).toEqual([]);
+        await page.screenshot({path:test.info().outputPath(`workshop-batch-${width}.png`),fullPage:true});
+        await page.locator('#langEn').click();
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+        await page.screenshot({path:test.info().outputPath(`workshop-batch-en-${width}.png`),fullPage:true});expect(failures).toEqual([]);
       });
     }
   });

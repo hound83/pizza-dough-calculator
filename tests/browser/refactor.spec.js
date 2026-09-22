@@ -198,11 +198,53 @@ for(const publication of PUBLICATIONS){
       await page.goto(publication.path,{waitUntil:'load'});
       await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#yeastApplyHelp')).toHaveText('Past alleen de berekende hoeveelheid gist aan.');
+      await page.locator('#roomTemp').fill('24');
+      await page.locator('#roomTemp').blur();
       await page.locator('#applyYeastAdviceButton').click();
       await expect(page.locator('#preset')).toHaveValue('custom');
       await expect(page.locator('#experienceCustomBadge')).toBeVisible();
       await expect(page.locator('#hydration')).toBeHidden();
       await expect(page.locator('#yeastPct')).toBeHidden();
+    });
+
+    test('yeast status survives language and display switches without a redundant recipe change',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="dough"]').click();
+      await expect(page.locator('#applyYeastAdviceButton')).toHaveText('Staat al in je recept');
+      await expect(page.locator('#applyYeastAdviceButton')).toBeDisabled();
+      await expect(page.locator('#preset')).toHaveValue('kodaNight');
+      await page.evaluate(()=>setLiveMeasurement('doughTemp','26'));
+      for(const lang of ['en','nl']){
+        await page.locator(lang==='en'?'#langEn':'#langNl').click();
+        for(const mode of ['full','basic']){
+          const before=await page.evaluate(()=>JSON.stringify(calc()));
+          // Changing display mode must not invoke the calculation pipeline.
+          await page.evaluate(mode=>{
+            const original=update;update=()=>{throw new Error('Unexpected recalculation');};
+            try{setExperienceMode(mode);}finally{update=original;}
+          },mode);
+          await expect(page.locator('#applyYeastAdviceButton')).toHaveText(lang==='en'?'Dough already mixed · yeast fixed':'Deeg al gemengd · gist staat vast');
+          await expect(page.locator('#applyYeastAdviceButton')).toBeDisabled();
+          expect(await page.evaluate(()=>JSON.stringify(calc()))).toBe(before);
+        }
+      }
+    });
+
+    test('subgram recipe quantities stay localized in the picker, customization, ingredients and steps',async({page})=>{
+      await page.goto(publication.path,{waitUntil:'load'});
+      await page.locator('[data-mode-card="full"]').click();
+      for(const lang of ['nl','en'])for(const diameter of ['30','40']){
+        await page.evaluate(({lang,diameter})=>{
+          setLanguage(lang);$('diameter').value=diameter;update();
+          pizzaSelections=Array(4).fill('napoletana');pizzaCustomizations=[];update();
+          pickerSelectedId='napoletana';renderPickerPreview();buildIngredientsModal(calc());
+        },{lang,diameter});
+        const amount=diameter==='30'?(lang==='nl'?'0,35 g':'0.35 g'):(lang==='nl'?'0,63 g':'0.63 g');
+        for(const id of ['pizzaPickerPreview','pizzaCustomize','ingredientsModalBody','stepsList']){
+          await expect(page.locator('#'+id)).toContainText(amount);
+          expect(await page.locator('#'+id).innerText()).not.toMatch(/\d[.,]\d{5,}/);
+        }
+      }
     });
 
     test('uses practical percentage spinner grids while preserving off-grid preset precision',async({page})=>{

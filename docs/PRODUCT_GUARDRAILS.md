@@ -275,3 +275,24 @@ The user explicitly authorized implementing all additional recommendations in a 
 | singleFile | `71bce4fb867a5e642b15e1b8b553d591e874d0be50be0a0022b3fa7a8915c267` |
 | css | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
 | javascript | `2ed15032fc560020ab6865ad72292b13bf228cd058b156ef43cef6a65af4ca83` |
+
+
+## v1.3.0 reviewed-candidate completion
+
+The user requested completion from current GitHub state and explicitly included Claude's crosscheck. The six corrections are described in `V1_3_0_CLAUDE_FOLLOWUP.md`. A matching weighed yeast dose displays a status and preserves its preset; display changes do not calculate or apply a recipe. Topping quantities use localized formatting on every surface. No numerical calibration, recipe catalogue, kneading time or storage change is authorized by these corrections. This patch retains v1.3.0 candidate metadata and preserves all original baseline records above.
+
+| Corrected candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `137c7fb047b1bcb6ec540cf53a43b5cf1a73c38185ab1e5e395a42dbd5c02c5a` |
+| css | `e7c20ac74ca79d1a2229ebc649e2c2b9d90dd5362b0e4d855cea05f94dfef619` |
+| javascript | `416b6139b19a2f293d08a61c6afa97f0ba8813062c360e05e2252abb1656dff4` |
+
+## v1.4.0 recovery completion
+
+The existing feature candidate incorporates the reviewed 1.3 completion fixes. Active batches retain the yeast lock without measurements; matching-dose status uses the shared quantity core. See `V1_4_0_RECOVERY_VERIFICATION.md`. The earlier candidate records remain above; this table pins the corrected candidate. No further schema change or numerical calibration is introduced.
+
+| Corrected v1.4 candidate artefact | SHA-256 |
+|---|---|
+| singleFile | `94e568b88e48312f7279d0d2fbc2694ede761092bcf608770befe5310ccc8c15` |
+| css | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
+| javascript | `cdbfefb2b0f92cf195df1c05f304072bd12456eceff5e4093ff460b7a2d4d5ce` |
