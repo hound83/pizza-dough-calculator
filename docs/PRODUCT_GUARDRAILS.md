@@ -365,3 +365,13 @@ The oven queue now precedes optional history/timer tools during baking, opens on
 | singleFile | `7fcabae9c5243dacc48b6cf91c24fd4bd996b1bb0f95bf5ab7c798970994d42c` |
 | css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
 | javascript | `40afdc95d35fa6d4ad0be0b938c3118277d01d1dcb928a6fc6755c4e88dca3a4` |
+
+### v2.0.0 archive access
+
+Read-only history exposes original archived checkpoints and measurements even when legacy toppings are unknown or another evening is active. A migration browser assertion protects access without changing active history.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `523d3e60d8596ba738ea56a52262652a4cf255567c57bac6a46d71f1085d8509` |
+| css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
+| javascript | `affdf2daab0d1b42741234e87f5e6395ffe4b1f33d983c3d9ff844ff222b3576` |

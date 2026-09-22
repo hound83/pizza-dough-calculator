@@ -23,7 +23,7 @@ Ordinary ingredient-only use requires no tracked evening, guest names, equipment
 
 - Schema 53 has one authoritative evening: frozen parent recipe and absolute target, independent run batches, stable pizza records and a selected run. The existing `workshop.batch` is a compatibility alias; persistence does not duplicate that active fact.
 - Ordinary recipe inputs stay frozen after starting. Stone temperature and preheat remain editable, are synchronized across run snapshots, and survive archive/reopen.
-- Schema 52's active batch becomes one evening/run, retaining actual checkpoints, measurements and progress. Current pizza choices are explicitly marked as legacy provenance. Historical batches do not receive invented toppings.
+- Schema 52's active batch becomes one evening/run, retaining actual checkpoints, measurements and progress. Current pizza choices are explicitly marked as legacy provenance. Historical batches do not receive invented toppings; their original checkpoints and measurements can be inspected read-only without interrupting the active evening.
 - Legacy keys are removed only after a successful new write and complete recovery. If records are dropped, the UI says so and retains the original storage. Quota failure keeps the old data. Future/corrupt current state is not automatically overwritten.
 - A same-origin Web Lock grants one writer for the page lifetime. Another tab can view, but cannot save or reset the writer's state. It takes over after the writer closes and it reloads. Revision checks also detect stale writes. Without Web Locks or writable storage, the UI explains that saving is unavailable; calculation/instructions remain usable.
 - Recipe files remain format 1 / 50 kB. Evening templates are format 1 / 250 kB. Private backups are format 1 / 2 MB. Full restore checks chronology, IDs, references, allocation consistency, collection bounds and time zone before replacing storage. Missing recipes in a portable template have an explicit replacement screen; the saved original remains intact.
@@ -57,7 +57,9 @@ The complete suite is `npm test`: 15 structure checks, 31 pure-core tests, 106 r
 
 Manual Chromium preview also exercised Plan → Start dough → post-knead reading → bulk transition → reload → unknown fridge checkpoints → first pizza launch. The full ordinary instructions and unchanged mixer timing remained available during that flow.
 
-Execution results and final Actions links are recorded below after the final branch checks complete. A locally unavailable Playwright browser is an environment limitation, not a passing browser result; the GitHub job installs Chromium and runs the same suite.
+The full `npm test` passed on GitHub at code commit `87eb019d6f9707a8b68992f2533c9e2d45f02123`: **15 structure + 31 pure core + 106 bundle + 106 source + 125 Chromium cases**, with no failed cases. [Recorded complete run](https://github.com/hound83/pizza-dough-calculator/actions/runs/35779847214). The preceding sharing/recovery candidate also passed all 125 browser cases. Screenshots are attached to the Actions runs (seven-day retention).
+
+A final follow-up adds a read-only archived-checkpoint view and its schema-52 browser assertion. Use [the current PR checks](https://github.com/hound83/pizza-dough-calculator/pull/16/checks) to verify the final review HEAD, and the PR description for its final run link. The local fast suite passed as well; local `npm test` reached the browser layer but could not launch the unavailable local Chromium executable. The GitHub job installs Chromium and provides the full-suite evidence.
 
 ## Focus for independent review / remaining limits
 

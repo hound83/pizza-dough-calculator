@@ -96,6 +96,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
     expect(await page.evaluate(()=>activeBatch().events)).toEqual(legacy.workshop.batch.events);
     expect(await page.evaluate(()=>({count:activeEvening().runs.length,provenance:activeEvening().pizzas[0].provenance,archived:evenings.history[0].pizzas,old:localStorage.getItem('pizzaCalcV52')}))).toEqual({count:1,provenance:'legacy-current-choices',archived:[],old:null});
     await page.reload();expect(await page.evaluate(()=>activeBatch().events)).toEqual(legacy.workshop.batch.events);
+    await page.locator('[data-workspace="plan"]').click();await expand(page,'#eveningCollectionDetails');await expand(page,'#eveningHistory');await page.locator('.evening-archive > summary').click();await expect(page.locator('.evening-archive')).toContainText('bulk gestart');expect(await page.evaluate(()=>activeBatch().events)).toEqual(legacy.workshop.batch.events);
   });
   test('quota failure during private restore preserves the previous evening',async({page})=>{
     await open(page);await start(page);
