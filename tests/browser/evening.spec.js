@@ -42,12 +42,15 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
     await page.locator('[data-evening-action="select-run"]').first().click();await expect(page.locator('#kitchenDoughTemp')).toHaveCount(0);
   });
   test('unknown history, correction and undo never invent times or discard measurements',async({page})=>{
-    await open(page);await start(page);await page.locator('#kitchenDoughTemp').fill('25');await page.locator('#kitchenDoughTemp').blur();
+    await open(page);await start(page);await page.locator('#kitchenDoughTemp').fill('25');
+    // Repaint while still editing: native pending change state belongs to the old node.
+    await page.evaluate(()=>{eveningNotice='Current phase refreshed';renderKitchen(calc());});
     await unknownThroughProof(page);
     expect(await page.evaluate(()=>({unknown:activeBatch().unknownEvents,temp:activeBatch().measurements.doughTemp,proposal:batchProposal().reason}))).toEqual({unknown:['bulkStart','fridgeIn','fridgeOut'],temp:25,proposal:'unknown-history'});
     await page.locator('[data-evening-action="undo"]').click();
     expect(await page.evaluate(()=>({unknown:activeBatch().unknownEvents,temp:activeBatch().measurements.doughTemp}))).toEqual({unknown:['bulkStart','fridgeIn'],temp:25});
     await page.reload();expect(await page.evaluate(()=>activeBatch().events.fridgeIn)).toBeUndefined();await expect(page.locator('#kitchenWorkspace')).toContainText('Tijd onbekend');
+    await page.locator('[data-evening-action="finish"]').click();expect(await page.evaluate(()=>evenings.history.at(-1).runs[0].batch.measurements.doughTemp)).toBe(25);
   });
   test('pizza queue keeps names, toppings and first launch linked and preserves unbaked pizzas',async({page})=>{
     await open(page);await page.evaluate(()=>{pizzaSelections=['parmaBurrata','margherita','marinara','diavola'];pizzaCustomizations=[];update();});await start(page);await unknownThroughProof(page);

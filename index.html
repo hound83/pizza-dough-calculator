@@ -7987,6 +7987,14 @@ function renderEvening(c){
   if($('instructionsSummary'))$('instructionsSummary').textContent=L('Alle instructies, tijdlijn en logboek','All instructions, timeline and logbook');
 }
 async function handleEveningAction(button){
+  // A repaint can preserve a focused value without the browser's pending change
+  // event. Commit the visible reading before replacing its phase or run.
+  const temperature=$('kitchenDoughTemp');
+  if(temperature&&activeBatch()){
+    const raw=temperature.value.trim(),value=validMeasured(raw,10,40);
+    if(raw!==''&&value===null)throw new Error(L('Vul een deegtemperatuur van 10–40 °C in, of laat het veld leeg.','Enter a dough temperature between 10–40 °C, or leave the field blank.'));
+    if(value!==liveMeasurementValue('doughTemp'))setLiveMeasurement('doughTemp',raw);
+  }
   const action=button.dataset.eveningAction,e=activeEvening();eveningNotice='';
   if(['event-now','unknown-event','pizza-in','pizza-out'].includes(action)){if(Date.now()-_lastEveningTransition<500)return;_lastEveningTransition=Date.now();}
   if(action==='start')startEvening();

@@ -375,3 +375,13 @@ Read-only history exposes original archived checkpoints and measurements even wh
 | singleFile | `523d3e60d8596ba738ea56a52262652a4cf255567c57bac6a46d71f1085d8509` |
 | css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
 | javascript | `affdf2daab0d1b42741234e87f5e6395ffe4b1f33d983c3d9ff844ff222b3576` |
+
+### v2.0.0 pending measurement preservation
+
+A focused temperature value survives repaint and is committed before a phase/run transition or closing. Existing browser coverage now reproduces repaint-before-blur and verifies its archived measurement.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `8d76bcffb423f365f5fd9091b2458fac303a1c55877cb5b421b119ce8d3144fd` |
+| css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
+| javascript | `235a660a51956c4cac84373e862ef41f36aad03b6c235b638268f7cd979b4bc3` |

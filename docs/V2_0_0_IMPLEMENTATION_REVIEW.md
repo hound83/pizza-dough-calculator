@@ -59,7 +59,7 @@ Manual Chromium preview also exercised Plan → Start dough → post-knead readi
 
 The full `npm test` passed on GitHub at code commit `87eb019d6f9707a8b68992f2533c9e2d45f02123`: **15 structure + 31 pure core + 106 bundle + 106 source + 125 Chromium cases**, with no failed cases. [Recorded complete run](https://github.com/hound83/pizza-dough-calculator/actions/runs/35779847214). The preceding sharing/recovery candidate also passed all 125 browser cases. Screenshots are attached to the Actions runs (seven-day retention).
 
-A final follow-up adds a read-only archived-checkpoint view and its schema-52 browser assertion. Use [the current PR checks](https://github.com/hound83/pizza-dough-calculator/pull/16/checks) to verify the final review HEAD, and the PR description for its final run link. The local fast suite passed as well; local `npm test` reached the browser layer but could not launch the unavailable local Chromium executable. The GitHub job installs Chromium and provides the full-suite evidence.
+Final follow-ups add a read-only archived-checkpoint view, its schema-52 browser assertion, and a regression for a focused temperature field being repainted before blur: the visible measurement is committed before a phase/run change and survives archiving. Use [the current PR checks](https://github.com/hound83/pizza-dough-calculator/pull/16/checks) to verify the final review HEAD, and the PR description for its final run link. The local fast suite passed as well; local `npm test` reached the browser layer but could not launch the unavailable local Chromium executable. The GitHub job installs Chromium and provides the full-suite evidence.
 
 ## Focus for independent review / remaining limits
 
