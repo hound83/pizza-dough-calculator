@@ -94,7 +94,7 @@ for(const publication of PUBLICATIONS){
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
         await page.screenshot({path:test.info().outputPath('basic-planning.png'),fullPage:true});
         await page.locator('#bakeDay').selectOption('3');
-        await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;$('kitchenInstructions').open=true;});
+        await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;});
         await expect(page.locator('#timeline')).toContainText('Koelkast uit');
         const timeline=await page.locator('#timeline').boundingBox(),steps=await page.locator('#stepsList').boundingBox();
         expect(timeline.y).toBeLessThan(steps.y);
@@ -152,7 +152,7 @@ for(const publication of PUBLICATIONS){
       await expect(page.locator('#hydration')).not.toBeVisible();
       const before=await page.locator('#hydration').inputValue();
       await page.locator('.mode-choice-nav').click();
-      await page.locator('#experienceFull').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('#experienceFull').click();
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#hydration')).toBeVisible();
       expect(await page.locator('#hydration').inputValue()).toBe(before);
@@ -190,7 +190,7 @@ for(const publication of PUBLICATIONS){
 
     test('shows a custom-settings badge in Basic after Full edits',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('#experienceFull').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('#experienceFull').click();
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await page.locator('#hydration').fill('66');
       await page.locator('#hydration').blur();
@@ -256,7 +256,7 @@ for(const publication of PUBLICATIONS){
 
     test('uses practical percentage spinner grids while preserving off-grid preset precision',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
-      await page.locator('#experienceFull').click();
+      await page.evaluate(()=>showModeChooser());await page.locator('#experienceFull').click();
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
       await expect(page.locator('#diameter')).toHaveValue('30');
 
@@ -311,7 +311,7 @@ for(const publication of PUBLICATIONS){
     test('shows practical water bands and route-correct hot-water warnings',async({page})=>{
       await page.goto(publication.path,{waitUntil:'load'});
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
-      await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;$('kitchenInstructions').open=true;});
+      await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;});
       const weigh=page.locator('div.step-card[data-step-key="s-weigh"]');
 
       await page.evaluate(()=>{

@@ -335,3 +335,13 @@ The user authorized the six workflow proposals as one v2.0 review candidate, bas
 | singleFile | `5f9fb301e0a4b665d5691dc7b54bb59aa376a0009a832ae298c3e99ccf1ab6e9` |
 | css | `f7dc573c0149ff4e1a8ef23b6e2d814eb01cfe57ebac3e847ea990f79308af18` |
 | javascript | `22501fa77185b894ac0967f820184aa7af8effcdac20a1266ed65147e4d3d985` |
+
+### v2.0.0 candidate hardening
+
+Import validation, recoverable migration, precise small-dose allocation and compact kitchen navigation complete the requested candidate. Earlier release and first-candidate hashes above remain historical evidence.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `feae446f7587041d5f8d2293c132b0024418b3c74959b9d00c2e5fbdfe56b9c1` |
+| css | `6b195a7b560f6dfe6c31b3484cdbe0edeb062429f6dabf383887f4779ad261b1` |
+| javascript | `5c8c7b0afa1f0a848af9759c8c251881125152cc426872390cd44fdfc6c58978` |

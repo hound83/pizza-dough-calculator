@@ -24,12 +24,13 @@
 <button aria-label="English" id="langEn" onclick="setLanguage('en')" type="button">EN</button>
 </div>
 </div>
-</div><div class="wizard-nav-shell hidden" id="wizardNavShell">
+</div><nav class="workspace-nav" aria-label="Plan / Kitchen"><button class="workspace-tab active" type="button" data-workspace="plan" aria-pressed="true">Plan</button><button class="workspace-tab" type="button" data-workspace="kitchen" aria-pressed="false">Keuken</button></nav>
+<div class="wizard-nav-shell hidden" id="wizardNavShell">
 <button aria-label="Vorige navigatiestappen" class="nav-scroll-button nav-scroll-prev" id="navScrollPrev" onclick="scrollWizardNav(-1)" type="button">‹</button>
 <div class="wizard-nav-viewport"><div class="steps-nav hidden" id="stepsNav"><button class="navpill mode-choice-nav" onclick="showModeChooser()" type="button">← Keuze</button><button class="navpill active" id="nav1" onclick="showPage(1)" type="button">1. Deeg</button><button class="navpill" id="nav2" onclick="showPage(2)" type="button">2. Sauzen</button><button class="navpill" id="nav3" onclick="showPage(3)" type="button">3. Bollen &amp; recepten</button><button class="navpill" id="nav4" onclick="showPage(4)" type="button">4. Stappenplan</button></div></div>
 <button aria-label="Volgende navigatiestappen" class="nav-scroll-button nav-scroll-next" id="navScrollNext" onclick="scrollWizardNav(1)" type="button">›</button>
 </div>
-<nav class="workspace-nav" aria-label="Plan / Kitchen"><button class="workspace-tab active" type="button" data-workspace="plan" aria-pressed="true">Plan</button><button class="workspace-tab" type="button" data-workspace="kitchen" aria-pressed="false">Keuken</button></nav>
+
 <section class="page active" id="page0">
 <div class="mode-start">
 <div class="mode-intro">

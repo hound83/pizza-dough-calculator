@@ -141,10 +141,10 @@ function buildMixerCapacityNote(c){
   if(!x.near && !x.over){box.innerHTML='';return;}
   const cls=x.over?'warning':'info';
   const msg=x.over
-    ? L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem ligt boven de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Verdeel dit deeg bij voorkeur over meerdere mixerbatches of controleer de handleiding van jouw exacte model. Het warmtemodel is afgestemd op ongeveer 880 g deeg; bij een duidelijk andere batch neemt ook de zekerheid van het wateradvies af.`,
-        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour exceeds the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Prefer splitting the dough into multiple mixer batches or check the manual for your exact model. The heat model is fitted to roughly 880 g of dough; confidence in the water guidance also decreases for a materially different batch.`)
-    : L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem zit dicht bij de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Houd motorgeluid, kombeweging en deegtemperatuur extra in de gaten; exacte modellen verschillen. Het warmtemodel is afgestemd op ongeveer 880 g deeg, dus controleer de einddeegtemperatuur extra zorgvuldig.`,
-        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour is close to the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Watch motor load, bowl movement and dough temperature more closely; exact models differ. The heat model is fitted to roughly 880 g of dough, so check the final dough temperature particularly carefully.`);
+    ? L(`<b>Batchgrootte:</b> ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g bloem ligt boven de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Verdeel dit deeg bij voorkeur over meerdere mixerbatches of controleer de handleiding van jouw exacte model. Het warmtemodel is afgestemd op ongeveer 880 g deeg; bij een duidelijk andere batch neemt ook de zekerheid van het wateradvies af.`,
+        `<b>Batch size:</b> ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g flour exceeds the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Prefer splitting the dough into multiple mixer batches or check the manual for your exact model. The heat model is fitted to roughly 880 g of dough; confidence in the water guidance also decreases for a materially different batch.`)
+    : L(`<b>Batchgrootte:</b> ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g bloem zit dicht bij de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Houd motorgeluid, kombeweging en deegtemperatuur extra in de gaten; exacte modellen verschillen. Het warmtemodel is afgestemd op ongeveer 880 g deeg, dus controleer de einddeegtemperatuur extra zorgvuldig.`,
+        `<b>Batch size:</b> ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g flour is close to the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Watch motor load, bowl movement and dough temperature more closely; exact models differ. The heat model is fitted to roughly 880 g of dough, so check the final dough temperature particularly carefully.`);
   box.innerHTML=`<div class="${cls}">${msg}</div>`;
 }
 
@@ -578,14 +578,14 @@ function fermentationSteps(c,startIndex,live){
 
 function waterTemperatureGuidance(c,wt){
   const reserveLine=L(
-    `Houd ongeveer <b>${fmt(c.reserve,0)} g reservewater</b> afgedekt op kamertemperatuur voor na de rust. Koel of verwarm dit kleine deel niet mee met het hoofdwater.`,
-    `Keep about <b>${fmt(c.reserve,0)} g reserved water</b> covered at room temperature for after the rest. Do not chill or warm this small portion with the main water.`
+    `Houd ongeveer <b>${fmt(c.reserve,c.runAllocation&&!c.practical?1:0)} g reservewater</b> afgedekt op kamertemperatuur voor na de rust. Koel of verwarm dit kleine deel niet mee met het hoofdwater.`,
+    `Keep about <b>${fmt(c.reserve,c.runAllocation&&!c.practical?1:0)} g reserved water</b> covered at room temperature for after the rest. Do not chill or warm this small portion with the main water.`
   );
   let mainLine;
   if(wt.achievable){
     mainLine=L(
-      `Streef naar <b>${fmt(c.doughTemp,1)} °C</b> einddeegtemperatuur. Breng alleen de resterende <b>${fmt(c.mainWater,0)} g hoofdwater</b> voor de eerste menging op ongeveer <b>${fmt(wt.water,0)} °C</b>.`,
-      `Aim for a final dough temperature of <b>${fmt(c.doughTemp,1)} °C</b>. Bring only the remaining <b>${fmt(c.mainWater,0)} g main water</b> for the first mix to approximately <b>${fmt(wt.water,0)} °C</b>.`
+      `Streef naar <b>${fmt(c.doughTemp,1)} °C</b> einddeegtemperatuur. Breng alleen de resterende <b>${fmt(c.mainWater,c.runAllocation&&!c.practical?1:0)} g hoofdwater</b> voor de eerste menging op ongeveer <b>${fmt(wt.water,0)} °C</b>.`,
+      `Aim for a final dough temperature of <b>${fmt(c.doughTemp,1)} °C</b>. Bring only the remaining <b>${fmt(c.mainWater,c.runAllocation&&!c.practical?1:0)} g main water</b> for the first mix to approximately <b>${fmt(wt.water,0)} °C</b>.`
     );
   }else if(Number.isFinite(wt.water)&&Number.isFinite(wt.predictedFinal)){
     mainLine=L(
@@ -617,8 +617,8 @@ function waterTemperatureGuidance(c,wt){
     ' Cold tap water may be sufficient; measure it before mixing.'
   ));
   if(wt.iceWater)notes.push(L(
-    ` Hiervoor is ijswater nodig. Koel het hoofdwater met ijs, verwijder resterend ijs en weeg daarna opnieuw precies ${fmt(c.mainWater,0)} g hoofdwater af.`,
-    ` This requires ice water. Chill the main water with ice, remove any remaining ice, then re-weigh exactly ${fmt(c.mainWater,0)} g of main water.`
+    ` Hiervoor is ijswater nodig. Koel het hoofdwater met ijs, verwijder resterend ijs en weeg daarna opnieuw precies ${fmt(c.mainWater,c.runAllocation&&!c.practical?1:0)} g hoofdwater af.`,
+    ` This requires ice water. Chill the main water with ice, remove any remaining ice, then re-weigh exactly ${fmt(c.mainWater,c.runAllocation&&!c.practical?1:0)} g of main water.`
   ));
   if(wt.hot)notes.push(L(
     ' Dit is relatief warm hoofdwater. Meet de einddeegtemperatuur extra zorgvuldig en compenseer een afwijking nooit blind met heter water.',
@@ -650,15 +650,15 @@ function waterTemperatureGuidance(c,wt){
 function buildSteps(c){
   ensurePizzaCustomizations();
   const m=methodInstructions(c),aggSauce=aggregateSauceNeeds(c),bake=stoneProfile(c.stoneTemp),live=liveFermentationPlan(c);
-  const oilText=c.o>0?L(` Voeg <b>${fmt(c.oil,0)} g olijfolie</b> pas tegen het einde van het kneden toe.`,` Add <b>${fmt(c.oil,0)} g olive oil</b> only towards the end of the kneading.`):'';
+  const oilText=c.o>0?L(` Voeg <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g olijfolie</b> pas tegen het einde van het kneden toe.`,` Add <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g olive oil</b> only towards the end of the kneading.`):'';
   let i=1,steps=[];
   _stepKeys=[];
   _stepSchedule=live.effective;
   const wt=waterTempAdvice(c);
   const waterText=waterTemperatureGuidance(c,wt);
   steps.push(step(i++,L('Weeg de ingrediënten','Weigh the ingredients'),
-    L(`Bloem <b>${fmt(c.flour,0)} g</b> • water <b>${fmt(c.water,0)} g</b> • zout <b>${fmt(c.salt,0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,2)} g</b>${c.o>0?` • olie <b>${fmt(c.oil,0)} g</b>`:''}.`,
-      `Flour <b>${fmt(c.flour,0)} g</b> • water <b>${fmt(c.water,0)} g</b> • salt <b>${fmt(c.salt,0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,2)} g</b>${c.o>0?` • oil <b>${fmt(c.oil,0)} g</b>`:''}.`),
+    L(`Bloem <b>${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g</b> • water <b>${fmt(c.water,c.runAllocation&&!c.practical?1:0)} g</b> • zout <b>${fmt(c.salt,c.runAllocation&&!c.practical?1:0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,c.runAllocation?runDoseDecimals(c.yeast):2)} g</b>${c.o>0?` • olie <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g</b>`:''}.`,
+      `Flour <b>${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g</b> • water <b>${fmt(c.water,c.runAllocation&&!c.practical?1:0)} g</b> • salt <b>${fmt(c.salt,c.runAllocation&&!c.practical?1:0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,c.runAllocation?runDoseDecimals(c.yeast):2)} g</b>${c.o>0?` • oil <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g</b>`:''}.`),
     `${waterText.reserveLine} ${waterText.mainLine}${waterText.notes}`,'weigh'));
   steps.push(step(i++,L('Eerste menging','First mix'),m.mix,'','mix'));
   steps.push(step(
@@ -760,9 +760,9 @@ function buildSteps(c){
   updateStepProgress();
 
   $('recipeBadges').innerHTML=[
-    `<span class="badge">🌾 ${fmt(c.flour,0)} g ${L('bloem','flour')}</span>`,
-    `<span class="badge">💧 ${fmt(c.water,0)} g ${L('water','water')}</span>`,
-    `<span class="badge">🧂 ${fmt(c.salt,0)} g ${L('zout','salt')}</span>`,
+    `<span class="badge">🌾 ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g ${L('bloem','flour')}</span>`,
+    `<span class="badge">💧 ${fmt(c.water,c.runAllocation&&!c.practical?1:0)} g ${L('water','water')}</span>`,
+    `<span class="badge">🧂 ${fmt(c.salt,c.runAllocation&&!c.practical?1:0)} g ${L('zout','salt')}</span>`,
     `<span class="badge">🫧 ${fmtFixed(c.yeast,2)} g ${yeastShort(c.yeastType)}</span>`,
     `<span class="badge">${c.autolyse?L('✅ autolyse','✅ autolyse'):L('↪️ hydratatierust','↪️ hydration rest')}</span>`,
     `<span class="badge">🍕 ${c.pizzas} × ${displayDoughBallWeight(c)} g</span>`

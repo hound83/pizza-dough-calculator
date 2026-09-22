@@ -24,6 +24,16 @@ test('allocation rejects a single over-capacity ball and splits seven/eight in w
   assert.deepEqual(E.allocate(c(7),{unit:'dough',capacity:900}).runs.map(x=>x.balls),[4,3]);
   assert.deepEqual(E.allocate(c(8),{unit:'dough',capacity:900}).runs.map(x=>x.balls),[4,4]);
 });
+test('tiny positive yeast doses are not rounded to zero by splitting',()=>{
+  const q={...c(24),yeast:.01},a=E.allocate(q,{unit:'dough',capacity:230});
+  assert.equal(a.ok,true);assert.equal(a.runs.length,24);
+  assert.ok(a.runs.every(r=>r.display.yeast>0));assert.ok(Math.abs(a.runs.reduce((s,r)=>s+r.display.yeast,0)-.01)<1e-10);
+});
+test('persisted allocations must reproduce the frozen parent recipe, not merely contain valid numbers',()=>{
+  const t=template(),quantities=W.summary(t.recipe,{neapolitan:.31},D),e=E.createEvening({id:'valid',template:t,allocation:E.allocate(quantities,t.split),startedAt:start,bakeAt:start+26*H,plan:{preparation:.9,bulk:1,cold:20,ball:4},zone:'Europe/Amsterdam'});
+  assert.equal(E.validateAllocations(e,quantities),true);
+  e.runs[0].allocation.display.salt+=1;assert.equal(E.validateAllocations(e,quantities),false);
+});
 test('unknown chronology is distinct from absent; later known times bound corrections',()=>{
   let b=W.createBatch({id:'b',recipe:snapshot(),startedAt:start,bakeAt:start+26*H,plan:{preparation:.9,bulk:1,cold:20,ball:4}});
   b=W.recordUnknownEvent(b,'bulkStart',start+3*H);b=W.recordEvent(b,'fridgeIn',start+2*H,start+3*H);

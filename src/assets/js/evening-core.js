@@ -15,17 +15,18 @@ const EveningCore=(()=>{
     const units=Math.round(total/step),sum=weights.reduce((a,b)=>a+b,0);
     const exact=weights.map(w=>units*w/sum),out=exact.map(Math.floor);
     const order=exact.map((v,i)=>({i,remainder:v-out[i]})).sort((a,b)=>b.remainder-a.remainder||a.i-b.i);
-    for(let i=0;i<units-out.reduce((a,b)=>a+b,0);){
-      // The remainder is bounded by the number of allocations.
-      const remaining=units-out.reduce((a,b)=>a+b,0);for(let j=0;j<remaining;j++)out[order[j].i]++;break;
-    }
+    const remaining=units-out.reduce((a,b)=>a+b,0);
+    for(let j=0;j<remaining;j++)out[order[j].i]++;
     return out.map(v=>Number((v*step).toFixed(8)));
   }
   function allocate(c,settings={}){
     if(!number(c.pizzas,1,24)||!Number.isInteger(c.pizzas)||!amountKeys.every(k=>number(c[k],0,50000))||!(c.flour>0)||!number(c.reserve,0,c.water))return {ok:false,reason:'ingredients'};
     const unit=settings.unit==='flour'?'flour':'dough',capacity=settings.capacity==null||settings.capacity===''?null:Number(settings.capacity);
     if(capacity!==null&&!number(capacity,1,50000))return {ok:false,reason:'capacity'};
-    const steps=Object.fromEntries([...amountKeys,'reserve'].map(k=>[k,k==='yeast'?.01:c.practical?1:.1]));
+    // Preserve a positive dose even when splitting the smallest parent dose.
+    // More decimals describe allocation, never a claim that a scale can weigh it.
+    const yeastStep=c.yeast>0?Math.min(.01,10**(Math.floor(Math.log10(c.yeast/c.pizzas))-1)):.01;
+    const steps=Object.fromEntries([...amountKeys,'reserve'].map(k=>[k,k==='yeast'?yeastStep:c.practical?1:.1]));
     const totals=Object.fromEntries([...amountKeys,'reserve'].map(k=>[k,Number((Math.round(c[k]/steps[k])*steps[k]).toFixed(8))]));
     totals.mainWater=Number((totals.water-totals.reserve).toFixed(8));
     const parentMass=amountKeys.reduce((s,k)=>s+c[k],0),perBall=(unit==='flour'?c.flour:parentMass)/c.pizzas;
@@ -97,7 +98,7 @@ const EveningCore=(()=>{
     if(!time(at)||at>Date.now()+60000||at>=e.bakeAt)throw new Error('future');
     const previous=out.runs[i-1]?.batch?.events.bulkStart;if(previous!=null&&at<previous)throw new Error('order');
     run.batch=W.createBatch({id:run.id,recipe:e.recipe,startedAt:at,bakeAt:e.bakeAt,plan:e.plan,profile:e.template.profile,storage:e.template.storage,scale:e.template.scale});
-    out.selectedRun=run.id;out.revision++;return out;
+    out.selectedRun=run.id;out.undo=null;out.revision++;return out;
   }
   function movePizza(e,pizzaId,offset){
     const out=clone(e),index=out.pizzas.findIndex(p=>p.id===pizzaId);if(index<0||out.pizzas[index].events.in!=null)throw new Error('completed');
@@ -217,11 +218,33 @@ const EveningCore=(()=>{
       for(const p of pizzas){const run=runs.find(r=>r.id===p.runId);if(!run||!run.pizzaIds.includes(p.id))return null;if(p.events.in!=null&&(!run.batch||!W.eventDone(run.batch,'bake')))return null;}
       if(!legacy&&runs.some(r=>r.pizzaIds.length!==r.balls||r.pizzaIds.some(pid=>!pizzas.some(p=>p.id===pid&&p.runId===r.id))))return null;
       if(!runs.some(r=>r.id===v.selectedRun&&r.batch))return null;
+      const launched=pizzas.filter(p=>p.events.in!=null).sort((a,b)=>a.events.in-b.events.in);
+      if(launched.some((p,i)=>i>0&&(launched[i-1].events.out==null||p.events.in<launched[i-1].events.out)))return null;
+      if(launched.some(p=>{const b=runs.find(r=>r.id===p.runId).batch;return b.events.bake!=null&&p.events.in<b.events.bake;}))return null;
+      if(v.undo!=null){
+        const u=v.undo,run=u.type==='event'?runs.find(r=>r.id===u.runId):runs.find(r=>r.pizzaIds.includes(u.id));
+        if(!object(u)||!run?.batch)return null;
+        const events=u.type==='event'?u.events:u.priorRunBake,unknown=u.type==='event'?u.unknownEvents:u.priorUnknown;
+        const prior=W.sanitizeBatch({...run.batch,events,unknownEvents:unknown,progress:u.type==='event'?u.progress:run.batch.progress});
+        if(!prior||!Array.isArray(unknown)||JSON.stringify(prior.events)!==JSON.stringify(events)||JSON.stringify(prior.unknownEvents||[])!==JSON.stringify(unknown))return null;
+        const changed=u.type==='event'?u.key:'bake';
+        if(!W.eventKeys(run.batch.route).includes(changed))return null;
+        for(const key of W.eventKeys(run.batch.route).filter(k=>k!==changed))if(events[key]!==run.batch.events[key]||unknown.includes(key)!==(run.batch.unknownEvents||[]).includes(key))return null;
+        if(u.type==='pizza'){
+          const p=pizzas.find(p=>p.id===u.id);if(!p||!['in','out'].includes(u.action)||p.events[u.action]!==u.at)return null;
+        }else if(u.type!=='event'||JSON.stringify(prior.progress)!==JSON.stringify(u.progress))return null;
+      }
       const timer=v.timer===null?null:object(v.timer)&&time(v.timer.endAt)&&time(v.timer.startedAt)&&v.timer.endAt>=v.timer.startedAt&&id(v.timer.runId)?{startedAt:v.timer.startedAt,endAt:v.timer.endAt,runId:v.timer.runId,label:text(v.timer.label)}:null;
       const plan=v.plan;if(!object(plan)||!['preparation','bulk','cold','ball'].every(k=>number(plan[k],0,k==='cold'?120:k==='preparation'?12:48)))return null;
       return {...clone(v),name:text(v.name),recipe:W.recipe(v.recipe),template,runs,pizzas,timer,revision:Number.isSafeInteger(v.revision)&&v.revision>=0?v.revision:0,zone:text(v.zone),manualGap:number(v.manualGap,0,3600)?v.manualGap:null,undo:object(v.undo)?clone(v.undo):null};
     }catch{return null;}
   }
-  return Object.freeze({allocate,apportion,cleanPizza,cleanTemplate,cleanSnapshot,exportTemplate,importTemplate,createEvening,startRun,movePizza,bake,undo,close,forecast,schedule,conflicts,alternatives,migrateLegacy,sanitizeEvening});
+  function validateAllocations(e,quantities){
+    const expected=allocate(quantities,e.legacyUnknownToppings?{}:e.template.split);
+    if(!expected.ok||expected.runs.length!==e.runs.length)return false;
+    return e.runs.every((run,i)=>run.balls===expected.runs[i].balls&&
+      ['exact','display'].every(kind=>Object.entries(expected.runs[i][kind]).every(([key,value])=>number(run.allocation[kind]?.[key],0,50000)&&Math.abs(run.allocation[kind][key]-value)<1e-7)));
+  }
+  return Object.freeze({allocate,apportion,cleanPizza,cleanTemplate,cleanSnapshot,exportTemplate,importTemplate,createEvening,startRun,movePizza,bake,undo,close,forecast,schedule,conflicts,alternatives,migrateLegacy,sanitizeEvening,validateAllocations});
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=EveningCore;

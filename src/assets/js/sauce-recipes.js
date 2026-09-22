@@ -189,7 +189,7 @@ function buildPizzaCustomize(c){
 
 function methodInstructions(c){
   const displayedReserve=c.runAllocation?c.reserve:Math.round(c.reserve),firstReserve=c.runAllocation?c.reserveFirst:Math.floor(displayedReserve/2),remainingReserve=c.runAllocation?c.reserveLast:displayedReserve-firstReserve;
-  const f=fmt(c.flour,0),mw=fmt(c.mainWater,0),rw=fmt(displayedReserve,0),firstRw=fmt(firstReserve,0),remainingRw=fmt(remainingReserve,0),y=fmt(c.yeast,2),s=fmt(c.salt,0),yn=yeastName(c.yeastType).toLowerCase();
+  const f=fmt(c.flour,c.runAllocation&&!c.practical?1:0),mw=fmt(c.mainWater,c.runAllocation&&!c.practical?1:0),rw=fmt(displayedReserve,c.runAllocation&&!c.practical?1:0),firstRw=fmt(firstReserve,c.runAllocation&&!c.practical?1:0),remainingRw=fmt(remainingReserve,c.runAllocation&&!c.practical?1:0),y=fmt(c.yeast,c.runAllocation?runDoseDecimals(c.yeast):2),s=fmt(c.salt,c.runAllocation&&!c.practical?1:0),yn=yeastName(c.yeastType).toLowerCase();
   const first=c.autolyse
     ? L(`Meng <b>${f} g bloem</b> met <b>${mw} g water</b>. <b>Nog geen gist of zout.</b>`,
         `Mix <b>${f} g flour</b> with <b>${mw} g water</b>. <b>No yeast or salt yet.</b>`)

@@ -70,6 +70,7 @@ function stateSnapshot(){
   return WorkflowCore.clone(data);
 }
 function saveState(){
+  if(_saveTimer){clearTimeout(_saveTimer);_saveTimer=null;}
   if(!_storageWriter||_storageCorrupt)return false;
   const current=SAFE.get(SAVE_KEY);
   if(current){try{if((JSON.parse(current).revision||0)>_storageRevision){_storageWriter=false;showStorageOwnership();return false;}}catch{_storageCorrupt=true;return false;}}
@@ -98,6 +99,10 @@ function sanitizeEvenings(value){
   if(value.active!==null&&!active)return null;
   const templates=value.templates.map(t=>EveningCore.cleanTemplate(t)),history=value.history.map(e=>EveningCore.sanitizeEvening(e));
   if(templates.some(t=>!t)||history.some(e=>!e)||new Set(templates.map(t=>t.id)).size!==templates.length)return null;
+  for(const e of [active,...history].filter(Boolean)){
+    if(!EveningCore.validateAllocations(e,recipePlanSummary(e.recipe)))return null;
+    try{new Intl.DateTimeFormat('en',{timeZone:e.zone||'UTC'});}catch{return null;}
+  }
   const d=value.draft;
   if(!Array.isArray(d.pizzas)||d.pizzas.length>24||!Array.isArray(d.unavailable)||d.unavailable.length>20)return null;
   const pizzas=d.pizzas.map(p=>EveningCore.cleanPizza(p));if(pizzas.some(p=>!p))return null;
@@ -257,7 +262,13 @@ function loadState(provided=null){
     document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===currentMethod;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
     // Oude versiesleutels opruimen zodat ze niet jaren later terugkomen.
     // Keep the last valid legacy copy if writing the migrated state fails.
-    if(saveState())LEGACY_KEYS.forEach(k=>SAFE.del(k));
+    const droppedLegacyData=Number(d.version)<SAVE_VERSION&&d.workshop&&(
+      (d.workshop.batch&&!workshop.batch)||
+      (Array.isArray(d.workshop.history)&&d.workshop.history.length!==workshop.history.length)||
+      (Array.isArray(d.workshop.recipes)&&d.workshop.recipes.length!==workshop.recipes.length)||
+      (Array.isArray(d.workshop.profiles)&&d.workshop.profiles.length!==workshop.profiles.length));
+    if(droppedLegacyData)eveningNotice=L('Niet alle oude gegevens konden worden hersteld. De oorspronkelijke opslag blijft bewaard voor herstel.','Some legacy data could not be recovered. The original stored copy remains available for recovery.');
+    if(saveState()&&!droppedLegacyData)LEGACY_KEYS.forEach(k=>SAFE.del(k));
     return true;
   }catch(e){return false}
 }

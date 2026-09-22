@@ -1182,3 +1182,6 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 @media(max-width:560px){.workshop-grid{grid-template-columns:minmax(0,1fr)}.workshop-panel{padding:12px}.workshop-table{font-size:.78rem}.workshop-table th,.workshop-table td{padding:8px 4px}}
 @media print{.workshop-panel details:not([open]){display:none}.batch-runner button{display:none}}
+
+#nav4{display:none}
+.evening-plan{margin-bottom:20px}
