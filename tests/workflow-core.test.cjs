@@ -84,3 +84,24 @@ test('cold-storage capacity rounds boxes up and makes a real shortfall visible',
   assert.deepEqual(W.capacity(7,{ballsPerBox:6,boxes:1}),{needed:2,available:1,missing:1,fits:false});
   assert.equal(W.capacity(24,{ballsPerBox:6,boxes:4}).fits,true);
 });
+
+test('saved active and archived checkpoints survive a backward clock correction while chronology stays strict',()=>{
+  const clock=Date.now;
+  const b=W.recordEvent(batch(),'bulkStart',start+W.HOUR,now);
+  try{
+    Date.now=()=>start-5*60000;
+    const restored=W.sanitize({batch:b,history:[{...b,id:'archived',status:'finished'}]});
+    assert.deepEqual(restored.batch.events,b.events);
+    assert.deepEqual(restored.history[0].events,b.events);
+    assert.throws(()=>W.recordEvent(restored.batch,'fridgeIn',start+2*W.HOUR),/future/);
+    assert.equal(W.sanitizeBatch({...b,events:{start,bulkStart:start-1}}),null);
+    assert.equal(W.sanitizeBatch({...b,events:{start,bulkStart:Infinity}}),null);
+  }finally{Date.now=clock;}
+});
+
+test('scale differences remove floating-point negative zero while retaining real quantization differences',()=>{
+  assert.equal(W.weighing(.1+.2,.1).delta,0);
+  assert.equal(Object.is(W.weighing(.1+.2,.1).delta,-0),false);
+  assert.equal(W.weighing(.17,.1).delta,.03);
+  assert.equal(W.weighing(.17,1).delta,-.17);
+});

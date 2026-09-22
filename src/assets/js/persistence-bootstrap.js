@@ -39,6 +39,7 @@ function scheduleSave(){
 }
 
 function saveState(){
+  captureBatchOven();
   if(activeBatch())workshop.batch.progress={...completedSteps};
   const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
     currentWizardPage,workshop,
@@ -136,7 +137,7 @@ function loadState(){
       else if((SAVE_IDS.includes(k)||k==='preset')&&$(k))$(k).value=v;
     });
 
-    if(activeBatch()){restoreRecipe(activeBatch().recipe);liveMeasurements={...activeBatch().measurements};completedSteps={...activeBatch().progress};}
+    if(activeBatch()){restoreRecipe(activeBatch().recipe,false);liveMeasurements={...activeBatch().measurements};completedSteps={...activeBatch().progress};}
 
     // Migratie van vóór v39: koude fermentatie stond als eigen methode opgeslagen.
     if($('fermentationMethod').value==='coldBalls'){

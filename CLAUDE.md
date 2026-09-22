@@ -8,6 +8,10 @@ Before proposing or making changes, read these files completely:
 
 Treat `docs/PRODUCT_GUARDRAILS.md` as the canonical source for non-negotiable product behavior. Maintainable application sources live under `src/`; root `index.html` is generated with `npm run bundle` and must not be edited directly. Run `npm test` before declaring work complete, and never change the golden hashes without an explicitly approved functional baseline change.
 
+## v1.4.0 release review
+
+Start with [the release response and verification](docs/V1_4_0_RELEASE_REVIEW.md), then read [Claude's original PR #14 crosscheck](docs/Claude_v1.4.0_PR14_crosscheck.md). All eight findings are addressed. Historical candidate handoffs below describe their original snapshots; the release has a separate baseline. The six later workflow proposals and app development are outside this release.
+
 ## Current recovery verification
 
 Read [the recovery verification](docs/V1_4_0_RECOVERY_VERIFICATION.md), then the implementation handoff below. Claude's original crosscheck and the response are both retained on this branch.

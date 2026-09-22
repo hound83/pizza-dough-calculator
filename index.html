@@ -1897,7 +1897,7 @@ const WorkflowCore=(()=>{
     const step=[1,.1,.01].includes(resolution)?resolution:.1;
     if(!bounded(grams,0,1000))throw new RangeError('Invalid yeast dose.');
     const nearest=Number((Math.round((grams+Number.EPSILON)/step)*step).toFixed(2));
-    return {step,nearest,delta:nearest-grams,halfStep:step/2,relativeHalfStep:grams>0?step/2/grams:null,tooCoarse:grams>0&&(nearest===0||step/2/grams>.1)};
+    return {step,nearest,delta:Math.round((nearest-grams)*1e4)/1e4||0,halfStep:step/2,relativeHalfStep:grams>0?step/2/grams:null,tooCoarse:grams>0&&(nearest===0||step/2/grams>.1)};
   }
 
   const eventKeys=route=>route==='room'?['start','bulkStart','shape','bake']:['start','bulkStart','fridgeIn','fridgeOut','bake'];
@@ -1990,7 +1990,9 @@ const WorkflowCore=(()=>{
       if(value.route!==out.route)return null;
       out.timings=durations(value.timings,out.route);if(!out.timings)return null;
       for(const key of eventKeys(out.route)){
-        if(value.events[key]!=null)out=recordEvent(out,key,value.events[key]);
+        // Persisted observations keep their chronology even if the device clock
+        // moved backwards. New input still uses recordEvent's live-clock check.
+        if(value.events[key]!=null)out=recordEvent(out,key,value.events[key],Infinity);
       }
       out.status=value.status==='finished'?'finished':'active';
       out.readings=(Array.isArray(value.readings)?value.readings:[]).filter(x=>object(x)&&['doughTemp','fridgeTemp'].includes(x.kind)&&validTime(x.at)&&bounded(x.value,x.kind==='doughTemp'?10:0,x.kind==='doughTemp'?40:15)).slice(-60).map(x=>({kind:x.kind,value:x.value,at:x.at}));
@@ -5525,7 +5527,7 @@ function step(n,title,text,detail='',id=null){
       <span class="step-check-mark"></span>
     </label>
     <div class="num">${n}</div>
-    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${batchMomentIsActual(momentKey)?L('Werkelijk','Actual'):L('Verwacht','Expected')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
+    <div class="step-content"><h3 id="step-title-${key}">${title}</h3>${moment?`<div class="step-moment">${!activeBatch()?L('Gepland','Planned'):batchMomentIsActual(momentKey)?L('Werkelijk','Actual'):L('Verwacht','Expected')}: ${moment}</div>`:''}<p>${text}</p>${detail?`<div class="detail">${detail}</div>`:''}</div>
   </div>`;
 }
 
@@ -5870,8 +5872,9 @@ function refreshBakeDayClock(){
   const changed=_bakeDayClockKey!==null&&key!==_bakeDayClockKey;
   _bakeDayClockKey=key;
   renderBakeDayLabels(now);
-  // Relative bake deadlines also follow the new local date after midnight.
-  if(changed)update();
+  // Refresh time-sensitive batch proposals on focus/visibility, even the same day.
+  // Relative unstarted deadlines still follow the new local date after midnight.
+  if(changed||activeBatch())update();
   const midnight=new Date(now);
   midnight.setHours(24,0,0,100);
   _bakeDayTimer=setTimeout(refreshBakeDayClock,Math.max(100,midnight-now));
@@ -7002,6 +7005,9 @@ function renderBakeLog(c){
 }
 let workshop=WorkflowCore.sanitize(null);
 let workshopNotice='';
+let workshopNoticeFor='batchPlanner';
+let workshopNoticeAnchor='';
+const BATCH_OVEN_FIELDS=new Set(['stoneTemp','preheatMinutes']);
 const workshopDrafts={};
 const workshopPanels=['batchPlanner','batchRunner','scalePlanner','coldStoragePlanner','recipeWorkbench','mixerProfiles','bakeComparison','doughHelp'];
 
@@ -7013,10 +7019,10 @@ function snapshotRecipe(){
   for(const key of WorkflowCore.CHECK_FIELDS)checks[key]=$(key).checked;
   return WorkflowCore.recipe({fields,checks,method:currentMethod,exact:exactOverride,preset:$('preset').value});
 }
-function restoreRecipe(snapshot){
+function restoreRecipe(snapshot,preserveOven=!!activeBatch()&&snapshot===activeBatch().recipe){
   const r=WorkflowCore.recipe(snapshot);if(!r)return false;
   suppressCustom=true;
-  for(const [key,value] of Object.entries(r.fields))$(key).value=value;
+  for(const [key,value] of Object.entries(r.fields))if(!preserveOven||!BATCH_OVEN_FIELDS.has(key))$(key).value=value;
   for(const [key,value] of Object.entries(r.checks))$(key).checked=value;
   currentMethod=r.method;exactOverride=r.exact?{...r.exact}:null;
   $('preset').value=presets[r.preset]?r.preset:'custom';previousYeastType=r.fields.yeastType;
@@ -7024,10 +7030,19 @@ function restoreRecipe(snapshot){
   document.querySelectorAll('.method').forEach(button=>{const selected=button.dataset.method===currentMethod;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));});
   return true;
 }
+function captureBatchOven(){
+  const b=activeBatch();if(!b)return;
+  // Only baking preferences remain mutable; the dough and method stay fixed.
+  // Keep them with the existing recipe so archive/reopen retains this batch's oven.
+  for(const id of BATCH_OVEN_FIELDS){
+    const el=$(id),value=Number(el.value);
+    if(el.value.trim()!==''&&Number.isFinite(value)&&value>=Number(el.min)&&value<=Number(el.max))b.recipe.fields[id]=el.value;
+  }
+}
 function enforceBatchRecipe(){
   const b=activeBatch();if(b)restoreRecipe(b.recipe);
   for(const id of [...WorkflowCore.FIELD_IDS,...WorkflowCore.CHECK_FIELDS,'preset','bakeDay','bakeTime']){
-    const el=$(id);if(el)el.disabled=!!b;
+    const el=$(id);if(el)el.disabled=!!b&&!BATCH_OVEN_FIELDS.has(id);
   }
   document.querySelectorAll('.method').forEach(button=>{button.disabled=!!b;});
 }
@@ -7058,7 +7073,8 @@ function observedBatchHours(){
 }
 function currentMixerProfile(){const b=activeBatch();return b?b.profile:workshop.profiles.find(p=>p.id===workshop.profileId)||null;}
 function saveWorkshop(){saveState();update();}
-function workshopError(error){
+function workshopError(error,panel=workshopNoticeFor,anchor=workshopNoticeAnchor){
+  workshopNoticeFor=panel;workshopNoticeAnchor=anchor;
   const messages={future:L('Kies een werkelijk moment, uiterlijk nu.','Choose an actual time, no later than now.'),'missing-previous':L('Registreer eerst het voorafgaande moment.','Record the preceding checkpoint first.'),order:L('Dit moment moet tussen de vorige en volgende geregistreerde stap liggen.','This time must lie between the previous and next recorded checkpoint.'),duration:L('Gebruik geldige tijden: bulk en eindrijs 0–48 uur, koelkast 0–120 uur.','Use valid durations: bulk and final proof 0–48 hours, fridge 0–120 hours.'),completed:L('Een afgeronde fase blijft vaststaan. Corrigeer zo nodig het geregistreerde moment.','A completed phase stays fixed. Correct its recorded checkpoint if necessary.'),elapsed:L('De nieuwe totale faseduur is korter dan de tijd die al verstreken is.','The new total phase duration is shorter than the time already elapsed.')};
   workshopNotice=messages[error.message]||error.message;renderWorkshop(calc());
 }
@@ -7095,17 +7111,18 @@ function recordBatchEvent(key,at){
 }
 function closeBatch(){
   const b=activeBatch();if(!b)return;
+  captureBatchOven();
   workshop.history=[...workshop.history,{...WorkflowCore.clone(b),status:'finished'}].slice(-20);
   workshop.batch=null;liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};_livePlanCache={key:null,value:null};
   delete workshopDrafts.batchStartAt;
-  $('bakeDay').value='';workshopNotice=L('Batch bewaard. Je kunt een nieuw plan maken.','Batch saved. You can make a new plan.');
+  $('bakeDay').value='';workshopNoticeFor='batchPlanner';workshopNoticeAnchor='';workshopNotice=L('Batch bewaard. Je kunt een nieuw plan maken.','Batch saved. You can make a new plan.');
   saveWorkshop();showPage(1);
 }
 function resumeBatch(id){
   if(activeBatch())return;
   const b=workshop.history.find(x=>x.id===id);if(!b)return;
   workshop.batch={...WorkflowCore.clone(b),status:'active'};workshop.history=workshop.history.filter(x=>x.id!==id);
-  restoreRecipe(b.recipe);liveMeasurements={doughTemp:null,fridgeTemp:null};
+  restoreRecipe(b.recipe,false);liveMeasurements={doughTemp:null,fridgeTemp:null};
   liveMeasurements={...b.measurements};
   completedSteps={...b.progress};resetBatchEventDraft();workshopNotice='';saveWorkshop();showPage(4);
 }
@@ -7134,12 +7151,12 @@ function renderBatchTimeline(){
   return `<div class="batch-target"><span>${L('Vaste gewenste bakstart','Fixed requested bake time')}</span><strong>${niceDate(new Date(b.bakeAt))}</strong></div>${offset>1/60?`<p class="warning">${L('De huidige verwachting ligt','The current estimate is')} ${durationLabel(offset)} ${t.delta>0?L('ná','after'):L('vóór','before')} ${L('je gewenste bakstart. Er worden geen rust- of kneedstappen automatisch ingekort.','your requested bake time. No rest or kneading stages are automatically shortened.')}</p>`:''}${rows}<p class="hint">${L('Verwachte tijden schuiven mee met je werkelijke momenten. Een verstreken tijd betekent niet dat de stap is uitgevoerd. Afvinkvakjes registreren geen tijdstip.','Expected times follow your actual checkpoints. A time passing does not mean the step has happened. Checkboxes do not record timestamps.')}</p>`;
 }
 function renderBatchPanels(){
-  const b=activeBatch(),notice=workshopNotice?`<p class="info" role="status">${esc(workshopNotice)}</p>`:'';
+  const b=activeBatch();
   if(!b){
     const history=workshop.history.slice().reverse();
     const archive=history.length?`<details id="batchArchive"><summary>${L('Opgeslagen batches','Saved batches')} (${history.length})</summary><div class="workshop-list">${history.map(x=>`<div><span>${niceDate(new Date(x.events.start))} · ${x.events.bake?L('bakstart vastgelegd','bake checkpoint recorded'):L('nog niet afgebakken','not yet baked')}</span><button class="btn ghost" type="button" data-workshop-action="resume-batch" data-id="${esc(x.id)}">${L('Openen','Open')}</button></div>`).join('')}</div></details>`:'';
-    replaceWorkshopPanel('batchPlanner',`<h3>${L('Van plan naar jouw batch','From plan to your batch')}</h3><p class="hint">${L('Start zodra je deeg gaat maken. Recept, mixer en bakdatum worden vastgezet. Een nieuwe batch begint met lege metingen en vinkjes; via “Al begonnen?” neem je ze juist over.','Start when you begin making dough. Recipe, mixer and bake date are fixed. A new batch clears measurements and checkmarks; use “Already started?” to retain them instead.')}</p><details id="batchStartDetails"><summary>${L('Al begonnen? Vul je werkelijke start in','Already started? Enter your actual start')}</summary><label for="batchStartAt">${L('Werkelijke start (lokale tijd; leeg = nu)','Actual start (local time; blank = now)')}</label><input class="field" type="datetime-local" id="batchStartAt" data-draft value="${esc(workshopDrafts.batchStartAt||'')}"></details><button class="btn" type="button" data-workshop-action="start-batch">${L('Start deze batch','Start this batch')}</button>${notice}${archive}`);
-    replaceWorkshopPanel('batchRunner',`<h2 id="batchRunnerTitle" tabindex="-1">${L('Houd je batch bij','Track your batch')}</h2><p>${L('Zet dit recept vast om echte start-, koelkast- en bakmomenten te bewaren.','Fix this recipe to save actual start, fridge and bake checkpoints.')}</p><button class="btn" type="button" data-workshop-action="start-batch">${L('Start deze batch','Start this batch')}</button>${notice}`);
+    replaceWorkshopPanel('batchPlanner',`<h3>${L('Van plan naar jouw batch','From plan to your batch')}</h3><p class="hint">${L('Start zodra je deeg gaat maken. Recept, mixer en bakdatum worden vastgezet. Een nieuwe batch begint met lege metingen en vinkjes; via “Al begonnen?” neem je ze juist over.','Start when you begin making dough. Recipe, mixer and bake date are fixed. A new batch clears measurements and checkmarks; use “Already started?” to retain them instead.')}</p><details id="batchStartDetails"><summary>${L('Al begonnen? Vul je werkelijke start in','Already started? Enter your actual start')}</summary><label for="batchStartAt">${L('Werkelijke start (lokale tijd; leeg = nu)','Actual start (local time; blank = now)')}</label><input class="field" type="datetime-local" id="batchStartAt" data-draft value="${esc(workshopDrafts.batchStartAt||'')}"></details><button class="btn" type="button" data-workshop-action="start-batch">${L('Start deze batch','Start this batch')}</button>${archive}`);
+    replaceWorkshopPanel('batchRunner',`<h2 id="batchRunnerTitle" tabindex="-1">${L('Houd je batch bij','Track your batch')}</h2><p>${L('Zet dit recept vast om echte start-, koelkast- en bakmomenten te bewaren.','Fix this recipe to save actual start, fridge and bake checkpoints.')}</p><button class="btn" type="button" data-workshop-action="start-batch">${L('Start deze batch','Start this batch')}</button>`);
     return;
   }
   const keys=WorkflowCore.eventKeys(b.route),next=keys.find(key=>b.events[key]==null);
@@ -7147,17 +7164,27 @@ function renderBatchPanels(){
   const selected=options.includes(workshopDrafts.batchEventKey)?workshopDrafts.batchEventKey:(next||'bake');
   const phases=[['bulk',L('Bulk buiten','Bulk at room temperature')],...(b.route==='room'?[]:[['cold',L('Koelkast','Fridge')]]),['ball',L('Eindrijs / opwarmen','Final proof / warm-up')]];
   const note=`<p class="hint">${L('De deegvelden staan vast voor deze batch. Sluit de batch af om een nieuw recept te plannen.','Dough fields are fixed for this batch. Close the batch to plan a new recipe.')}</p>`;
-  replaceWorkshopPanel('batchPlanner',`<h3>${L('Batch loopt · recept staat vast','Batch in progress · recipe fixed')}</h3><p><b>${L('Bakken','Bake')}: ${niceDate(new Date(b.bakeAt))}</b></p>${note}<button class="btn secondary" type="button" data-workshop-action="go-batch">${L('Naar de werkelijke momenten','Go to actual checkpoints')}</button>${notice}`);
-  replaceWorkshopPanel('batchRunner',`<h2 id="batchRunnerTitle" tabindex="-1">${L('Jouw lopende batch','Your current batch')}</h2>${note}${notice}${next?`<p class="batch-next">${L('Volgende moment','Next checkpoint')}: <b>${batchEventName(next)}</b></p><button class="btn" type="button" data-workshop-action="record-now" data-key="${next}">${L('Dit moment nu vastleggen','Record this checkpoint now')}</button>`:`<p class="info">${L('Alle momenten zijn geregistreerd. Sla je bakresultaat hieronder op en sluit daarna de batch af.','All checkpoints are recorded. Save your bake result below, then close the batch.')}</p>`}<details id="batchEventDetails"><summary>${L('Eerder moment invullen of corrigeren','Enter or correct an earlier checkpoint')}</summary><div class="workshop-grid"><label>${L('Moment','Checkpoint')}<select class="field" id="batchEventKey" data-draft>${options.map(key=>`<option value="${key}" ${key===selected?'selected':''}>${batchEventName(key)}</option>`).join('')}</select></label><label>${L('Datum en tijd (lokaal)','Date and time (local)')}<input class="field" type="datetime-local" id="batchEventAt" data-draft value="${esc(workshopDrafts.batchEventAt||localDateTime(b.events[selected]??Date.now()))}"></label></div><button type="button" class="btn secondary" data-workshop-action="record-time">${L('Opgegeven moment bewaren','Save entered checkpoint')}</button><p class="hint">${L('Bij een dubbel uur tijdens de wintertijd kiest je browser de eerste voorkomst. Gebruik “nu vastleggen” voor het huidige moment.','During a repeated daylight-saving hour your browser chooses the first occurrence. Use “record now” for the current instant.')}</p></details><details id="batchTimingDetails"><summary>${L('Resterende tijden beoordelen','Review remaining times')}</summary>${batchProposalHtml()}<div class="workshop-grid">${phases.map(([key,label])=>`<label>${label} · ${L('totale fase (uur)','total phase (hours)')}<input class="field" type="number" id="batchHours-${key}" min="0" max="${key==='cold'?120:48}" step="0.25" value="${fieldNum(WorkflowCore.phaseDone(b,key)?WorkflowCore.actualSchedule(b)[key]:b.timings[key])}" ${WorkflowCore.phaseDone(b,key)?'disabled':''}></label>`).join('')}</div><p class="hint">${L('Dit zijn totale faseduren, inclusief reeds verstreken tijd. Afgeronde fases kun je hier niet wijzigen.','These are total phase durations, including elapsed time. Completed phases cannot be changed here.')}</p><button class="btn secondary" type="button" data-workshop-action="save-times">${L('Mijn resterende planning bewaren','Save my remaining plan')}</button></details><div class="btnrow"><button class="btn ghost" type="button" data-workshop-action="close-batch">${L('Batch bewaren en afsluiten','Save and close batch')}</button></div>`);
+  replaceWorkshopPanel('batchPlanner',`<h3>${L('Batch loopt · recept staat vast','Batch in progress · recipe fixed')}</h3><p><b>${L('Bakken','Bake')}: ${niceDate(new Date(b.bakeAt))}</b></p>${note}<button class="btn secondary" type="button" data-workshop-action="go-batch">${L('Naar de werkelijke momenten','Go to actual checkpoints')}</button>`);
+  replaceWorkshopPanel('batchRunner',`<h2 id="batchRunnerTitle" tabindex="-1">${L('Jouw lopende batch','Your current batch')}</h2>${note}${next?`<p class="batch-next">${L('Volgende moment','Next checkpoint')}: <b>${batchEventName(next)}</b></p><button class="btn" type="button" data-workshop-action="record-now" data-key="${next}">${L('Dit moment nu vastleggen','Record this checkpoint now')}</button>`:`<p class="info">${L('Alle momenten zijn geregistreerd. Sla je bakresultaat hieronder op en sluit daarna de batch af.','All checkpoints are recorded. Save your bake result below, then close the batch.')}</p>`}<details id="batchEventDetails"><summary>${L('Eerder moment invullen of corrigeren','Enter or correct an earlier checkpoint')}</summary><div class="workshop-grid"><label>${L('Moment','Checkpoint')}<select class="field" id="batchEventKey" data-draft>${options.map(key=>`<option value="${key}" ${key===selected?'selected':''}>${batchEventName(key)}</option>`).join('')}</select></label><label>${L('Datum en tijd (lokaal)','Date and time (local)')}<input class="field" type="datetime-local" id="batchEventAt" data-draft value="${esc(workshopDrafts.batchEventAt||localDateTime(b.events[selected]??Date.now()))}"></label></div><button type="button" class="btn secondary" data-workshop-action="record-time">${L('Opgegeven moment bewaren','Save entered checkpoint')}</button><p class="hint">${L('Bij een dubbel uur tijdens de wintertijd kiest je browser de eerste voorkomst. Gebruik “nu vastleggen” voor het huidige moment.','During a repeated daylight-saving hour your browser chooses the first occurrence. Use “record now” for the current instant.')}</p></details><details id="batchTimingDetails"><summary>${L('Resterende tijden beoordelen','Review remaining times')}</summary>${batchProposalHtml()}<div class="workshop-grid">${phases.map(([key,label])=>`<label>${label} · ${L('totale fase (uur)','total phase (hours)')}<input class="field" type="number" id="batchHours-${key}" min="0" max="${key==='cold'?120:48}" step="0.25" value="${fieldNum(WorkflowCore.phaseDone(b,key)?WorkflowCore.actualSchedule(b)[key]:b.timings[key])}" ${WorkflowCore.phaseDone(b,key)?'disabled':''}></label>`).join('')}</div><p class="hint">${L('Dit zijn totale faseduren, inclusief reeds verstreken tijd. Afgeronde fases kun je hier niet wijzigen.','These are total phase durations, including elapsed time. Completed phases cannot be changed here.')}</p><button class="btn secondary" type="button" data-workshop-action="save-times">${L('Mijn resterende planning bewaren','Save my remaining plan')}</button></details><div class="btnrow"><button class="btn ghost" type="button" data-workshop-action="close-batch">${L('Batch bewaren en afsluiten','Save and close batch')}</button></div>`);
 }
 
 function replaceWorkshopPanel(id,html){
-  const root=$(id);if(!root||root._workshopHtml===html)return;
+  const root=$(id),notice=id===workshopNoticeFor?workshopNotice:'';
+  const noticeKey=JSON.stringify([notice,notice?workshopNoticeAnchor:'']);
+  if(!root||(root._workshopHtml===html&&root._workshopNoticeKey===noticeKey))return;
+  const newNotice=!!notice&&root._workshopNoticeKey!==noticeKey;
   const open=[...root.querySelectorAll('details[open]')].map(el=>el.id);
   const focused=document.activeElement,focusId=root.contains?.(focused)?focused.id:null;
   const focusValue=focusId&&focused.tagName==='INPUT'?focused.value:null;
-  root.innerHTML=html;root._workshopHtml=html;
+  root.innerHTML=html;root._workshopHtml=html;root._workshopNoticeKey=noticeKey;
   for(const key of open){const el=$(key);if(el)el.open=true;}
+  if(notice){
+    const status=document.createElement('p');status.className='info workshop-notice';status.setAttribute('role','status');status.textContent=notice;
+    const trigger=workshopNoticeAnchor?root.querySelector(workshopNoticeAnchor):null;
+    const anchor=trigger?.closest('.btnrow')||trigger?.closest('label')||trigger;
+    if(anchor)anchor.insertAdjacentElement('afterend',status);else root.prepend(status);
+    if(newNotice)requestAnimationFrame(()=>status.scrollIntoView({block:'nearest'}));
+  }
   if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
 }
 function collectWorkshopDrafts(){
@@ -7172,7 +7199,7 @@ function wireWorkshopEvents(){
     const root=$(id);if(!root)continue;
     root.addEventListener('click',event=>{
       const button=event.target.closest('[data-workshop-action]');if(!button||button.disabled)return;
-      collectWorkshopDrafts();workshopNotice='';
+      collectWorkshopDrafts();workshopNotice='';workshopNoticeFor=id;workshopNoticeAnchor=`[data-workshop-action="${button.dataset.workshopAction}"]`;
       try{
         const action=button.dataset.workshopAction;
         if(action==='start-batch')startBatch();
@@ -7193,11 +7220,15 @@ function wireWorkshopEvents(){
       }catch(error){workshopError(error);}
     });
     root.addEventListener('change',event=>{
-      const el=event.target;if(el.dataset.draft!==undefined)workshopDrafts[el.id]=el.value;
+      const el=event.target;workshopNotice='';workshopNoticeFor=id;workshopNoticeAnchor=el.id?`#${el.id}`:'';
+      if(el.dataset.draft!==undefined)workshopDrafts[el.id]=el.value;
       if(el.id==='batchEventKey'){delete workshopDrafts.batchEventAt;const b=activeBatch();$('batchEventAt').value=localDateTime(b?.events[el.value]??Date.now());return;}
       try{handleWorkshopChange(el);}catch(error){workshopError(error);}
     });
   }
+  $('batchRunner').addEventListener('toggle',event=>{
+    if(event.target.id==='batchTimingDetails'&&event.target.open&&event.target.isConnected)renderWorkshop(calc());
+  },true);
 }
 function workshopInput(id,label,value,{type='text',min='',max='',step='',draft=true,disabled=false}={}){
   return `<label>${label}<input class="field" id="${id}" type="${type}" value="${esc(value??'')}" ${min!==''?`min="${min}"`:''} ${max!==''?`max="${max}"`:''} ${step!==''?`step="${step}"`:''} ${draft?'data-draft':''} ${disabled?'disabled':''} ${type==='text'?'maxlength="300"':''}></label>`;
@@ -7268,7 +7299,7 @@ function renderBakeComparison(){
       ...[['bulk',L('Werkelijke bulk','Actual bulk')],['cold',L('Werkelijk in koelkast','Actual refrigeration')],['ball',L('Werkelijke eindrijs','Actual final proof')]].map(([key,label])=>[label,av.observedHours?.[key]==null?'—':durationLabel(av.observedHours[key]),bv.observedHours?.[key]==null?'—':durationLabel(bv.observedHours[key])]),
       [L('Uitkomst','Outcome'),ratingLabel(av.rating),ratingLabel(bv.rating)]
     ];
-    compare=`<div class="workshop-grid">${workshopSelect('compareBakeA',L('Bake A','Bake A'),options,a,{draft:true})}${workshopSelect('compareBakeB',L('Bake B','Bake B'),options,b,{draft:true})}</div>${workshopTable([L('Meting','Measurement'),'A','B'],rows)}`;
+    compare=`<div class="workshop-grid">${workshopSelect('compareBakeA',L('Bak A','Bake A'),options,a,{draft:true})}${workshopSelect('compareBakeB',L('Bak B','Bake B'),options,b,{draft:true})}</div>${workshopTable([L('Meting','Measurement'),'A','B'],rows)}`;
   }
   replaceWorkshopPanel('bakeComparison',`<details id="bakeComparisonDetails"><summary>${L('Bakes en mixerprofielen vergelijken','Compare bakes and mixer profiles')}</summary>${compare}<p class="hint">${L('Vergelijk bij voorkeur dezelfde bloem, hydratatie, batchgrootte, rustroute en mengstappen. Verschillen zijn waarnemingen, geen automatische kalibratie of bewijs dat langer kneden beter is.','Prefer comparisons with the same flour, hydration, batch size, rest route and mixing stages. Differences are observations, not automatic calibration or evidence that longer kneading is better.')}</p></details>`);
 }
@@ -7338,12 +7369,13 @@ function handleWorkshopChange(el){
     if(file.size>50000)throw new Error(L('Receptbestand is groter dan 50 kB.','Recipe file is larger than 50 kB.'));
     file.text().then(text=>{
       try{
-        const imported=WorkflowCore.importRecipe(JSON.parse(text));
+        let parsed=null;try{parsed=JSON.parse(text);}catch{}
+        const imported=WorkflowCore.importRecipe(parsed);
         if(!imported)throw new Error(L('Dit is geen geldig deegreceptbestand voor deze versie.','This is not a valid dough recipe file for this version.'));
         if(workshop.recipes.length>=30)throw new Error(L('Je hebt al 30 opgeslagen recepten.','You already have 30 saved recipes.'));
-        workshop.recipes.push({id:workshopId(),...imported});workshopNotice=L('Recept als eigen profiel geïmporteerd. Je kunt het vergelijken of als nieuw plan laden.','Recipe imported as a custom profile. You can compare it or load it as a new plan.');saveWorkshop();
-      }catch(error){workshopError(error);}
-    }).catch(()=>workshopError(new Error(L('Het bestand kon niet worden gelezen.','The file could not be read.'))));
+        workshop.recipes.push({id:workshopId(),...imported});workshopNoticeFor='recipeWorkbench';workshopNoticeAnchor='#importRecipeFile';workshopNotice=L('Recept als eigen profiel geïmporteerd. Je kunt het vergelijken of als nieuw plan laden.','Recipe imported as a custom profile. You can compare it or load it as a new plan.');saveWorkshop();
+      }catch(error){workshopError(error,'recipeWorkbench','#importRecipeFile');}
+    }).catch(()=>workshopError(new Error(L('Het bestand kon niet worden gelezen.','The file could not be read.')),'recipeWorkbench','#importRecipeFile'));
   }
 }
 const SAVE_KEY='pizzaCalcV52';
@@ -7387,6 +7419,7 @@ function scheduleSave(){
 }
 
 function saveState(){
+  captureBatchOven();
   if(activeBatch())workshop.batch.progress={...completedSteps};
   const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
     currentWizardPage,workshop,
@@ -7484,7 +7517,7 @@ function loadState(){
       else if((SAVE_IDS.includes(k)||k==='preset')&&$(k))$(k).value=v;
     });
 
-    if(activeBatch()){restoreRecipe(activeBatch().recipe);liveMeasurements={...activeBatch().measurements};completedSteps={...activeBatch().progress};}
+    if(activeBatch()){restoreRecipe(activeBatch().recipe,false);liveMeasurements={...activeBatch().measurements};completedSteps={...activeBatch().progress};}
 
     // Migratie van vóór v39: koude fermentatie stond als eigen methode opgeslagen.
     if($('fermentationMethod').value==='coldBalls'){

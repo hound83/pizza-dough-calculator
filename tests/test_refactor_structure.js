@@ -40,6 +40,7 @@ const V1_2_1_RELEASE_BASELINE={
 };
 const V1_3_0_CANDIDATE_BASELINE=require('./baselines/v1.3.0-candidate.json');
 const V1_4_0_CANDIDATE_BASELINE=require('./baselines/v1.4.0-candidate.json');
+const V1_4_0_RELEASE_BASELINE=require('./baselines/v1.4.0-release.json');
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}
 
@@ -78,10 +79,10 @@ for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.inclu
 pass('released v1.1.1 hashes remain documented');
 
 for(const hash of Object.values(V1_2_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.0 baseline hash is missing from product guardrails: ${hash}`);
-assert(sha256(bundledHtml)===V1_4_0_CANDIDATE_BASELINE.singleFile,'Standalone differs from the documented v1.4.0 candidate baseline.');
-assert(sha256(css)===V1_4_0_CANDIDATE_BASELINE.css,'CSS differs from the documented v1.4.0 candidate baseline.');
-assert(sha256(combinedJavaScript)===V1_4_0_CANDIDATE_BASELINE.javascript,'JavaScript differs from the documented v1.4.0 candidate baseline.');
-for(const hash of [...Object.values(V1_3_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_CANDIDATE_BASELINE)])assert(guardrails.includes(hash),`Candidate hash is not documented: ${hash}`);
+assert(sha256(bundledHtml)===V1_4_0_RELEASE_BASELINE.singleFile,'Standalone differs from the documented v1.4.0 release baseline.');
+assert(sha256(css)===V1_4_0_RELEASE_BASELINE.css,'CSS differs from the documented v1.4.0 release baseline.');
+assert(sha256(combinedJavaScript)===V1_4_0_RELEASE_BASELINE.javascript,'JavaScript differs from the documented v1.4.0 release baseline.');
+for(const hash of [...Object.values(V1_3_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_RELEASE_BASELINE)])assert(guardrails.includes(hash),`Candidate/release hash is not documented: ${hash}`);
 for(const hash of Object.values(V1_2_1_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.1 baseline hash is missing from product guardrails: ${hash}`);
 pass('released v1.2.0 and v1.2.1 baselines are pinned and documented');
 

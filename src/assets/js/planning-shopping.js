@@ -41,8 +41,9 @@ function refreshBakeDayClock(){
   const changed=_bakeDayClockKey!==null&&key!==_bakeDayClockKey;
   _bakeDayClockKey=key;
   renderBakeDayLabels(now);
-  // Relative bake deadlines also follow the new local date after midnight.
-  if(changed)update();
+  // Refresh time-sensitive batch proposals on focus/visibility, even the same day.
+  // Relative unstarted deadlines still follow the new local date after midnight.
+  if(changed||activeBatch())update();
   const midnight=new Date(now);
   midnight.setHours(24,0,0,100);
   _bakeDayTimer=setTimeout(refreshBakeDayClock,Math.max(100,midnight-now));

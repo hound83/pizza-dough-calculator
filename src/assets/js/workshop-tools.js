@@ -67,7 +67,7 @@ function renderBakeComparison(){
       ...[['bulk',L('Werkelijke bulk','Actual bulk')],['cold',L('Werkelijk in koelkast','Actual refrigeration')],['ball',L('Werkelijke eindrijs','Actual final proof')]].map(([key,label])=>[label,av.observedHours?.[key]==null?'—':durationLabel(av.observedHours[key]),bv.observedHours?.[key]==null?'—':durationLabel(bv.observedHours[key])]),
       [L('Uitkomst','Outcome'),ratingLabel(av.rating),ratingLabel(bv.rating)]
     ];
-    compare=`<div class="workshop-grid">${workshopSelect('compareBakeA',L('Bake A','Bake A'),options,a,{draft:true})}${workshopSelect('compareBakeB',L('Bake B','Bake B'),options,b,{draft:true})}</div>${workshopTable([L('Meting','Measurement'),'A','B'],rows)}`;
+    compare=`<div class="workshop-grid">${workshopSelect('compareBakeA',L('Bak A','Bake A'),options,a,{draft:true})}${workshopSelect('compareBakeB',L('Bak B','Bake B'),options,b,{draft:true})}</div>${workshopTable([L('Meting','Measurement'),'A','B'],rows)}`;
   }
   replaceWorkshopPanel('bakeComparison',`<details id="bakeComparisonDetails"><summary>${L('Bakes en mixerprofielen vergelijken','Compare bakes and mixer profiles')}</summary>${compare}<p class="hint">${L('Vergelijk bij voorkeur dezelfde bloem, hydratatie, batchgrootte, rustroute en mengstappen. Verschillen zijn waarnemingen, geen automatische kalibratie of bewijs dat langer kneden beter is.','Prefer comparisons with the same flour, hydration, batch size, rest route and mixing stages. Differences are observations, not automatic calibration or evidence that longer kneading is better.')}</p></details>`);
 }
@@ -137,11 +137,12 @@ function handleWorkshopChange(el){
     if(file.size>50000)throw new Error(L('Receptbestand is groter dan 50 kB.','Recipe file is larger than 50 kB.'));
     file.text().then(text=>{
       try{
-        const imported=WorkflowCore.importRecipe(JSON.parse(text));
+        let parsed=null;try{parsed=JSON.parse(text);}catch{}
+        const imported=WorkflowCore.importRecipe(parsed);
         if(!imported)throw new Error(L('Dit is geen geldig deegreceptbestand voor deze versie.','This is not a valid dough recipe file for this version.'));
         if(workshop.recipes.length>=30)throw new Error(L('Je hebt al 30 opgeslagen recepten.','You already have 30 saved recipes.'));
-        workshop.recipes.push({id:workshopId(),...imported});workshopNotice=L('Recept als eigen profiel geïmporteerd. Je kunt het vergelijken of als nieuw plan laden.','Recipe imported as a custom profile. You can compare it or load it as a new plan.');saveWorkshop();
-      }catch(error){workshopError(error);}
-    }).catch(()=>workshopError(new Error(L('Het bestand kon niet worden gelezen.','The file could not be read.'))));
+        workshop.recipes.push({id:workshopId(),...imported});workshopNoticeFor='recipeWorkbench';workshopNoticeAnchor='#importRecipeFile';workshopNotice=L('Recept als eigen profiel geïmporteerd. Je kunt het vergelijken of als nieuw plan laden.','Recipe imported as a custom profile. You can compare it or load it as a new plan.');saveWorkshop();
+      }catch(error){workshopError(error,'recipeWorkbench','#importRecipeFile');}
+    }).catch(()=>workshopError(new Error(L('Het bestand kon niet worden gelezen.','The file could not be read.')),'recipeWorkbench','#importRecipeFile'));
   }
 }

@@ -1183,6 +1183,26 @@ test('a started batch freezes ingredients and method while persisting checkpoint
   run(`workshop=WorkflowCore.sanitize(null);liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};`);storage.data.clear();defaults();
 });
 
+test('oven settings remain editable and follow their archived batch without changing the frozen dough',()=>{
+  defaults();storage.data.clear();
+  const x=run(`(()=>{
+    workshop=WorkflowCore.sanitize(null);liveMeasurements={doughTemp:null,fridgeTemp:null};exactOverride=null;currentMethod='kitchenaid';
+    const start=Date.now()-3600000;
+    workshop.batch=WorkflowCore.createBatch({id:'oven',recipe:snapshotRecipe(),startedAt:start,bakeAt:Date.now()+25*3600000,plan:{preparation:.9,bulk:1,cold:20,ball:4}});
+    const before=calc(),target=activeBatch().bakeAt,events=JSON.stringify(activeBatch().events);
+    $('stoneTemp').value='400';$('preheatMinutes').value='45';update();saveState();
+    const edited={stone:calc().stoneTemp,preheat:calc().preheat,locked:$('stoneTemp').disabled};
+    closeBatch();$('stoneTemp').value='300';$('preheatMinutes').value='60';resumeBatch('oven');
+    const resumed={stone:calc().stoneTemp,preheat:calc().preheat};
+    saveState();workshop=WorkflowCore.sanitize(null);$('stoneTemp').value='250';loadState();
+    const after=calc();
+    return {edited,resumed,loaded:{stone:after.stoneTemp,preheat:after.preheat},sameDough:['flour','water','salt','oil','yeast','h','s','y','o','bulk','cold','ball'].every(k=>before[k]===after[k]),sameEvents:events===JSON.stringify(activeBatch().events),sameTarget:target===activeBatch().bakeAt};
+  })()`);
+  assert(x.edited.stone===400&&x.edited.preheat===45&&!x.edited.locked,JSON.stringify(x));
+  assert(x.resumed.stone===400&&x.resumed.preheat===45&&x.loaded.stone===400&&x.loaded.preheat===45&&x.sameDough&&x.sameEvents&&x.sameTarget,JSON.stringify(x));
+  run(`workshop=WorkflowCore.sanitize(null);liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};workshopNotice='';`);storage.data.clear();defaults();
+});
+
 test('profile bake observations survive storage without changing water or yeast calculations',()=>{
   defaults();storage.data.clear();setField('logMixMinutes',9,{min:0,max:120});setField('logWaterTemp',18,{min:0,max:50});
   const x=run(`(()=>{

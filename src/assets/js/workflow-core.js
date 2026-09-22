@@ -66,7 +66,7 @@ const WorkflowCore=(()=>{
     const step=[1,.1,.01].includes(resolution)?resolution:.1;
     if(!bounded(grams,0,1000))throw new RangeError('Invalid yeast dose.');
     const nearest=Number((Math.round((grams+Number.EPSILON)/step)*step).toFixed(2));
-    return {step,nearest,delta:nearest-grams,halfStep:step/2,relativeHalfStep:grams>0?step/2/grams:null,tooCoarse:grams>0&&(nearest===0||step/2/grams>.1)};
+    return {step,nearest,delta:Math.round((nearest-grams)*1e4)/1e4||0,halfStep:step/2,relativeHalfStep:grams>0?step/2/grams:null,tooCoarse:grams>0&&(nearest===0||step/2/grams>.1)};
   }
 
   const eventKeys=route=>route==='room'?['start','bulkStart','shape','bake']:['start','bulkStart','fridgeIn','fridgeOut','bake'];
@@ -159,7 +159,9 @@ const WorkflowCore=(()=>{
       if(value.route!==out.route)return null;
       out.timings=durations(value.timings,out.route);if(!out.timings)return null;
       for(const key of eventKeys(out.route)){
-        if(value.events[key]!=null)out=recordEvent(out,key,value.events[key]);
+        // Persisted observations keep their chronology even if the device clock
+        // moved backwards. New input still uses recordEvent's live-clock check.
+        if(value.events[key]!=null)out=recordEvent(out,key,value.events[key],Infinity);
       }
       out.status=value.status==='finished'?'finished':'active';
       out.readings=(Array.isArray(value.readings)?value.readings:[]).filter(x=>object(x)&&['doughTemp','fridgeTemp'].includes(x.kind)&&validTime(x.at)&&bounded(x.value,x.kind==='doughTemp'?10:0,x.kind==='doughTemp'?40:15)).slice(-60).map(x=>({kind:x.kind,value:x.value,at:x.at}));

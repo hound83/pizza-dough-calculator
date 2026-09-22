@@ -96,7 +96,7 @@ for(const path of ['/index.html','/src/index.html']){
       await page.reload();expect(await page.evaluate(()=>workshop.recipes.length)).toBe(2);
       await page.locator('#recipeWorkbenchDetails summary').click();
       await page.locator('#importRecipeFile').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"format":"pizza-dough-recipe","version":1}')});
-      await expect(page.locator('#batchPlanner [role="status"]')).toContainText('geen geldig');
+      await expect(page.locator('#recipeWorkbench [role="status"]')).toContainText('geen geldig');
       expect(await page.evaluate(()=>workshop.recipes.length)).toBe(2);
     });
     test('scale resolution and container capacity guide a real plan without changing grams silently',async({page})=>{
@@ -118,6 +118,7 @@ for(const path of ['/index.html','/src/index.html']){
       await page.getByRole('button',{name:'Bakresultaat opslaan',exact:true}).click();
       await page.locator('#logWaterTemp').fill('19');await page.evaluate(()=>setLiveMeasurement('doughTemp','25'));await page.getByRole('button',{name:'Bakresultaat opslaan',exact:true}).click();
       await page.locator('#bakeComparisonDetails summary').click();await expect(page.locator('#bakeComparison')).toContainText('Spiraalhaak');await expect(page.locator('#bakeComparison')).toContainText('9 min');
+      await expect(page.locator('#bakeComparison label').first()).toContainText('Bak A');
       expect(await page.evaluate(()=>waterTempAdvice(calc()).raw)).toBe(before);
       await page.reload();expect(await page.evaluate(()=>bakeLog[0].profile.hook)).toBe('Spiraalhaak');
       await page.locator('#langEn').click();await page.locator('#bakeComparisonDetails summary').click();await expect(page.locator('#bakeComparison')).toContainText('Actual main water');
@@ -129,6 +130,73 @@ for(const path of ['/index.html','/src/index.html']){
       await page.locator('#helpSymptom').selectOption('slack');await expect(page.locator('#doughHelpAdvice')).toContainText('steeds slapper');
       await page.locator('#langEn').click();await expect(page.locator('#doughHelpAdvice')).toContainText('progressively');
       await page.locator('#helpSymptom').selectOption('recoil');await expect(page.locator('#doughHelpAdvice')).toContainText('Extra kneading is not an automatic solution');
+    });
+    test('persisted active and archived batches survive a five-minute backward clock correction',async({page})=>{
+      const now=new Date('2026-09-21T12:00:00Z');await page.clock.install({time:now});await open(page);
+      await page.locator('#batchPlanner [data-workshop-action="start-batch"]').click();
+      await page.locator('[data-workshop-action="record-now"]').click();
+      const events=await page.evaluate(()=>activeBatch().events);
+      await page.locator('[data-workshop-action="close-batch"]').click();
+      await page.locator('#batchPlanner [data-workshop-action="start-batch"]').click();
+      await page.locator('[data-workshop-action="record-now"]').click();
+      const active=await page.evaluate(()=>JSON.stringify(activeBatch()));
+      await page.clock.setSystemTime(new Date(now.getTime()-5*60000));await page.reload();
+      expect(await page.evaluate(()=>JSON.stringify(activeBatch()))).toBe(active);
+      expect(await page.evaluate(()=>workshop.history[0].events)).toEqual(events);
+      await page.evaluate(()=>showPage(1));await expect(page.locator('#pizzas')).toBeDisabled();
+      await page.clock.setSystemTime(new Date(now.getTime()+30*60000));await page.reload();
+      expect(await page.evaluate(()=>JSON.stringify(activeBatch()))).toBe(active);
+    });
+    test('oven settings are editable during a batch and persist across reload and archive/reopen',async({page})=>{
+      await open(page);await page.evaluate(()=>setExperienceMode('full'));await page.locator('#bakeDay').selectOption('2');
+      await page.evaluate(()=>showPage(4));await expect(page.locator('[data-step-key="s-weigh"] .step-moment')).toContainText('Gepland');
+      await page.locator('#batchRunner [data-workshop-action="start-batch"]').click();
+      await expect(page.locator('[data-step-key="s-weigh"] .step-moment')).toContainText('Werkelijk');
+      await expect(page.locator('[data-step-key="s-cold"] .step-moment')).toContainText('Verwacht');
+      const before=await page.evaluate(()=>({yeast:calc().yeast,flour:calc().flour,events:activeBatch().events,target:activeBatch().bakeAt}));
+      await page.evaluate(()=>showPage(1));await expect(page.locator('#stoneTemp')).toBeEnabled();
+      await page.locator('#stoneTemp').fill('400');await page.locator('#stoneTemp').blur();
+      await page.locator('#preheatMinutes').fill('45');await page.locator('#preheatMinutes').blur();
+      await page.reload();await expect(page.locator('#stoneTemp')).toHaveValue('400');await expect(page.locator('#preheatMinutes')).toHaveValue('45');
+      expect(await page.evaluate(()=>({yeast:calc().yeast,flour:calc().flour,events:activeBatch().events,target:activeBatch().bakeAt}))).toEqual(before);
+      await page.evaluate(()=>showPage(4));
+      expect(await page.evaluate(()=>$('timeline').textContent.includes(niceDate(new Date(WorkflowCore.timeline(activeBatch()).times.bake-45*60000))))).toBe(true);
+      await page.locator('[data-workshop-action="close-batch"]').click();
+      await page.locator('#stoneTemp').fill('300');await page.locator('#stoneTemp').blur();
+      await page.locator('#batchArchive summary').click();await page.locator('[data-workshop-action="resume-batch"]').first().click();
+      await page.evaluate(()=>showPage(1));await expect(page.locator('#stoneTemp')).toHaveValue('400');await expect(page.locator('#preheatMinutes')).toHaveValue('45');
+    });
+    for(const width of [320,390,760,1280])test(`workshop errors stay beside the action and inside the viewport at ${width}px`,async({page})=>{
+      await page.setViewportSize({width,height:800});await open(page);await page.locator('#recipeWorkbenchDetails summary').click();
+      const visible=async()=>{
+        const status=page.locator('#recipeWorkbench [role="status"]');await expect(status).toBeVisible();
+        await expect.poll(async()=>status.evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;})).toBe(true);
+        await expect(page.locator('#batchPlanner [role="status"]')).toHaveCount(0);
+      };
+      await page.locator('[data-workshop-action="save-recipe"]').click();await expect(page.locator('#recipeWorkbench [role="status"]')).toContainText('Geef je recept');await visible();
+      for(const [lang,message] of [['nl','geen geldig deegreceptbestand'],['en','not a valid dough recipe file']]){
+        await page.locator(lang==='nl'?'#langNl':'#langEn').click();
+        await page.locator('#importRecipeFile').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('dit is geen json')});
+        await expect(page.locator('#recipeWorkbench [role="status"]')).toContainText(message);await visible();
+      }
+      await page.locator('#importRecipeFile').setInputFiles({name:'large.json',mimeType:'application/json',buffer:Buffer.alloc(50001,32)});
+      await expect(page.locator('#recipeWorkbench [role="status"]')).toContainText('larger than 50 kB');await visible();
+      await page.locator('#coldStorageDetails summary').click();await page.locator('#storage-ballsPerBox').fill('0');await page.locator('#storage-ballsPerBox').blur();
+      await expect(page.locator('#coldStoragePlanner [role="status"]')).toContainText('within the indicated bounds');
+      await expect.poll(()=>page.locator('#coldStoragePlanner [role="status"]').evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;})).toBe(true);
+      expect(await page.evaluate(()=>workshop.recipes.length)).toBe(0);
+    });
+    test('same-day proof advice refreshes on reopening and returning to the page',async({page})=>{
+      const now=new Date('2026-09-21T12:00:00Z');await page.clock.install({time:now});await open(page);
+      await page.locator('#preset').selectOption('sameDay');await page.locator('#batchPlanner [data-workshop-action="start-batch"]').click();
+      await page.locator('[data-workshop-action="record-now"]').click();await page.evaluate(()=>setLiveMeasurement('doughTemp','26'));
+      await page.locator('#batchTimingDetails summary').click();await expect(page.locator('[data-workshop-action="apply-proof"]')).toBeVisible();
+      await page.locator('#batchTimingDetails summary').click();await page.clock.setSystemTime(new Date(now.getTime()+3*3600000));
+      await page.locator('#batchTimingDetails summary').click();await expect(page.locator('#batchTimingDetails')).toContainText('overgangsmoment is verstreken');
+      await expect(page.locator('[data-workshop-action="apply-proof"]')).toHaveCount(0);
+      await page.clock.setSystemTime(now);await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect(page.locator('[data-workshop-action="apply-proof"]')).toBeVisible();
+      await page.clock.setSystemTime(new Date(now.getTime()+3*3600000));await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+      await expect(page.locator('#batchTimingDetails')).toContainText('overgangsmoment is verstreken');await expect(page.locator('[data-workshop-action="apply-proof"]')).toHaveCount(0);
     });
     for(const width of [320,390,430,760,1024,1280]){
       test(`expanded planning and running-batch controls fit at ${width}px`,async({page})=>{

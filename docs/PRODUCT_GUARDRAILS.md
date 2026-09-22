@@ -296,3 +296,22 @@ The existing feature candidate incorporates the reviewed 1.3 completion fixes. A
 | singleFile | `94e568b88e48312f7279d0d2fbc2694ede761092bcf608770befe5310ccc8c15` |
 | css | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
 | javascript | `cdbfefb2b0f92cf195df1c05f304072bd12456eceff5e4093ff460b7a2d4d5ce` |
+
+## v1.4.0 release follow-up
+
+The user authorized resolving Claude's eight PR #14 findings and publishing 1.4 when no major redesign was needed. The historical candidate baselines above stay intact. The release adds these contracts:
+
+- Loading valid saved checkpoints must not delete a batch after a device clock moves backwards. New checkpoints still reject future input and all checkpoints retain chronological validation.
+- Active-batch dough quantities, method and requested bake time remain fixed. Stone temperature and preheat minutes are editable baking preferences retained per batch across reload, archive and reopen.
+- Workshop validation appears beside its originating action; invalid JSON uses the selected interface language.
+- Remaining-proof advice refreshes on opening its disclosure and returning to the page; applying it still validates current elapsed time.
+- Untracked step times are Planned, recorded checkpoints Actual, and remaining tracked times Expected, localized in NL/EN.
+- Scale rounding must not display negative zero. Mixer comparisons use Bak A/B in Dutch.
+
+No physical constants, yeast model, kneading duration or rest duration change in this follow-up. The six later workflow proposals and app development are outside this release. LF checkout rules keep deterministic bundle hashes portable to Windows.
+
+| Release artifact | SHA-256 |
+|---|---|
+| v1.4.0 standalone | `8d279726faa7862cb10120cc749149d496cf52bf4bd5a75f1cf5907b08cda657` |
+| v1.4.0 CSS | `3ecef9a1327b1fc2db1cd6d25f505fb535f700808be63680aed5c7f26aa50919` |
+| v1.4.0 JavaScript | `a824d3e6969071d08036933f84bce39bc3ef7d29301c7505ff1d57a7f38183d1` |

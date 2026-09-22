@@ -4,8 +4,8 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v1.2.1-f0b45a)](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
-[![Tests](https://img.shields.io/badge/regressietests-98_tests-76c990)](tests/test_v50.js)
+[![Versie](https://img.shields.io/badge/versie-v1.4.0-f0b45a)](docs/V1_4_0_RELEASE_REVIEW.md)
+[![Tests](https://img.shields.io/badge/regressietests-106_tests-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
@@ -13,13 +13,13 @@ Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fe
 
 De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies de standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
 
-**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Bekijk de v1.2.1-release](https://github.com/hound83/pizza-dough-calculator/releases/tag/v1.2.1)
+**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v1.4.0-releasenotities](docs/V1_4_0_RELEASE_REVIEW.md)
 
-> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.2.1 is de huidige publieke release en behoudt opslagschema 51.
+> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.4.0 gebruikt opslagschema 52 en migreert bestaande schema-51-gegevens automatisch.
 
-**Deze branch: v1.4.0-kandidaat.** Vaste batches en bakdatums, werkelijke momenten, eigen deegrecepten en vergelijkingen, weegschaal- en koelkastadvies, mixerprofielen en gerichte deeghulp. Gebouwd op de 1.3-review; mixtijden en modelconstanten blijven behouden. Schema 51 migreert met behoud van gegevens naar 52. [Implementatie en review voor Claude](docs/V1_4_0_IMPLEMENTATION_REVIEW.md). De publieke versie blijft v1.2.1 tot een expliciete release.
+**Nieuw in v1.4.0:** vaste batches en bakdatums, werkelijke momenten, eigen deegrecepten en vergelijkingen, weegschaal- en koelkastadvies, mixerprofielen en gerichte deeghulp. De verbeterde 1.3-planning is inbegrepen, met dynamische weekdagen. Alle acht bevindingen uit Claude’s 1.4-review zijn verwerkt; mixtijden en modelconstanten blijven behouden. [Review en releasecontroles](docs/V1_4_0_RELEASE_REVIEW.md).
 
-**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v140-implementation-start-here). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
+**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v140-release-review). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
 
 ## Wat kan de calculator?
 
@@ -51,6 +51,9 @@ Belangrijkste mogelijkheden:
 - planning terugrekenen vanaf een gewenste bakdag en baktijd;
 - afvinkbaar stappenplan, printweergave en kopieerbare recepten;
 - optionele live temperatuurmetingen en een lokaal deeglogboek;
+- bewaar een lopende batch met echte momenten, hervat hem later en pas oveninstellingen aan zonder je deegrecept te wijzigen;
+- sla eigen deegrecepten op, vergelijk en wissel ze uit via JSON;
+- controleer weegschaalprecisie en koelkastruimte en leg mixerwaarnemingen vast;
 - volledige Nederlandse en Engelse interface.
 
 ## Zo gebruik je hem
@@ -131,14 +134,14 @@ Voer daarna de complete suite uit:
 npm test
 ```
 
-Controles voor de kandidaat (zie de Actions-uitslag bij de PR voor de uitvoerstatus):
+Releasecontroles (zie de Actions-uitslag bij de PR voor de uitvoerstatus):
 
 ```text
 15 refactor-structure tests
-16 pure-core tests
-102 bundle regression tests
-102 source regression tests
-67 Chromium browser/layout tests
+19 pure-core tests
+106 bundle regression tests
+106 source regression tests
+89 Chromium browser/layout tests
 ```
 
 De suite controleert onder meer:
@@ -154,7 +157,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de vijftien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes en de afzonderlijke v1.3.0- en v1.4.0-kandidaatbaselines. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de vijftien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes de historische v1.3.0- en v1.4.0-kandidaatbaselines en de afzonderlijke v1.4.0-releasebaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -175,6 +178,7 @@ Vanaf de eerste golden release gebruikt het project semantic versioning:
 | **v1.1.1** | Achterwaarts compatibele gebruikscorrectie na v1.1.0 |
 | **v1.2.0** | Gefaseerde, route-afhankelijke berekening van hoofdwater en einddeegtemperatuur |
 | **v1.2.1** | Achterwaarts compatibele opschoning van vertalingen, receptdata en sauskeuze |
+| **v1.4.0** | Batchregistratie, receptprofielen, praktische keukenhulpen en de verbeterde 1.3-planning |
 | **v2.0.0** | Alleen nodig bij een werkelijk brekende wijziging |
 
 Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigraties, testbestanden en auditdocumenten. Ze worden niet langer als publieke productversie doorgeteld.
@@ -204,15 +208,12 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Release:** v1.2.1 is de huidige release; tag v1.0.0 blijft de onveranderlijke historische golden baseline.
-- **Huidige architectuur:** statische bron-HTML, CSS en twaalf JavaScriptmodules genereren de geteste standalone publicatie voor GitHub Pages.
-- **Audit:** Claude keurde v1.2.1 in de definitieve heraudit goed na de Marinara-fideliteitscorrectie en beide browserdekkingsaanvullingen; alle 15 + 89 + 89 + 41 controles slaagden onafhankelijk.
-- **Kleine follow-up:** voor zeven uitgebreide veldlabels blijft een niet-blokkerende toegankelijkheidsverbetering mogelijk.
-- **v1.1.0:** een duidelijke toggle tussen **Basis** en **Uitgebreid**, zonder twee verschillende rekenmodellen te creëren.
-- **v1.1.1:** een persoonlijk standaardrecept van 30 cm, praktische percentagebediening, gecorrigeerde tweetalige enkelvoud/meervoud-teksten en consistente weergave van deegbolgewicht.
-- **v1.2.0:** een op warmtecapaciteit gebaseerd gefaseerd DDT-model, aparte autolyse/directe routes, expliciet hoofd- versus reservewater, eerlijke haalbaarheidsmelding en normale-keukenbegeleiding.
-- **v1.2.1:** herstelde NL/EN-teksten, gededupliceerde Marinara-knoflook/-oregano met behoud van de aparte 5 g afwerk-EVOO, en een schonere ingeklapte sausoverride met behoud van alle zeven saustypes.
-- **v1.3.0 hierna:** anonieme feedback blijft gescheiden en vereist vóór release productieconfiguratie van Turnstile/Worker en een echte end-to-end-issuetest.
+- **Release:** v1.4.0; tag v1.0.0 en alle eerdere baselines blijven behouden.
+- **Architectuur:** statische HTML, CSS en vijftien JavaScriptmodules genereren de standalone publicatie voor GitHub Pages.
+- **Review:** Claude’s onafhankelijke 1.4-crosscheck en de reactie op alle acht bevindingen staan in [het releaseverslag](docs/V1_4_0_RELEASE_REVIEW.md).
+- **Inbegrepen:** de verbeterde 1.3-planning, dynamische weekdagen, schema-52-migratie en alle zeven workshopuitbreidingen.
+- **Volgende versie:** de zes besproken gebruiks- en keukenverbeteringen worden apart voorbereid; appontwikkeling is geparkeerd.
+- **Feedback:** anonieme feedback/Cloudflare blijft afzonderlijk werk; PR #12 zit niet in deze release.
 
 ## Achtergrond
 
