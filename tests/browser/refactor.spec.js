@@ -75,8 +75,10 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v1.4.0');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v1.4.1');
         await expect(page.locator('#page0')).toHaveClass(/\bactive\b/);
+        await expect(page.locator('#appVersion')).toHaveText('v1.4.1');
+        await expect(page.locator('#appVersion')).toBeVisible();
         await expect(page.locator('[data-mode-card="full"]')).toBeVisible();
 
         const runtime=await page.evaluate(()=>({
@@ -84,7 +86,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'1.4.0',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'1.4.1',hasCalculator:true,horizontalOverflow:0});
         await page.locator('[data-mode-card="dough"]').click();
         await expect(page.locator('#scheduleSummary')).toBeVisible();
         await expect(page.locator('#scheduleSummary')).toContainText('1 u 54 min');
@@ -102,6 +104,10 @@ for(const publication of PUBLICATIONS){
         await expect(page.locator('[data-method="hand"]')).toHaveAttribute('aria-pressed','true');
         await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','false');
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+        await page.locator('#appVersion').scrollIntoViewIfNeeded();
+        await expect(page.locator('#appVersion')).toBeInViewport();
+        const footer=await page.locator('#appVersion').boundingBox(),actions=await page.locator('#floatingActions').boundingBox();
+        expect(footer.y+18).toBeLessThan(actions.y);
         await page.screenshot({path:test.info().outputPath('workflow.png'),fullPage:true});
         expect(failures).toEqual([]);
       });
@@ -119,6 +125,7 @@ for(const publication of PUBLICATIONS){
         await page.locator('#bakeDay').selectOption('2');
         await page.locator('#langEn').click();
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('In 2 days – Wednesday');
+        await expect(page.locator('#appVersion')).toHaveText('v1.4.1');
         await page.locator('#langNl').click();
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
         await page.clock.fastForward(11*60_000);

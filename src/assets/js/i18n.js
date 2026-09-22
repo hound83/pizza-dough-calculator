@@ -258,6 +258,7 @@ function updateLanguageSwitch(){
   const nl=$('langNl'),en=$('langEn');
   if(nl)nl.classList.toggle('active',currentLang==='nl');
   if(en)en.classList.toggle('active',currentLang==='en');
+  $('appVersion').textContent=`v${APP_VERSION}`;
   document.documentElement.lang=currentLang;
   document.title=currentLang==='en'?`Pizza dough calculator v${APP_VERSION}`:`Pizzadeegcalculator v${APP_VERSION}`;
 }

@@ -170,12 +170,12 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('v1.4.0 release uses schema 52 with v51 migration',()=>{
+test('v1.4.1 release uses schema 52 with v51 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='1.4.0'&&x.key==='pizzaCalcV52'&&x.version===52&&x.legacy==='pizzaCalcV51',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v1.4.0'&&x.titleEn==='Pizza dough calculator v1.4.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v1.4.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v1.4.0</title>'),'static document title is not v1.4.0');
+  assert(x.app==='1.4.1'&&x.key==='pizzaCalcV52'&&x.version===52&&x.legacy==='pizzaCalcV51',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v1.4.1'&&x.titleEn==='Pizza dough calculator v1.4.1',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v1.4.1')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v1.4.1</title>'),'static document title is not v1.4.1');
 });
 
 test('standard preset uses a 30 cm peel-friendly default and practical percentage steps',()=>{

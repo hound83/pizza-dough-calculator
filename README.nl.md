@@ -4,7 +4,7 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v1.4.0-f0b45a)](docs/V1_4_0_RELEASE_REVIEW.md)
+[![Versie](https://img.shields.io/badge/versie-v1.4.1-f0b45a)](docs/PRODUCT_GUARDRAILS.md#v141-visible-version-patch)
 [![Tests](https://img.shields.io/badge/regressietests-106_tests-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
@@ -15,9 +15,11 @@ De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v1.4.0-releasenotities](docs/V1_4_0_RELEASE_REVIEW.md)
 
-> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.4.0 gebruikt opslagschema 52 en migreert bestaande schema-51-gegevens automatisch.
+> Tag **v1.0.0** blijft de onveranderlijke golden gedragsbaseline. v1.4.1 gebruikt opslagschema 52 en migreert bestaande schema-51-gegevens automatisch.
 
 **Nieuw in v1.4.0:** vaste batches en bakdatums, werkelijke momenten, eigen deegrecepten en vergelijkingen, weegschaal- en koelkastadvies, mixerprofielen en gerichte deeghulp. De verbeterde 1.3-planning is inbegrepen, met dynamische weekdagen. Alle acht bevindingen uit Claude’s 1.4-review zijn verwerkt; mixtijden en modelconstanten blijven behouden. [Review en releasecontroles](docs/V1_4_0_RELEASE_REVIEW.md).
+
+**v1.4.1:** het versienummer staat nu onderaan elk scherm, ook op mobiel en in beide talen.
 
 **Voor Claude/reviewers:** [begin hier](CLAUDE.md#v140-release-review). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
 
@@ -157,7 +159,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de vijftien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes de historische v1.3.0- en v1.4.0-kandidaatbaselines en de afzonderlijke v1.4.0-releasebaseline. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de vijftien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes, de historische v1.3.0- en v1.4.0-kandidaatbaselines en de afzonderlijke v1.4.0/v1.4.1-releasebaselines. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -208,7 +210,7 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Release:** v1.4.0; tag v1.0.0 en alle eerdere baselines blijven behouden.
+- **Release:** v1.4.1; tag v1.0.0 en alle eerdere baselines blijven behouden.
 - **Architectuur:** statische HTML, CSS en vijftien JavaScriptmodules genereren de standalone publicatie voor GitHub Pages.
 - **Review:** Claude’s onafhankelijke 1.4-crosscheck en de reactie op alle acht bevindingen staan in [het releaseverslag](docs/V1_4_0_RELEASE_REVIEW.md).
 - **Inbegrepen:** de verbeterde 1.3-planning, dynamische weekdagen, schema-52-migratie en alle zeven workshopuitbreidingen.
