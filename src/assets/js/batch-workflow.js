@@ -6,6 +6,38 @@ const BATCH_OVEN_FIELDS=new Set(['stoneTemp','preheatMinutes']);
 const workshopDrafts={};
 const workshopPanels=['batchPlanner','batchRunner','scalePlanner','coldStoragePlanner','recipeWorkbench','mixerProfiles','bakeComparison','doughHelp'];
 
+// Native change runs between pointerdown and click. Keep the pressed control
+// mounted until activation has finished; state and storage still update now.
+let panelInteraction=null,panelRenderTimer=null;
+const deferredPanels=new Set();
+function holdPanelRender(id){
+  if(panelInteraction?.id!==id)return false;
+  deferredPanels.add(id);return true;
+}
+function flushPanelRender(){
+  clearTimeout(panelRenderTimer);panelRenderTimer=null;panelInteraction=null;
+  if(deferredPanels.size){deferredPanels.clear();update();}
+}
+function wirePanelInteractions(){
+  const panelFor=node=>{
+    for(let el=node;el;el=el.parentElement)if([...workshopPanels,...eveningPanels,'stepsList'].includes(el.id))return el.id;
+    return null;
+  };
+  const later=delay=>{clearTimeout(panelRenderTimer);panelRenderTimer=setTimeout(flushPanelRender,delay);};
+  document.addEventListener('pointerdown',event=>{
+    flushPanelRender();const id=panelFor(event.target);
+    if(id)panelInteraction={id,pointerId:event.pointerId};
+  },true);
+  document.addEventListener('pointerup',event=>{if(panelInteraction?.pointerId===event.pointerId)later(250);},true);
+  document.addEventListener('click',()=>{if(panelInteraction)later(0);},true);
+  document.addEventListener('pointercancel',()=>{if(panelInteraction)later(0);},true);
+  window.addEventListener('blur',flushPanelRender);
+  document.addEventListener('keydown',event=>{
+    if(!['Tab','Enter',' '].includes(event.key)||panelInteraction)return;
+    const id=panelFor(event.target);if(id){panelInteraction={id};later(0);}
+  },true);
+}
+
 function activeBatch(){return workshop.batch;}
 function workshopId(){return `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;}
 function snapshotRecipe(){
@@ -57,12 +89,13 @@ function batchEventName(key){
 }
 function batchMomentIsActual(key){
   const b=activeBatch();if(!b)return false;
-  if(key==='shape'&&b.route!=='room')key=b.route==='coldBalls'?'fridgeIn':'fridgeOut';
+  if(key==='shape'&&b.route==='hybrid')return b.shapedAt!=null;
+  if(key==='shape'&&b.route==='coldBalls')key='fridgeIn';
   if(key==='ballStart')key=b.route==='room'?'shape':'fridgeOut';
   return b.events[key]!=null;
 }
 function observedBatchHours(){
-  const b=activeBatch();if(!b)return null;
+  const b=activeBatch();if(!b||(b.unknownEvents||[]).length)return null;
   const d=WorkflowCore.actualSchedule(b);
   return Object.fromEntries(['bulk','cold','ball'].map(key=>[key,b.route==='room'&&key==='cold'?0:WorkflowCore.phaseDone(b,key)?d[key]:null]));
 }
@@ -74,6 +107,9 @@ function workshopError(error,panel=workshopNoticeFor,anchor=workshopNoticeAnchor
   workshopNotice=messages[error.message]||error.message;renderWorkshop(calc());
 }
 function startBatch(){
+  return startEvening();
+}
+function startLegacyBatch(){
   if(activeBatch())return;
   normalizeStoredNumberInputs();
   const r=snapshotRecipe(),c=calc(),entered=$('batchStartAt')?.value||'';
@@ -93,18 +129,20 @@ function startBatch(){
   saveWorkshop();showPage(4);$('batchRunnerTitle')?.focus({preventScroll:true});
 }
 function resetBatchEventDraft(){
-  const b=activeBatch(),key=WorkflowCore.eventKeys(b.route).find(x=>b.events[x]==null)||'bake';
+  const b=activeBatch(),key=WorkflowCore.eventKeys(b.route).find(x=>!WorkflowCore.eventDone(b,x))||'bake';
   workshopDrafts.batchEventKey=key;workshopDrafts.batchEventAt=localDateTime(b.events[key]??Date.now());
   if($('batchEventKey'))$('batchEventKey').value=key;
   if($('batchEventAt'))$('batchEventAt').value=workshopDrafts.batchEventAt;
 }
 function recordBatchEvent(key,at){
+  if(activeEvening()){recordEveningEvent(key,at);resetBatchEventDraft();renderWorkshop(calc());return;}
   if(!activeBatch())return;
   workshop.batch=WorkflowCore.recordEvent(activeBatch(),key,at);
   workshopNotice='';resetBatchEventDraft();
   saveWorkshop();
 }
 function closeBatch(){
+  if(activeEvening())return handleEveningAction({dataset:{eveningAction:'finish'}});
   const b=activeBatch();if(!b)return;
   captureBatchOven();
   workshop.history=[...workshop.history,{...WorkflowCore.clone(b),status:'finished'}].slice(-20);
@@ -114,6 +152,7 @@ function closeBatch(){
   saveWorkshop();showPage(1);
 }
 function resumeBatch(id){
+  if(evenings.history.some(e=>e.id===id||e.runs.some(r=>r.id===id)))return reopenEvening(id);
   if(activeBatch())return;
   const b=workshop.history.find(x=>x.id===id);if(!b)return;
   workshop.batch={...WorkflowCore.clone(b),status:'active'};workshop.history=workshop.history.filter(x=>x.id!==id);
@@ -134,14 +173,14 @@ function recordBatchMeasurement(kind,value){
 function batchProposal(){return WorkflowCore.finalProofProposal(activeBatch(),calc(),{doughTemp:liveMeasurementValue('doughTemp'),fridgeTemp:liveMeasurementValue('fridgeTemp')},DoughCore);}
 function batchProposalHtml(){
   const p=batchProposal();
-  const reasons={'checkpoint-needed':L('Een verwacht overgangsmoment is verstreken. Registreer de werkelijke overgang, of verleng eerst de huidige fase; daarna kan het model de resterende eindrijs voorstellen.','An expected phase transition has passed. Record the actual transition, or extend the current phase first; the model can then propose remaining final proof.'),'no-measurement':L('Vul eerst een werkelijke deeg- of koelkasttemperatuur in het stappenplan in.','First enter an actual dough or fridge temperature in the workflow.'),deadband:L('De deegtemperatuur ligt binnen ±1 °C van het doel; het kamertemperatuurschema blijft staan.','Dough temperature is within ±1 °C of the target; the room-temperature schedule stays unchanged.'),'past-target':L('Het modeldoel lijkt al bereikt. Eerder verstreken tijd kan niet worden teruggedraaid: beoordeel het deeg nu.','The model target appears to have been reached already. Elapsed time cannot be undone: inspect the dough now.'),unreachable:L('Geen modeloplossing binnen 48 uur eindrijs. Gebruik dit niet als betrouwbaar tijdadvies.','No model solution within 48 hours of final proof. Do not treat this as reliable timing advice.'),completed:L('De bakstart is geregistreerd; het schema wordt niet meer aangepast.','The bake checkpoint is recorded; the schedule will no longer be adjusted.')};
+  const reasons={'unknown-history':L('Er ontbreken werkelijke tijden. Het model kan geen betrouwbaar voorstel voor de resterende rijs geven. Vul eerst de geschiedenis aan.','Actual times are missing. The model cannot provide a reliable remaining-proof proposal. Complete the history first.'),'checkpoint-needed':L('Een verwacht overgangsmoment is verstreken. Registreer de werkelijke overgang, of verleng eerst de huidige fase; daarna kan het model de resterende eindrijs voorstellen.','An expected phase transition has passed. Record the actual transition, or extend the current phase first; the model can then propose remaining final proof.'),'no-measurement':L('Vul eerst een werkelijke deeg- of koelkasttemperatuur in het stappenplan in.','First enter an actual dough or fridge temperature in the workflow.'),deadband:L('De deegtemperatuur ligt binnen ±1 °C van het doel; het kamertemperatuurschema blijft staan.','Dough temperature is within ±1 °C of the target; the room-temperature schedule stays unchanged.'),'past-target':L('Het modeldoel lijkt al bereikt. Eerder verstreken tijd kan niet worden teruggedraaid: beoordeel het deeg nu.','The model target appears to have been reached already. Elapsed time cannot be undone: inspect the dough now.'),unreachable:L('Geen modeloplossing binnen 48 uur eindrijs. Gebruik dit niet als betrouwbaar tijdadvies.','No model solution within 48 hours of final proof. Do not treat this as reliable timing advice.'),completed:L('De bakstart is geregistreerd; het schema wordt niet meer aangepast.','The bake checkpoint is recorded; the schedule will no longer be adjusted.')};
   if(!p.ok)return `<p class="hint">${reasons[p.reason]}</p>`;
   return `<p>${L('Modelvoorstel voor de totale eindrijs','Model proposal for total final proof')}: <b>${durationLabel(p.ball)}</b> · ${L('nog ongeveer','roughly remaining')} ${durationLabel(p.remaining)}.</p><p class="hint">${L('Gebaseerd op gemeten temperaturen en geregistreerde fases. Dit evenaart alleen de geschatte gasontwikkeling, niet automatisch glutensterkte of smaak. Bulk en koelkast worden niet ingekort. De vaste baktijd blijft zichtbaar; vergelijk het deeg met de gereedheidskenmerken.','Based on measured temperatures and recorded phases. This only matches estimated gas development, not automatically gluten strength or flavour. Bulk and refrigeration are not shortened. The fixed bake target stays visible; compare the dough with the readiness cues.')}</p><button type="button" class="btn secondary" data-workshop-action="apply-proof">${L('Dit voorstel voor eindrijs gebruiken','Use this final-proof proposal')}</button>`;
 }
 function renderBatchTimeline(){
   const b=activeBatch();if(!b)return '';
   const t=WorkflowCore.timeline(b);
-  const rows=WorkflowCore.eventKeys(b.route).map(key=>`<div class="timeitem"><b>${batchEventName(key)}<small>${t.actual[key]?L('Werkelijk geregistreerd','Actually recorded'):L('Verwacht','Expected')}</small></b><span>${niceDate(new Date(t.times[key]))}</span></div>`).join('');
+  const rows=WorkflowCore.eventKeys(b.route).map(key=>`<div class="timeitem"><b>${batchEventName(key)}<small>${t.actual[key]?L('Werkelijk geregistreerd','Actually recorded'):L('Verwacht','Expected')}</small></b><span>${(t.times[key]==null?L('Tijd onbekend','Time unknown'):niceDate(new Date(t.times[key])))}</span></div>`).join('');
   const offset=Math.abs(t.delta);
   return `<div class="batch-target"><span>${L('Vaste gewenste bakstart','Fixed requested bake time')}</span><strong>${niceDate(new Date(b.bakeAt))}</strong></div>${offset>1/60?`<p class="warning">${L('De huidige verwachting ligt','The current estimate is')} ${durationLabel(offset)} ${t.delta>0?L('ná','after'):L('vóór','before')} ${L('je gewenste bakstart. Er worden geen rust- of kneedstappen automatisch ingekort.','your requested bake time. No rest or kneading stages are automatically shortened.')}</p>`:''}${rows}<p class="hint">${L('Verwachte tijden schuiven mee met je werkelijke momenten. Een verstreken tijd betekent niet dat de stap is uitgevoerd. Afvinkvakjes registreren geen tijdstip.','Expected times follow your actual checkpoints. A time passing does not mean the step has happened. Checkboxes do not record timestamps.')}</p>`;
 }
@@ -154,7 +193,7 @@ function renderBatchPanels(){
     replaceWorkshopPanel('batchRunner',`<h2 id="batchRunnerTitle" tabindex="-1">${L('Houd je batch bij','Track your batch')}</h2><p>${L('Zet dit recept vast om echte start-, koelkast- en bakmomenten te bewaren.','Fix this recipe to save actual start, fridge and bake checkpoints.')}</p><button class="btn" type="button" data-workshop-action="start-batch">${L('Start deze batch','Start this batch')}</button>`);
     return;
   }
-  const keys=WorkflowCore.eventKeys(b.route),next=keys.find(key=>b.events[key]==null);
+  const keys=WorkflowCore.eventKeys(b.route),next=keys.find(key=>!WorkflowCore.eventDone(b,key));
   const options=keys.filter(key=>b.events[key]!=null||key===next);
   const selected=options.includes(workshopDrafts.batchEventKey)?workshopDrafts.batchEventKey:(next||'bake');
   const phases=[['bulk',L('Bulk buiten','Bulk at room temperature')],...(b.route==='room'?[]:[['cold',L('Koelkast','Fridge')]]),['ball',L('Eindrijs / opwarmen','Final proof / warm-up')]];
@@ -164,6 +203,7 @@ function renderBatchPanels(){
 }
 
 function replaceWorkshopPanel(id,html){
+  if(holdPanelRender(id))return;
   const root=$(id),notice=id===workshopNoticeFor?workshopNotice:'';
   const noticeKey=JSON.stringify([notice,notice?workshopNoticeAnchor:'']);
   if(!root||(root._workshopHtml===html&&root._workshopNoticeKey===noticeKey))return;
@@ -171,6 +211,8 @@ function replaceWorkshopPanel(id,html){
   const open=[...root.querySelectorAll('details[open]')].map(el=>el.id);
   const focused=document.activeElement,focusId=root.contains?.(focused)?focused.id:null;
   const focusValue=focusId&&focused.tagName==='INPUT'?focused.value:null;
+  const actionSelector='[data-evening-action],[data-workshop-action]';
+  const actionData=root.contains?.(focused)&&focused.matches?.(actionSelector)?JSON.stringify(focused.dataset):null;
   root.innerHTML=html;root._workshopHtml=html;root._workshopNoticeKey=noticeKey;
   for(const key of open){const el=$(key);if(el)el.open=true;}
   if(notice){
@@ -184,6 +226,11 @@ function replaceWorkshopPanel(id,html){
     });
   }
   if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
+  else if(actionData){
+    const same=[...root.querySelectorAll(actionSelector)].find(el=>JSON.stringify(el.dataset)===actionData);
+    // A completed action may disappear; continue at this panel's next main action.
+    (same||root.querySelector('.btn.primary[data-evening-action],.btn.primary[data-workshop-action]')||root.querySelector(actionSelector))?.focus({preventScroll:true});
+  }
 }
 function collectWorkshopDrafts(){
   for(const id of workshopPanels)for(const el of $(id)?.querySelectorAll('[data-draft]')||[])workshopDrafts[el.id]=el.value;

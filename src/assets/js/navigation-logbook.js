@@ -50,8 +50,8 @@ function wizardPages(){
 function wizardPageName(page){
   const nl=currentLang!=='en';
   const names=nl
-    ? {1:'Deeg',2:'Sauzen',3:'Bollen & recepten',4:'Stappenplan'}
-    : {1:'Dough',2:'Sauces',3:'Dough balls & recipes',4:'Workflow'};
+    ? {1:'Deeg',2:'Sauzen',3:'Pizza’s',4:'Keuken'}
+    : {1:'Dough',2:'Sauces',3:'Pizzas',4:'Kitchen'};
   return names[page]||'';
 }
 
@@ -65,7 +65,7 @@ function updateWizardNav(activePage=currentWizardPage){
     const idx=pages.indexOf(page);
     btn.classList.toggle('hidden',idx<0);
     btn.classList.toggle('active',page===activePage);
-    if(idx>=0)btn.textContent=`${idx+1}. ${wizardPageName(page)}`;
+    if(idx>=0)btn.textContent=wizardPageName(page);
   });
 
   // Zet de zichtbare knoppen ook fysiek in workflowvolgorde.
@@ -162,6 +162,7 @@ function renderExperienceMode(){
 function setExperienceMode(mode){
   experienceMode=mode==='full'?'full':'basic';
   renderExperienceMode();
+  document.querySelectorAll('[data-measurement-disclosure]').forEach(el=>{el.open=experienceMode==='full';});
   scheduleSave();
 }
 
@@ -231,6 +232,7 @@ function showPage(n){
   const available=wizardPages();
   if(!available.includes(n))n=available[0];
 
+  if(n!==4&&eveningWakeLock){eveningWakeWanted=false;eveningWakeLock.release().catch(()=>{});eveningWakeLock=null;}
   currentWizardPage=n;
   $('page0').classList.remove('active');
   [1,2,3,4].forEach(page=>$(`page${page}`)?.classList.toggle('active',page===n));

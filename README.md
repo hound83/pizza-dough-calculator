@@ -2,7 +2,7 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v1.4.1-f0b45a)](docs/PRODUCT_GUARDRAILS.md#v141-visible-version-patch)
+[![Version](https://img.shields.io/badge/version-v2.0.0-76c990)](docs/V2_0_0_RELEASE.md)
 [![Tests](https://img.shields.io/badge/regression_tests-106_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
@@ -11,15 +11,13 @@ A comprehensive Dutch and English calculator for pizza dough, fermentation, sauc
 
 The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
-**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v1.4.0 release notes](docs/V1_4_0_RELEASE_REVIEW.md)
+**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v2.0.0 release notes](docs/V2_0_0_RELEASE.md)
 
-> Tag **v1.0.0** remains the immutable golden behavior baseline. v1.4.1 uses storage schema 52 and automatically migrates existing schema-51 data.
+> **v2.0.0 release.** The reviewed evening workflow is published through GitHub Pages. Tag v1.0.0 and all earlier baselines are preserved. Schema 53 migrates existing schema-52 data.
 
-**New in v1.4.0:** fixed batches and bake dates, actual checkpoints, saved dough recipes and comparisons, scale/container guidance, mixer profiles and targeted dough help. Includes the improved 1.3 planning and dynamic weekday labels. All eight findings from Claude’s 1.4 crosscheck are addressed; mixing times and model constants remain unchanged. [Review response and release checks](docs/V1_4_0_RELEASE_REVIEW.md).
+**New in v2:** freely switch between Plan and Kitchen, plan around availability, split dough into independent mixer runs, follow a queue with actual oven-in/out times, get contextual dough help, and reuse complete evening templates or transfer private backups. The visible version, dynamic weekdays and previous improvements remain intact. [Implementation and review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
-**v1.4.1:** the version number now appears at the bottom of every screen, including mobile and both languages.
-
-**For Claude/reviewers:** [start here](CLAUDE.md#v140-release-review). The [full original review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) and current implementation roadmap are stored in this branch; separate attachments are unnecessary.
+**For Claude/reviewers:** [start here](CLAUDE.md#v200-release). The [full original review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) and current implementation roadmap are stored in this branch; separate attachments are unnecessary.
 
 ## Features
 
@@ -31,7 +29,7 @@ The app currently offers three usage modes:
 | **Dough + sauce** | Everything in Dough only, plus a separate sauce calculator |
 | **Complete pizzas** | Dough, sauce, one recipe per dough ball, toppings, shopping list, and complete workflow |
 
-Independently of those output modes, the start screen offers **Basic** and **Full** display modes. Basic keeps the practical inputs and results visible while presets manage technical dough values. Full exposes every existing setting. Switching is lossless; existing v1.0 users migrate to Full and new users start in Basic.
+Independently of those output modes, Plan offers **Basic** and **Full** display modes. Basic keeps the practical inputs and results visible while presets manage technical dough values. Full exposes every existing setting. In Basic, temperature readings are optional and collapsed; Full shows them directly. No reading is required to continue, and switching preserves existing measurements. Switching is lossless; existing v1.0 users migrate to Full and new users start in Basic.
 
 Highlights:
 
@@ -58,12 +56,12 @@ Highlights:
 
 ## Usage
 
-1. Choose Basic or Full, then choose how much of the calculator you need.
+1. Start in Plan. Choose what you are making; Basic/Full remains available through the display choices.
 2. Select a preset or enter your own dough values.
 3. Choose diameter or dough-ball weight as the leading measurement.
 4. Configure fermentation, temperatures, and optionally a target baking time.
 5. In Complete pizzas mode, assign a recipe to each dough ball.
-6. Follow the generated workflow from mixing through baking.
+6. Open Kitchen for instructions, or use Start dough to track actual checkpoints, mixer runs and the oven queue.
 
 All calculations update immediately. Values and progress are stored locally in the browser, so refreshing the page does not discard the recipe.
 
@@ -79,7 +77,8 @@ This is intentionally **not a validated laboratory model** or an official AVPN c
 
 - The interface switches immediately between Dutch and English.
 - No account or server is required.
-- Recipe settings, progress, and the dough log are stored only in the browser through `localStorage`.
+- Recipes, evenings, progress and the dough log stay in your browser. One tab can write at a time; close it and reload another to take over. If locking or storage is unavailable, the app reports that it cannot save.
+- Shareable evening templates omit private names and actual history. Private backups include them and require confirmation before replacing local data; they are snapshots, not synchronization.
 - The app sends no recipe or log data to a backend.
 - `Reset` removes the locally stored calculator state but preserves the language choice.
 
@@ -138,10 +137,10 @@ Release verification suite (see the PR Actions result for execution status):
 
 ```text
 15 refactor-structure tests
-19 pure-core tests
+31 pure-core tests
 106 bundle regression tests
 106 source regression tests
-89 Chromium browser/layout tests
+139 Chromium browser/layout tests
 ```
 
 The suite covers, among other things:
@@ -157,7 +156,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the fifteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, the historical v1.3.0 and v1.4.0 candidate baselines, and the separate v1.4.0/v1.4.1 release baselines. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the eighteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, the historical v1.3.0 and v1.4.0 candidate baselines, and the separate v1.4.0/v1.4.1 release baselines. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 
@@ -179,7 +178,7 @@ The project uses semantic versioning from the first golden release onward:
 | **v1.2.0** | Staged, route-aware main-water and final-dough-temperature calculation |
 | **v1.2.1** | Backward-compatible localization, recipe-data, and sauce-choice cleanup |
 | **v1.4.0** | Batch tracking, recipe profiles, kitchen guidance and the improved 1.3 planning |
-| **v2.0.0** | Reserved for a genuinely breaking change |
+| **v2.0.0** | Integrated Plan/Kitchen workflow, independent mixer runs, pizza queue and schema-53 migration |
 
 Historic working versions such as v50 remain where technically necessary in storage migrations, test names, and audit documents. They are no longer used as public product versions.
 
@@ -190,7 +189,7 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`index.html`](index.html) | Generated standalone publication for Pages and offline use |
 | [`src/index.html`](src/index.html) | Semantic source HTML and fixed asset-loading order |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Complete presentation and responsive layout |
-| [`src/assets/js/`](src/assets/js/) | Fifteen ordered responsibility-based modules |
+| [`src/assets/js/`](src/assets/js/) | Eighteen ordered responsibility-based modules |
 | [`tools/bundle.js`](tools/bundle.js) | Dependency-free standalone bundler and drift check |
 | [`tests/test_v50.js`](tests/test_v50.js) | Fast Node/VM functional regression suite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architecture, integrity, and golden-equivalence tests |
@@ -208,11 +207,11 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Release:** v1.4.1; tag v1.0.0 and all earlier baselines remain preserved.
-- **Architecture:** static HTML, CSS and fifteen JavaScript modules generate the standalone publication for GitHub Pages.
-- **Review:** Claude's independent 1.4 crosscheck and the response to all eight findings are recorded in [the release review](docs/V1_4_0_RELEASE_REVIEW.md).
-- **Included:** improved 1.3 planning, dynamic weekdays, schema-52 migration and all seven workshop additions.
-- **Next version:** the six discussed usability and kitchen improvements are being designed separately; app development is parked.
+- **Current release:** v2.0.0; tag v1.0.0 and all earlier baselines remain preserved.
+- **Architecture:** static HTML, CSS and eighteen JavaScript modules generate the standalone publication for GitHub Pages.
+- **Review:** both independent v2 crosschecks, resolved findings and verification evidence are linked in [the release notes](docs/V2_0_0_RELEASE.md).
+- **Included:** all six evening workflow improvements, schema-53 migration, dynamic weekdays and the existing workshop/calculation contracts.
+- **Deferred:** app development and the three proposed physical-model investigations.
 - **Feedback:** anonymous feedback/Cloudflare remains separate work; PR #12 is not included in this release.
 
 ## Background

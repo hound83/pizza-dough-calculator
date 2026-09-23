@@ -185,7 +185,7 @@ let _livePlanCache={key:null,value:null};
 // van "20") nooit recepten of afgevinkte stappen vernietigen.
 let _deferDependentStatePrune=false;
 // Publieke productversie staat bewust los van opslag-/migratieschema 51.
-const APP_VERSION='1.4.1';
+const APP_VERSION='2.0.0';
 
 // Keep subgram herbs legible across recipe, shopping and copy surfaces.
 function ingredientAmount(qty){return fmt(qty,qty<1?2:qty<2?1:0);}

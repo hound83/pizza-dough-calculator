@@ -70,6 +70,15 @@ const WorkflowCore=(()=>{
   }
 
   const eventKeys=route=>route==='room'?['start','bulkStart','shape','bake']:['start','bulkStart','fridgeIn','fridgeOut','bake'];
+  const eventDone=(batch,key)=>batch.events[key]!=null||(batch.unknownEvents||[]).includes(key);
+  function recordUnknownEvent(batch,key,now=Date.now()){
+    const keys=eventKeys(batch.route),index=keys.indexOf(key);
+    if(index<=0)throw new RangeError('order');
+    if(!eventDone(batch,keys[index-1]))throw new RangeError('missing-previous');
+    const out=clone(batch);delete out.events[key];
+    out.unknownEvents=[...new Set([...(out.unknownEvents||[]),key])];
+    return out;
+  }
   function durations(value,route){
     if(!object(value))return null;
     const limits={preparation:12,bulk:48,cold:120,ball:48},out={};
@@ -85,17 +94,18 @@ const WorkflowCore=(()=>{
   function recordEvent(batch,key,at,now=Date.now()){
     const keys=eventKeys(batch.route),index=keys.indexOf(key);
     if(index<0||!validTime(at)||at>now+60000)throw new RangeError('future');
-    const previous=index>0?batch.events[keys[index-1]]:null,next=batch.events[keys[index+1]];
-    if(index>0&&previous==null)throw new RangeError('missing-previous');
+    const previous=keys.slice(0,index).reverse().map(k=>batch.events[k]).find(at=>at!=null),next=keys.slice(index+1).map(k=>batch.events[k]).find(at=>at!=null);
+    if(index>0&&!eventDone(batch,keys[index-1]))throw new RangeError('missing-previous');
     if((previous!=null&&at<previous)||(next!=null&&at>next))throw new RangeError('order');
     if(key==='start'&&at>=batch.bakeAt)throw new RangeError('order');
     const out=clone(batch),old=out.events[key];
     out.events[key]=at;
+    if(out.unknownEvents)out.unknownEvents=out.unknownEvents.filter(k=>k!==key);
     if(old!=null&&old!==at)out.revisions=[...out.revisions,{key,from:old,to:at,recordedAt:now}].slice(-40);
     return out;
   }
   function phaseDone(batch,key){
-    return key==='preparation'?batch.events.bulkStart!=null:key==='bulk'?(batch.events[batch.route==='room'?'shape':'fridgeIn']!=null):key==='cold'?batch.events.fridgeOut!=null:batch.events.bake!=null;
+    return eventDone(batch,key==='preparation'?'bulkStart':key==='bulk'?(batch.route==='room'?'shape':'fridgeIn'):key==='cold'?'fridgeOut':'bake');
   }
   function timeline(batch){
     const keys=eventKeys(batch.route),d=batch.timings;
@@ -104,12 +114,12 @@ const WorkflowCore=(()=>{
     const times={start:previous},actual={start:true};
     keys.slice(1).forEach((key,index)=>{
       actual[key]=batch.events[key]!=null;
-      times[key]=actual[key]?batch.events[key]:previous+lengths[index]*HOUR;
+      times[key]=actual[key]?batch.events[key]:eventDone(batch,key)||previous===null?null:previous+lengths[index]*HOUR;
       previous=times[key];
     });
     times.ballStart=times[batch.route==='room'?'shape':'fridgeOut'];
     if(batch.route!=='room')times.shape=times[batch.route==='coldBalls'?'fridgeIn':'fridgeOut'];
-    return {times,actual,delta:(times.bake-batch.bakeAt)/HOUR};
+    return {times,actual,delta:times.bake===null?null:(times.bake-batch.bakeAt)/HOUR};
   }
   function reviseTimings(batch,changes,now=Date.now()){
     const next=durations({...batch.timings,...changes},batch.route);
@@ -125,11 +135,13 @@ const WorkflowCore=(()=>{
   }
   function actualSchedule(batch){
     const t=timeline(batch).times,e=batch.events;
-    return {bulk:(t[batch.route==='room'?'shape':'fridgeIn']-t.bulkStart)/HOUR,cold:batch.route==='room'?0:(t.fridgeOut-t.fridgeIn)/HOUR,ball:(t.bake-t.ballStart)/HOUR,preparation:(t.bulkStart-e.start)/HOUR};
+    const duration=(a,b,key)=>a==null||b==null?batch.timings[key]:(b-a)/HOUR;
+    return {bulk:duration(t.bulkStart,t[batch.route==='room'?'shape':'fridgeIn'],'bulk'),cold:batch.route==='room'?0:duration(t.fridgeIn,t.fridgeOut,'cold'),ball:duration(t.ballStart,t.bake,'ball'),preparation:duration(e.start,t.bulkStart,'preparation'),...((batch.unknownEvents||[]).length?{uncertain:true}:{})};
   }
   // A proposal changes only unfinished final proof. Actual anchors and the
   // requested bake time never move, and elapsed proof cannot be removed.
   function finalProofProposal(batch,c,measurements,core,now=Date.now()){
+    if((batch.unknownEvents||[]).length)return {ok:false,reason:'unknown-history'};
     if(batch.events.bake!=null)return {ok:false,reason:'completed'};
     const md=measurements.doughTemp,mf=measurements.fridgeTemp;
     if(md==null&&mf==null)return {ok:false,reason:'no-measurement'};
@@ -162,6 +174,7 @@ const WorkflowCore=(()=>{
         // Persisted observations keep their chronology even if the device clock
         // moved backwards. New input still uses recordEvent's live-clock check.
         if(value.events[key]!=null)out=recordEvent(out,key,value.events[key],Infinity);
+        else if((value.unknownEvents||[]).includes(key))out=recordUnknownEvent(out,key,Infinity);
       }
       out.status=value.status==='finished'?'finished':'active';
       out.readings=(Array.isArray(value.readings)?value.readings:[]).filter(x=>object(x)&&['doughTemp','fridgeTemp'].includes(x.kind)&&validTime(x.at)&&bounded(x.value,x.kind==='doughTemp'?10:0,x.kind==='doughTemp'?40:15)).slice(-60).map(x=>({kind:x.kind,value:x.value,at:x.at}));
@@ -187,6 +200,6 @@ const WorkflowCore=(()=>{
     if(!object(value)||value.format!=='pizza-dough-recipe'||value.version!==1||!cleanText(value.name)||!recipe(value.recipe))return null;
     return {name:cleanText(value.name),recipe:{...recipe(value.recipe),preset:'custom'}};
   }
-  return Object.freeze({HOUR,FIELD_IDS,CHECK_FIELDS,METHODS,recipe,summary,profile,storage,capacity,weighing,eventKeys,createBatch,recordEvent,phaseDone,timeline,reviseTimings,actualSchedule,finalProofProposal,sanitizeBatch,sanitize,exportRecipe,importRecipe,clone});
+  return Object.freeze({HOUR,FIELD_IDS,CHECK_FIELDS,METHODS,recipe,summary,profile,storage,capacity,weighing,eventKeys,eventDone,recordUnknownEvent,createBatch,recordEvent,phaseDone,timeline,reviseTimings,actualSchedule,finalProofProposal,sanitizeBatch,sanitize,exportRecipe,importRecipe,clone});
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=WorkflowCore;

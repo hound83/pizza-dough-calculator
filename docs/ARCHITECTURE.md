@@ -2,19 +2,19 @@
 
 ## Design goals
 
-This architecture makes golden v1.0.0 easier to maintain without changing product behavior. It therefore has five hard constraints:
+This architecture preserves the established calculation contracts while supporting the explicitly approved v2 evening workflow. It has five hard constraints:
 
 1. Tag `v1.0.0` remains the immutable functional reference; `main` may advance through behavior-equivalent architecture and documentation changes.
 2. The shipped application requires no framework, package dependency, transpiler, or production build at runtime.
 3. GitHub Pages serves the generated standalone root `index.html` directly.
-4. Maintainable sources live under `src/`; fifteen classic browser scripts load there in a fixed order.
+4. Maintainable sources live under `src/`; eighteen classic browser scripts load there in a fixed order.
 5. Historical v1.0.0 hashes remain immutable evidence. Approved feature versions may change the current bundle with focused regression coverage and an explicit migration path.
 
 Classic scripts are a deliberate intermediate architecture. They preserve the existing inline HTML handlers and shared global lexical runtime without rewriting hundreds of calls at once. Fixed load order and ownership tests make this shared runtime explicit instead of merely implicit.
 
 ## Distribution model
 
-`src/` is the source of truth for application code. `tools/bundle.js` reads `src/index.html`, inlines the stylesheet and the fifteen scripts without changing their bytes, and writes the standalone root `index.html`. The generated root file is committed so GitHub Pages and downloaded offline use require no build step.
+`src/` is the source of truth for application code. `tools/bundle.js` reads `src/index.html`, inlines the stylesheet and the eighteen scripts without changing their bytes, and writes the standalone root `index.html`. The generated root file is committed so GitHub Pages and downloaded offline use require no build step.
 
 ```text
 src/index.html + src/assets/css/app.css + src/assets/js/*.js
@@ -33,21 +33,24 @@ src/index.html + src/assets/css/app.css + src/assets/js/*.js
 |---:|---|---|
 | 1 | `calculation-core.js` | DOM-independent dough quantities, thermal exchange, phase simulation, generic yeast model, preparation and offsets |
 | 2 | `workflow-core.js` | Pure recipe exchange, batch chronology, scale/capacity math and remaining-final-proof proposals |
-| 3 | `foundation.js` | Safe browser storage, numeric fields, global UI state and product version |
-| 4 | `translations.js` | Static Dutch/English dictionary |
-| 5 | `i18n.js` | Language switching and localized helpers |
-| 6 | `catalog.js` | Yeast, flour, dough styles, sauces, ingredients and pizza catalogue |
-| 7 | `pizza-picker.js` | Per-ball customization and picker interaction |
-| 8 | `dough-fermentation.js` | Calculator adapter, yeast advice, presets and main update cycle |
-| 9 | `sauce-recipes.js` | Sauce aggregation, recipe summaries and kneading instructions |
-| 10 | `fermentation-live.js` | DDT, untracked live solver, measurement controls and workflow steps |
-| 11 | `planning-shopping.js` | Calendar planning, shared timeline, shopping and oven advice |
-| 12 | `navigation-logbook.js` | Wizard modes and bake-log observations |
-| 13 | `batch-workflow.js` | Frozen recipes, actual batch lifecycle, checkpoint/timing presentation and event delegation |
-| 14 | `workshop-tools.js` | Named recipes, comparison, scale/container controls, equipment profiles and symptom guidance |
-| 15 | `persistence-bootstrap.js` | Schema-52 persistence, migration, event registration and sole bootstrap |
+| 3 | `evening-core.js` | Pure evening/run/pizza identities, whole-ball allocation, availability and template validation |
+| 4 | `foundation.js` | Safe browser storage, numeric fields, global UI state and product version |
+| 5 | `translations.js` | Static Dutch/English dictionary |
+| 6 | `i18n.js` | Language switching and localized helpers |
+| 7 | `catalog.js` | Yeast, flour, dough styles, sauces, ingredients and pizza catalogue |
+| 8 | `pizza-picker.js` | Per-ball customization and picker interaction |
+| 9 | `dough-fermentation.js` | Calculator adapter, yeast advice, presets and main update cycle |
+| 10 | `sauce-recipes.js` | Sauce aggregation, recipe summaries and kneading instructions |
+| 11 | `fermentation-live.js` | DDT, untracked live solver, measurement controls and workflow steps |
+| 12 | `planning-shopping.js` | Calendar planning, shared timeline, shopping and oven advice |
+| 13 | `navigation-logbook.js` | Wizard modes and bake-log observations |
+| 14 | `batch-workflow.js` | Frozen recipes, actual batch lifecycle, checkpoint/timing presentation and event delegation |
+| 15 | `workshop-tools.js` | Named recipes, comparison, scale/container controls, equipment profiles and symptom guidance |
+| 16 | `evening-workflow.js` | Current kitchen phase, linked actual events, run selection, oven queue, absolute timers and calendar |
+| 17 | `evening-planning.js` | Plan overview, optional availability/splitting, templates, import preview and explicit replacement choices |
+| 18 | `persistence-bootstrap.js` | Schema-53 persistence, migration, event registration and sole bootstrap |
 
-The order is a contract: later modules may use functions and state from earlier modules. Function declarations may also call later-loaded functions after user interaction, because all fifteen scripts have loaded before the user can operate the application.
+The order is a contract: later modules may use functions and state from earlier modules. Function declarations may also call later-loaded functions after user interaction, because all eighteen scripts have loaded before the user can operate the application.
 
 ## Ownership rules
 
@@ -97,7 +100,23 @@ The earlier handoff mentioned a roughly 48-hour deadline crash. This review did 
 
 ## v1.4 batch workflow
 
-See [the implementation handoff](V1_4_0_IMPLEMENTATION_REVIEW.md) for schema 52, pure chronology, fixed snapshots, fifteen-module ownership and scientific limits. The six core tests are joined by thirteen workflow-core tests. The original numerical constants and staged mixing copy are preserved. An architecture commit first shared dough quantities, then a separate feature commit added the authorized workflow. The release hashes are pinned separately from both historical candidates; all historical baseline records remain intact.
+See [the implementation handoff](V1_4_0_IMPLEMENTATION_REVIEW.md) for schema 52, pure chronology, fixed snapshots, eighteen-module ownership and scientific limits. The six core tests are joined by thirteen workflow-core tests. The original numerical constants and staged mixing copy are preserved. An architecture commit first shared dough quantities, then a separate feature commit added the authorized workflow. The release hashes are pinned separately from both historical candidates; all historical baseline records remain intact.
 
 
 The v1.4.0 review follow-up preserves stored event chronology independently of later device-clock corrections, while retaining live-clock validation for new checkpoints. Only stone temperature and preheat duration remain editable within an active batch; save/archive/reopen persist those settings with the batch. Workshop notices are rendered next to their originating action. Time-sensitive proposals refresh on disclosure opening and page focus/visibility. See the release response for targeted regression coverage.
+
+## v2 evening ownership
+
+`evenings.active` owns the frozen parent recipe, independent run batches and stable pizza identities. `workshop.batch` aliases only the selected run for existing calculators and instructions; persistence writes the authoritative evening once. Changing run rebinds its measurements and progress. Catalogue picker arrays are a projection of the stable pizza order. Kitchen steps use the selected run allocation; Plan and shopping keep parent quantities.
+
+Schema 53 migrates schema 52 only after a successful write. A same-origin Web Lock held for the page lifetime grants one writer; other tabs are read-only until the writer closes and they reload. Storage revision checks add stale-write detection. No server, worker or background alarm service is introduced. Restore validates before writing and asks one explicit confirmation. Shared templates and private backups have separate formats and privacy contracts.
+
+See [the v2 review contract](V2_0_0_IMPLEMENTATION_REVIEW.md) and [the accepted design](V2_0_0_ACCEPTED_DESIGN.md). The v2 browser suite adds split-run independence, unknown chronology, queue identities, migration, import/restore, cross-tab ownership, timers, dates, both languages and the same six viewport widths. All earlier release baselines remain immutable.
+
+## v2 review follow-up
+
+Bootstrap keeps the application inert until state recovery and Web Lock ownership have completed. Writer ownership defaults to false. `data-app-ready="true"` is the explicit browser-test readiness boundary. The first static view is Plan, not the old chooser.
+
+Panel rendering is held through pointer activation and keyboard focus transfer; data mutation and saving remain synchronous. Cancellation releases the hold. Deferred rendering uses current state and restores the focused action when it still exists. The baking queue moves only when its position changes.
+
+Basic/Full is directly available on Plan and changes disclosure visibility without recalculating the recipe. Optional reading disclosures share one control per surface; the classic step list does not count a reading as another cooking step. Existing legacy reading check flags remain stored but do not affect the current progress total.

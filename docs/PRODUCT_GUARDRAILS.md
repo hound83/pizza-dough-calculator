@@ -325,3 +325,89 @@ The user requested a small visible version label and publication as v1.4.1. A mu
 | v1.4.1 standalone | `25ac6adcaf69a71f4b660b54fff2405fecd664542f95e7556994ac1711f5b564` |
 | v1.4.1 CSS | `b5607c063a00325d4842e603590c3ed07cdee7a81e74bf9736c624018c17d8b8` |
 | v1.4.1 JavaScript | `c24fc9dddef97fee9a1e7d85d27cd398e06d233c0d62822187f9502219ecdf69` |
+
+## v2.0.0 evening-workflow candidate
+
+The user authorized the six workflow proposals as one v2.0 review candidate, based on released v1.4.1. See [the implementation contract](V2_0_0_IMPLEMENTATION_REVIEW.md). Schema 53 adds an evening, independent mixer runs, stable pizza identities, availability constraints and portable templates/private backups. Unknown timestamps remain unknown; no actual time or passed quality check is inferred. Allocation conserves the parent ingredients; the physical calculation model and mixing/rest durations remain unchanged. Browser locking coordinates one writer. The live release remains 1.4.1 while this candidate is reviewed. These hashes identify software, not empirical validation.
+
+| Candidate artifact | SHA-256 |
+|---|---|
+| singleFile | `5f9fb301e0a4b665d5691dc7b54bb59aa376a0009a832ae298c3e99ccf1ab6e9` |
+| css | `f7dc573c0149ff4e1a8ef23b6e2d814eb01cfe57ebac3e847ea990f79308af18` |
+| javascript | `22501fa77185b894ac0967f820184aa7af8effcdac20a1266ed65147e4d3d985` |
+
+### v2.0.0 candidate hardening
+
+Import validation, recoverable migration, precise small-dose allocation and compact kitchen navigation complete the requested candidate. Earlier release and first-candidate hashes above remain historical evidence.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `feae446f7587041d5f8d2293c132b0024418b3c74959b9d00c2e5fbdfe56b9c1` |
+| css | `6b195a7b560f6dfe6c31b3484cdbe0edeb062429f6dabf383887f4779ad261b1` |
+| javascript | `5c8c7b0afa1f0a848af9759c8c251881125152cc426872390cd44fdfc6c58978` |
+
+### v2.0.0 review snapshot
+
+The final review candidate additionally protects read-only reset, reconciles the parent yeast display, previews private-data-free sharing and identifies the next pizza’s run forecast. No physical model or timing constants changed.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `d13159cabf093ea9d9ab9d653973b8ff9ea491b3a863b86126d6f23a60174f97` |
+| css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
+| javascript | `d22d3f64fcf3b21da23fbba3fb3525062f5ade90778441f6f7ddc9c4d912af38` |
+
+### v2.0.0 kitchen visual check
+
+The oven queue now precedes optional history/timer tools during baking, opens on entry into that phase, and labels the desired target as planned. Recipe and calculation behavior are unchanged.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `7fcabae9c5243dacc48b6cf91c24fd4bd996b1bb0f95bf5ab7c798970994d42c` |
+| css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
+| javascript | `40afdc95d35fa6d4ad0be0b938c3118277d01d1dcb928a6fc6755c4e88dca3a4` |
+
+### v2.0.0 archive access
+
+Read-only history exposes original archived checkpoints and measurements even when legacy toppings are unknown or another evening is active. A migration browser assertion protects access without changing active history.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `523d3e60d8596ba738ea56a52262652a4cf255567c57bac6a46d71f1085d8509` |
+| css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
+| javascript | `affdf2daab0d1b42741234e87f5e6395ffe4b1f33d983c3d9ff844ff222b3576` |
+
+### v2.0.0 pending measurement preservation
+
+A focused temperature value survives repaint and is committed before a phase/run transition or closing. Existing browser coverage now reproduces repaint-before-blur and verifies its archived measurement.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `8d76bcffb423f365f5fd9091b2458fac303a1c55877cb5b421b119ce8d3144fd` |
+| css | `a52c67d2bf9ac9579e5c50c57f1cf9efaf59a33e08f0d486192d35ef33538b65` |
+| javascript | `235a660a51956c4cac84373e862ef41f36aad03b6c235b638268f7cd979b4bc3` |
+
+### v2.0.0 Claude review and optional Basic readings
+
+Michael explicitly authorized all reviewed corrections and the simpler Basic flow. This supersedes the earlier mandatory post-knead measurement presentation: readings are optional, collapsed in Basic and directly visible in Full, without a numbered measurement step. Both modes retain water/oven advice, model limitations and visual dough checks. Switching modes preserves recipe, readings and progress without recalculation. A post-knead reading still means immediately after kneading, not a later core reading.
+
+Startup remains inert until state recovery and writer ownership resolve; unknown writer ownership cannot save. Input is committed synchronously while native activation protects its button from replacement. Unknown-time actions follow checkpoint order. See V2_0_0_CLAUDE_FOLLOWUP.md; all historical hashes remain untouched.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `259d3cce0186604c3f47a19783d6a2f88b3cec5d79a98c13ac9973f500832bfe` |
+| css | `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9` |
+| javascript | `ca4537f62217ce7ec80dc398cf77342e63b03c9572d4ee8d632c1552a7a6f8ff` |
+
+### v2.0.0 final keyboard-focus correction
+
+Michael authorized the remaining keyboard-focus fix from Claude’s second review. After a focused action is replaced, focus stays on the same action if it survives, otherwise on the panel’s next primary action (or first action if none remains). Focus outside the panel is not moved. The existing keyboard test covers both replacement and ordinary redraw. Download behavior and tests are unchanged. This remains the v2.0.0 candidate; previous hashes are historical evidence.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `830c2fddd81b0a9baf88cc1c488e69874bf745048f6e207627b0a1fe090990db` |
+| css | `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9` |
+| javascript | `c3293b9fb0447187e4f43d323177ae2ba93eca2ca823d2ee9393978b2a69a23c` |
+
+## v2.0.0 release authorization
+
+Michael authorized publishing the reviewed v2.0.0 application, including the final keyboard-focus correction. The preceding candidate hashes are now also the release baseline: standalone `830c2fddd81b0a9baf88cc1c488e69874bf745048f6e207627b0a1fe090990db`, CSS `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9`, combined JavaScript `c3293b9fb0447187e4f43d323177ae2ba93eca2ca823d2ee9393978b2a69a23c`. Release preparation changes documentation only, with no application, calculation, schema or timing changes. See [the release record](V2_0_0_RELEASE.md); all earlier status statements and hashes remain historical evidence.

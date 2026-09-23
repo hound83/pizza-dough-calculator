@@ -1,6 +1,6 @@
-const SAVE_KEY='pizzaCalcV52';
-const SAVE_VERSION=52;
-const LEGACY_KEYS=Array.from({length:26},(_,i)=>`pizzaCalcV${51-i}`);
+const SAVE_KEY='pizzaCalcV53';
+const SAVE_VERSION=53;
+const LEGACY_KEYS=Array.from({length:27},(_,i)=>`pizzaCalcV${52-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
 // Only these controls override the technical dough profile owned by a preset.
@@ -15,6 +15,25 @@ const PRESET_TECHNICAL_FIELDS=new Set([
 
 let _saveTimer=null;
 let _storageWarningShown=false;
+let _storageWriter=false;
+let _storageRevision=0;
+let _storageCorrupt=false;
+let _releaseStorageWriter=null;
+async function acquireStorageWriter(){
+  if(!navigator.locks?.request){_storageWriter=false;return;}
+  await new Promise(resolve=>{
+    navigator.locks.request('pizza-calculator-state',{ifAvailable:true},async lock=>{
+      _storageWriter=!!lock;resolve();
+      if(lock)await new Promise(release=>{_releaseStorageWriter=release;});
+    }).catch(()=>{_storageWriter=false;resolve();});
+  });
+}
+function showStorageOwnership(){
+  if(_storageWriter||$('storageOwnerNotice'))return;
+  const box=document.createElement('div');box.className='warning storage-owner';box.id='storageOwnerNotice';box.setAttribute('role','status');
+  box.textContent=navigator.locks?.request?L('Deze calculator is al actief in een ander tabblad. Dit tabblad kan bekijken, maar niet opslaan. Sluit het andere tabblad en herlaad om hier verder te gaan.','This calculator is active in another tab. This tab can view, but cannot save. Close the other tab and reload to continue here.'):L('Deze browser kan wijzigingen niet veilig tussen tabbladen coördineren. Je kunt rekenen, maar deze sessie wordt niet opgeslagen. Download een back-up om je werk te bewaren.','This browser cannot safely coordinate changes between tabs. You can calculate, but this session is not saved. Download a backup to retain your work.');
+  const button=document.createElement('button');button.type='button';button.className='btn secondary';button.textContent=L('Opnieuw laden','Reload');button.addEventListener('click',()=>location.reload());box.appendChild(button);document.querySelector('.app').prepend(box);
+}
 function storageWarningText(){
   return L('⚠️ Lokale opslag is niet beschikbaar. De calculator blijft werken, maar wijzigingen en het deeglogboek gaan verloren zodra je deze pagina sluit.',
            '⚠️ Local storage is unavailable. The calculator keeps working, but changes and the dough log will be lost when you close this page.');
@@ -38,16 +57,26 @@ function scheduleSave(){
   _saveTimer=setTimeout(()=>{_saveTimer=null;saveState();},300);
 }
 
-function saveState(){
+function stateSnapshot(){
   captureBatchOven();
   if(activeBatch())workshop.batch.progress={...completedSteps};
+  syncEveningRun();
   const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
-    currentWizardPage,workshop,
+    currentWizardPage,workshop:{...workshop,batch:activeEvening()?null:workshop.batch},evenings,revision:_storageRevision,
     practical:$('practical').checked,autolyse:$('autolyse').checked,
     sizeFromDiameter:$('sizeFromDiameter').checked,includeSauce:$('includeSauce').checked,
     autoSauceFromPizzas:$('autoSauceFromPizzas').checked,pizzaSelections,pizzaCustomizations,recipeAllSelection,preset:$('preset').value};
   SAVE_IDS.forEach(id=>{ if($(id)) data[id]=$(id).value; });
+  return WorkflowCore.clone(data);
+}
+function saveState(){
+  if(_saveTimer){clearTimeout(_saveTimer);_saveTimer=null;}
+  if(!_storageWriter||_storageCorrupt)return false;
+  const current=SAFE.get(SAVE_KEY);
+  if(current){try{if((JSON.parse(current).revision||0)>_storageRevision){_storageWriter=false;showStorageOwnership();return false;}}catch{_storageCorrupt=true;return false;}}
+  const data=stateSnapshot();data.revision=_storageRevision+1;
   const ok=SAFE.set(SAVE_KEY,JSON.stringify(data));
+  if(ok)_storageRevision=data.revision;
   if(!ok)showStorageWarningOnce();
   return ok;
 }
@@ -61,6 +90,48 @@ function sanitizeExactOverride(v){
   const out={};
   ['h','s','o','ySelected'].forEach(k=>{ if(Number.isFinite(v[k])) out[k]=clamp(v[k],bounds[k][0],bounds[k][1]); });
   return Object.keys(out).length?out:null;
+}
+
+function sanitizeEvenings(value){
+  if(!value||typeof value!=='object'||!Array.isArray(value.templates)||!Array.isArray(value.history)||!value.draft)return null;
+  if(value.templates.length>30||value.history.length>20)return null;
+  const active=value.active===null?null:EveningCore.sanitizeEvening(value.active);
+  if(value.active!==null&&!active)return null;
+  const templates=value.templates.map(t=>EveningCore.cleanTemplate(t)),history=value.history.map(e=>EveningCore.sanitizeEvening(e));
+  if(templates.some(t=>!t)||history.some(e=>!e)||new Set(templates.map(t=>t.id)).size!==templates.length)return null;
+  for(const e of [active,...history].filter(Boolean)){
+    if(!EveningCore.validateAllocations(e,recipePlanSummary(e.recipe)))return null;
+    try{new Intl.DateTimeFormat('en',{timeZone:e.zone||'UTC'});}catch{return null;}
+  }
+  const d=value.draft;
+  if(!Array.isArray(d.pizzas)||d.pizzas.length>24||!Array.isArray(d.unavailable)||d.unavailable.length>20)return null;
+  const pizzas=d.pizzas.map(p=>EveningCore.cleanPizza(p));if(pizzas.some(p=>!p))return null;
+  const date=typeof d.date==='string'?d.date:'',earliest=typeof d.earliest==='string'?d.earliest:'';
+  if(date&&parseEveningTime(date,d.fold)===null||earliest&&parseEveningTime(earliest,d.fold)===null)return null;
+  if(d.unavailable.some(x=>!x||!Number.isFinite(x.start)||!Number.isFinite(x.end)||x.start<0||x.end<=x.start))return null;
+  if(!d.split||!['flour','dough'].includes(d.split.unit)||d.split.capacity!==null&&(!Number.isFinite(d.split.capacity)||d.split.capacity<1||d.split.capacity>50000))return null;
+  if(!Number.isFinite(d.cleanup)||d.cleanup<0||d.cleanup>60)return null;
+  return {active,templates,history,draft:{pizzas,date,earliest,unavailable:d.unavailable.map(x=>({start:x.start,end:x.end})),cleanup:d.cleanup,split:{...d.split},fold:d.fold==='second'?'second':'first'}};
+}
+function validateEveningBackup(file){
+  if(!file||file.format!=='pizza-private-backup'||file.version!==1||!Number.isFinite(file.createdAt)||file.createdAt<0)return null;
+  const d=file.state;if(!d||d.version!==SAVE_VERSION||!['dough','sauce','full'].includes(d.appMode)||!['basic','full'].includes(d.experienceMode)||!['nl','en'].includes(d.currentLang))return null;
+  const fields=Object.fromEntries(WorkflowCore.FIELD_IDS.map(id=>[id,d[id]])),checks=Object.fromEntries(WorkflowCore.CHECK_FIELDS.map(id=>[id,d[id]]));
+  if(!WorkflowCore.recipe({fields,checks,method:d.currentMethod,preset:d.preset,exact:d.exactOverride}))return null;
+  const next=sanitizeEvenings(d.evenings);if(!next)return null;
+  const w=WorkflowCore.sanitize(d.workshop);
+  if(!d.workshop||!Array.isArray(d.workshop.recipes)||!Array.isArray(d.workshop.profiles)||!Array.isArray(d.bakeLog)||w.recipes.length!==d.workshop.recipes.length||w.profiles.length!==d.workshop.profiles.length||sanitizeBakeLog(d.bakeLog).length!==d.bakeLog.length)return null;
+  if(!Array.isArray(d.pizzaSelections)||d.pizzaSelections.length!==Number(d.pizzas)||d.pizzaSelections.some(id=>!pizzaRecipes.some(r=>r.id===id))||!Array.isArray(d.pizzaCustomizations)||d.pizzaCustomizations.length!==d.pizzaSelections.length)return null;
+  if(!sauces[d.sauceType])return null;
+  return {...WorkflowCore.clone(d),evenings:next,workshop:w};
+}
+function restoreEveningBackup(candidate){
+  if(!_storageWriter)throw new Error('storage');
+  const prior=SAFE.get(SAVE_KEY),next={...candidate,revision:_storageRevision+1};
+  if(!SAFE.set(SAVE_KEY,JSON.stringify(next)))throw new Error('storage');
+  _storageCorrupt=false;_storageRevision=next.revision;
+  if(!loadState(next)){if(prior!==null)SAFE.set(SAVE_KEY,prior);throw new Error('format');}
+  bindEveningRun();showPage(activeEvening()?4:1);
 }
 
 
@@ -105,12 +176,14 @@ function sanitizeBakeLog(v){
 }
 
 let _restoredWizardPage=0;
-function loadState(){
+function loadState(provided=null){
   try{
     let raw=SAFE.get(SAVE_KEY);
     if(!raw){ for(const k of LEGACY_KEYS){ raw=SAFE.get(k); if(raw) break; } }
-    const d=JSON.parse(raw||'null');
+    const d=provided||JSON.parse(raw||'null');
     if(!d||typeof d!=='object'||Array.isArray(d))return false;
+    if(Number(d.version)>SAVE_VERSION){_storageCorrupt=true;showStorageWarningOnce();return false;}
+    _storageRevision=Number.isSafeInteger(d.revision)?d.revision:0;
     // v1.0.0 had no Basic/Full display mode. Existing users retain the full
     // controls they were accustomed to; only genuinely new users start Basic.
     experienceMode=Object.prototype.hasOwnProperty.call(d,'experienceMode')
@@ -137,6 +210,11 @@ function loadState(){
       else if((SAVE_IDS.includes(k)||k==='preset')&&$(k))$(k).value=v;
     });
 
+    if(Number(d.version)===SAVE_VERSION){
+      const restored=sanitizeEvenings(d.evenings);
+      if(!restored){_storageCorrupt=true;eveningNotice=L('Een opgeslagen avond is ongeldig. De oorspronkelijke gegevens zijn behouden; herstel een geldige back-up.','A saved evening is invalid. Original data is preserved; restore a valid backup.');}
+      else{evenings=restored;bindEveningRun();if(activeEvening())projectEveningPizzas(activeEvening().pizzas);}
+    }
     if(activeBatch()){restoreRecipe(activeBatch().recipe,false);liveMeasurements={...activeBatch().measurements};completedSteps={...activeBatch().progress};}
 
     // Migratie van vóór v39: koude fermentatie stond als eigen methode opgeslagen.
@@ -170,12 +248,27 @@ function loadState(){
     pizzaCustomizations.forEach(cu=>{
       if(cu&&typeof cu==='object'&&cu.sauceOverride&&!sauces[cu.sauceOverride])cu.sauceOverride=null;
     });
+    if(Number(d.version)<SAVE_VERSION){
+      ensurePizzaCustomizations();syncEveningPizzas(calc());
+      const legacy=workshop.batch,zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if(legacy){
+        evenings.active=EveningCore.migrateLegacy(legacy,captureEveningTemplate(),calc(),zone);bindEveningRun();
+      }
+      evenings.history=workshop.history.map(b=>EveningCore.migrateLegacy(b,null,recipePlanSummary(b.recipe),zone));
+      if(d.workshop?.batch&&!legacy)eveningNotice=L('De oude actieve batch kon niet worden hersteld. Andere geldige gegevens zijn behouden.','The legacy active batch could not be recovered. Other valid data was retained.');
+    }
 
     suppressCustom=false;
     document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===currentMethod;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
     // Oude versiesleutels opruimen zodat ze niet jaren later terugkomen.
     // Keep the last valid legacy copy if writing the migrated state fails.
-    if(saveState())LEGACY_KEYS.forEach(k=>SAFE.del(k));
+    const droppedLegacyData=Number(d.version)<SAVE_VERSION&&d.workshop&&(
+      (d.workshop.batch&&!workshop.batch)||
+      (Array.isArray(d.workshop.history)&&d.workshop.history.length!==workshop.history.length)||
+      (Array.isArray(d.workshop.recipes)&&d.workshop.recipes.length!==workshop.recipes.length)||
+      (Array.isArray(d.workshop.profiles)&&d.workshop.profiles.length!==workshop.profiles.length));
+    if(droppedLegacyData)eveningNotice=L('Niet alle oude gegevens konden worden hersteld. De oorspronkelijke opslag blijft bewaard voor herstel.','Some legacy data could not be recovered. The original stored copy remains available for recovery.');
+    if(saveState()&&!droppedLegacyData)LEGACY_KEYS.forEach(k=>SAFE.del(k));
     return true;
   }catch(e){return false}
 }
@@ -185,6 +278,7 @@ function wireEvents(){
     el.addEventListener('focus',()=>rememberNumericEditStart(el));
     el.addEventListener('input',()=>{
       if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
+      if(el.id==='bakeDay'&&!activeEvening())evenings.draft.date='';
       if(el.classList.contains('pct')) markCustomField(el.id);
       else if(PRESET_TECHNICAL_FIELDS.has(el.id)) markCustom(false);
       _deferDependentStatePrune=el.id==='pizzas';
@@ -271,7 +365,9 @@ function wireEvents(){
   $('practical').addEventListener('change',()=>{markCustom(false);update();});
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
+  try{
+  await acquireStorageWriter();
   document.querySelectorAll('[data-experience]').forEach(button=>button.addEventListener('click',()=>setExperienceMode(button.dataset.experience)));
   const search=$('pizzaPickerSearch');
   if(search){
@@ -284,7 +380,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   initRecipeOptions();
   wireEvents();
+  wirePanelInteractions();
   wireWorkshopEvents();
+  wireEveningEvents();
 
   const wizardNav=$('stepsNav');
   if(wizardNav){
@@ -302,11 +400,20 @@ document.addEventListener('DOMContentLoaded',()=>{
   applyAppModeUI();
   // Herladen tijdens het bakken bracht je altijd terug naar het keuzescherm.
   if(restored && _restoredWizardPage>0 && wizardPages().includes(_restoredWizardPage)) showPage(_restoredWizardPage);
-  else showModeChooser();
+  else showPage(1);
   initI18n();
+  showStorageOwnership();
   refreshBakeDayClock();
   window.addEventListener('focus',refreshBakeDayClock);
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible')refreshBakeDayClock();
   });
+  document.querySelector('.app').inert=false;
+  document.querySelector('.app').setAttribute('aria-busy','false');
+  $('startupStatus').hidden=true;
+  document.documentElement.dataset.appReady='true';
+  }catch(error){
+    $('startupStatus').textContent='Laden mislukt. Herlaad de pagina. / Loading failed. Reload the page.';
+    console.error(error);
+  }
 });

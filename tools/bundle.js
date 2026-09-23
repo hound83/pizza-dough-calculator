@@ -11,6 +11,7 @@ const STYLE_LINK='<link href="assets/css/app.css" rel="stylesheet"/>';
 const EXPECTED_SCRIPTS=[
   'assets/js/calculation-core.js',
   'assets/js/workflow-core.js',
+  'assets/js/evening-core.js',
   'assets/js/foundation.js',
   'assets/js/translations.js',
   'assets/js/i18n.js',
@@ -23,6 +24,8 @@ const EXPECTED_SCRIPTS=[
   'assets/js/navigation-logbook.js',
   'assets/js/batch-workflow.js',
   'assets/js/workshop-tools.js',
+  'assets/js/evening-workflow.js',
+  'assets/js/evening-planning.js',
   'assets/js/persistence-bootstrap.js'
 ];
 const SCRIPT_TAGS=EXPECTED_SCRIPTS.map(src=>`<script src="${src}"></script>`).join('\n');

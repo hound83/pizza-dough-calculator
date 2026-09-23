@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v1.4.1</title>
+<title>Pizzadeegcalculator v2.0.0</title>
 <style>
 :root{
   --bg:#0e1011; --panel:#181b1d; --panel2:#202427; --panel3:#111416;
@@ -122,6 +122,53 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 .recipebox h3{margin:0 0 4px}.tag{font-size:11px;padding:4px 8px;border-radius:99px;background:#282e31;color:#d9dddf;border:1px solid #3b4246;white-space:nowrap}
 .footer-note{color:var(--muted);font-size:12px;margin-top:15px}
 .app-version{padding-bottom:128px}
+/* v2: the normal route is Plan -> Kitchen; auxiliary forms remain optional. */
+.workspace-nav{display:flex;gap:8px;margin:16px 0;position:relative;z-index:1}
+.workspace-tab{flex:1;min-height:48px;border:1px solid var(--line,#343c48);border-radius:12px;background:var(--panel,#17202b);color:var(--text,#f4f5f7);font:inherit;font-weight:700;cursor:pointer}
+.workspace-tab.active{background:#bd460d;color:#fff;border-color:#ef9462}
+.workspace-tab:focus-visible,.kitchen-workspace button:focus-visible{outline:3px solid #f9ba7b;outline-offset:3px}
+.plan-heading,.kitchen-heading{display:flex;justify-content:space-between;gap:20px;align-items:start;flex-wrap:wrap}
+.plan-heading h2,.kitchen-heading h2{margin:4px 0 10px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#f9ba7b}
+.plan-shortcuts{display:flex;align-items:end;gap:16px;flex-wrap:wrap}
+.plan-shortcuts>label{min-width:180px;flex:1}
+.plan-shortcuts>.btnrow{flex:3;margin:0}
+.kitchen-workspace{border:1px solid #835032;background:linear-gradient(120deg,#252016,#161d26);margin-bottom:20px}
+.kitchen-workspace button{min-height:44px;white-space:normal}
+.kitchen-workspace input,.evening-plan input{min-height:44px}
+.kitchen-ingredients{display:flex;gap:12px;flex-wrap:wrap;padding:15px 0;border-bottom:1px solid #42434b}
+.kitchen-ingredients span{background:#111b23;padding:9px 12px;border-radius:10px}
+.kitchen-ingredients b{white-space:nowrap}
+.kitchen-programme{max-width:850px;line-height:1.65}
+.kitchen-programme>label{display:block;max-width:320px}
+.run-switch{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.run-switch [aria-pressed="true"]{border:2px solid #f0a06c;background:#473326}
+.checkpoint-row,.queue-row,.collection-row{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #343c48;flex-wrap:wrap}
+.checkpoint-row small,.queue-row small,.collection-row small,.timeitem small{display:block;color:#b5bfcb;margin-top:4px}
+.checkpoint-row>div,.collection-row>div,.queue-controls{display:flex;gap:8px;flex-wrap:wrap}
+.queue-controls input{flex:1;min-width:120px;max-width:220px}
+.pizza-current,.pizza-next,.pizza-finishing{padding:16px;margin:12px 0;border-radius:12px;background:#18252d;border:1px solid #36434b}
+.pizza-current{border-color:#e18a52}
+.pizza-finishing{background:#20302a;border-color:#47705a}
+.timer-status{padding:12px;background:#293147;border-radius:10px;font-variant-numeric:tabular-nums}
+.table-scroll{overflow-x:auto;max-width:100%}
+.legacy-batch-panel{display:none}
+#kitchenInstructions{padding:16px;border:1px solid #3b424c;border-radius:12px}
+#kitchenInstructions>summary{font-weight:700;cursor:pointer;min-height:44px;padding:8px}
+#page4 .wizard-page-intro{display:none}
+#eveningOptions details,#eveningCollection details,.kitchen-workspace details{margin:14px 0}
+#eveningOptions summary,#eveningCollection summary,.kitchen-workspace summary{cursor:pointer;padding:10px 0;line-height:1.5;min-height:44px}
+.storage-owner{margin:12px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.startup-status{max-width:1200px;margin:20px auto;padding:16px;color:var(--text)}
+.app[inert]{opacity:.55}
+.measurement-disclosure{margin:12px 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px}
+.measurement-disclosure>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;line-height:1.5}
+.measurement-disclosure>label{display:block;max-width:320px}
+.step-measurement{margin:0 0 14px}
+body[data-experience-mode="full"] .measurement-disclosure>summary{display:none}
+.workspace-nav~#page1 .card .card{margin-top:16px;padding:16px;background:transparent}
+@media(max-width:760px){.plan-heading,.kitchen-heading{gap:8px}.kitchen-workspace{padding:16px}.plan-shortcuts{display:block}.plan-shortcuts>.btnrow{margin-top:10px}.checkpoint-row>span,.queue-row>span{width:100%}.queue-controls{width:100%}.queue-controls input{max-width:none;width:100%}.kitchen-ingredients{gap:6px}.kitchen-ingredients span{padding:7px}.workspace-nav{margin:12px 0}.workshop-grid{min-width:0}.kitchen-workspace .field{width:100%;min-width:0}#kitchenInstructions{padding:10px}}
+@media print{.workspace-nav,.workspace-tab,.kitchen-workspace button,.storage-owner{display:none}#kitchenInstructions>summary{display:none}#kitchenInstructions{border:0}}
 @media print{.app-version{padding-bottom:0}}
 .hidden{display:none!important}
 hr{border:0;border-top:1px solid var(--line);margin:18px 0}
@@ -1149,10 +1196,16 @@ body[data-app-mode="sauce"] #pizzaSauceAutoToggle{display:none!important}
 button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 @media(max-width:560px){.workshop-grid{grid-template-columns:minmax(0,1fr)}.workshop-panel{padding:12px}.workshop-table{font-size:.78rem}.workshop-table th,.workshop-table td{padding:8px 4px}}
 @media print{.workshop-panel details:not([open]){display:none}.batch-runner button{display:none}}
+
+#nav4{display:none}
+.evening-plan{margin-bottom:20px}
+
+.share-file-content{white-space:pre-wrap;overflow-wrap:anywhere;max-height:20rem;overflow:auto;font-size:.8rem}
 </style>
 </head>
 <body>
-<div class="app">
+<div id="startupStatus" class="startup-status" role="status">Calculator laden… / Loading calculator…</div>
+<div class="app" inert aria-busy="true">
 <div class="topbar">
 <div class="brand">
 <div class="logo">🍕</div>
@@ -1168,22 +1221,19 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 <button aria-label="English" id="langEn" onclick="setLanguage('en')" type="button">EN</button>
 </div>
 </div>
-</div><div class="wizard-nav-shell hidden" id="wizardNavShell">
+</div><nav class="workspace-nav" aria-label="Plan / Kitchen"><button class="workspace-tab active" type="button" data-workspace="plan" aria-pressed="true">Plan</button><button class="workspace-tab" type="button" data-workspace="kitchen" aria-pressed="false">Keuken</button></nav>
+<div class="wizard-nav-shell hidden" id="wizardNavShell">
 <button aria-label="Vorige navigatiestappen" class="nav-scroll-button nav-scroll-prev" id="navScrollPrev" onclick="scrollWizardNav(-1)" type="button">‹</button>
 <div class="wizard-nav-viewport"><div class="steps-nav hidden" id="stepsNav"><button class="navpill mode-choice-nav" onclick="showModeChooser()" type="button">← Keuze</button><button class="navpill active" id="nav1" onclick="showPage(1)" type="button">1. Deeg</button><button class="navpill" id="nav2" onclick="showPage(2)" type="button">2. Sauzen</button><button class="navpill" id="nav3" onclick="showPage(3)" type="button">3. Bollen &amp; recepten</button><button class="navpill" id="nav4" onclick="showPage(4)" type="button">4. Stappenplan</button></div></div>
 <button aria-label="Volgende navigatiestappen" class="nav-scroll-button nav-scroll-next" id="navScrollNext" onclick="scrollWizardNav(1)" type="button">›</button>
 </div>
-<section class="page active" id="page0">
+
+<section class="page" id="page0">
 <div class="mode-start">
 <div class="mode-intro">
 <h2>Wat wil je maken?</h2>
 <p>Kies hoe uitgebreid je wilt starten. Dezelfde deegcalculator zit onder alle drie de opties; extra onderdelen verschijnen alleen wanneer je ze nodig hebt.</p>
 </div>
-<div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
-<button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
-<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Uitgebreid</b><span>Alle instellingen en uitleg</span></button>
-</div>
-<p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
 <div class="mode-grid">
 <button class="mode-card" data-mode-card="dough" onclick="selectAppMode('dough')" type="button">
 <div class="mode-icon">🌾</div>
@@ -1210,7 +1260,14 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 <div class="mode-note">Je kunt later altijd wisselen via <b>← Keuze</b>; je ingevulde waarden blijven staan.</div>
 </div>
 </section>
-<section class="page" id="page1">
+<section class="page active" id="page1">
+<div aria-label="Weergavemodus" class="experience-switch" id="experienceSwitch" role="group">
+<button aria-pressed="true" class="experience-choice active" data-experience="basic" id="experienceBasic" type="button"><b>Basis</b><span>Alleen wat je nodig hebt</span></button>
+<button aria-pressed="false" class="experience-choice" data-experience="full" id="experienceFull" type="button"><b>Uitgebreid</b><span>Alle instellingen en uitleg</span></button>
+</div>
+<p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
+
+<div class="card evening-plan" id="eveningPlan"></div>
 <div class="grid">
 <div>
 <div class="card">
@@ -1362,7 +1419,27 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 </div>
 </div>
 <div class="schedule-summary" id="scheduleSummary"></div>
-<div class="workshop-panel" id="batchPlanner"></div>
+<div class="workshop-panel legacy-batch-panel" id="batchPlanner"></div>
+<div class="card">
+<h2>Kneedmethode</h2>
+<p class="hint">De ingrediënten blijven hetzelfde; de meng- en kneedstappen passen zich aan.</p>
+<div class="method-tabs">
+<button class="method" data-method="hand" aria-pressed="false" onclick="setMethod('hand')">✋ Hand</button>
+<button class="method active" data-method="kitchenaid" aria-pressed="true" onclick="setMethod('kitchenaid')">KitchenAid</button>
+<button class="method" data-method="kenwood" aria-pressed="false" onclick="setMethod('kenwood')">Kenwood</button>
+<button class="method" data-method="pro" aria-pressed="false" onclick="setMethod('pro')">Spiraalkneder</button>
+</div>
+<div id="mixerCapacityNote"></div>
+<div class="workshop-panel" id="mixerProfiles"></div>
+<div class="badges" id="recipeBadges"></div>
+<div class="btnrow">
+
+<button class="btn secondary" onclick="window.print()">Print stappen</button>
+<button class="btn ghost" onclick="copyRecipe()">Kopieer recept</button>
+</div>
+</div>
+<div class="workshop-panel" id="eveningOptions"></div>
+<div class="workshop-panel" id="eveningCollection"></div>
 <div class="workshop-panel" id="coldStoragePlanner"></div>
 <div class="advisor">
 <div class="advisor-result">
@@ -1551,31 +1628,13 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 <button class="btn secondary" onclick="previousWizardPage(2)" type="button">← Vorige</button>
 <button class="btn primary" onclick="nextWizardPage(2)" type="button">Volgende →</button>
 </div>
-</section><section class="page" id="page4"><div class="wizard-page-intro">
+</section><section class="page" id="page4"><div class="card kitchen-workspace" id="kitchenWorkspace"></div><details id="kitchenInstructions"><summary id="instructionsSummary">Alle instructies, tijdlijn en logboek</summary><div class="wizard-page-intro">
 <div class="wizard-kicker" id="finalStepKicker">Laatste stap</div>
 <h2>Stappenplan</h2>
 <p>Hier komt alles samen: kneden, fermenteren, saus, beleggen, tijdlijn, oven en bakken.</p>
 </div>
 <div class="grid">
 <div>
-<div class="card">
-<h2>Kneedmethode</h2>
-<p class="hint">De ingrediënten blijven hetzelfde; de meng- en kneedstappen passen zich aan.</p>
-<div class="method-tabs">
-<button class="method" data-method="hand" aria-pressed="false" onclick="setMethod('hand')">✋ Hand</button>
-<button class="method active" data-method="kitchenaid" aria-pressed="true" onclick="setMethod('kitchenaid')">KitchenAid</button>
-<button class="method" data-method="kenwood" aria-pressed="false" onclick="setMethod('kenwood')">Kenwood</button>
-<button class="method" data-method="pro" aria-pressed="false" onclick="setMethod('pro')">Spiraalkneder</button>
-</div>
-<div id="mixerCapacityNote"></div>
-<div class="workshop-panel" id="mixerProfiles"></div>
-<div class="badges" id="recipeBadges"></div>
-<div class="btnrow">
-<button class="btn secondary" onclick="previousWizardPage(4)">← Vorige</button>
-<button class="btn secondary" onclick="window.print()">Print stappen</button>
-<button class="btn ghost" onclick="copyRecipe()">Kopieer recept</button>
-</div>
-</div>
 <div class="card">
 <div class="workshop-panel batch-runner" id="batchRunner"></div>
 <h2>Jouw tijdlijn</h2>
@@ -1645,7 +1704,7 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 </div>
 </div>
 </div>
-</section>
+</details></section>
 <footer class="footer-note app-version" id="appVersion"></footer>
 </div>
 <script>// DOM-independent numerical core. No browser state, translation or persistence.
@@ -1904,6 +1963,15 @@ const WorkflowCore=(()=>{
   }
 
   const eventKeys=route=>route==='room'?['start','bulkStart','shape','bake']:['start','bulkStart','fridgeIn','fridgeOut','bake'];
+  const eventDone=(batch,key)=>batch.events[key]!=null||(batch.unknownEvents||[]).includes(key);
+  function recordUnknownEvent(batch,key,now=Date.now()){
+    const keys=eventKeys(batch.route),index=keys.indexOf(key);
+    if(index<=0)throw new RangeError('order');
+    if(!eventDone(batch,keys[index-1]))throw new RangeError('missing-previous');
+    const out=clone(batch);delete out.events[key];
+    out.unknownEvents=[...new Set([...(out.unknownEvents||[]),key])];
+    return out;
+  }
   function durations(value,route){
     if(!object(value))return null;
     const limits={preparation:12,bulk:48,cold:120,ball:48},out={};
@@ -1919,17 +1987,18 @@ const WorkflowCore=(()=>{
   function recordEvent(batch,key,at,now=Date.now()){
     const keys=eventKeys(batch.route),index=keys.indexOf(key);
     if(index<0||!validTime(at)||at>now+60000)throw new RangeError('future');
-    const previous=index>0?batch.events[keys[index-1]]:null,next=batch.events[keys[index+1]];
-    if(index>0&&previous==null)throw new RangeError('missing-previous');
+    const previous=keys.slice(0,index).reverse().map(k=>batch.events[k]).find(at=>at!=null),next=keys.slice(index+1).map(k=>batch.events[k]).find(at=>at!=null);
+    if(index>0&&!eventDone(batch,keys[index-1]))throw new RangeError('missing-previous');
     if((previous!=null&&at<previous)||(next!=null&&at>next))throw new RangeError('order');
     if(key==='start'&&at>=batch.bakeAt)throw new RangeError('order');
     const out=clone(batch),old=out.events[key];
     out.events[key]=at;
+    if(out.unknownEvents)out.unknownEvents=out.unknownEvents.filter(k=>k!==key);
     if(old!=null&&old!==at)out.revisions=[...out.revisions,{key,from:old,to:at,recordedAt:now}].slice(-40);
     return out;
   }
   function phaseDone(batch,key){
-    return key==='preparation'?batch.events.bulkStart!=null:key==='bulk'?(batch.events[batch.route==='room'?'shape':'fridgeIn']!=null):key==='cold'?batch.events.fridgeOut!=null:batch.events.bake!=null;
+    return eventDone(batch,key==='preparation'?'bulkStart':key==='bulk'?(batch.route==='room'?'shape':'fridgeIn'):key==='cold'?'fridgeOut':'bake');
   }
   function timeline(batch){
     const keys=eventKeys(batch.route),d=batch.timings;
@@ -1938,12 +2007,12 @@ const WorkflowCore=(()=>{
     const times={start:previous},actual={start:true};
     keys.slice(1).forEach((key,index)=>{
       actual[key]=batch.events[key]!=null;
-      times[key]=actual[key]?batch.events[key]:previous+lengths[index]*HOUR;
+      times[key]=actual[key]?batch.events[key]:eventDone(batch,key)||previous===null?null:previous+lengths[index]*HOUR;
       previous=times[key];
     });
     times.ballStart=times[batch.route==='room'?'shape':'fridgeOut'];
     if(batch.route!=='room')times.shape=times[batch.route==='coldBalls'?'fridgeIn':'fridgeOut'];
-    return {times,actual,delta:(times.bake-batch.bakeAt)/HOUR};
+    return {times,actual,delta:times.bake===null?null:(times.bake-batch.bakeAt)/HOUR};
   }
   function reviseTimings(batch,changes,now=Date.now()){
     const next=durations({...batch.timings,...changes},batch.route);
@@ -1959,11 +2028,13 @@ const WorkflowCore=(()=>{
   }
   function actualSchedule(batch){
     const t=timeline(batch).times,e=batch.events;
-    return {bulk:(t[batch.route==='room'?'shape':'fridgeIn']-t.bulkStart)/HOUR,cold:batch.route==='room'?0:(t.fridgeOut-t.fridgeIn)/HOUR,ball:(t.bake-t.ballStart)/HOUR,preparation:(t.bulkStart-e.start)/HOUR};
+    const duration=(a,b,key)=>a==null||b==null?batch.timings[key]:(b-a)/HOUR;
+    return {bulk:duration(t.bulkStart,t[batch.route==='room'?'shape':'fridgeIn'],'bulk'),cold:batch.route==='room'?0:duration(t.fridgeIn,t.fridgeOut,'cold'),ball:duration(t.ballStart,t.bake,'ball'),preparation:duration(e.start,t.bulkStart,'preparation'),...((batch.unknownEvents||[]).length?{uncertain:true}:{})};
   }
   // A proposal changes only unfinished final proof. Actual anchors and the
   // requested bake time never move, and elapsed proof cannot be removed.
   function finalProofProposal(batch,c,measurements,core,now=Date.now()){
+    if((batch.unknownEvents||[]).length)return {ok:false,reason:'unknown-history'};
     if(batch.events.bake!=null)return {ok:false,reason:'completed'};
     const md=measurements.doughTemp,mf=measurements.fridgeTemp;
     if(md==null&&mf==null)return {ok:false,reason:'no-measurement'};
@@ -1996,6 +2067,7 @@ const WorkflowCore=(()=>{
         // Persisted observations keep their chronology even if the device clock
         // moved backwards. New input still uses recordEvent's live-clock check.
         if(value.events[key]!=null)out=recordEvent(out,key,value.events[key],Infinity);
+        else if((value.unknownEvents||[]).includes(key))out=recordUnknownEvent(out,key,Infinity);
       }
       out.status=value.status==='finished'?'finished':'active';
       out.readings=(Array.isArray(value.readings)?value.readings:[]).filter(x=>object(x)&&['doughTemp','fridgeTemp'].includes(x.kind)&&validTime(x.at)&&bounded(x.value,x.kind==='doughTemp'?10:0,x.kind==='doughTemp'?40:15)).slice(-60).map(x=>({kind:x.kind,value:x.value,at:x.at}));
@@ -2021,9 +2093,268 @@ const WorkflowCore=(()=>{
     if(!object(value)||value.format!=='pizza-dough-recipe'||value.version!==1||!cleanText(value.name)||!recipe(value.recipe))return null;
     return {name:cleanText(value.name),recipe:{...recipe(value.recipe),preset:'custom'}};
   }
-  return Object.freeze({HOUR,FIELD_IDS,CHECK_FIELDS,METHODS,recipe,summary,profile,storage,capacity,weighing,eventKeys,createBatch,recordEvent,phaseDone,timeline,reviseTimings,actualSchedule,finalProofProposal,sanitizeBatch,sanitize,exportRecipe,importRecipe,clone});
+  return Object.freeze({HOUR,FIELD_IDS,CHECK_FIELDS,METHODS,recipe,summary,profile,storage,capacity,weighing,eventKeys,eventDone,recordUnknownEvent,createBatch,recordEvent,phaseDone,timeline,reviseTimings,actualSchedule,finalProofProposal,sanitizeBatch,sanitize,exportRecipe,importRecipe,clone});
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=WorkflowCore;
+/* Pure evening identities, allocation, availability and portable templates. */
+const EveningCore=(()=>{
+  'use strict';
+  const W=typeof WorkflowCore!=='undefined'?WorkflowCore:require('./workflow-core');
+  const M=60000,H=60*M;
+  const clone=W.clone;
+  const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+  const number=(x,min,max)=>typeof x==='number'&&Number.isFinite(x)&&x>=min&&x<=max;
+  const time=x=>number(x,0,8640000000000000);
+  const id=x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(x);
+  const text=(x,n=80)=>typeof x==='string'?x.trim().slice(0,n):'';
+  const unique=xs=>new Set(xs).size===xs.length;
+  const amountKeys=['flour','water','salt','yeast','oil'];
+  function apportion(total,weights,step){
+    const units=Math.round(total/step),sum=weights.reduce((a,b)=>a+b,0);
+    const exact=weights.map(w=>units*w/sum),out=exact.map(Math.floor);
+    const order=exact.map((v,i)=>({i,remainder:v-out[i]})).sort((a,b)=>b.remainder-a.remainder||a.i-b.i);
+    const remaining=units-out.reduce((a,b)=>a+b,0);
+    for(let j=0;j<remaining;j++)out[order[j].i]++;
+    return out.map(v=>Number((v*step).toFixed(8)));
+  }
+  function allocate(c,settings={}){
+    if(!number(c.pizzas,1,24)||!Number.isInteger(c.pizzas)||!amountKeys.every(k=>number(c[k],0,50000))||!(c.flour>0)||!number(c.reserve,0,c.water))return {ok:false,reason:'ingredients'};
+    const unit=settings.unit==='flour'?'flour':'dough',capacity=settings.capacity==null||settings.capacity===''?null:Number(settings.capacity);
+    if(capacity!==null&&!number(capacity,1,50000))return {ok:false,reason:'capacity'};
+    // Preserve a positive dose even when splitting the smallest parent dose.
+    // More decimals describe allocation, never a claim that a scale can weigh it.
+    const yeastStep=c.yeast>0?Math.min(.01,10**(Math.floor(Math.log10(c.yeast/c.pizzas))-1)):.01;
+    const steps=Object.fromEntries([...amountKeys,'reserve'].map(k=>[k,k==='yeast'?yeastStep:c.practical?1:.1]));
+    const totals=Object.fromEntries([...amountKeys,'reserve'].map(k=>[k,Number((Math.round(c[k]/steps[k])*steps[k]).toFixed(8))]));
+    // Match the parent readout; use extra precision only for a dose that would
+    // otherwise disappear entirely, or to share its displayed total across runs.
+    const parentYeast=Math.round(c.yeast*100)/100;
+    if(parentYeast>0)totals.yeast=parentYeast;
+    totals.mainWater=Number((totals.water-totals.reserve).toFixed(8));
+    const parentMass=amountKeys.reduce((s,k)=>s+c[k],0),perBall=(unit==='flour'?c.flour:parentMass)/c.pizzas;
+    if(capacity!==null&&perBall>capacity+1e-8)return {ok:false,reason:'one-ball'};
+    for(let count=1;count<=c.pizzas;count++){
+      const weights=Array.from({length:count},(_,i)=>Math.floor(c.pizzas/count)+(i<c.pizzas%count?1:0));
+      const parts=Object.fromEntries(Object.keys(steps).map(k=>[k,apportion(totals[k],weights,steps[k])]));
+      const runs=weights.map((balls,i)=>{
+        const exact=Object.fromEntries([...amountKeys,'reserve'].map(k=>[k,c[k]*balls/c.pizzas]));exact.mainWater=exact.water-exact.reserve;
+        const display=Object.fromEntries(Object.keys(steps).map(k=>[k,parts[k][i]]));
+        display.mainWater=Number((display.water-display.reserve).toFixed(8));
+        display.reserveFirst=Number((Math.floor(display.reserve/steps.reserve/2)*steps.reserve).toFixed(8));display.reserveLast=Number((display.reserve-display.reserveFirst).toFixed(8));
+        const exactMass=amountKeys.reduce((s,k)=>s+exact[k],0),displayMass=amountKeys.reduce((s,k)=>s+display[k],0);
+        const capacityUsed=unit==='flour'?Math.max(exact.flour,display.flour):Math.max(exactMass,displayMass);
+        return {balls,exact,display,capacityUsed,hydration:display.water/display.flour*100,yeastPct:display.yeast/display.flour*100};
+      });
+      if(runs.every(r=>(capacity===null||r.capacityUsed<=capacity+1e-8)&&r.display.mainWater>=0&&r.display.flour>0))return {ok:true,unit,capacity,totals,runs};
+    }
+    return {ok:false,reason:'rounding-capacity'};
+  }
+
+  function cleanSnapshot(value){
+    if(!object(value)||!text(value.name)||!Array.isArray(value.before)||!Array.isArray(value.after))return null;
+    const clean=xs=>xs.length<=40?xs.map(x=>object(x)&&text(x.name)&&number(x.quantity,0,20000)&&['g','ml','st'].includes(x.unit)?{name:text(x.name,160),nameEn:text(x.nameEn,160)||text(x.name,160),quantity:x.quantity,unit:x.unit}:null):null;
+    const before=clean(value.before),after=clean(value.after);if(!before||!after||[...before,...after].some(x=>!x))return null;
+    return {name:text(value.name,160),nameEn:text(value.nameEn,160)||text(value.name,160),before,after};
+  }
+  function cleanPizza(p,{history=false,privateNames=true}={}){
+    if(!object(p)||!id(p.id)||!id(p.recipeId)||!object(p.custom))return null;
+    const snapshot=cleanSnapshot(p.snapshot);if(!snapshot)return null;
+    const cu=p.custom;if(!object(cu.excluded)||Object.keys(cu.excluded).length>50)return null;
+    const excluded=Object.fromEntries(Object.entries(cu.excluded).filter(([k,v])=>k.length<=160&&v===true));
+    if(!['traditional','nl'].includes(cu.pizzaStyle)||!['noSauce','extraCheese'].every(k=>typeof cu[k]==='boolean'))return null;
+    if(cu.sauceOverride!==null&&!id(cu.sauceOverride))return null;
+    const events={};
+    if(history){
+      if(!object(p.events))return null;
+      for(const k of ['in','out'])if(p.events[k]!=null){if(!time(p.events[k]))return null;events[k]=p.events[k];}
+      if(events.out!=null&&(events.in==null||events.out<events.in))return null;
+    }
+    return {id:p.id,name:privateNames?text(p.name):'',recipeId:p.recipeId,custom:{recipeId:p.recipeId,excluded,noSauce:cu.noSauce,extraCheese:cu.extraCheese,pizzaStyle:cu.pizzaStyle,sauceOverride:cu.sauceOverride},snapshot,runId:history&&id(p.runId)?p.runId:'',events,...(p.provenance==='legacy-current-choices'?{provenance:p.provenance}:{})};
+  }
+  function cleanTemplate(value,{privateNames=true,imported=false}={}){
+    if(!object(value)||!id(value.id)||!text(value.name)||!['dough','sauce','full'].includes(value.mode))return null;
+    const recipe=W.recipe(value.recipe);if(!recipe)return null;
+    if(imported)recipe.preset='custom';
+    if(!Array.isArray(value.pizzas)||value.pizzas.length!==Number(recipe.fields.pizzas))return null;
+    const pizzas=value.pizzas.map(p=>cleanPizza(p,{privateNames}));if(pizzas.some(p=>!p)||!unique(pizzas.map(p=>p.id)))return null;
+    const s=value.sauce;if(!object(s)||typeof s.enabled!=='boolean'||typeof s.automatic!=='boolean'||!id(s.type)||!number(s.grams,0,400))return null;
+    const split=value.split;if(!object(split)||!['flour','dough'].includes(split.unit)||(split.capacity!==null&&!number(split.capacity,1,50000)))return null;
+    return {id:value.id,name:text(value.name),recipe,mode:value.mode,pizzas,sauce:{enabled:s.enabled,automatic:s.automatic,type:s.type,grams:s.grams},split:{unit:split.unit,capacity:split.capacity},storage:W.storage(value.storage),scale:[1,.1,.01].includes(value.scale)?value.scale:.1,profile:W.profile(value.profile)};
+  }
+  function exportTemplate(value){
+    const t=cleanTemplate(value,{privateNames:false});if(!t)throw new Error('template');
+    t.name='Pizza evening';
+    if(t.profile){t.profile.name='Mixer';t.profile.programme='';}
+    return {format:'pizza-evening-template',version:1,template:t};
+  }
+  function importTemplate(value){return object(value)&&value.format==='pizza-evening-template'&&value.version===1?cleanTemplate(value.template,{imported:true,privateNames:false}):null;}
+
+  function createEvening({id:eveningId,template,allocation,startedAt,bakeAt,plan,zone}){
+    const t=cleanTemplate(template);if(!t||!id(eveningId)||!allocation.ok||allocation.runs.reduce((s,r)=>s+r.balls,0)!==t.pizzas.length)throw new Error('evening');
+    let cursor=0;
+    const runs=allocation.runs.map((part,i)=>{
+      const runId=`${eveningId}-r${i+1}`,pizzaIds=t.pizzas.slice(cursor,cursor+part.balls).map(p=>p.id);cursor+=part.balls;
+      return {id:runId,balls:part.balls,allocation:clone(part),pizzaIds,batch:i===0?W.createBatch({id:runId,recipe:t.recipe,startedAt,bakeAt,plan,profile:t.profile,storage:t.storage,scale:t.scale}):null};
+    });
+    return {id:eveningId,name:t.name,template:t,recipe:clone(t.recipe),bakeAt,createdAt:startedAt,zone:text(zone,80),plan:clone(plan),runs,pizzas:t.pizzas.map(p=>({...p,runId:runs.find(r=>r.pizzaIds.includes(p.id)).id})),selectedRun:runs[0].id,revision:0,status:'active',timer:null,undo:null,manualGap:null};
+  }
+  function startRun(e,runId,at){
+    const out=clone(e),run=out.runs.find(r=>r.id===runId),i=out.runs.indexOf(run);
+    if(!run||run.batch)return out;
+    if(i>0&&!W.eventDone(out.runs[i-1].batch||{events:{}},'bulkStart'))throw new Error('bowl-busy');
+    if(!time(at)||at>Date.now()+60000||at>=e.bakeAt)throw new Error('future');
+    const previous=out.runs[i-1]?.batch?.events.bulkStart;if(previous!=null&&at<previous)throw new Error('order');
+    run.batch=W.createBatch({id:run.id,recipe:e.recipe,startedAt:at,bakeAt:e.bakeAt,plan:e.plan,profile:e.template.profile,storage:e.template.storage,scale:e.template.scale});
+    out.selectedRun=run.id;out.undo=null;out.revision++;return out;
+  }
+  function movePizza(e,pizzaId,offset){
+    const out=clone(e),index=out.pizzas.findIndex(p=>p.id===pizzaId);if(index<0||out.pizzas[index].events.in!=null)throw new Error('completed');
+    const next=Math.max(0,Math.min(out.pizzas.length-1,index+offset));
+    const [pizza]=out.pizzas.splice(index,1);out.pizzas.splice(next,0,pizza);out.revision++;return out;
+  }
+  function bake(e,pizzaId,action,at){
+    if(!time(at)||at>Date.now()+60000)throw new Error('future');
+    const out=clone(e),p=out.pizzas.find(p=>p.id===pizzaId);if(!p)throw new Error('pizza');
+    const run=out.runs.find(r=>r.id===p.runId);if(!run?.batch)throw new Error('run-not-started');
+    if(action==='in'){
+      if(p.events.in!=null)return out;
+      if(out.pizzas.some(p=>p.events.in!=null&&p.events.out==null))throw new Error('oven-busy');
+      const lastOut=Math.max(0,...out.pizzas.map(p=>p.events.out||0));if(at<lastOut)throw new Error('order');
+      if(!W.eventDone(run.batch,'bake'))run.batch=W.recordEvent(run.batch,'bake',at);
+      else if(run.batch.events.bake!=null&&at<run.batch.events.bake)throw new Error('order');
+      p.events.in=at;
+    }else if(action==='out'){
+      if(p.events.out!=null)return out;
+      if(p.events.in==null||at<p.events.in)throw new Error('order');p.events.out=at;
+    }else throw new Error('event');
+    out.undo={type:'pizza',id:pizzaId,action,at,priorRunBake:clone(e.runs.find(r=>r.id===p.runId).batch.events),priorUnknown:clone(e.runs.find(r=>r.id===p.runId).batch.unknownEvents||[])};
+    out.revision++;return out;
+  }
+  function undo(e){
+    if(!e.undo)throw new Error('nothing-to-undo');const out=clone(e),u=out.undo;
+    if(u.type==='pizza'){
+      const p=out.pizzas.find(p=>p.id===u.id);if(!p||p.events[u.action]!==u.at)throw new Error('dependent');
+      if(out.pizzas.some(other=>other.id!==p.id&&Object.values(other.events).some(at=>at>=u.at)))throw new Error('dependent');
+      if(u.action==='in'&&p.events.out!=null)throw new Error('dependent');delete p.events[u.action];
+      const run=out.runs.find(r=>r.id===p.runId);run.batch.events=u.priorRunBake;run.batch.unknownEvents=u.priorUnknown;
+    }else if(u.type==='event'){
+      const run=out.runs.find(r=>r.id===u.runId);if(!run?.batch)throw new Error('dependent');
+      const keys=W.eventKeys(run.batch.route),index=keys.indexOf(u.key);
+      if(keys.slice(index+1).some(k=>W.eventDone(run.batch,k)))throw new Error('dependent');
+      run.batch.events=clone(u.events);run.batch.unknownEvents=clone(u.unknownEvents);run.batch.progress=clone(u.progress);
+    }else throw new Error('nothing-to-undo');
+    out.undo=null;out.revision++;return out;
+  }
+  function close(e,at){const out=clone(e);out.status='finished';out.closedAt=at;out.timer=null;out.undo=null;out.runs.forEach(r=>{if(r.batch)r.batch.status='finished';});return out;}
+  function forecast(pizzas,{low,high,gap=60,manualGap=null},now){
+    const baked=pizzas.filter(p=>p.events.out!=null).sort((a,b)=>a.events.in-b.events.in);
+    const mean=xs=>xs.reduce((s,x)=>s+x,0)/xs.length;
+    const bakeSeconds=baked.length?mean(baked.map(p=>(p.events.out-p.events.in)/1000)):(low+high)/2;
+    const launches=pizzas.filter(p=>p.events.in!=null).sort((a,b)=>a.events.in-b.events.in);
+    const gaps=launches.slice(1).map((p,i)=>launches[i].events.out==null?null:(p.events.in-launches[i].events.out)/1000).filter(x=>x!==null&&x>=0);
+    const gapSeconds=number(manualGap,0,3600)?manualGap:gaps.length?mean(gaps):gap;
+    const queued=pizzas.filter(p=>p.events.in==null).length,inOven=pizzas.find(p=>p.events.in!=null&&p.events.out==null);
+    const ovenRemaining=inOven?Math.max(0,bakeSeconds-(now-inOven.events.in)/1000):0;
+    return {bakeSeconds,gapSeconds,observed:baked.length,gaps:gaps.length,remaining:queued+(inOven?1:0),finishAt:now+(ovenRemaining+queued*bakeSeconds+Math.max(0,queued-(inOven?0:1))*gapSeconds)*1000,firstReadyAt:baked[0]?.events.out??now+(inOven?ovenRemaining:bakeSeconds)*1000};
+  }
+
+  function schedule({plan,route,runBalls,bakeAt,autolyse,cleanup=0,preheat=30,bakeMinutes=20,sauceMinutes=0}){
+    const tasks=[],base=bakeAt-(plan.preparation+plan.bulk+(route==='room'?0:plan.cold)+plan.ball)*H;
+    const add=(kind,start,minutes,run,active=true)=>tasks.push({kind,start,end:start+minutes*M,run,active});
+    const prep=plan.preparation*60,rest=autolyse?30:20,mix=4,finish=prep-rest-mix;
+    for(let i=0;i<runBalls.length;i++){
+      const start=base+i*(prep+cleanup)*M,bulk=start+prep*M;
+      add('mix',start,mix,i);add('rest',start+mix*M,rest,i,false);add('finish',start+(mix+rest)*M,finish,i);
+      if(cleanup)add('cleanup',bulk,cleanup,i);
+      const inAt=bulk+plan.bulk*H,outAt=inAt+(route==='room'?0:plan.cold)*H;
+      if(route==='room')add('shape',inAt,Math.max(3,runBalls[i]*1.2),i);
+      else{add('fridgeIn',inAt,route==='coldBalls'?Math.max(3,runBalls[i]*1.2):2,i);add('fridgeOut',outAt,2,i);if(route==='hybrid')add('shape',outAt+2*M,Math.max(3,runBalls[i]*1.2),i);}
+    }
+    const oven=bakeAt-preheat*M;
+    // Reserve attendance across preheat. A hot oven is never assumed safe to leave.
+    add('oven',oven,preheat,-1,false);tasks.at(-1).attendance=true;
+    add('ovenSetup',oven,2,-1);add('ovenCheck',bakeAt-2*M,2,-1);
+    if(sauceMinutes)add('sauce',oven-sauceMinutes*M,sauceMinutes,-1);
+    add('bake',bakeAt,bakeMinutes+(runBalls.length-1)*(prep+cleanup),-1);
+    return tasks.sort((a,b)=>a.start-b.start||a.run-b.run);
+  }
+  const overlap=(a,b)=>a.start<b.end&&b.start<a.end;
+  function conflicts(tasks,{earliest=null,unavailable=[]}={}){
+    const out=[];
+    for(const task of tasks){
+      if(!task.active&&!task.attendance)continue;
+      if(earliest!=null&&task.start<earliest)out.push({reason:'earliest',task});
+      if(unavailable.some(interval=>overlap(task,interval)))out.push({reason:'unavailable',task});
+    }
+    const active=tasks.filter(t=>t.active);
+    for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++)if(overlap(active[i],active[j]))out.push({reason:'resource',task:active[j],other:active[i]});
+    return out;
+  }
+  function alternatives(tasks,constraints,maxMinutes=1440){
+    const out=[];
+    for(let minutes=15;minutes<=maxMinutes&&out.length<2;minutes+=15){
+      const shifted=tasks.map(t=>({...t,start:t.start+minutes*M,end:t.end+minutes*M}));
+      if(!conflicts(shifted,constraints).length){out.push({minutes,tasks:shifted});minutes+=45;}
+    }
+    return out;
+  }
+  function migrateLegacy(batch,template,quantities,zone){
+    if(!batch)return null;
+    const allocation=allocate(quantities),base=template?cleanTemplate(template):null;
+    const r={id:batch.id,balls:Number(batch.recipe.fields.pizzas),allocation:allocation.runs[0],pizzaIds:base?base.pizzas.map(p=>p.id):[],batch:clone(batch)};
+    const fallback={id:`legacy-${batch.id}`,name:'Pizza',recipe:clone(batch.recipe),mode:'dough',pizzas:[],sauce:{enabled:false,automatic:true,type:'sanMarzano',grams:80},split:{unit:'dough',capacity:null},storage:batch.storage,scale:batch.scale,profile:batch.profile};
+    return {id:batch.id,name:base?.name||'Pizza',template:base||fallback,recipe:clone(batch.recipe),bakeAt:batch.bakeAt,createdAt:batch.startedAt,zone,plan:clone(batch.initial),runs:[r],pizzas:base?base.pizzas.map(p=>({...p,runId:r.id,provenance:'legacy-current-choices'})):[],selectedRun:r.id,revision:0,status:batch.status,timer:null,undo:null,manualGap:null,legacyUnknownToppings:!base};
+  }
+  function sanitizeEvening(v){
+    try{
+      if(!object(v)||!id(v.id)||!W.recipe(v.recipe)||!time(v.bakeAt)||!time(v.createdAt)||v.createdAt>=v.bakeAt||!['active','finished'].includes(v.status))return null;
+      const legacy=v.legacyUnknownToppings===true&&v.status==='finished',template=legacy?clone(v.template):cleanTemplate(v.template);if(!template)return null;
+      if(!Array.isArray(v.runs)||v.runs.length<1||v.runs.length>24||!unique(v.runs.map(r=>r.id)))return null;
+      const runs=v.runs.map(r=>{
+        if(!object(r)||!id(r.id)||!Number.isInteger(r.balls)||!number(r.balls,1,24)||!object(r.allocation)||!Array.isArray(r.pizzaIds))throw new Error('run');
+        const batch=r.batch===null?null:W.sanitizeBatch(r.batch);if(r.batch!==null&&!batch)throw new Error('batch');
+        if(batch&&(batch.id!==r.id||batch.bakeAt!==v.bakeAt||JSON.stringify(batch.recipe)!==JSON.stringify(W.recipe(v.recipe))))throw new Error('snapshot');
+        for(const k of [...amountKeys,'reserve','mainWater'])if(!number(r.allocation.exact?.[k],0,50000)||!number(r.allocation.display?.[k],0,50000))throw new Error('allocation');
+        if(Math.abs(r.allocation.display.water-r.allocation.display.reserve-r.allocation.display.mainWater)>1e-7)throw new Error('water');
+        return {...clone(r),batch};
+      });
+      if(runs.reduce((s,r)=>s+r.balls,0)!==Number(v.recipe.fields.pizzas))return null;
+      if(!Array.isArray(v.pizzas)||v.pizzas.length!==(legacy?0:Number(v.recipe.fields.pizzas)))return null;
+      const pizzas=v.pizzas.map(p=>cleanPizza(p,{history:true}));if(pizzas.some(p=>!p)||!unique(pizzas.map(p=>p.id)))return null;
+      if(pizzas.filter(p=>p.events.in!=null&&p.events.out==null).length>1)return null;
+      for(const p of pizzas){const run=runs.find(r=>r.id===p.runId);if(!run||!run.pizzaIds.includes(p.id))return null;if(p.events.in!=null&&(!run.batch||!W.eventDone(run.batch,'bake')))return null;}
+      if(!legacy&&runs.some(r=>r.pizzaIds.length!==r.balls||r.pizzaIds.some(pid=>!pizzas.some(p=>p.id===pid&&p.runId===r.id))))return null;
+      if(!runs.some(r=>r.id===v.selectedRun&&r.batch))return null;
+      const launched=pizzas.filter(p=>p.events.in!=null).sort((a,b)=>a.events.in-b.events.in);
+      if(launched.some((p,i)=>i>0&&(launched[i-1].events.out==null||p.events.in<launched[i-1].events.out)))return null;
+      if(launched.some(p=>{const b=runs.find(r=>r.id===p.runId).batch;return b.events.bake!=null&&p.events.in<b.events.bake;}))return null;
+      if(v.undo!=null){
+        const u=v.undo,run=u.type==='event'?runs.find(r=>r.id===u.runId):runs.find(r=>r.pizzaIds.includes(u.id));
+        if(!object(u)||!run?.batch)return null;
+        const events=u.type==='event'?u.events:u.priorRunBake,unknown=u.type==='event'?u.unknownEvents:u.priorUnknown;
+        const prior=W.sanitizeBatch({...run.batch,events,unknownEvents:unknown,progress:u.type==='event'?u.progress:run.batch.progress});
+        if(!prior||!Array.isArray(unknown)||JSON.stringify(prior.events)!==JSON.stringify(events)||JSON.stringify(prior.unknownEvents||[])!==JSON.stringify(unknown))return null;
+        const changed=u.type==='event'?u.key:'bake';
+        if(!W.eventKeys(run.batch.route).includes(changed))return null;
+        for(const key of W.eventKeys(run.batch.route).filter(k=>k!==changed))if(events[key]!==run.batch.events[key]||unknown.includes(key)!==(run.batch.unknownEvents||[]).includes(key))return null;
+        if(u.type==='pizza'){
+          const p=pizzas.find(p=>p.id===u.id);if(!p||!['in','out'].includes(u.action)||p.events[u.action]!==u.at)return null;
+        }else if(u.type!=='event'||JSON.stringify(prior.progress)!==JSON.stringify(u.progress))return null;
+      }
+      const timer=v.timer===null?null:object(v.timer)&&time(v.timer.endAt)&&time(v.timer.startedAt)&&v.timer.endAt>=v.timer.startedAt&&id(v.timer.runId)?{startedAt:v.timer.startedAt,endAt:v.timer.endAt,runId:v.timer.runId,label:text(v.timer.label)}:null;
+      const plan=v.plan;if(!object(plan)||!['preparation','bulk','cold','ball'].every(k=>number(plan[k],0,k==='cold'?120:k==='preparation'?12:48)))return null;
+      return {...clone(v),name:text(v.name),recipe:W.recipe(v.recipe),template,runs,pizzas,timer,revision:Number.isSafeInteger(v.revision)&&v.revision>=0?v.revision:0,zone:text(v.zone),manualGap:number(v.manualGap,0,3600)?v.manualGap:null,undo:object(v.undo)?clone(v.undo):null};
+    }catch{return null;}
+  }
+  function validateAllocations(e,quantities){
+    const expected=allocate(quantities,e.legacyUnknownToppings?{}:e.template.split);
+    if(!expected.ok||expected.runs.length!==e.runs.length)return false;
+    return e.runs.every((run,i)=>run.balls===expected.runs[i].balls&&
+      ['exact','display'].every(kind=>Object.entries(expected.runs[i][kind]).every(([key,value])=>number(run.allocation[kind]?.[key],0,50000)&&Math.abs(run.allocation[kind][key]-value)<1e-7)));
+  }
+  return Object.freeze({allocate,apportion,cleanPizza,cleanTemplate,cleanSnapshot,exportTemplate,importTemplate,createEvening,startRun,movePizza,bake,undo,close,forecast,schedule,conflicts,alternatives,migrateLegacy,sanitizeEvening,validateAllocations});
+})();
+if(typeof module!=='undefined'&&module.exports)module.exports=EveningCore;
 
 const $ = id => document.getElementById(id);
 
@@ -2211,7 +2542,7 @@ let _livePlanCache={key:null,value:null};
 // van "20") nooit recepten of afgevinkte stappen vernietigen.
 let _deferDependentStatePrune=false;
 // Publieke productversie staat bewust los van opslag-/migratieschema 51.
-const APP_VERSION='1.4.1';
+const APP_VERSION='2.0.0';
 
 // Keep subgram herbs legible across recipe, shopping and copy surfaces.
 function ingredientAmount(qty){return fmt(qty,qty<1?2:qty<2?1:0);}
@@ -2494,12 +2825,14 @@ function _observeI18n(){
 
 
 function resetCalculator(){
+  if(!_storageWriter){showStorageOwnership();return;}
   const nl=currentLang!=='en';
   const message=nl
     ? 'Weet je het zeker?\n\nAlle ingevulde waarden, pizzakeuzes, eigen deegrecepten, mixerprofielen, batches, logboeken en planning worden gewist. De calculator keert terug naar het beginscherm met de standaardwaarden.\n\nJe taalkeuze blijft behouden.'
     : 'Are you sure?\n\nAll entered values, pizza choices, saved dough recipes, mixer profiles, batches, logs and planning will be cleared. The calculator will return to the start screen with the default values.\n\nYour language choice will be kept.';
 
   if(!window.confirm(message))return;
+  if(_saveTimer){clearTimeout(_saveTimer);_saveTimer=null;}
 
   // Wis iedere opgeslagen calculatorversie, zodat een oude state
   // niet via de backwards-compatible loader opnieuw wordt geladen.
@@ -4570,11 +4903,12 @@ function update(){
   updateSauceSummary(c);
   updateRecipeSummary(c);
   buildPizzaCustomize(c);
-  buildSteps(c);
+  buildSteps(runCalculation(c));
   buildMixerCapacityNote(c);
   buildTimeline(c);
   renderBakeLog(c);
   renderWorkshop(c);
+  renderEvening(c);
   buildShopping(c);
   buildStoneAdvice(c);
   // De ingrediëntenmodal werd bij elke toetsaanslag herbouwd, ook dicht.
@@ -5005,8 +5339,8 @@ function buildPizzaCustomize(c){
 }
 
 function methodInstructions(c){
-  const displayedReserve=Math.round(c.reserve),firstReserve=Math.floor(displayedReserve/2),remainingReserve=displayedReserve-firstReserve;
-  const f=fmt(c.flour,0),mw=fmt(c.mainWater,0),rw=fmt(displayedReserve,0),firstRw=fmt(firstReserve,0),remainingRw=fmt(remainingReserve,0),y=fmt(c.yeast,2),s=fmt(c.salt,0),yn=yeastName(c.yeastType).toLowerCase();
+  const displayedReserve=c.runAllocation?c.reserve:Math.round(c.reserve),firstReserve=c.runAllocation?c.reserveFirst:Math.floor(displayedReserve/2),remainingReserve=c.runAllocation?c.reserveLast:displayedReserve-firstReserve;
+  const f=fmt(c.flour,c.runAllocation&&!c.practical?1:0),mw=fmt(c.mainWater,c.runAllocation&&!c.practical?1:0),rw=fmt(displayedReserve,c.runAllocation&&!c.practical?1:0),firstRw=fmt(firstReserve,c.runAllocation&&!c.practical?1:0),remainingRw=fmt(remainingReserve,c.runAllocation&&!c.practical?1:0),y=fmt(c.yeast,c.runAllocation?runDoseDecimals(c.yeast):2),s=fmt(c.salt,c.runAllocation&&!c.practical?1:0),yn=yeastName(c.yeastType).toLowerCase();
   const first=c.autolyse
     ? L(`Meng <b>${f} g bloem</b> met <b>${mw} g water</b>. <b>Nog geen gist of zout.</b>`,
         `Mix <b>${f} g flour</b> with <b>${mw} g water</b>. <b>No yeast or salt yet.</b>`)
@@ -5206,10 +5540,10 @@ function buildMixerCapacityNote(c){
   if(!x.near && !x.over){box.innerHTML='';return;}
   const cls=x.over?'warning':'info';
   const msg=x.over
-    ? L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem ligt boven de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Verdeel dit deeg bij voorkeur over meerdere mixerbatches of controleer de handleiding van jouw exacte model. Het warmtemodel is afgestemd op ongeveer 880 g deeg; bij een duidelijk andere batch neemt ook de zekerheid van het wateradvies af.`,
-        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour exceeds the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Prefer splitting the dough into multiple mixer batches or check the manual for your exact model. The heat model is fitted to roughly 880 g of dough; confidence in the water guidance also decreases for a materially different batch.`)
-    : L(`<b>Batchgrootte:</b> ${fmt(c.flour,0)} g bloem zit dicht bij de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Houd motorgeluid, kombeweging en deegtemperatuur extra in de gaten; exacte modellen verschillen. Het warmtemodel is afgestemd op ongeveer 880 g deeg, dus controleer de einddeegtemperatuur extra zorgvuldig.`,
-        `<b>Batch size:</b> ${fmt(c.flour,0)} g flour is close to the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Watch motor load, bowl movement and dough temperature more closely; exact models differ. The heat model is fitted to roughly 880 g of dough, so check the final dough temperature particularly carefully.`);
+    ? L(`<b>Batchgrootte:</b> ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g bloem ligt boven de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Verdeel dit deeg bij voorkeur over meerdere mixerbatches of controleer de handleiding van jouw exacte model. Het warmtemodel is afgestemd op ongeveer 880 g deeg; bij een duidelijk andere batch neemt ook de zekerheid van het wateradvies af.`,
+        `<b>Batch size:</b> ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g flour exceeds the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Prefer splitting the dough into multiple mixer batches or check the manual for your exact model. The heat model is fitted to roughly 880 g of dough; confidence in the water guidance also decreases for a materially different batch.`)
+    : L(`<b>Batchgrootte:</b> ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g bloem zit dicht bij de praktische ${x.g.label}-referentie van ongeveer ${fmt(x.g.maxFlour,0)} g bloem. Houd motorgeluid, kombeweging en deegtemperatuur extra in de gaten; exacte modellen verschillen. Het warmtemodel is afgestemd op ongeveer 880 g deeg, dus controleer de einddeegtemperatuur extra zorgvuldig.`,
+        `<b>Batch size:</b> ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g flour is close to the practical ${x.g.label} reference of about ${fmt(x.g.maxFlour,0)} g flour. Watch motor load, bowl movement and dough temperature more closely; exact models differ. The heat model is fitted to roughly 880 g of dough, so check the final dough temperature particularly carefully.`);
   box.innerHTML=`<div class="${cls}">${msg}</div>`;
 }
 
@@ -5488,12 +5822,20 @@ function livePlanSummaryHtml(c,live,context='dough'){
   }
   return `<div class="live-plan-summary ${cls}">${intro}${residual}${mat}${livePlanChangesHtml(c,live)}</div>`;
 }
+function measurementDisclosure(id,html,kind){
+  const measured=liveMeasurementValue(kind);
+  const title=kind==='fridgeTemp'?L('Koelkasttemperatuur — optioneel','Fridge temperature — optional'):L('Temperatuur meten — optioneel','Measure temperature — optional');
+  return `<details id="${id}" class="measurement-disclosure" data-measurement-disclosure ${experienceMode==='full'?'open':''}><summary>${title}${measured==null?'':` · ${fmt(measured,1)} °C`}</summary>${html}</details>`;
+}
+function measurementPurpose(c){
+  return `<p class="hint">${L(`Doel na kneden: ${fmt(c.doughTemp,1)} °C. Meet één keer direct na het kneden, vóór de herstelrust. Vul hier geen latere kerntemperatuur in.`,`Target after kneading: ${fmt(c.doughTemp,1)} °C. Measure once directly after kneading, before recovery rest. Do not enter a later core temperature here.`)}</p><p class="hint">${L('Leeg laten mag: zonder meting blijft het oorspronkelijke temperatuurplan gelden. Tijden zijn richtlijnen; beoordeel ook volume, soepelheid en spanning. De gist in gemengd deeg blijft vast.','Leaving this blank is fine: without a reading, the original temperature plan remains in use. Times are guides; also assess volume, pliability and tension. Yeast in mixed dough stays fixed.')}</p>`;
+}
 function doughMeasurementControl(c,live){
-  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemeten direct na kneden (°C)','Actually measured directly after kneading (°C)')}<input class="field" type="number" min="10" max="40" step="0.5" value="${liveMeasureDisplay('doughTemp')}" placeholder="${fmt(c.doughTemp,1)}" onchange="setLiveMeasurement('doughTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Doel: ${fmt(c.doughTemp,1)} °C • leeg = oorspronkelijk plan.`,`Target: ${fmt(c.doughTemp,1)} °C • blank = original plan.`)}</div></div>${live.measuredDough!=null?livePlanSummaryHtml(c,live,'dough'):''}</div>`;
+  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemeten direct na kneden (°C)','Actually measured directly after kneading (°C)')}<input class="field" id="stepDoughTemp" type="number" min="10" max="40" step="0.5" value="${liveMeasureDisplay('doughTemp')}" placeholder="${fmt(c.doughTemp,1)}" onchange="setLiveMeasurement('doughTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Doel: ${fmt(c.doughTemp,1)} °C • leeg = oorspronkelijk plan.`,`Target: ${fmt(c.doughTemp,1)} °C • blank = original plan.`)}</div></div>${live.measuredDough!=null?livePlanSummaryHtml(c,live,'dough'):''}</div>`;
 }
 function fridgeMeasurementControl(c,live){
   if(c.ferm==='room')return '';
-  return `<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemiddelde koelkasttemp. bij het deeg (°C)','Actual average refrigerator temp. where the dough sits (°C)')}<input class="field" type="number" min="0" max="15" step="0.5" value="${liveMeasureDisplay('fridgeTemp')}" placeholder="${fmt(c.fridge,1)}" onchange="setLiveMeasurement('fridgeTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Gepland: ${fmt(c.fridge,1)} °C • weet je het niet, laat leeg.`,`Planned: ${fmt(c.fridge,1)} °C • leave blank if unknown.`)}</div></div>${live.measuredFridge!=null?livePlanSummaryHtml(c,live,'fridge'):''}</div>`;
+  return measurementDisclosure('stepFridgeMeasurement',`<div class="live-measure"><div class="live-measure-grid"><label>${L('Werkelijk gemiddelde koelkasttemp. bij het deeg (°C)','Actual average refrigerator temp. where the dough sits (°C)')}<input class="field" id="stepFridgeTemp" type="number" min="0" max="15" step="0.5" value="${liveMeasureDisplay('fridgeTemp')}" placeholder="${fmt(c.fridge,1)}" onchange="setLiveMeasurement('fridgeTemp',this.value)"></label><div class="hint" style="margin:0">${L(`Gepland: ${fmt(c.fridge,1)} °C • weet je het niet, laat leeg.`,`Planned: ${fmt(c.fridge,1)} °C • leave blank if unknown.`)}</div></div>${live.measuredFridge!=null?livePlanSummaryHtml(c,live,'fridge'):''}</div>`,'fridgeTemp');
 }
 function phaseAdjustmentDetail(c,live,key){
   if(!live.active)return '';
@@ -5569,7 +5911,8 @@ function pruneCompletedStepState(){
   const liveKeys=new Set(_stepKeys);
   let prunedAny=false;
   Object.keys(completedSteps).forEach(key=>{
-    if(!liveKeys.has(key)){
+    // Retain the historical optional-reading check in old sessions, without counting it.
+    if(key!=='s-doughtemp'&&!liveKeys.has(key)){
       delete completedSteps[key];
       prunedAny=true;
     }
@@ -5643,14 +5986,14 @@ function fermentationSteps(c,startIndex,live){
 
 function waterTemperatureGuidance(c,wt){
   const reserveLine=L(
-    `Houd ongeveer <b>${fmt(c.reserve,0)} g reservewater</b> afgedekt op kamertemperatuur voor na de rust. Koel of verwarm dit kleine deel niet mee met het hoofdwater.`,
-    `Keep about <b>${fmt(c.reserve,0)} g reserved water</b> covered at room temperature for after the rest. Do not chill or warm this small portion with the main water.`
+    `Houd ongeveer <b>${fmt(c.reserve,c.runAllocation&&!c.practical?1:0)} g reservewater</b> afgedekt op kamertemperatuur voor na de rust. Koel of verwarm dit kleine deel niet mee met het hoofdwater.`,
+    `Keep about <b>${fmt(c.reserve,c.runAllocation&&!c.practical?1:0)} g reserved water</b> covered at room temperature for after the rest. Do not chill or warm this small portion with the main water.`
   );
   let mainLine;
   if(wt.achievable){
     mainLine=L(
-      `Streef naar <b>${fmt(c.doughTemp,1)} °C</b> einddeegtemperatuur. Breng alleen de resterende <b>${fmt(c.mainWater,0)} g hoofdwater</b> voor de eerste menging op ongeveer <b>${fmt(wt.water,0)} °C</b>.`,
-      `Aim for a final dough temperature of <b>${fmt(c.doughTemp,1)} °C</b>. Bring only the remaining <b>${fmt(c.mainWater,0)} g main water</b> for the first mix to approximately <b>${fmt(wt.water,0)} °C</b>.`
+      `Streef naar <b>${fmt(c.doughTemp,1)} °C</b> einddeegtemperatuur. Breng alleen de resterende <b>${fmt(c.mainWater,c.runAllocation&&!c.practical?1:0)} g hoofdwater</b> voor de eerste menging op ongeveer <b>${fmt(wt.water,0)} °C</b>.`,
+      `Aim for a final dough temperature of <b>${fmt(c.doughTemp,1)} °C</b>. Bring only the remaining <b>${fmt(c.mainWater,c.runAllocation&&!c.practical?1:0)} g main water</b> for the first mix to approximately <b>${fmt(wt.water,0)} °C</b>.`
     );
   }else if(Number.isFinite(wt.water)&&Number.isFinite(wt.predictedFinal)){
     mainLine=L(
@@ -5682,8 +6025,8 @@ function waterTemperatureGuidance(c,wt){
     ' Cold tap water may be sufficient; measure it before mixing.'
   ));
   if(wt.iceWater)notes.push(L(
-    ` Hiervoor is ijswater nodig. Koel het hoofdwater met ijs, verwijder resterend ijs en weeg daarna opnieuw precies ${fmt(c.mainWater,0)} g hoofdwater af.`,
-    ` This requires ice water. Chill the main water with ice, remove any remaining ice, then re-weigh exactly ${fmt(c.mainWater,0)} g of main water.`
+    ` Hiervoor is ijswater nodig. Koel het hoofdwater met ijs, verwijder resterend ijs en weeg daarna opnieuw precies ${fmt(c.mainWater,c.runAllocation&&!c.practical?1:0)} g hoofdwater af.`,
+    ` This requires ice water. Chill the main water with ice, remove any remaining ice, then re-weigh exactly ${fmt(c.mainWater,c.runAllocation&&!c.practical?1:0)} g of main water.`
   ));
   if(wt.hot)notes.push(L(
     ' Dit is relatief warm hoofdwater. Meet de einddeegtemperatuur extra zorgvuldig en compenseer een afwijking nooit blind met heter water.',
@@ -5715,15 +6058,15 @@ function waterTemperatureGuidance(c,wt){
 function buildSteps(c){
   ensurePizzaCustomizations();
   const m=methodInstructions(c),aggSauce=aggregateSauceNeeds(c),bake=stoneProfile(c.stoneTemp),live=liveFermentationPlan(c);
-  const oilText=c.o>0?L(` Voeg <b>${fmt(c.oil,0)} g olijfolie</b> pas tegen het einde van het kneden toe.`,` Add <b>${fmt(c.oil,0)} g olive oil</b> only towards the end of the kneading.`):'';
+  const oilText=c.o>0?L(` Voeg <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g olijfolie</b> pas tegen het einde van het kneden toe.`,` Add <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g olive oil</b> only towards the end of the kneading.`):'';
   let i=1,steps=[];
   _stepKeys=[];
   _stepSchedule=live.effective;
   const wt=waterTempAdvice(c);
   const waterText=waterTemperatureGuidance(c,wt);
   steps.push(step(i++,L('Weeg de ingrediënten','Weigh the ingredients'),
-    L(`Bloem <b>${fmt(c.flour,0)} g</b> • water <b>${fmt(c.water,0)} g</b> • zout <b>${fmt(c.salt,0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,2)} g</b>${c.o>0?` • olie <b>${fmt(c.oil,0)} g</b>`:''}.`,
-      `Flour <b>${fmt(c.flour,0)} g</b> • water <b>${fmt(c.water,0)} g</b> • salt <b>${fmt(c.salt,0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,2)} g</b>${c.o>0?` • oil <b>${fmt(c.oil,0)} g</b>`:''}.`),
+    L(`Bloem <b>${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g</b> • water <b>${fmt(c.water,c.runAllocation&&!c.practical?1:0)} g</b> • zout <b>${fmt(c.salt,c.runAllocation&&!c.practical?1:0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,c.runAllocation?runDoseDecimals(c.yeast):2)} g</b>${c.o>0?` • olie <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g</b>`:''}.`,
+      `Flour <b>${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g</b> • water <b>${fmt(c.water,c.runAllocation&&!c.practical?1:0)} g</b> • salt <b>${fmt(c.salt,c.runAllocation&&!c.practical?1:0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,c.runAllocation?runDoseDecimals(c.yeast):2)} g</b>${c.o>0?` • oil <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g</b>`:''}.`),
     `${waterText.reserveLine} ${waterText.mainLine}${waterText.notes}`,'weigh'));
   steps.push(step(i++,L('Eerste menging','First mix'),m.mix,'','mix'));
   steps.push(step(
@@ -5741,10 +6084,8 @@ function buildSteps(c){
   ));
   steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+'<br><br>'+m.knead+oilText,m.note,'knead'));
   const sci=yeastRecommendation(c);
-  steps.push(step(i++,L('Meet de werkelijke deegtemperatuur','Measure the actual dough temperature'),
-    L(`Doel-einddeegtemperatuur na het kneden: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (standaarddoel)':''}. Meet nu direct na het kneden, vóór de herstelrust of handmatige finish, in het midden van de deegmassa.`,
-      `Target final dough temperature after kneading: <b>${fmt(c.doughTemp,1)} °C</b>${c.doughTempDefault?' (default target)':''}. Measure now, immediately after kneading and before the recovery rest or manual finish, in the centre of the dough mass.`),
-    `${L('De gist zit nu al in het deeg. Een afwijkende meting verandert daarom <b>niet</b> achteraf de gistdosering; de calculator past alleen de nog toekomstige fermentatietijden aan.','The yeast is already in the dough. A different measurement therefore does <b>not</b> retroactively change the yeast dose; the calculator only adjusts the future fermentation timings.')}${doughMeasurementControl(c,live)}`,'doughtemp'));
+  // A reading is optional information, not another required cooking step.
+  steps.push(`<div class="step-measurement">${measurementDisclosure('stepDoughMeasurement',doughMeasurementControl(c,live)+measurementPurpose(c),'doughTemp')}</div>`);
   if(m.finish)steps.push(step(i++,L('Korte handmatige finish','Short manual finish'),m.finish,m.finishNote,'manualfinish'));
   steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
     L('Laat een klein stukje eerst 1–2 min ontspannen en rek het dan rustig uit. Stop wanneer het deeg glad, soepel en elastisch is en voldoende dun kan uitrekken zonder direct te scheuren.','Let a small piece relax for 1–2 min, then stretch it gently. Stop when the dough is smooth, supple and elastic, and can stretch sufficiently thin without tearing immediately.'),
@@ -5818,16 +6159,16 @@ function buildSteps(c){
       `At this stone temperature, bake for roughly <b>${bake.time}</b> as a starting point and turn <b>${bake.turn}</b>.`),
     L(`Steentemperatuur is de basis; vlam/bovenwarmte en hoeveelheid beleg blijven mede bepalend. Voor ${pizzaCountLabel(c.pizzas)} achter elkaar: reken op ongeveer <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minuten</b> totale baksessie.`,
       `Stone temperature is the basis; flame/top heat and the amount of topping matter too. For ${pizzaCountLabel(c.pizzas)} in a row, allow roughly <b>${bakeSessionRange(c).low}–${bakeSessionRange(c).high} minutes</b> for the full baking session.`),'bake'));
-  $('stepsList').innerHTML=steps.join('');
+  replaceWorkshopPanel('stepsList',steps.join(''));
   // Vinkjes van stappen die niet meer bestaan opruimen, zodat ze niet
   // eeuwig in localStorage blijven staan en later verkeerd terugkomen.
   pruneCompletedStepState();
   updateStepProgress();
 
   $('recipeBadges').innerHTML=[
-    `<span class="badge">🌾 ${fmt(c.flour,0)} g ${L('bloem','flour')}</span>`,
-    `<span class="badge">💧 ${fmt(c.water,0)} g ${L('water','water')}</span>`,
-    `<span class="badge">🧂 ${fmt(c.salt,0)} g ${L('zout','salt')}</span>`,
+    `<span class="badge">🌾 ${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g ${L('bloem','flour')}</span>`,
+    `<span class="badge">💧 ${fmt(c.water,c.runAllocation&&!c.practical?1:0)} g ${L('water','water')}</span>`,
+    `<span class="badge">🧂 ${fmt(c.salt,c.runAllocation&&!c.practical?1:0)} g ${L('zout','salt')}</span>`,
     `<span class="badge">🫧 ${fmtFixed(c.yeast,2)} g ${yeastShort(c.yeastType)}</span>`,
     `<span class="badge">${c.autolyse?L('✅ autolyse','✅ autolyse'):L('↪️ hydratatierust','↪️ hydration rest')}</span>`,
     `<span class="badge">🍕 ${c.pizzas} × ${displayDoughBallWeight(c)} g</span>`
@@ -5889,6 +6230,7 @@ function refreshBakeDayClock(){
 let _bakeTimeShifted=false;
 function selectedBakeDate(){
   if(activeBatch())return new Date(activeBatch().bakeAt);
+  if(evenings.draft.date){const at=parseEveningTime(evenings.draft.date,evenings.draft.fold);return at===null?null:new Date(at);}
   const dayRaw=$('bakeDay')?.value||'';
   const timeRaw=$('bakeTime')?.value||'';
   if(!dayRaw||!timeRaw)return null;
@@ -6141,7 +6483,7 @@ function timelineTotalHours(c){
 function scheduleView(c,bake=selectedBakeDate()){
   if(activeBatch()){
     const b=activeBatch(),view=WorkflowCore.timeline(b),start=b.events.start;
-    const offsets={...DoughCore.scheduleOffsets(c,prepHours()),...Object.fromEntries(Object.entries(view.times).map(([key,at])=>[key,(at-start)/3600000]))};
+    const offsets={...DoughCore.scheduleOffsets(c,prepHours()),...Object.fromEntries(Object.entries(view.times).map(([key,at])=>[key,at==null?null:(at-start)/3600000]))};
     offsets.preparation=offsets.bulkStart;offsets.beforeFridge=offsets.fridgeIn??null;
     return {offsets,date:key=>view.times[key]==null?null:new Date(view.times[key])};
   }
@@ -6185,7 +6527,7 @@ function buildScheduleSummary(c){
 function buildTimeline(c){
   if(activeBatch()){
     const t=WorkflowCore.timeline(activeBatch());
-    $('timeline').innerHTML=renderBatchTimeline()+`<div class="timeitem"><b>${L('Start voorverwarmen','Start preheating')}</b><span>${niceDate(new Date(t.times.bake-c.preheat*60000))}</span></div>`;
+    $('timeline').innerHTML=renderBatchTimeline()+`<div class="timeitem"><b>${L('Start voorverwarmen','Start preheating')}</b><span>${(t.times.bake==null?L('Onbekend','Unknown'):niceDate(new Date(t.times.bake-c.preheat*60000)))}</span></div>`;
     return;
   }
   const live=liveFermentationPlan(c);
@@ -6709,8 +7051,8 @@ function wizardPages(){
 function wizardPageName(page){
   const nl=currentLang!=='en';
   const names=nl
-    ? {1:'Deeg',2:'Sauzen',3:'Bollen & recepten',4:'Stappenplan'}
-    : {1:'Dough',2:'Sauces',3:'Dough balls & recipes',4:'Workflow'};
+    ? {1:'Deeg',2:'Sauzen',3:'Pizza’s',4:'Keuken'}
+    : {1:'Dough',2:'Sauces',3:'Pizzas',4:'Kitchen'};
   return names[page]||'';
 }
 
@@ -6724,7 +7066,7 @@ function updateWizardNav(activePage=currentWizardPage){
     const idx=pages.indexOf(page);
     btn.classList.toggle('hidden',idx<0);
     btn.classList.toggle('active',page===activePage);
-    if(idx>=0)btn.textContent=`${idx+1}. ${wizardPageName(page)}`;
+    if(idx>=0)btn.textContent=wizardPageName(page);
   });
 
   // Zet de zichtbare knoppen ook fysiek in workflowvolgorde.
@@ -6821,6 +7163,7 @@ function renderExperienceMode(){
 function setExperienceMode(mode){
   experienceMode=mode==='full'?'full':'basic';
   renderExperienceMode();
+  document.querySelectorAll('[data-measurement-disclosure]').forEach(el=>{el.open=experienceMode==='full';});
   scheduleSave();
 }
 
@@ -6890,6 +7233,7 @@ function showPage(n){
   const available=wizardPages();
   if(!available.includes(n))n=available[0];
 
+  if(n!==4&&eveningWakeLock){eveningWakeWanted=false;eveningWakeLock.release().catch(()=>{});eveningWakeLock=null;}
   currentWizardPage=n;
   $('page0').classList.remove('active');
   [1,2,3,4].forEach(page=>$(`page${page}`)?.classList.toggle('active',page===n));
@@ -7015,6 +7359,38 @@ const BATCH_OVEN_FIELDS=new Set(['stoneTemp','preheatMinutes']);
 const workshopDrafts={};
 const workshopPanels=['batchPlanner','batchRunner','scalePlanner','coldStoragePlanner','recipeWorkbench','mixerProfiles','bakeComparison','doughHelp'];
 
+// Native change runs between pointerdown and click. Keep the pressed control
+// mounted until activation has finished; state and storage still update now.
+let panelInteraction=null,panelRenderTimer=null;
+const deferredPanels=new Set();
+function holdPanelRender(id){
+  if(panelInteraction?.id!==id)return false;
+  deferredPanels.add(id);return true;
+}
+function flushPanelRender(){
+  clearTimeout(panelRenderTimer);panelRenderTimer=null;panelInteraction=null;
+  if(deferredPanels.size){deferredPanels.clear();update();}
+}
+function wirePanelInteractions(){
+  const panelFor=node=>{
+    for(let el=node;el;el=el.parentElement)if([...workshopPanels,...eveningPanels,'stepsList'].includes(el.id))return el.id;
+    return null;
+  };
+  const later=delay=>{clearTimeout(panelRenderTimer);panelRenderTimer=setTimeout(flushPanelRender,delay);};
+  document.addEventListener('pointerdown',event=>{
+    flushPanelRender();const id=panelFor(event.target);
+    if(id)panelInteraction={id,pointerId:event.pointerId};
+  },true);
+  document.addEventListener('pointerup',event=>{if(panelInteraction?.pointerId===event.pointerId)later(250);},true);
+  document.addEventListener('click',()=>{if(panelInteraction)later(0);},true);
+  document.addEventListener('pointercancel',()=>{if(panelInteraction)later(0);},true);
+  window.addEventListener('blur',flushPanelRender);
+  document.addEventListener('keydown',event=>{
+    if(!['Tab','Enter',' '].includes(event.key)||panelInteraction)return;
+    const id=panelFor(event.target);if(id){panelInteraction={id};later(0);}
+  },true);
+}
+
 function activeBatch(){return workshop.batch;}
 function workshopId(){return `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;}
 function snapshotRecipe(){
@@ -7066,12 +7442,13 @@ function batchEventName(key){
 }
 function batchMomentIsActual(key){
   const b=activeBatch();if(!b)return false;
-  if(key==='shape'&&b.route!=='room')key=b.route==='coldBalls'?'fridgeIn':'fridgeOut';
+  if(key==='shape'&&b.route==='hybrid')return b.shapedAt!=null;
+  if(key==='shape'&&b.route==='coldBalls')key='fridgeIn';
   if(key==='ballStart')key=b.route==='room'?'shape':'fridgeOut';
   return b.events[key]!=null;
 }
 function observedBatchHours(){
-  const b=activeBatch();if(!b)return null;
+  const b=activeBatch();if(!b||(b.unknownEvents||[]).length)return null;
   const d=WorkflowCore.actualSchedule(b);
   return Object.fromEntries(['bulk','cold','ball'].map(key=>[key,b.route==='room'&&key==='cold'?0:WorkflowCore.phaseDone(b,key)?d[key]:null]));
 }
@@ -7083,6 +7460,9 @@ function workshopError(error,panel=workshopNoticeFor,anchor=workshopNoticeAnchor
   workshopNotice=messages[error.message]||error.message;renderWorkshop(calc());
 }
 function startBatch(){
+  return startEvening();
+}
+function startLegacyBatch(){
   if(activeBatch())return;
   normalizeStoredNumberInputs();
   const r=snapshotRecipe(),c=calc(),entered=$('batchStartAt')?.value||'';
@@ -7102,18 +7482,20 @@ function startBatch(){
   saveWorkshop();showPage(4);$('batchRunnerTitle')?.focus({preventScroll:true});
 }
 function resetBatchEventDraft(){
-  const b=activeBatch(),key=WorkflowCore.eventKeys(b.route).find(x=>b.events[x]==null)||'bake';
+  const b=activeBatch(),key=WorkflowCore.eventKeys(b.route).find(x=>!WorkflowCore.eventDone(b,x))||'bake';
   workshopDrafts.batchEventKey=key;workshopDrafts.batchEventAt=localDateTime(b.events[key]??Date.now());
   if($('batchEventKey'))$('batchEventKey').value=key;
   if($('batchEventAt'))$('batchEventAt').value=workshopDrafts.batchEventAt;
 }
 function recordBatchEvent(key,at){
+  if(activeEvening()){recordEveningEvent(key,at);resetBatchEventDraft();renderWorkshop(calc());return;}
   if(!activeBatch())return;
   workshop.batch=WorkflowCore.recordEvent(activeBatch(),key,at);
   workshopNotice='';resetBatchEventDraft();
   saveWorkshop();
 }
 function closeBatch(){
+  if(activeEvening())return handleEveningAction({dataset:{eveningAction:'finish'}});
   const b=activeBatch();if(!b)return;
   captureBatchOven();
   workshop.history=[...workshop.history,{...WorkflowCore.clone(b),status:'finished'}].slice(-20);
@@ -7123,6 +7505,7 @@ function closeBatch(){
   saveWorkshop();showPage(1);
 }
 function resumeBatch(id){
+  if(evenings.history.some(e=>e.id===id||e.runs.some(r=>r.id===id)))return reopenEvening(id);
   if(activeBatch())return;
   const b=workshop.history.find(x=>x.id===id);if(!b)return;
   workshop.batch={...WorkflowCore.clone(b),status:'active'};workshop.history=workshop.history.filter(x=>x.id!==id);
@@ -7143,14 +7526,14 @@ function recordBatchMeasurement(kind,value){
 function batchProposal(){return WorkflowCore.finalProofProposal(activeBatch(),calc(),{doughTemp:liveMeasurementValue('doughTemp'),fridgeTemp:liveMeasurementValue('fridgeTemp')},DoughCore);}
 function batchProposalHtml(){
   const p=batchProposal();
-  const reasons={'checkpoint-needed':L('Een verwacht overgangsmoment is verstreken. Registreer de werkelijke overgang, of verleng eerst de huidige fase; daarna kan het model de resterende eindrijs voorstellen.','An expected phase transition has passed. Record the actual transition, or extend the current phase first; the model can then propose remaining final proof.'),'no-measurement':L('Vul eerst een werkelijke deeg- of koelkasttemperatuur in het stappenplan in.','First enter an actual dough or fridge temperature in the workflow.'),deadband:L('De deegtemperatuur ligt binnen ±1 °C van het doel; het kamertemperatuurschema blijft staan.','Dough temperature is within ±1 °C of the target; the room-temperature schedule stays unchanged.'),'past-target':L('Het modeldoel lijkt al bereikt. Eerder verstreken tijd kan niet worden teruggedraaid: beoordeel het deeg nu.','The model target appears to have been reached already. Elapsed time cannot be undone: inspect the dough now.'),unreachable:L('Geen modeloplossing binnen 48 uur eindrijs. Gebruik dit niet als betrouwbaar tijdadvies.','No model solution within 48 hours of final proof. Do not treat this as reliable timing advice.'),completed:L('De bakstart is geregistreerd; het schema wordt niet meer aangepast.','The bake checkpoint is recorded; the schedule will no longer be adjusted.')};
+  const reasons={'unknown-history':L('Er ontbreken werkelijke tijden. Het model kan geen betrouwbaar voorstel voor de resterende rijs geven. Vul eerst de geschiedenis aan.','Actual times are missing. The model cannot provide a reliable remaining-proof proposal. Complete the history first.'),'checkpoint-needed':L('Een verwacht overgangsmoment is verstreken. Registreer de werkelijke overgang, of verleng eerst de huidige fase; daarna kan het model de resterende eindrijs voorstellen.','An expected phase transition has passed. Record the actual transition, or extend the current phase first; the model can then propose remaining final proof.'),'no-measurement':L('Vul eerst een werkelijke deeg- of koelkasttemperatuur in het stappenplan in.','First enter an actual dough or fridge temperature in the workflow.'),deadband:L('De deegtemperatuur ligt binnen ±1 °C van het doel; het kamertemperatuurschema blijft staan.','Dough temperature is within ±1 °C of the target; the room-temperature schedule stays unchanged.'),'past-target':L('Het modeldoel lijkt al bereikt. Eerder verstreken tijd kan niet worden teruggedraaid: beoordeel het deeg nu.','The model target appears to have been reached already. Elapsed time cannot be undone: inspect the dough now.'),unreachable:L('Geen modeloplossing binnen 48 uur eindrijs. Gebruik dit niet als betrouwbaar tijdadvies.','No model solution within 48 hours of final proof. Do not treat this as reliable timing advice.'),completed:L('De bakstart is geregistreerd; het schema wordt niet meer aangepast.','The bake checkpoint is recorded; the schedule will no longer be adjusted.')};
   if(!p.ok)return `<p class="hint">${reasons[p.reason]}</p>`;
   return `<p>${L('Modelvoorstel voor de totale eindrijs','Model proposal for total final proof')}: <b>${durationLabel(p.ball)}</b> · ${L('nog ongeveer','roughly remaining')} ${durationLabel(p.remaining)}.</p><p class="hint">${L('Gebaseerd op gemeten temperaturen en geregistreerde fases. Dit evenaart alleen de geschatte gasontwikkeling, niet automatisch glutensterkte of smaak. Bulk en koelkast worden niet ingekort. De vaste baktijd blijft zichtbaar; vergelijk het deeg met de gereedheidskenmerken.','Based on measured temperatures and recorded phases. This only matches estimated gas development, not automatically gluten strength or flavour. Bulk and refrigeration are not shortened. The fixed bake target stays visible; compare the dough with the readiness cues.')}</p><button type="button" class="btn secondary" data-workshop-action="apply-proof">${L('Dit voorstel voor eindrijs gebruiken','Use this final-proof proposal')}</button>`;
 }
 function renderBatchTimeline(){
   const b=activeBatch();if(!b)return '';
   const t=WorkflowCore.timeline(b);
-  const rows=WorkflowCore.eventKeys(b.route).map(key=>`<div class="timeitem"><b>${batchEventName(key)}<small>${t.actual[key]?L('Werkelijk geregistreerd','Actually recorded'):L('Verwacht','Expected')}</small></b><span>${niceDate(new Date(t.times[key]))}</span></div>`).join('');
+  const rows=WorkflowCore.eventKeys(b.route).map(key=>`<div class="timeitem"><b>${batchEventName(key)}<small>${t.actual[key]?L('Werkelijk geregistreerd','Actually recorded'):L('Verwacht','Expected')}</small></b><span>${(t.times[key]==null?L('Tijd onbekend','Time unknown'):niceDate(new Date(t.times[key])))}</span></div>`).join('');
   const offset=Math.abs(t.delta);
   return `<div class="batch-target"><span>${L('Vaste gewenste bakstart','Fixed requested bake time')}</span><strong>${niceDate(new Date(b.bakeAt))}</strong></div>${offset>1/60?`<p class="warning">${L('De huidige verwachting ligt','The current estimate is')} ${durationLabel(offset)} ${t.delta>0?L('ná','after'):L('vóór','before')} ${L('je gewenste bakstart. Er worden geen rust- of kneedstappen automatisch ingekort.','your requested bake time. No rest or kneading stages are automatically shortened.')}</p>`:''}${rows}<p class="hint">${L('Verwachte tijden schuiven mee met je werkelijke momenten. Een verstreken tijd betekent niet dat de stap is uitgevoerd. Afvinkvakjes registreren geen tijdstip.','Expected times follow your actual checkpoints. A time passing does not mean the step has happened. Checkboxes do not record timestamps.')}</p>`;
 }
@@ -7163,7 +7546,7 @@ function renderBatchPanels(){
     replaceWorkshopPanel('batchRunner',`<h2 id="batchRunnerTitle" tabindex="-1">${L('Houd je batch bij','Track your batch')}</h2><p>${L('Zet dit recept vast om echte start-, koelkast- en bakmomenten te bewaren.','Fix this recipe to save actual start, fridge and bake checkpoints.')}</p><button class="btn" type="button" data-workshop-action="start-batch">${L('Start deze batch','Start this batch')}</button>`);
     return;
   }
-  const keys=WorkflowCore.eventKeys(b.route),next=keys.find(key=>b.events[key]==null);
+  const keys=WorkflowCore.eventKeys(b.route),next=keys.find(key=>!WorkflowCore.eventDone(b,key));
   const options=keys.filter(key=>b.events[key]!=null||key===next);
   const selected=options.includes(workshopDrafts.batchEventKey)?workshopDrafts.batchEventKey:(next||'bake');
   const phases=[['bulk',L('Bulk buiten','Bulk at room temperature')],...(b.route==='room'?[]:[['cold',L('Koelkast','Fridge')]]),['ball',L('Eindrijs / opwarmen','Final proof / warm-up')]];
@@ -7173,6 +7556,7 @@ function renderBatchPanels(){
 }
 
 function replaceWorkshopPanel(id,html){
+  if(holdPanelRender(id))return;
   const root=$(id),notice=id===workshopNoticeFor?workshopNotice:'';
   const noticeKey=JSON.stringify([notice,notice?workshopNoticeAnchor:'']);
   if(!root||(root._workshopHtml===html&&root._workshopNoticeKey===noticeKey))return;
@@ -7180,6 +7564,8 @@ function replaceWorkshopPanel(id,html){
   const open=[...root.querySelectorAll('details[open]')].map(el=>el.id);
   const focused=document.activeElement,focusId=root.contains?.(focused)?focused.id:null;
   const focusValue=focusId&&focused.tagName==='INPUT'?focused.value:null;
+  const actionSelector='[data-evening-action],[data-workshop-action]';
+  const actionData=root.contains?.(focused)&&focused.matches?.(actionSelector)?JSON.stringify(focused.dataset):null;
   root.innerHTML=html;root._workshopHtml=html;root._workshopNoticeKey=noticeKey;
   for(const key of open){const el=$(key);if(el)el.open=true;}
   if(notice){
@@ -7193,6 +7579,11 @@ function replaceWorkshopPanel(id,html){
     });
   }
   if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
+  else if(actionData){
+    const same=[...root.querySelectorAll(actionSelector)].find(el=>JSON.stringify(el.dataset)===actionData);
+    // A completed action may disappear; continue at this panel's next main action.
+    (same||root.querySelector('.btn.primary[data-evening-action],.btn.primary[data-workshop-action]')||root.querySelector(actionSelector))?.focus({preventScroll:true});
+  }
 }
 function collectWorkshopDrafts(){
   for(const id of workshopPanels)for(const el of $(id)?.querySelectorAll('[data-draft]')||[])workshopDrafts[el.id]=el.value;
@@ -7253,7 +7644,7 @@ function renderScalePlanner(c){
 }
 function renderColdStoragePlanner(c){
   const s=activeBatch()?.storage||workshop.storage,capacity=WorkflowCore.capacity(c.pizzas,s),locked=!!activeBatch();
-  replaceWorkshopPanel('coldStoragePlanner',`<details id="coldStorageDetails"><summary>${L('Past mijn deeg in de koelkast?','Will my dough fit in the fridge?')}</summary>${c.ferm==='room'?`<p class="hint">${L('Dit recept rijst volledig buiten de koelkast. De bakindeling blijft beschikbaar voor je volgende koude batch.','This recipe proofs entirely outside the fridge. Container settings remain available for your next cold batch.')}</p>`:''}<div class="workshop-grid">${workshopSelect('workshopColdRoute',L('Koude fermentatie in','Cold fermentation in'),[['bulk',L('Bulk · één deegmassa','Bulk · one dough mass')],['balls',L('Losse bollen','Individual balls')]],c.ferm==='coldBalls'?'balls':'bulk',{disabled:locked||c.ferm==='room'})}${workshopInput('storage-ballsPerBox',L('Bollen die ruim in één bak passen','Balls fitting comfortably in one box'),s.ballsPerBox,{type:'number',min:1,max:24,step:1,draft:false,disabled:locked})}${workshopInput('storage-boxes',L('Beschikbare bakken die in je koelkast passen','Available boxes that fit in your fridge'),s.boxes,{type:'number',min:1,max:24,step:1,draft:false,disabled:locked})}${workshopInput('storage-depth',L('Hoogte van je deegmassa (cm)','Depth of your dough mass (cm)'),s.depth,{type:'number',min:1,max:30,step:.5,draft:false,disabled:locked})}${workshopSelect('storage-layout',L('Plaatsing','Placement'),[['single',L('Naast elkaar','Side by side')],['stacked',L('Gestapeld','Stacked')]],s.layout,{disabled:locked})}${workshopSelect('storage-load',L('Koelkastbezetting','Fridge load'),[['normal',L('Ruimte rond de bakken','Space around the boxes')],['full',L('Vrij vol','Quite full')]],s.load,{disabled:locked})}</div><p class="${capacity.fits?'info':'warning'}">${L('Voor','For')} ${c.pizzas} ${L('bollen heb je','balls you need')} <b>${capacity.needed}</b> ${L('bak(ken) nodig','box(es)')}. ${capacity.fits?L('Volgens jouw invulling past dat.','According to your entries, they fit.'):L(`Je komt ${capacity.missing} bak(ken) tekort. Verklein de batch of regel meer passende bakken.`,`You are ${capacity.missing} box(es) short. Reduce the batch or arrange more boxes that fit.`)}</p><p class="hint">${L(`Bulkhoogte: ${fmt(s.depth,1)} cm. Het temperatuurmodel onderscheidt bulk en bollen, maar is niet gekalibreerd op jouw bakdiepte, stapeling of koelkastbelasting. Geef bollen ruimte om te rijzen en laat lucht rond de bakken circuleren. De temperatuur in het midden van deeg loopt achter op de koelkastlucht.`,`Bulk depth: ${fmt(s.depth,1)} cm. The temperature model distinguishes bulk and balls, but is not calibrated for your container depth, stacking or fridge load. Leave room for balls to rise and for air around the boxes. Dough core temperature lags behind fridge air.`)}</p>${s.layout==='stacked'||s.load==='full'?`<p class="warning">${L('Gestapelde bakken of een volle koelkast maken de geschatte koeltijd minder overdraagbaar. Meet de koelkast bij het deeg; gebruik de geplande koelkasttijd niet als bewijs dat de deegkern al op temperatuur is.','Stacked boxes or a full fridge make the estimated cooling time less transferable. Measure the fridge near the dough; planned refrigeration time does not prove the dough core has reached that temperature.')}</p>`:''}</details>`);
+  replaceWorkshopPanel('coldStoragePlanner',`<details id="coldStorageDetails"><summary>${L('Past mijn deeg in de koelkast?','Will my dough fit in the fridge?')}</summary>${c.ferm==='room'?`<p class="hint">${L('Dit recept rijst volledig buiten de koelkast. De bakindeling blijft beschikbaar voor je volgende koude batch.','This recipe proofs entirely outside the fridge. Container settings remain available for your next cold batch.')}</p>`:''}<div class="workshop-grid">${workshopSelect('workshopColdRoute',L('Koude fermentatie in','Cold fermentation in'),[['bulk',L('Bulk · één deegmassa','Bulk · one dough mass')],['balls',L('Losse bollen','Individual balls')]],c.ferm==='coldBalls'?'balls':'bulk',{disabled:locked||c.ferm==='room'})}${workshopInput('storage-ballsPerBox',L('Bollen die ruim in één bak passen','Balls fitting comfortably in one box'),s.ballsPerBox,{type:'number',min:1,max:24,step:1,draft:false,disabled:locked})}${workshopInput('storage-boxes',L('Beschikbare bakken die in je koelkast passen','Available boxes that fit in your fridge'),s.boxes,{type:'number',min:1,max:24,step:1,draft:false,disabled:locked})}${workshopInput('storage-depth',L('Hoogte van je deegmassa (cm)','Depth of your dough mass (cm)'),s.depth,{type:'number',min:1,max:30,step:.5,draft:false,disabled:locked})}${workshopSelect('storage-layout',L('Plaatsing','Placement'),[['single',L('Naast elkaar','Side by side')],['stacked',L('Gestapeld','Stacked')]],s.layout,{disabled:locked})}${workshopSelect('storage-load',L('Koelkastbezetting','Fridge load'),[['normal',L('Ruimte rond de bakken','Space around the boxes')],['full',L('Vrij vol','Quite full')]],s.load,{disabled:locked})}</div><p class="${c.ferm==='hybrid'?'hint':capacity.fits?'info':'warning'}">${c.ferm==='hybrid'?L('Bulkcapaciteit is niet beoordeeld. Controleer de inhoud en rijsmarge van je bak zelf. Hieronder staat alleen de indeling voor losse bollen.','Bulk capacity is not assessed. Check your container volume and expansion margin yourself. The following allocation applies only to individual balls.')+'<br>':''}${L('Voor','For')} ${c.pizzas} ${L('bollen heb je','balls you need')} <b>${capacity.needed}</b> ${L('bak(ken) nodig','box(es)')}. ${c.ferm==='hybrid'?'':capacity.fits?L('Volgens jouw invulling past dat.','According to your entries, they fit.'):L(`Je komt ${capacity.missing} bak(ken) tekort. Verklein de batch of regel meer passende bakken.`,`You are ${capacity.missing} box(es) short. Reduce the batch or arrange more boxes that fit.`)}</p><p class="hint">${L(`Bulkhoogte: ${fmt(s.depth,1)} cm. Het temperatuurmodel onderscheidt bulk en bollen, maar is niet gekalibreerd op jouw bakdiepte, stapeling of koelkastbelasting. Geef bollen ruimte om te rijzen en laat lucht rond de bakken circuleren. De temperatuur in het midden van deeg loopt achter op de koelkastlucht.`,`Bulk depth: ${fmt(s.depth,1)} cm. The temperature model distinguishes bulk and balls, but is not calibrated for your container depth, stacking or fridge load. Leave room for balls to rise and for air around the boxes. Dough core temperature lags behind fridge air.`)}</p>${s.layout==='stacked'||s.load==='full'?`<p class="warning">${L('Gestapelde bakken of een volle koelkast maken de geschatte koeltijd minder overdraagbaar. Meet de koelkast bij het deeg; gebruik de geplande koelkasttijd niet als bewijs dat de deegkern al op temperatuur is.','Stacked boxes or a full fridge make the estimated cooling time less transferable. Measure the fridge near the dough; planned refrigeration time does not prove the dough core has reached that temperature.')}</p>`:''}</details>`);
 }
 function renderRecipeWorkbench(){
   const recipes=workshop.recipes,current=snapshotRecipe();if(!current)return;
@@ -7385,9 +7776,398 @@ function handleWorkshopChange(el){
     }).catch(()=>workshopError(new Error(L('Het bestand kon niet worden gelezen.','The file could not be read.')),'recipeWorkbench','#importRecipeFile'));
   }
 }
-const SAVE_KEY='pizzaCalcV52';
-const SAVE_VERSION=52;
-const LEGACY_KEYS=Array.from({length:26},(_,i)=>`pizzaCalcV${51-i}`);
+/* The evening owns run and pizza identities; the legacy batch view is an adapter. */
+let evenings={active:null,history:[],templates:[],draft:{pizzas:[],date:'',earliest:'',unavailable:[],cleanup:0,split:{unit:'dough',capacity:null}}};
+let eveningNotice='';
+let eveningImport=null;
+let eveningShare=null;
+let pendingEveningTemplate=null;
+let eveningWakeLock=null;
+let eveningWakeWanted=false;
+let kitchenQueueOpenedFor='';
+const eveningPanels=['eveningPlan','eveningOptions','eveningCollection','kitchenWorkspace'];
+function activeEvening(){return evenings.active;}
+function selectedRun(){return activeEvening()?.runs.find(r=>r.id===activeEvening().selectedRun)||null;}
+function bindEveningRun(){
+  if(!activeEvening())return;
+  workshop.batch=selectedRun()?.batch||null;
+  if(workshop.batch){liveMeasurements={...workshop.batch.measurements};completedSteps={...workshop.batch.progress};}
+}
+function syncEveningRun(){
+  const run=selectedRun();if(!run||!workshop.batch)return;
+  run.batch=workshop.batch;run.batch.progress={...completedSteps};
+  for(const key of BATCH_OVEN_FIELDS){
+    activeEvening().recipe.fields[key]=workshop.batch.recipe.fields[key];
+    activeEvening().template.recipe.fields[key]=workshop.batch.recipe.fields[key];
+    activeEvening().runs.forEach(r=>{if(r.batch)r.batch.recipe.fields[key]=workshop.batch.recipe.fields[key];});
+  }
+}
+function runDoseDecimals(value){return value>0?Math.max(2,Math.min(6,1-Math.floor(Math.log10(value)))):2;}
+function runCalculation(c){
+  const run=selectedRun();if(!run)return c;
+  const q=run.allocation.display,total=['flour','water','salt','yeast','oil'].reduce((s,k)=>s+q[k],0);
+  return {...c,...q,pizzas:run.balls,total,actualBall:total/run.balls,actualH:q.water/q.flour*100,actualS:q.salt/q.flour*100,actualY:q.yeast/q.flour*100,actualO:q.oil/q.flour*100,runAllocation:true};
+}
+function pizzaSnapshot(index,c){
+  const recipe=recipeById(pizzaSelections[index]),custom=pizzaCustomizations[index],after=new Set(recipe.after||[]);
+  const items=includedItemsForBall(index).map(item=>({name:item[0],nameEn:ITEM_EN[item[0]]||item[0],quantity:item[1],unit:['g','ml'].includes(item[2])?item[2]:'st',after:after.has(itemKey(item))}));
+  const before=items.filter(x=>!x.after),finish=items.filter(x=>x.after);
+  if(appMode!=='dough'&&$('includeSauce').checked&&!custom.noSauce){
+    const type=$('autoSauceFromPizzas').checked?effectiveSauceTypeForBall(index):$('sauceType').value;
+    const amount=$('autoSauceFromPizzas').checked?effectiveSauceGramsForBall(index):manualSaucePerPizza();
+    before.unshift({name:sauces[type]?.name||type,nameEn:sauces[type]?.nameEn||type,quantity:amount,unit:'g'});
+  }
+  const cheese=extraCheeseAdvice(index,c);
+  if(custom.extraCheese&&cheese.allowed)before.push({name:cheese.name,nameEn:ITEM_EN[cheese.name]||cheese.name,quantity:cheese.amount,unit:'g'});
+  return {name:appMode==='full'?recipe.name:'Pizza',nameEn:appMode==='full'?englishDataText(recipe.name,recipe.nameEn):'Pizza',before:appMode==='full'?before:appMode==='sauce'?before.slice(0,1):[],after:appMode==='full'?finish:[]};
+}
+function syncEveningPizzas(c=calc()){
+  ensurePizzaCustomizations();
+  const list=activeEvening()?.pizzas||evenings.draft.pizzas;
+  // Array order is a compatibility projection; IDs are the authoritative identity.
+  pizzaSelections.forEach((rid,i)=>{
+    if(!list[i])list[i]={id:workshopId(),name:'',recipeId:rid,custom:WorkflowCore.clone(pizzaCustomizations[i]),events:{},runId:''};
+    const p=list[i];
+    if(p.events.in!=null){pizzaSelections[i]=p.recipeId;pizzaCustomizations[i]=WorkflowCore.clone(p.custom);return;}
+    if(p.unresolved)return;
+    p.recipeId=rid;p.custom=WorkflowCore.clone(pizzaCustomizations[i]);p.snapshot=pizzaSnapshot(i,c);
+  });
+  if(!activeEvening()&&!_deferDependentStatePrune)list.length=pizzaSelections.length;
+}
+function projectEveningPizzas(list){
+  pizzaSelections=list.map(p=>p.recipeId);pizzaCustomizations=list.map(p=>WorkflowCore.clone(p.custom));
+}
+function captureEveningTemplate(name=L('Pizza-avond','Pizza evening')){
+  syncEveningPizzas();
+  const e=activeEvening();
+  return EveningCore.cleanTemplate({id:workshopId(),name,recipe:e?.recipe||snapshotRecipe(),mode:appMode,pizzas:e?.pizzas||evenings.draft.pizzas,
+    sauce:{enabled:$('includeSauce').checked,automatic:$('autoSauceFromPizzas').checked,type:$('sauceType').value,grams:manualSaucePerPizza()},
+    split:e?.template.split||evenings.draft.split,storage:e?.template.storage||workshop.storage,scale:workshop.scale,profile:currentMixerProfile()});
+}
+function eveningFailure(error){
+  const messages={
+    'one-ball':L('Eén deegbal overschrijdt deze capaciteit. Kies een grotere kom of kleinere bollen.','One dough ball exceeds this capacity. Use a larger bowl or smaller balls.'),
+    'rounding-capacity':L('Deze verdeling past na afronden niet binnen de capaciteit.','This allocation exceeds capacity after rounding.'),
+    'bowl-busy':L('Rond eerst het afwerken van de vorige mixerbeurt af; daarna is de kom vrij.','Finish the previous mixer run first; the bowl is then free.'),
+    'oven-busy':L('Er staat al een pizza in de oven. Registreer eerst het uithalen.','A pizza is already in the oven. Record its removal first.'),
+    'run-not-started':L('Start eerst de mixerbeurt van deze pizza.','Start this pizza’s mixer run first.'),
+    'missing-previous':L(`Registreer eerst “${batchEventName(kitchenCurrentKey())}”; de tijd mag onbekend zijn.`,`First record “${batchEventName(kitchenCurrentKey())}”; its time may be unknown.`),
+    'order':L('Dit moment past niet tussen de andere werkelijke momenten.','This time does not fit between the other actual checkpoints.'),
+    'future':L('Gebruik een werkelijke tijd, uiterlijk nu en vóór de gewenste bakstart.','Use an actual time, no later than now and before the requested bake time.'),
+    'dependent':L('Er zijn latere handelingen. Corrigeer het tijdstip bij de geregistreerde momenten.','Later actions exist. Correct the time in the recorded checkpoints.'),
+    'completed':L('Een pizza die al in de oven is geweest behoudt zijn gegevens.','A pizza that has entered the oven keeps its recorded details.'),
+    'nothing-to-undo':L('Er is geen laatste handeling om terug te draaien.','There is no latest action to undo.'),
+    'storage':L('Niet opgeslagen. De vorige opgeslagen gegevens zijn behouden; download zo nodig een back-up.','Not saved. Previously saved data is intact; download a backup if needed.'),
+    'date':L('Kies een bestaande lokale datum en tijd. Bij een dubbel uur kies je de eerste of tweede voorkomst.','Choose an existing local date and time. For a repeated hour, choose the first or second occurrence.'),
+    'capacity':L('Vul een capaciteit van 1–50.000 gram in of laat het veld leeg.','Enter a capacity of 1–50,000 grams or leave the field blank.'),
+    'format':L('Dit bestand is onvolledig, ongeldig of van een niet-ondersteunde versie. Er is niets vervangen.','This file is incomplete, invalid or from an unsupported version. Nothing was replaced.'),
+    'collection-full':L('De verzameling bevat al 30 avonden. Verwijder eerst een sjabloon.','The collection already contains 30 evenings. Delete a template first.')
+  };
+  eveningNotice=messages[error.message]||error.message;
+  renderEvening(calc());
+}
+function commitEvening(next){
+  const previous=evenings.active;syncEveningRun();evenings.active=next;bindEveningRun();
+  if(!saveState()){evenings.active=previous;if(previous)projectEveningPizzas(previous.pizzas);bindEveningRun();throw new Error('storage');}
+  update();
+}
+function startEvening(){
+  if(activeEvening())return;
+  normalizeStoredNumberInputs();syncEveningPizzas();
+  const c=calc(),template=captureEveningTemplate(),allocation=EveningCore.allocate(c,evenings.draft.split);
+  if(!allocation.ok)throw new Error(allocation.reason);
+  if(evenings.draft.pizzas.some(p=>p.unresolved))throw new Error(L('Kies eerst een beschikbaar recept voor de gemarkeerde pizza.','Choose an available recipe for the marked pizza first.'));
+  const entered=$('eveningStartAt')?.value||$('batchStartAt')?.value||'',startedAt=entered?parseEveningTime(entered,'first'):Date.now();
+  if(startedAt==null||startedAt>Date.now()+60000)throw new Error('future');
+  const bakeAt=selectedBakeDate()?.getTime()??startedAt+timelineTotalHours(c)*3600000;
+  if(bakeAt<=startedAt)throw new Error('future');
+  const plan={preparation:prepHours(),bulk:c.bulk,cold:c.cold,ball:c.ball};
+  const next=EveningCore.createEvening({id:workshopId(),template,allocation,startedAt,bakeAt,plan,zone:Intl.DateTimeFormat().resolvedOptions().timeZone});
+  if(entered){next.runs[0].batch.measurements={...liveMeasurements};next.runs[0].batch.progress={...completedSteps};}
+  eveningNotice='';commitEvening(next);showPage(4);
+}
+function recordEveningEvent(key,at,unknown=false){
+  const e=WorkflowCore.clone(activeEvening()),run=e.runs.find(r=>r.id===e.selectedRun);if(!run?.batch)return;
+  if(key==='bake'&&e.pizzas.some(p=>p.runId===run.id&&p.events.in!=null))throw new Error('dependent');
+  if(WorkflowCore.eventDone(run.batch,key)&&at===null&&!unknown)return;
+  const previous=WorkflowCore.clone(run.batch);
+  run.batch=unknown?WorkflowCore.recordUnknownEvent(run.batch,key):WorkflowCore.recordEvent(run.batch,key,at??Date.now());
+  const stepKeys={bulkStart:['s-mix','s-rest','s-knead','s-manualfinish'],fridgeIn:['s-bulk',...(run.batch.route==='coldBalls'?['s-shape']:[])],fridgeOut:['s-cold'],shape:['s-bulk','s-shape'],bake:['s-ballproof']};
+  for(const step of stepKeys[key]||[])run.batch.progress[step]=true;
+  e.undo={type:'event',runId:run.id,key,events:previous.events,unknownEvents:previous.unknownEvents||[],progress:previous.progress};e.revision++;
+  commitEvening(e);
+}
+function kitchenCurrentKey(b=activeBatch()){return b?WorkflowCore.eventKeys(b.route).find(k=>!WorkflowCore.eventDone(b,k)):null;}
+function eveningButton(action,label,extra='',kind='secondary'){return `<button type="button" class="btn ${kind}" data-evening-action="${action}" ${extra}>${label}</button>`;}
+function eveningField(id,label,value,type='text',extra=''){return `<label>${label}<input class="field" id="${id}" type="${type}" value="${esc(value??'')}" ${extra}></label>`;}
+function eveningPanel(id,html){
+  // Reuse the proven details/focus preserving renderer without sharing notices.
+  replaceWorkshopPanel(id,html);
+}
+function renderKitchen(c){
+  if(holdPanelRender('kitchenWorkspace'))return;
+  const e=activeEvening(),b=activeBatch(),run=selectedRun();
+  if(!e){eveningPanel('kitchenWorkspace',`<h2>${L('Keuken','Kitchen')}</h2><p>${L('Je hoeveelheden en alle instructies zijn klaar. Start wanneer je echt gaat mengen.','Your quantities and all instructions are ready. Start when you actually begin mixing.')}</p>${eveningButton('start',L('Start deeg','Start dough'),'','primary')}${eveningNotice?`<p class="info" role="status">${esc(eveningNotice)}</p>`:''}`);return;}
+  const key=kitchenCurrentKey(b),view=WorkflowCore.timeline(b),rc=runCalculation(c),m=methodInstructions(rc),wt=waterTemperatureGuidance(rc,waterTempAdvice(rc));
+  const title=key==='bulkStart'?L('Mengen, rusten en kneden','Mix, rest and knead'):key==='fridgeIn'||key==='shape'?L('Bulkrijs','Bulk proof'):key==='fridgeOut'?L('Koude fermentatie','Cold fermentation'):L('Opwarmen, openen en bakken','Warm up, open and bake');
+  const selected=e.runs.indexOf(run);
+  const nextTime=key&&view.times[key]!=null?niceDate(new Date(view.times[key])):L('Tijd onbekend','Time unknown');
+  const runNav=e.runs.length>1?`<div class="run-switch" role="group" aria-label="${L('Mixerbeurt','Mixer run')}">${e.runs.map((r,i)=>eveningButton(r.batch?'select-run':'start-run',L(`Beurt ${i+1} · ${r.balls} bollen${r.batch?'':' · starten'}`,`Run ${i+1} · ${r.balls} balls${r.batch?'':' · start'}`),`data-id="${esc(r.id)}" aria-pressed="${r.id===e.selectedRun}"`)).join('')}</div>`:'';
+  const mixing=key==='bulkStart'?`<div class="kitchen-ingredients">${['flour','water','salt','yeast','oil'].filter(k=>rc[k]>0).map(k=>`<span><b>${fmt(rc[k],k==='yeast'?runDoseDecimals(rc[k]):rc.practical?0:1)} g</b> ${{flour:L('bloem','flour'),water:L('water','water'),salt:L('zout','salt'),yeast:yeastName(c.yeastType),oil:L('olie','oil')}[k]}</span>`).join('')}</div><div class="kitchen-programme"><p>${wt.reserveLine} ${wt.mainLine}${wt.notes}</p><p>${m.mix}</p><p><b>${c.autolyse?L('30 min autolyse in de koelkast','30 min autolyse in the fridge'):L('20 min hydratatierust','20 min hydration rest')}</b></p><p>${m.add}</p><p>${m.knead}</p><p>${m.note||''}</p>${measurementDisclosure('kitchenDoughMeasurement',eveningField('kitchenDoughTemp',L('Direct na kneden gemeten (°C)','Measured directly after kneading (°C)'),liveMeasurements.doughTemp,'number','min="10" max="40" step="0.5"')+measurementPurpose(c),'doughTemp')}<p>${m.finish||''} ${m.finishNote||''}</p><p>${L('Beoordeel samenhang, elasticiteit en een ontspannen windowpane. Sterk maar strak deeg heeft vooral rust nodig.','Assess cohesion, elasticity and a rested windowpane. Strong but tight dough mainly needs rest.')}</p></div>`:'';
+  const cues=key==='fridgeIn'?L('Bewaar deze beurt apart. Controleer of het deeg samenhangend en voldoende ontwikkeld is; de klok alleen beslist dat niet.','Keep this run separate. Check that the dough is cohesive and sufficiently developed; time alone does not decide this.'):
+    key==='fridgeOut'?L('Het deeg rust in de koelkast. Volgende handeling: uit de koelkast. De kern kan warmer zijn dan de koelkastlucht.','The dough is resting in the fridge. Next action: take it out. The core can be warmer than the fridge air.'):
+    L('Zoek luchtigheid, soepelheid en ontspanning. Nog koud of sterk terugverend? Laat afgedekt ontspannen en beoordeel opnieuw. Erg slap deeg vraagt voorzichtig behandelen.','Look for aeration, pliability and relaxation. Still cold or strongly recoiling? Rest covered and reassess. Very slack dough needs gentle handling.');
+  const moments=WorkflowCore.eventKeys(b.route).map(k=>`<div class="checkpoint-row"><span>${batchEventName(k)}<small>${b.events[k]!=null?niceDate(new Date(b.events[k])):WorkflowCore.eventDone(b,k)?L('Gedaan, tijd onbekend','Done, time unknown'):L('Nog niet geregistreerd','Not recorded yet')}</small></span>${k==='start'?'':`<div>${eveningButton('correct-event',L('Tijd aanpassen','Correct time'),`data-key="${k}"`)}${k===key?eveningButton('unknown-event',L('Gedaan, tijd onbekend','Done, time unknown'),`data-key="${k}"`):''}</div>`}</div>`).join('');
+  const correction=workshopDrafts.eveningCorrectKey?`<div class="workshop-grid">${eveningField('eveningEventAt',batchEventName(workshopDrafts.eveningCorrectKey),workshopDrafts.eveningEventAt||localDateTime(),'datetime-local')}<label>${L('Bij een dubbel uur','For a repeated hour')}<select class="field" id="eveningTimeFold"><option value="first">${L('Eerste voorkomst','First occurrence')}</option><option value="second">${L('Tweede voorkomst','Second occurrence')}</option></select></label></div>${eveningButton('save-event-time',L('Moment bewaren','Save checkpoint'))}`:'';
+  const zone=e.zone&&e.zone!==Intl.DateTimeFormat().resolvedOptions().timeZone?`<p class="hint">${L('Oorspronkelijke tijdzone','Original time zone')}: ${esc(e.zone)} · ${new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'nl-NL',{dateStyle:'medium',timeStyle:'short',timeZone:e.zone}).format(e.bakeAt)}. ${L('Hierboven staat je lokale tijd.','Your local time is shown above.')}</p>`:'';
+  eveningPanel('kitchenWorkspace',`<div class="kitchen-heading"><div><span class="eyebrow">${L('Keuken','Kitchen')}${e.runs.length>1?` · ${L('Beurt','Run')} ${selected+1}/${e.runs.length}`:''}</span><h2>${title}</h2><p>${pizzaCountLabel(c.pizzas)} · ${L('Geplande eerste pizza in de oven','Planned first pizza in the oven')}: <b>${niceDate(new Date(e.bakeAt))}</b></p>${zone}</div>${eveningButton('wake',eveningWakeLock&&!eveningWakeLock.released?L('Scherm blijft aan','Screen stays awake'):L('Scherm aanhouden','Keep screen awake'),'aria-pressed="'+String(!!eveningWakeLock&&!eveningWakeLock.released)+'"','ghost')}</div>${runNav}${eveningNotice?`<p class="info" role="status">${esc(eveningNotice)}</p>`:''}${mixing}${key!=='bulkStart'?`<p>${cues}</p>`:''}${key&&key!=='bake'?`<p>${L('Volgende handeling','Next action')}: <b>${batchEventName(key)}</b> · ${nextTime}</p>${eveningButton('event-now',batchEventName(key),`data-key="${key}"`,'primary')}`:''}<div class="btnrow">${e.undo?eveningButton('undo',L('Laatste handeling ongedaan maken','Undo latest action'),'','ghost'):''}${eveningButton('help',L('Deeg reageert anders?','Dough behaving differently?'),'','ghost')}</div><details id="kitchenHistory"><summary>${L('Momenten aanvullen of corrigeren','Complete or correct checkpoints')}</summary>${moments}${correction}${b.route==='hybrid'?`<p class="hint">${L('Uit de koelkast is geen geregistreerd opbolmoment. Opbollen blijft een aparte handeling binnen de bestaande eindrijstijd.','Fridge-out is not a recorded shaping time. Shaping remains a separate action within the existing final-proof allowance.')}</p>`:''}</details><details id="kitchenTimers"><summary>${L('Rusttimer en herinneringen','Rest timer and reminders')}</summary>${eveningField('restTimerMinutes',L('Timer (minuten)','Timer (minutes)'),workshopDrafts.restTimerMinutes||5,'number','min="1" max="1440"')}<div class="btnrow">${eveningButton('start-timer',L('Timer starten','Start timer'))}${eveningButton('calendar',L('Planning naar agenda (.ics)','Planning to calendar (.ics)'))}</div><p class="hint">${L('Een timer verandert je planning niet. Bij extra rust kun je de resterende tijden apart aanpassen. De pagina garandeert geen alarm als zij gesloten of gepauzeerd is. Een agenda-export is een momentopname.','A timer does not change the plan. For extra rest, adjust remaining times separately. The page cannot guarantee an alarm when closed or suspended. A calendar export is a snapshot.')}</p></details>${e.timer?`<p class="timer-status" id="eveningTimer" role="status"></p>${eveningButton('stop-timer',L('Timer stoppen','Stop timer'),'','ghost')}`:''}<details id="bakingWorkspace" ${key==='bake'||!key||e.pizzas.some(p=>p.events.in!=null)?'open':''}><summary>${L('Bakvolgorde','Baking queue')} · ${e.pizzas.length} ${L('pizza’s','pizzas')}</summary><div id="bakingQueue">${bakingQueueHtml(c,e)}</div></details><div class="btnrow">${eveningButton('finish',L('Avond bewaren en afsluiten','Save and finish evening'),'','ghost')}</div>`);
+  const bakingNow=key==='bake'||!key||e.pizzas.some(p=>p.events.in!=null);
+  if(bakingNow){
+    const panel=$('kitchenWorkspace'),queue=$('bakingWorkspace');
+    const anchor=panel.querySelector('.run-switch')||panel.querySelector('.kitchen-heading');
+    if(anchor&&queue&&queue.previousElementSibling!==anchor)anchor.after(queue);
+    if(kitchenQueueOpenedFor!==e.id)queue.open=true;
+    kitchenQueueOpenedFor=e.id;
+  }else kitchenQueueOpenedFor='';
+  renderEveningTimer();
+}
+function pizzaLabel(p,e=activeEvening()){const index=e.pizzas.findIndex(x=>x.id===p.id);return `${p.name||L('Pizza','Pizza')+' '+(index+1)} · ${currentLang==='en'?p.snapshot.nameEn:p.snapshot.name}`;}
+function toppingSnapshotHtml(p,after=false){
+  const items=p.snapshot[after?'after':'before'];return items.length?`<p><b>${after?L('Na het bakken','After baking'):L('Vóór het bakken','Before baking')}</b>: ${items.map(x=>`${esc(currentLang==='en'?x.nameEn:x.name)} <b>${fmt(x.quantity,x.quantity<1?2:1)} ${tUnit(x.unit,x.quantity)}</b>`).join(' · ')}</p>`:after?'':`<p>${L('Geen toppings gekozen.','No toppings selected.')}</p>`;
+}
+function bakingQueueHtml(c,e){
+  const current=e.pizzas.find(p=>p.events.in!=null&&p.events.out==null),next=e.pizzas.find(p=>p.events.in==null),last=e.pizzas.filter(p=>p.events.out!=null).sort((a,b)=>b.events.out-a.events.out)[0];
+  const nextRun=next?e.runs.find(r=>r.id===next.runId):null,nextBake=nextRun?.batch?WorkflowCore.timeline(nextRun.batch).times.bake:null;
+  const nextTiming=nextRun?.batch?(nextBake==null?L('Prognose onbekend door ontbrekende werkelijke tijden.','Forecast unknown because actual times are missing.'):`${L('Verwachte bakstart voor deze beurt','Expected bake start for this run')}: ${niceDate(new Date(nextBake))}.`):L('Deze mixerbeurt is nog niet gestart.','This mixer run has not started.');
+  const stone=stoneProfile(c.stoneTemp),forecast=EveningCore.forecast(e.pizzas,{low:stone.secLow,high:stone.secHigh,manualGap:e.manualGap},e.pizzas.some(p=>p.events.in!=null)?Date.now():Math.max(Date.now(),e.bakeAt));
+  return `<h3>${L('Bakken','Baking')}</h3><p>${L('Steen','Stone')}: <b>${fmt(c.stoneTemp,0)} °C</b> · ${stone.time}. ${L('Controleer de steen en het bakbeeld; de timer is een hulpmiddel.','Check the stone and the bake; the timer is a guide.')}</p>${current?`<div class="pizza-current"><h3>${L('In de oven','In the oven')}: ${esc(pizzaLabel(current,e))}</h3><p>${L('Sinds','Since')} ${niceDate(new Date(current.events.in))} · <span id="bakeElapsed"></span></p>${eveningButton('pizza-out',L('Uit oven','Out of oven'),`data-id="${esc(current.id)}"`,'primary')}</div>`:''}${last?`<div class="pizza-finishing"><b>${L('Net uit de oven','Just out of the oven')}: ${esc(pizzaLabel(last,e))}</b>${toppingSnapshotHtml(last,true)}<small>${L('Uit de oven betekent nog niet afgewerkt of geserveerd.','Out of the oven does not mean garnished or served.')}</small></div>`:''}${next?`<div class="pizza-next"><h3>${L('Volgende','Next')}: ${esc(pizzaLabel(next,e))}</h3><p>${L('Deeg uit beurt','Dough from run')} ${e.runs.findIndex(r=>r.id===next.runId)+1} · ${nextTiming} ${L('Beoordeel ook het deeg.','Also assess the dough.')}</p>${toppingSnapshotHtml(next)}${toppingSnapshotHtml(next,true)}${!current?eveningButton('pizza-in',L('In oven','In oven'),`data-id="${esc(next.id)}"`,'primary'):''}</div>`:''}<p class="hint">${L('Gebakken','Baked')}: ${e.pizzas.filter(p=>p.events.out!=null).length}/${e.pizzas.length}. ${forecast.remaining?`${forecast.observed?L('Eerste pizza uit oven','First pizza out of oven'):L('Eerste pizza naar verwachting klaar','First pizza expected ready')}: ${niceDate(new Date(forecast.firstReadyAt))}. ${L('Laatste pizza naar verwachting klaar','Last pizza expected ready')}: ${niceDate(new Date(forecast.finishAt))}. ${forecast.observed?L(`Gebaseerd op ${forecast.observed} baktijden; pauzes apart (${fmt(forecast.gapSeconds/60,1)} min).`,`Based on ${forecast.observed} bake times; gaps kept separate (${fmt(forecast.gapSeconds/60,1)} min).`):L('Schatting volgens het bestaande ovenadvies.','Estimate follows existing oven guidance.')}`:''}</p><details id="queueDetails"><summary>${L('Volgorde en namen aanpassen','Edit order and names')}</summary>${e.pizzas.map((p,i)=>`<div class="queue-row"><span><b>${esc(pizzaLabel(p,e))}</b><small>${p.events.out!=null?L('Uit oven','Out of oven'):p.events.in!=null?L('In oven','In oven'):L('Wachtend','Queued')}</small></span>${p.events.in==null?`<div class="queue-controls"><input class="field" aria-label="${L('Naam pizza','Pizza name')} ${i+1}" data-pizza-name="${esc(p.id)}" value="${esc(p.name)}" maxlength="80" placeholder="${L('Naam (optioneel)','Name (optional)')}">${eveningButton('pizza-up',L('Eerder','Earlier'),`data-id="${esc(p.id)}" ${i===0?'disabled':''}`)}${eveningButton('pizza-down',L('Later','Later'),`data-id="${esc(p.id)}" ${i===e.pizzas.length-1?'disabled':''}`)}${e.template.mode==='full'?eveningButton('pizza-edit',L('Toppings','Toppings'),`data-id="${esc(p.id)}"`):''}</div>`:''}</div>`).join('')}${eveningField('eveningGap',L('Pauze tussen pizza’s (min; leeg = waargenomen)','Gap between pizzas (min; blank = observed)'),e.manualGap==null?'':e.manualGap/60,'number','min="0" max="60" step="0.5"')}</details>`;
+}
+function renderEveningTimer(){
+  const elapsed=$('bakeElapsed'),pizza=activeEvening()?.pizzas.find(p=>p.events.in!=null&&p.events.out==null);
+  if(elapsed&&pizza){const seconds=Math.max(0,Math.floor((Date.now()-pizza.events.in)/1000));elapsed.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')} ${L('verstreken','elapsed')}`;}
+  const element=$('eveningTimer'),timer=activeEvening()?.timer;if(!element||!timer)return;
+  const seconds=Math.ceil((timer.endAt-Date.now())/1000),remaining=Math.max(0,seconds);
+  element.textContent=seconds<=0?L('Timer klaar · beoordeel het deeg voordat je verdergaat.','Timer finished · assess the dough before continuing.'):`${L('Rusttimer','Rest timer')} · ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+}
+async function toggleEveningWake(){
+  if(eveningWakeLock&&!eveningWakeLock.released){eveningWakeWanted=false;await eveningWakeLock.release();eveningWakeLock=null;}
+  else{
+    try{eveningWakeWanted=true;eveningWakeLock=await navigator.wakeLock.request('screen');eveningWakeLock.addEventListener('release',()=>{eveningWakeLock=null;renderKitchen(calc());});}
+    catch{eveningWakeWanted=false;eveningNotice=L('Scherm aanhouden is niet beschikbaar of is door je apparaat geweigerd.','Keeping the screen awake is unavailable or was refused by your device.');}
+  }
+  renderKitchen(calc());
+}
+function parseEveningTime(value,fold='first'){
+  const first=parseLocalDateTime(value);if(first===null)return null;
+  // Offset transitions may be 30, 60 or 120 minutes; select the actual matching wall time.
+  const matches=[first];for(let minutes=15;minutes<=180;minutes+=15)if(localDateTime(first+minutes*60000)===value)matches.push(first+minutes*60000);
+  return fold==='second'?matches.at(-1):first;
+}
+function downloadEveningFile(content,name,type='application/json'){
+  const url=URL.createObjectURL(new Blob([typeof content==='string'?content:JSON.stringify(content,null,2)],{type}));
+  const link=document.createElement('a');link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportEveningCalendar(){
+  const e=activeEvening();if(!e)return;
+  const stamp=at=>new Date(at).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
+  const events=[];
+  for(const [i,run] of e.runs.entries()){
+    if(!run.batch)continue;const timeline=WorkflowCore.timeline(run.batch);
+    for(const key of WorkflowCore.eventKeys(run.batch.route))if(!WorkflowCore.eventDone(run.batch,key)&&timeline.times[key]!=null)events.push(`BEGIN:VEVENT\r\nUID:${run.id}-${key}@pizza-calculator\r\nDTSTAMP:${stamp(Date.now())}\r\nDTSTART:${stamp(timeline.times[key])}\r\nSUMMARY:${L('Beurt','Run')} ${i+1}: ${batchEventName(key)}\r\nEND:VEVENT`);
+  }
+  downloadEveningFile(`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Pizza Calculator//Planning//EN\r\n${events.join('\r\n')}\r\nEND:VCALENDAR\r\n`,'pizza-planning.ics','text/calendar;charset=utf-8');
+}
+
+function reopenEvening(id){
+  if(activeEvening())return;
+  const archived=evenings.history.find(e=>e.id===id||e.runs.some(r=>r.id===id));if(!archived||archived.legacyUnknownToppings)return;
+  const next=WorkflowCore.clone(archived);next.status='active';delete next.closedAt;next.runs.forEach(r=>{if(r.batch)r.batch.status='active';});
+  const history=evenings.history;evenings.history=history.filter(e=>e.id!==archived.id);projectEveningPizzas(next.pizzas);restoreRecipe(next.recipe,false);appMode=next.template.mode;
+  try{commitEvening(next);}catch(error){evenings.history=history;throw error;}
+  showPage(4);
+}
+/* Optional planning and reuse surfaces; ordinary cooking never requires setup here. */
+function eveningTaskName(task){
+  const names={mix:L('Wegen en eerste menging','Weigh and first mix'),rest:L('Passieve rust','Passive rest'),finish:L('Toevoegen, kneden en afwerken','Add, knead and finish'),cleanup:L('Extra opruimbuffer','Extra cleanup buffer'),shape:L('Verdelen en opbollen','Divide and shape'),fridgeIn:L('Koelkast in','Into fridge'),fridgeOut:L('Koelkast uit','Out of fridge'),oven:L('Voorverwarmen · aanwezig blijven','Preheat · remain present'),ovenSetup:L('Oven aanzetten','Set up oven'),ovenCheck:L('Steen controleren','Check stone'),sauce:L('Saus voorbereiden','Prepare sauce'),bake:L('Pizza’s beleggen en bakken','Top and bake pizzas')};
+  return `${task.run>=0?L(`Beurt ${task.run+1} · `,`Run ${task.run+1} · `):''}${names[task.kind]||task.kind}`;
+}
+function eveningSchedule(c,bakeAt=selectedBakeDate()?.getTime()){
+  const allocation=EveningCore.allocate(c,evenings.draft.split);if(!allocation.ok||!bakeAt)return null;
+  const sauce=aggregateSauceNeeds(c),sauceMinutes=appMode==='dough'||!sauce.enabled?0:sauce.groups.reduce((n,g)=>n+8+(g.s.cooked?5:0),0);
+  return EveningCore.schedule({plan:{preparation:prepHours(),bulk:c.bulk,cold:c.cold,ball:c.ball},route:c.ferm,runBalls:allocation.runs.map(r=>r.balls),bakeAt,autolyse:c.autolyse,cleanup:evenings.draft.cleanup,preheat:c.preheat,bakeMinutes:bakeSessionRange(c).high,sauceMinutes});
+}
+function eveningConstraints(){return {earliest:evenings.draft.earliest?parseEveningTime(evenings.draft.earliest,evenings.draft.fold):null,unavailable:evenings.draft.unavailable};}
+let _lastEveningTransition=0;
+function renderEveningPlan(c){
+  const e=activeEvening(),d=evenings.draft,bake=selectedBakeDate(),allocation=EveningCore.allocate(c,e?.template.split||d.split);
+  const modeOptions=[['dough',L('Alleen deeg','Dough only')],['sauce',L('Deeg + saus','Dough + sauce')],['full',L('Volledige pizza’s','Complete pizzas')]];
+  eveningPanel('eveningPlan',`<div class="plan-heading"><div><span class="eyebrow">${L('Plan','Plan')}</span><h2>${pizzaCountLabel(c.pizzas)} · ${fmt(c.targetDiameter,1)} cm</h2><p>${bake?`${L('Eerste pizza in de oven','First pizza in the oven')}: <b>${niceDate(bake)}</b>`:L('Hoeveelheden en werkwijze, ook zonder vaste bakdatum.','Quantities and instructions, also without a fixed baking date.')}</p></div><div>${eveningButton(e?'go-kitchen':'start',e?L('Verder in de keuken','Continue in Kitchen'):L('Start deeg','Start dough'),'','primary')}</div></div>${eveningNotice?`<p class="info" role="status">${esc(eveningNotice)}</p>`:''}${!e?`<details id="eveningAlreadyStarted"><summary>${L('Al begonnen?','Already started?')}</summary>${eveningField('eveningStartAt',L('Werkelijke start (lokaal)','Actual start (local)'),workshopDrafts.eveningStartAt||'','datetime-local')}</details>`:''}<div class="plan-shortcuts"><label>${L('Wat maak je?','What are you making?')}<select class="field" id="eveningMode" ${e?'disabled':''}>${modeOptions.map(([value,label])=>`<option value="${value}" ${appMode===value?'selected':''}>${label}</option>`).join('')}</select></label><div class="btnrow">${appMode==='full'?eveningButton('pizzas',L('Pizza’s en toppings','Pizzas and toppings')):''}${appMode!=='dough'?eveningButton('sauces',L('Sauzen','Sauces')):''}${eveningButton('ingredients',L('Alle hoeveelheden','All quantities'))}${eveningButton('go-kitchen',L('Instructies bekijken','View instructions'),'','ghost')}</div></div><p class="hint">${mixerMethodName(currentMethod)}${allocation.ok&&allocation.runs.length>1?` · ${allocation.runs.length} ${L('aparte mixerbeurten','separate mixer runs')}`:''} · ${L('Je huidige werk wordt automatisch bewaard.','Your current work is saved automatically.')}</p>`);
+  const split=allocation.ok?`<p>${allocation.runs.length===1?L('Eén mixerbeurt.','One mixer run.'):L(`${allocation.runs.length} aparte beurten: ${allocation.runs.map(r=>r.balls).join(' + ')} bollen.`,`${allocation.runs.length} separate runs: ${allocation.runs.map(r=>r.balls).join(' + ')} balls.`)}</p><div class="table-scroll"><table class="workshop-table"><thead><tr><th>${L('Beurt','Run')}</th>${['flour','water','salt','yeast','oil'].map(k=>`<th>${{flour:L('Bloem','Flour'),water:L('Water','Water'),salt:L('Zout','Salt'),yeast:L('Gist','Yeast'),oil:L('Olie','Oil')}[k]} (g)</th>`).join('')}</tr></thead><tbody>${allocation.runs.map((r,i)=>`<tr><th>${i+1} · ${r.balls} ${L('bollen','balls')}</th>${['flour','water','salt','yeast','oil'].map(k=>`<td>${fmt(r.display[k],k==='yeast'?runDoseDecimals(r.display[k]):c.practical?0:1)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${allocation.runs.some(r=>WorkflowCore.weighing(r.exact.yeast,workshop.scale).tooCoarse||r.exact.yeast>0&&r.display.yeast===0)?`<p class="warning">${L('Een gistdosis per beurt is klein voor je schaalverdeling. Gebruik een fijnere weegschaal; de oorspronkelijke dosis is niet aangepast.','A per-run yeast dose is small for your scale resolution. Use a finer scale; the original dose was not changed.')}</p>`:''}<p class="hint">${L('Eén kom, beurten achter elkaar. Houd het deeg per beurt apart tijdens de rijs. De capaciteit is jouw opgegeven limiet; algemene merkadviezen zijn geen modelspecificatie.','One bowl, sequential runs. Keep each run separate during proof. Capacity is your entered limit; general brand advice is not a model specification.')}</p>`:`<p class="warning">${allocation.reason==='one-ball'?L('Zelfs één bol overschrijdt deze limiet.','Even one ball exceeds this limit.'):L('Controleer capaciteit en verdeling.','Check capacity and allocation.')}</p>`;
+  const tasks=!e?eveningSchedule(c):null,constraints=eveningConstraints(),conflicts=tasks?EveningCore.conflicts(tasks,constraints):[],options=conflicts.length?EveningCore.alternatives(tasks,constraints):[];
+  const availability=!tasks?`<p class="hint">${e?L('De avond loopt. Werkelijke tijden corrigeer je in de keuken; de oorspronkelijke agenda blijft een referentie.','The evening is running. Correct actual checkpoints in Kitchen; the original calendar remains a reference.'):L('Kies eerst een bakdatum om je beschikbaarheid te controleren.','Choose a baking date to check your availability.')}</p>`:`<p class="${conflicts.length?'warning':'info'}">${conflicts.length?L(`${conflicts.length} aandachtspunt(en) in deze planning.`,`This plan has ${conflicts.length} conflict(s).`):L('De ingevoerde beschikbaarheid past bij deze planning.','The entered availability fits this plan.')}</p>${conflicts.slice(0,8).map(x=>`<p>${esc(eveningTaskName(x.task))} · ${niceDate(new Date(x.task.start))}: ${x.reason==='resource'?L('overlap met ander actief werk','overlaps other active work'):x.reason==='earliest'?L('vóór je vroegste start','before your earliest start'):L('tijdens afwezigheid','during your absence')}</p>`).join('')}${conflicts.length?options.length?`<details id="availabilityAlternatives"><summary>${L('Andere baktijden met hetzelfde recept','Other bake times with the same recipe')}</summary>${options.map(option=>`<p>${L('Eerste pizza in oven','First pizza in oven')}: <b>${niceDate(new Date(bake.getTime()+option.minutes*60000))}</b>. ${L('Het hele plan schuift','The whole plan shifts')} ${option.minutes} min. ${eveningButton('apply-availability',L('Deze baktijd gebruiken','Use this bake time'),`data-minutes="${option.minutes}"`)}</p>`).join('')}</details>`:`<p class="hint">${L('Geen passend alternatief binnen 24 uur later. Kies bewust een andere bakdag, beschikbaarheid of recept. Meng- en rusttijden worden niet ingekort.','No fitting alternative within 24 hours later. Deliberately choose another bake day, availability or recipe. Mixing and rest times are not shortened.')}</p>`:''}<details id="availabilityTasks"><summary>${L('Actieve taken en wachttijden','Active tasks and waits')}</summary>${tasks.map(t=>`<div class="timeitem"><span>${esc(eveningTaskName(t))}<small>${t.active?L('Actief','Active'):t.attendance?L('Aanwezig blijven','Remain present'):L('Passief','Passive')}</small></span><span>${niceDate(new Date(t.start))} – ${new Date(t.end).toLocaleTimeString(currentLang==='en'?'en-GB':'nl-NL',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')}</details>`;
+  eveningPanel('eveningOptions',`<details id="eveningDateDetails"><summary>${L('Een andere datum of beschikbaarheid','Another date or availability')}</summary>${eveningField('eveningBakeDate',L('Vaste bakdatum (optioneel)','Fixed bake date (optional)'),d.date,'datetime-local',e?'disabled':'')}<p class="hint">${L('Een vaste datum blijft staan wanneer de dag wisselt. De snelkeuzes morgen/overmorgen blijven relatief zolang je geen vaste datum kiest.','A fixed date stays put when the day changes. Tomorrow/in-two-days shortcuts remain relative until you choose a fixed date.')}</p><div class="workshop-grid">${eveningField('eveningEarliest',L('Ik kan niet eerder beginnen dan','I cannot start before'),d.earliest,'datetime-local',e?'disabled':'')}${eveningField('eveningCleanup',L('Extra opruimen per beurt (min)','Extra cleanup per run (min)'),d.cleanup,'number',`min="0" max="60" ${e?'disabled':''}`)}<label>${L('Bij een dubbel uur','For a repeated hour')}<select class="field" id="planTimeFold" ${e?'disabled':''}><option value="first" ${d.fold!=='second'?'selected':''}>${L('Eerste voorkomst','First occurrence')}</option><option value="second" ${d.fold==='second'?'selected':''}>${L('Tweede voorkomst','Second occurrence')}</option></select></label></div><div class="workshop-grid">${eveningField('unavailableFrom',L('Afwezig vanaf','Unavailable from'),workshopDrafts.unavailableFrom||'','datetime-local',e?'disabled':'')}${eveningField('unavailableUntil',L('Tot','Until'),workshopDrafts.unavailableUntil||'','datetime-local',e?'disabled':'')}</div>${eveningButton('add-unavailable',L('Afwezigheid toevoegen','Add unavailable time'),e?'disabled':'')}${d.unavailable.map((interval,i)=>`<p>${niceDate(new Date(interval.start))} – ${niceDate(new Date(interval.end))} ${eveningButton('remove-unavailable',L('Verwijderen','Remove'),`data-index="${i}" ${e?'disabled':''}`,'ghost')}</p>`).join('')}${availability}<p class="hint">${L('Actief werk en aanwezigheid bij de oven worden gecontroleerd; passieve rust kan overlappen. De opruimbuffer telt niet nogmaals mee als deegrijs.','Active work and oven attendance are checked; passive rest may overlap. Cleanup is not counted again as dough proofing.')}</p></details><details id="eveningSplitDetails"><summary>${L('Verdelen over mixerbeurten','Split into mixer runs')}</summary><div class="workshop-grid"><label>${L('Capaciteit uitgedrukt in','Capacity expressed in')}<select class="field" id="splitUnit" ${e?'disabled':''}><option value="dough" ${(e?.template.split||d.split).unit==='dough'?'selected':''}>${L('Totaal deeg (g)','Total dough (g)')}</option><option value="flour" ${(e?.template.split||d.split).unit==='flour'?'selected':''}>${L('Bloem (g)','Flour (g)')}</option></select></label>${eveningField('splitCapacity',L('Bekende capaciteit (g; leeg = één beurt)','Known capacity (g; blank = one run)'),(e?.template.split||d.split).capacity,'number',`min="1" max="50000" ${e?'disabled':''}`)}</div>${split}</details>`);
+}
+function missingTemplateChoices(t){
+  return {pizzas:t.pizzas.filter(p=>!pizzaRecipes.some(r=>r.id===p.recipeId)),sauces:[...new Set([t.sauce.type,...t.pizzas.map(p=>p.custom.sauceOverride).filter(Boolean)])].filter(id=>!sauces[id])};
+}
+function templateResolutionHtml(){
+  const t=pendingEveningTemplate;if(!t)return '';
+  const missing=missingTemplateChoices(t);
+  return `<div class="restore-preview" id="templateResolution"><h3>${L('Kies vervangende recepten','Choose replacement recipes')}</h3><p>${L('Deze recepten ontbreken in de huidige catalogus. Kies bewust een vervanging; het bewaarde sjabloon blijft intact.','These recipes are missing from the current catalogue. Choose replacements explicitly; the saved template stays intact.')}</p>${missing.pizzas.map(p=>`<label>${esc(currentLang==='en'?p.snapshot.nameEn:p.snapshot.name)}<select class="field" data-resolve-pizza="${esc(p.id)}"><option value="">${L('Kies een recept','Choose a recipe')}</option>${pizzaRecipes.map(r=>`<option value="${esc(r.id)}">${esc(currentLang==='en'?r.nameEn||r.name:r.name)}</option>`).join('')}</select></label>`).join('')}${missing.sauces.map(id=>`<label>${L('Ontbrekende saus','Missing sauce')}: ${esc(id)}<select class="field" data-resolve-sauce="${esc(id)}"><option value="">${L('Kies een saus','Choose a sauce')}</option>${Object.entries(sauces).map(([id,s])=>`<option value="${esc(id)}">${esc(currentLang==='en'?s.nameEn||s.name:s.name)}</option>`).join('')}</select></label>`).join('')}<div class="btnrow">${eveningButton('resolve-template',L('Met deze keuzes gebruiken','Use these choices'))}${eveningButton('cancel-template',L('Annuleren','Cancel'),'','ghost')}</div></div>`;
+}
+function eveningArchiveHtml(e){
+  return `<details class="evening-archive"><summary>${L('Momenten en metingen bekijken','View checkpoints and readings')}</summary><p>${L('Geplande bakstart','Planned bake start')}: ${niceDate(new Date(e.bakeAt))}</p>${e.runs.map((r,i)=>r.batch?`<h4>${L('Beurt','Run')} ${i+1} · ${r.balls} ${L('bollen','balls')}</h4>${WorkflowCore.eventKeys(r.batch.route).map(key=>`<div class="checkpoint-row"><span>${batchEventName(key)}<small>${r.batch.events[key]!=null?niceDate(new Date(r.batch.events[key])):WorkflowCore.eventDone(r.batch,key)?L('Gedaan, tijd onbekend','Done, time unknown'):L('Niet geregistreerd','Not recorded')}</small></span></div>`).join('')}<p>${L('Gemeten na kneden','Measured after kneading')}: ${r.batch.measurements.doughTemp==null?'—':fmt(r.batch.measurements.doughTemp,1)+' °C'} · ${L('Gemeten koelkast','Measured fridge')}: ${r.batch.measurements.fridgeTemp==null?'—':fmt(r.batch.measurements.fridgeTemp,1)+' °C'}</p>`:`<p>${L('Beurt','Run')} ${i+1}: ${L('Niet gestart','Not started')}</p>`).join('')}</details>`;
+}
+function renderEveningCollection(){
+  const templates=evenings.templates,history=evenings.history;
+  const sharePreview=eveningShare?`<div class="restore-preview" id="eveningSharePreview"><h3>${L('Dit ga je delen','What you will share')}</h3><p>${L('Deegrecept, sauzen, toppings, volgorde, verdeling en materiaal. Namen, programmanotities, datums, metingen en werkelijke geschiedenis zijn weggelaten.','Dough recipe, sauces, toppings, order, allocation and equipment. Names, programme notes, dates, readings and actual history are omitted.')}</p><ol>${eveningShare.template.pizzas.map(p=>`<li>${esc(currentLang==='en'?p.snapshot.nameEn:p.snapshot.name)}</li>`).join('')}</ol><details><summary>${L('Volledige bestandsinhoud','Full file contents')}</summary><pre class="share-file-content">${esc(JSON.stringify(eveningShare,null,2))}</pre></details><div class="btnrow">${eveningButton('download-shared',L('Bestand downloaden','Download file'))}${eveningButton('cancel-share',L('Annuleren','Cancel'),'','ghost')}</div></div>`:'';
+  const preview=eveningImport?`<div class="restore-preview"><h3>${eveningImport.kind==='backup'?L('Back-up herstellen','Restore backup'):L('Avondsjabloon toevoegen','Add evening template')}</h3><p>${esc(eveningImport.description)}</p>${eveningImport.kind==='backup'?`<p class="warning">${L('Dit vervangt alle lokale gegevens, ook een lopende avond. Download eventueel eerst je huidige back-up.','This replaces all local data, including a running evening. Download your current backup first if needed.')}</p>${eveningButton('backup',L('Huidige back-up downloaden','Download current backup'))}`:''}${eveningButton('confirm-import',L('Herstellen bevestigen','Confirm restore'))}${eveningButton('cancel-import',L('Annuleren','Cancel'),'','ghost')}</div>`:'';
+  eveningPanel('eveningCollection',`<details id="eveningCollectionDetails"><summary>${L('Avonden bewaren, herhalen en overzetten','Save, repeat and transfer evenings')}</summary>${eveningField('eveningTemplateName',L('Naam voor deze avond','Name for this evening'),workshopDrafts.eveningTemplateName||'')}<div class="btnrow">${eveningButton('save-template',L('Als avondsjabloon bewaren','Save as evening template'))}${eveningButton('share-template',L('Avond delen (.json)','Share evening (.json)'))}</div><p class="hint">${L('Een sjabloon bewaart het recept, toppings, volgorde en materiaal. Nieuwe avonden beginnen zonder datum, metingen of voortgang. Gedeelde bestanden bevatten geen namen of privégeschiedenis.','A template keeps the recipe, toppings, order and equipment. New evenings start without a date, readings or progress. Shared files contain no names or private history.')}</p>${templates.map(t=>`<div class="collection-row"><b>${esc(t.name)}</b><div>${eveningButton('load-template',L('Opnieuw maken','Make again'),`data-id="${esc(t.id)}" ${activeEvening()?'disabled':''}`)}${eveningButton('delete-template',L('Verwijderen','Delete'),`data-id="${esc(t.id)}"`,'ghost')}</div></div>`).join('')}${history.length?`<details id="eveningHistory"><summary>${L('Eerdere avonden','Previous evenings')} (${history.length})</summary>${history.slice().reverse().map(e=>`<div class="collection-row"><span>${niceDate(new Date(e.createdAt))}<small>${e.legacyUnknownToppings?L('Oude batch · toppings onbekend','Legacy batch · toppings unknown'):L(`${e.pizzas.filter(p=>p.events.out!=null).length}/${e.pizzas.length} pizza’s uit oven geregistreerd`,`${e.pizzas.filter(p=>p.events.out!=null).length}/${e.pizzas.length} pizzas recorded out of oven`)}</small></span>${eveningButton('reopen-evening',L('Openen','Open'),`data-id="${esc(e.id)}" ${activeEvening()||e.legacyUnknownToppings?'disabled':''}`)}${eveningButton('repeat-evening',L('Opnieuw maken','Make again'),`data-id="${esc(e.id)}" ${activeEvening()||e.legacyUnknownToppings?'disabled':''}`)}</div>${eveningArchiveHtml(e)}`).join('')}</details>`:''}<hr><div class="btnrow">${eveningButton('backup',L('Privéback-up downloaden','Download private backup'))}</div><label>${L('Sjabloon of privéback-up openen (.json)','Open template or private backup (.json)')}<input class="field" type="file" accept=".json,application/json" id="eveningImportFile"></label><p class="hint">${L('Een privéback-up bevat alle lokale gegevens, inclusief echte tijden, namen en notities. Herstel om op een ander apparaat verder te gaan; werk daarna op één apparaat. Dit is een momentopname, geen synchronisatie.','A private backup contains all local data, including actual times, names and notes. Restore it to continue on another device; then work on one device. This is a snapshot, not synchronization.')}</p>${preview}${sharePreview}${templateResolutionHtml()}</details>`);
+}
+function applyEveningTemplate(template){
+  if(activeEvening())return;
+  const t=EveningCore.cleanTemplate(template);if(!t)throw new Error('format');
+  // Unknown catalogue references must be resolved explicitly, never mapped to Margherita.
+  const missing=missingTemplateChoices(t);
+  if(missing.pizzas.length||missing.sauces.length){pendingEveningTemplate=t;renderEveningCollection();$('eveningCollectionDetails').open=true;return;}
+  pendingEveningTemplate=null;
+  restoreRecipe(t.recipe,false);appMode=t.mode;projectEveningPizzas(t.pizzas);
+  evenings.draft={pizzas:WorkflowCore.clone(t.pizzas).map(p=>({...p,id:workshopId(),events:{},runId:''})),date:'',earliest:'',unavailable:[],cleanup:0,split:WorkflowCore.clone(t.split)};
+  workshop.storage=t.storage;workshop.scale=t.scale;
+  if(t.profile){if(!workshop.profiles.some(p=>p.id===t.profile.id))workshop.profiles=[...workshop.profiles,t.profile].slice(-20);workshop.profileId=t.profile.id;}
+  $('includeSauce').checked=t.sauce.enabled;$('autoSauceFromPizzas').checked=t.sauce.automatic;$('sauceType').value=t.sauce.type;$('saucePerPizza').value=t.sauce.grams;
+  $('bakeDay').value='';liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};_livePlanCache={key:null,value:null};saveState();showPage(1);
+}
+function renderEvening(c){
+  if(!$('eveningPlan'))return;
+  syncEveningRun();syncEveningPizzas(c);renderEveningPlan(c);renderEveningCollection();renderKitchen(c);
+  document.querySelectorAll('[data-workspace]').forEach(button=>{const selected=button.dataset.workspace===(currentWizardPage===4?'kitchen':'plan');button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));button.textContent=button.dataset.workspace==='kitchen'?L('Keuken','Kitchen'):'Plan';});
+  if($('instructionsSummary'))$('instructionsSummary').textContent=L('Alle instructies, tijdlijn en logboek','All instructions, timeline and logbook');
+}
+async function handleEveningAction(button){
+  // A repaint can preserve a focused value without the browser's pending change
+  // event. Commit the visible reading before replacing its phase or run.
+  const temperature=$('kitchenDoughTemp');
+  if(temperature&&activeBatch()){
+    const raw=temperature.value.trim(),value=validMeasured(raw,10,40);
+    if(raw!==''&&value===null)throw new Error(L('Vul een deegtemperatuur van 10–40 °C in, of laat het veld leeg.','Enter a dough temperature between 10–40 °C, or leave the field blank.'));
+    if(value!==liveMeasurementValue('doughTemp'))setLiveMeasurement('doughTemp',raw);
+  }
+  const action=button.dataset.eveningAction,e=activeEvening();eveningNotice='';
+  if(['event-now','unknown-event','pizza-in','pizza-out'].includes(action)){if(Date.now()-_lastEveningTransition<500)return;_lastEveningTransition=Date.now();}
+  if(action==='start')startEvening();
+  else if(action==='go-kitchen')showPage(4);
+  else if(action==='pizzas')showPage(3);
+  else if(action==='sauces')showPage(2);
+  else if(action==='ingredients')openIngredientsModal();
+  else if(action==='event-now')recordEveningEvent(button.dataset.key,null);
+  else if(action==='unknown-event')recordEveningEvent(button.dataset.key,null,true);
+  else if(action==='correct-event'){workshopDrafts.eveningCorrectKey=button.dataset.key;workshopDrafts.eveningEventAt=localDateTime(activeBatch().events[button.dataset.key]??Date.now());renderKitchen(calc());}
+  else if(action==='save-event-time'){const at=parseEveningTime($('eveningEventAt').value,$('eveningTimeFold').value);if(at===null)throw new Error('date');recordEveningEvent(workshopDrafts.eveningCorrectKey,at);delete workshopDrafts.eveningCorrectKey;renderKitchen(calc());}
+  else if(action==='select-run'){syncEveningRun();const next=WorkflowCore.clone(e);next.selectedRun=button.dataset.id;commitEvening(next);}
+  else if(action==='start-run')commitEvening(EveningCore.startRun(e,button.dataset.id,Date.now()));
+  else if(action==='undo')commitEvening(EveningCore.undo(e));
+  else if(action==='pizza-in'||action==='pizza-out')commitEvening(EveningCore.bake(e,button.dataset.id,action==='pizza-in'?'in':'out',Date.now()));
+  else if(action==='pizza-up'||action==='pizza-down'){const next=EveningCore.movePizza(e,button.dataset.id,action==='pizza-up'?-1:1);projectEveningPizzas(next.pizzas);commitEvening(next);}
+  else if(action==='pizza-edit'){const index=e.pizzas.findIndex(p=>p.id===button.dataset.id);if(index>=0&&e.pizzas[index].events.in==null)openPizzaPicker(index);}
+  else if(action==='finish'){
+    syncEveningRun();const previous=WorkflowCore.clone(evenings);const archived=EveningCore.close(e,Date.now());archived.template=captureEveningTemplate(e.name);evenings.history=[...evenings.history,archived].slice(-20);workshop.history=[...workshop.history,...archived.runs.filter(r=>r.batch).map(r=>r.batch)].slice(-20);evenings.active=null;workshop.batch=null;
+    liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};evenings.draft.date='';$('bakeDay').value='';
+    if(!saveState()){evenings=previous;bindEveningRun();throw new Error('storage');}
+    eveningNotice=L('Avond bewaard. Niet gebakken pizza’s blijven als niet gebakken geregistreerd.','Evening saved. Unbaked pizzas remain recorded as unbaked.');showPage(1);
+  }else if(action==='help'){
+    const key=kitchenCurrentKey();workshopDrafts.helpStage=key==='bulkStart'?'mix':key==='bake'||!key?'open':'proof';
+    renderDoughHelp();$('kitchenInstructions').open=true;$('doughHelpDetails').open=true;$('doughHelp').scrollIntoView({block:'center'});
+  }else if(action==='start-timer'){
+    const minutes=Number($('restTimerMinutes').value);if(!Number.isFinite(minutes)||minutes<1||minutes>1440)throw new Error(L('Kies 1–1440 minuten.','Choose 1–1440 minutes.'));
+    const next=WorkflowCore.clone(e);next.timer={startedAt:Date.now(),endAt:Date.now()+minutes*60000,runId:e.selectedRun,label:'rest'};commitEvening(next);
+  }else if(action==='stop-timer'){const next=WorkflowCore.clone(e);next.timer=null;commitEvening(next);}
+  else if(action==='wake')await toggleEveningWake();
+  else if(action==='calendar')exportEveningCalendar();
+  else if(action==='add-unavailable'){
+    if(e)return;const from=$('unavailableFrom').value,until=$('unavailableUntil').value,start=parseEveningTime(from,evenings.draft.fold),end=parseEveningTime(until,evenings.draft.fold);
+    if(start===null||end===null||end<=start)throw new Error('date');if(evenings.draft.unavailable.length>=20)throw new Error(L('Maximaal 20 perioden.','At most 20 intervals.'));
+    evenings.draft.unavailable.push({start,end});delete workshopDrafts.unavailableFrom;delete workshopDrafts.unavailableUntil;saveState();update();
+  }else if(action==='remove-unavailable'){if(e)return;evenings.draft.unavailable.splice(Number(button.dataset.index),1);saveState();update();}
+  else if(action==='apply-availability'){
+    if(e)return;const tasks=eveningSchedule(calc()),minutes=Number(button.dataset.minutes),option=tasks&&EveningCore.alternatives(tasks,eveningConstraints()).find(o=>o.minutes===minutes);
+    if(!option)throw new Error(L('Het voorstel is veranderd. Controleer opnieuw.','The proposal has changed. Review it again.'));
+    evenings.draft.date=localDateTime(selectedBakeDate().getTime()+minutes*60000);$('bakeDay').value='';saveState();update();
+  }else if(action==='save-template'){
+    if(evenings.templates.length>=30)throw new Error('collection-full');const name=$('eveningTemplateName').value.trim();if(!name)throw new Error(L('Geef de avond een naam.','Give the evening a name.'));
+    const template=captureEveningTemplate(name);if(!template)throw new Error('format');evenings.templates.push(template);if(!saveState()){evenings.templates.pop();throw new Error('storage');}eveningNotice=L('Avondsjabloon bewaard.','Evening template saved.');renderEvening(calc());
+  }else if(action==='load-template')applyEveningTemplate(evenings.templates.find(t=>t.id===button.dataset.id));
+  else if(action==='reopen-evening')reopenEvening(button.dataset.id);
+  else if(action==='repeat-evening')applyEveningTemplate(evenings.history.find(h=>h.id===button.dataset.id)?.template);
+  else if(action==='delete-template'){const previous=evenings.templates;evenings.templates=previous.filter(t=>t.id!==button.dataset.id);if(!saveState()){evenings.templates=previous;throw new Error('storage');}renderEvening(calc());}
+  else if(action==='share-template'){
+    eveningShare=EveningCore.exportTemplate(captureEveningTemplate());renderEveningCollection();$('eveningCollectionDetails').open=true;
+  }else if(action==='download-shared'){downloadEveningFile(eveningShare,'pizza-evening.json');}
+  else if(action==='cancel-share'){eveningShare=null;renderEveningCollection();}
+  else if(action==='backup')downloadEveningFile({format:'pizza-private-backup',version:1,createdAt:Date.now(),appVersion:APP_VERSION,state:stateSnapshot()},'pizza-private-backup.json');
+  else if(action==='cancel-template'){pendingEveningTemplate=null;renderEveningCollection();}
+  else if(action==='resolve-template'){
+    const t=WorkflowCore.clone(pendingEveningTemplate);if(!t)return;
+    for(const select of document.querySelectorAll('[data-resolve-pizza]')){
+      if(!pizzaRecipes.some(r=>r.id===select.value))throw new Error(L('Kies voor elk ontbrekend recept een vervanging.','Choose a replacement for each missing recipe.'));
+      const p=t.pizzas.find(p=>p.id===select.dataset.resolvePizza);p.recipeId=select.value;p.custom={recipeId:select.value,excluded:{},noSauce:false,extraCheese:false,pizzaStyle:'traditional',sauceOverride:null};
+    }
+    for(const select of document.querySelectorAll('[data-resolve-sauce]')){
+      if(!sauces[select.value])throw new Error(L('Kies voor elke ontbrekende saus een vervanging.','Choose a replacement for each missing sauce.'));
+      if(t.sauce.type===select.dataset.resolveSauce)t.sauce.type=select.value;
+      t.pizzas.forEach(p=>{if(p.custom.sauceOverride===select.dataset.resolveSauce)p.custom.sauceOverride=select.value;});
+    }
+    applyEveningTemplate(t);
+  }
+  else if(action==='cancel-import'){eveningImport=null;renderEveningCollection();}
+  else if(action==='confirm-import'){
+    if(!eveningImport)return;
+    if(eveningImport.kind==='template'){
+      if(evenings.templates.length>=30)throw new Error('collection-full');const t={...eveningImport.value,id:workshopId()};evenings.templates.push(t);if(!saveState()){evenings.templates.pop();throw new Error('storage');}
+    }else restoreEveningBackup(eveningImport.value);
+    eveningImport=null;eveningNotice=L('Bestand hersteld.','File restored.');update();
+  }
+}
+function wireEveningEvents(){
+  document.querySelectorAll('[data-workspace]').forEach(button=>button.addEventListener('click',()=>showPage(button.dataset.workspace==='kitchen'?4:1)));
+  for(const id of eveningPanels){
+    const root=$(id);if(!root)continue;
+    root.addEventListener('click',async event=>{const button=event.target.closest('[data-evening-action]');if(!button||button.disabled)return;try{await handleEveningAction(button);}catch(error){eveningFailure(error);}});
+    root.addEventListener('input',event=>{if(event.target.id)workshopDrafts[event.target.id]=event.target.value;});
+    root.addEventListener('change',async event=>{
+      const el=event.target;eveningNotice='';
+      try{
+        if(el.id==='eveningMode'){if(activeEvening())return;selectAppMode(el.value);update();}
+        else if(['eveningBakeDate','eveningEarliest','planTimeFold','eveningCleanup','splitUnit','splitCapacity'].includes(el.id)){
+          if(activeEvening())return;
+          if(el.id==='eveningBakeDate'||el.id==='eveningEarliest'){
+            if(el.value&&parseEveningTime(el.value,evenings.draft.fold)===null)throw new Error('date');evenings.draft[el.id==='eveningBakeDate'?'date':'earliest']=el.value;if(el.id==='eveningBakeDate')$('bakeDay').value='';
+          }else if(el.id==='planTimeFold')evenings.draft.fold=el.value;
+          else if(el.id==='eveningCleanup'){const value=Number(el.value);if(!Number.isFinite(value)||value<0||value>60)throw new Error(L('Gebruik 0–60 minuten.','Use 0–60 minutes.'));evenings.draft.cleanup=value;}
+          else if(el.id==='splitUnit')evenings.draft.split.unit=el.value;
+          else{const value=el.value===''?null:Number(el.value);if(value!==null&&(!Number.isFinite(value)||value<1||value>50000))throw new Error('capacity');evenings.draft.split.capacity=value;}
+          saveState();update();
+        }else if(el.id==='kitchenDoughTemp'){setLiveMeasurement('doughTemp',el.value);saveState();}
+        else if(el.dataset.pizzaName){const e=WorkflowCore.clone(activeEvening()),p=e.pizzas.find(p=>p.id===el.dataset.pizzaName);if(p&&p.events.in==null){p.name=el.value.trim().slice(0,80);commitEvening(e);}}
+        else if(el.id==='eveningGap'){const e=WorkflowCore.clone(activeEvening()),value=el.value===''?null:Number(el.value);if(value!==null&&(!Number.isFinite(value)||value<0||value>60))throw new Error(L('Gebruik 0–60 minuten.','Use 0–60 minutes.'));e.manualGap=value===null?null:value*60;commitEvening(e);}
+        else if(el.id==='eveningImportFile'){
+          const file=el.files?.[0];if(!file)return;if(file.size>2000000)throw new Error('format');let value;try{value=JSON.parse(await file.text());}catch{throw new Error('format');}
+          if(value.format==='pizza-evening-template'){
+            if(file.size>250000)throw new Error('format');const t=EveningCore.importTemplate(value);if(!t)throw new Error('format');eveningImport={kind:'template',value:t,description:`${t.name} · ${t.pizzas.length} ${L('pizza’s','pizzas')}`};
+          }else{
+            const candidate=validateEveningBackup(value);if(!candidate)throw new Error('format');eveningImport={kind:'backup',value:candidate,description:`${L('Gemaakt','Created')}: ${niceDate(new Date(value.createdAt))} · ${candidate.evenings.templates.length} ${L('sjablonen','templates')}, ${candidate.evenings.history.length} ${L('avonden','evenings')}${candidate.evenings.active?' · '+L('lopende avond','running evening'):''}`};
+          }
+          renderEveningCollection();
+        }
+      }catch(error){eveningFailure(error);}
+    });
+  }
+  window.setInterval(renderEveningTimer,1000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){renderEveningTimer();if(currentWizardPage===4&&activeEvening())renderKitchen(calc());}});
+}
+const SAVE_KEY='pizzaCalcV53';
+const SAVE_VERSION=53;
+const LEGACY_KEYS=Array.from({length:27},(_,i)=>`pizzaCalcV${52-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
 // Only these controls override the technical dough profile owned by a preset.
@@ -7402,6 +8182,25 @@ const PRESET_TECHNICAL_FIELDS=new Set([
 
 let _saveTimer=null;
 let _storageWarningShown=false;
+let _storageWriter=false;
+let _storageRevision=0;
+let _storageCorrupt=false;
+let _releaseStorageWriter=null;
+async function acquireStorageWriter(){
+  if(!navigator.locks?.request){_storageWriter=false;return;}
+  await new Promise(resolve=>{
+    navigator.locks.request('pizza-calculator-state',{ifAvailable:true},async lock=>{
+      _storageWriter=!!lock;resolve();
+      if(lock)await new Promise(release=>{_releaseStorageWriter=release;});
+    }).catch(()=>{_storageWriter=false;resolve();});
+  });
+}
+function showStorageOwnership(){
+  if(_storageWriter||$('storageOwnerNotice'))return;
+  const box=document.createElement('div');box.className='warning storage-owner';box.id='storageOwnerNotice';box.setAttribute('role','status');
+  box.textContent=navigator.locks?.request?L('Deze calculator is al actief in een ander tabblad. Dit tabblad kan bekijken, maar niet opslaan. Sluit het andere tabblad en herlaad om hier verder te gaan.','This calculator is active in another tab. This tab can view, but cannot save. Close the other tab and reload to continue here.'):L('Deze browser kan wijzigingen niet veilig tussen tabbladen coördineren. Je kunt rekenen, maar deze sessie wordt niet opgeslagen. Download een back-up om je werk te bewaren.','This browser cannot safely coordinate changes between tabs. You can calculate, but this session is not saved. Download a backup to retain your work.');
+  const button=document.createElement('button');button.type='button';button.className='btn secondary';button.textContent=L('Opnieuw laden','Reload');button.addEventListener('click',()=>location.reload());box.appendChild(button);document.querySelector('.app').prepend(box);
+}
 function storageWarningText(){
   return L('⚠️ Lokale opslag is niet beschikbaar. De calculator blijft werken, maar wijzigingen en het deeglogboek gaan verloren zodra je deze pagina sluit.',
            '⚠️ Local storage is unavailable. The calculator keeps working, but changes and the dough log will be lost when you close this page.');
@@ -7425,16 +8224,26 @@ function scheduleSave(){
   _saveTimer=setTimeout(()=>{_saveTimer=null;saveState();},300);
 }
 
-function saveState(){
+function stateSnapshot(){
   captureBatchOven();
   if(activeBatch())workshop.batch.progress={...completedSteps};
+  syncEveningRun();
   const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
-    currentWizardPage,workshop,
+    currentWizardPage,workshop:{...workshop,batch:activeEvening()?null:workshop.batch},evenings,revision:_storageRevision,
     practical:$('practical').checked,autolyse:$('autolyse').checked,
     sizeFromDiameter:$('sizeFromDiameter').checked,includeSauce:$('includeSauce').checked,
     autoSauceFromPizzas:$('autoSauceFromPizzas').checked,pizzaSelections,pizzaCustomizations,recipeAllSelection,preset:$('preset').value};
   SAVE_IDS.forEach(id=>{ if($(id)) data[id]=$(id).value; });
+  return WorkflowCore.clone(data);
+}
+function saveState(){
+  if(_saveTimer){clearTimeout(_saveTimer);_saveTimer=null;}
+  if(!_storageWriter||_storageCorrupt)return false;
+  const current=SAFE.get(SAVE_KEY);
+  if(current){try{if((JSON.parse(current).revision||0)>_storageRevision){_storageWriter=false;showStorageOwnership();return false;}}catch{_storageCorrupt=true;return false;}}
+  const data=stateSnapshot();data.revision=_storageRevision+1;
   const ok=SAFE.set(SAVE_KEY,JSON.stringify(data));
+  if(ok)_storageRevision=data.revision;
   if(!ok)showStorageWarningOnce();
   return ok;
 }
@@ -7448,6 +8257,48 @@ function sanitizeExactOverride(v){
   const out={};
   ['h','s','o','ySelected'].forEach(k=>{ if(Number.isFinite(v[k])) out[k]=clamp(v[k],bounds[k][0],bounds[k][1]); });
   return Object.keys(out).length?out:null;
+}
+
+function sanitizeEvenings(value){
+  if(!value||typeof value!=='object'||!Array.isArray(value.templates)||!Array.isArray(value.history)||!value.draft)return null;
+  if(value.templates.length>30||value.history.length>20)return null;
+  const active=value.active===null?null:EveningCore.sanitizeEvening(value.active);
+  if(value.active!==null&&!active)return null;
+  const templates=value.templates.map(t=>EveningCore.cleanTemplate(t)),history=value.history.map(e=>EveningCore.sanitizeEvening(e));
+  if(templates.some(t=>!t)||history.some(e=>!e)||new Set(templates.map(t=>t.id)).size!==templates.length)return null;
+  for(const e of [active,...history].filter(Boolean)){
+    if(!EveningCore.validateAllocations(e,recipePlanSummary(e.recipe)))return null;
+    try{new Intl.DateTimeFormat('en',{timeZone:e.zone||'UTC'});}catch{return null;}
+  }
+  const d=value.draft;
+  if(!Array.isArray(d.pizzas)||d.pizzas.length>24||!Array.isArray(d.unavailable)||d.unavailable.length>20)return null;
+  const pizzas=d.pizzas.map(p=>EveningCore.cleanPizza(p));if(pizzas.some(p=>!p))return null;
+  const date=typeof d.date==='string'?d.date:'',earliest=typeof d.earliest==='string'?d.earliest:'';
+  if(date&&parseEveningTime(date,d.fold)===null||earliest&&parseEveningTime(earliest,d.fold)===null)return null;
+  if(d.unavailable.some(x=>!x||!Number.isFinite(x.start)||!Number.isFinite(x.end)||x.start<0||x.end<=x.start))return null;
+  if(!d.split||!['flour','dough'].includes(d.split.unit)||d.split.capacity!==null&&(!Number.isFinite(d.split.capacity)||d.split.capacity<1||d.split.capacity>50000))return null;
+  if(!Number.isFinite(d.cleanup)||d.cleanup<0||d.cleanup>60)return null;
+  return {active,templates,history,draft:{pizzas,date,earliest,unavailable:d.unavailable.map(x=>({start:x.start,end:x.end})),cleanup:d.cleanup,split:{...d.split},fold:d.fold==='second'?'second':'first'}};
+}
+function validateEveningBackup(file){
+  if(!file||file.format!=='pizza-private-backup'||file.version!==1||!Number.isFinite(file.createdAt)||file.createdAt<0)return null;
+  const d=file.state;if(!d||d.version!==SAVE_VERSION||!['dough','sauce','full'].includes(d.appMode)||!['basic','full'].includes(d.experienceMode)||!['nl','en'].includes(d.currentLang))return null;
+  const fields=Object.fromEntries(WorkflowCore.FIELD_IDS.map(id=>[id,d[id]])),checks=Object.fromEntries(WorkflowCore.CHECK_FIELDS.map(id=>[id,d[id]]));
+  if(!WorkflowCore.recipe({fields,checks,method:d.currentMethod,preset:d.preset,exact:d.exactOverride}))return null;
+  const next=sanitizeEvenings(d.evenings);if(!next)return null;
+  const w=WorkflowCore.sanitize(d.workshop);
+  if(!d.workshop||!Array.isArray(d.workshop.recipes)||!Array.isArray(d.workshop.profiles)||!Array.isArray(d.bakeLog)||w.recipes.length!==d.workshop.recipes.length||w.profiles.length!==d.workshop.profiles.length||sanitizeBakeLog(d.bakeLog).length!==d.bakeLog.length)return null;
+  if(!Array.isArray(d.pizzaSelections)||d.pizzaSelections.length!==Number(d.pizzas)||d.pizzaSelections.some(id=>!pizzaRecipes.some(r=>r.id===id))||!Array.isArray(d.pizzaCustomizations)||d.pizzaCustomizations.length!==d.pizzaSelections.length)return null;
+  if(!sauces[d.sauceType])return null;
+  return {...WorkflowCore.clone(d),evenings:next,workshop:w};
+}
+function restoreEveningBackup(candidate){
+  if(!_storageWriter)throw new Error('storage');
+  const prior=SAFE.get(SAVE_KEY),next={...candidate,revision:_storageRevision+1};
+  if(!SAFE.set(SAVE_KEY,JSON.stringify(next)))throw new Error('storage');
+  _storageCorrupt=false;_storageRevision=next.revision;
+  if(!loadState(next)){if(prior!==null)SAFE.set(SAVE_KEY,prior);throw new Error('format');}
+  bindEveningRun();showPage(activeEvening()?4:1);
 }
 
 
@@ -7492,12 +8343,14 @@ function sanitizeBakeLog(v){
 }
 
 let _restoredWizardPage=0;
-function loadState(){
+function loadState(provided=null){
   try{
     let raw=SAFE.get(SAVE_KEY);
     if(!raw){ for(const k of LEGACY_KEYS){ raw=SAFE.get(k); if(raw) break; } }
-    const d=JSON.parse(raw||'null');
+    const d=provided||JSON.parse(raw||'null');
     if(!d||typeof d!=='object'||Array.isArray(d))return false;
+    if(Number(d.version)>SAVE_VERSION){_storageCorrupt=true;showStorageWarningOnce();return false;}
+    _storageRevision=Number.isSafeInteger(d.revision)?d.revision:0;
     // v1.0.0 had no Basic/Full display mode. Existing users retain the full
     // controls they were accustomed to; only genuinely new users start Basic.
     experienceMode=Object.prototype.hasOwnProperty.call(d,'experienceMode')
@@ -7524,6 +8377,11 @@ function loadState(){
       else if((SAVE_IDS.includes(k)||k==='preset')&&$(k))$(k).value=v;
     });
 
+    if(Number(d.version)===SAVE_VERSION){
+      const restored=sanitizeEvenings(d.evenings);
+      if(!restored){_storageCorrupt=true;eveningNotice=L('Een opgeslagen avond is ongeldig. De oorspronkelijke gegevens zijn behouden; herstel een geldige back-up.','A saved evening is invalid. Original data is preserved; restore a valid backup.');}
+      else{evenings=restored;bindEveningRun();if(activeEvening())projectEveningPizzas(activeEvening().pizzas);}
+    }
     if(activeBatch()){restoreRecipe(activeBatch().recipe,false);liveMeasurements={...activeBatch().measurements};completedSteps={...activeBatch().progress};}
 
     // Migratie van vóór v39: koude fermentatie stond als eigen methode opgeslagen.
@@ -7557,12 +8415,27 @@ function loadState(){
     pizzaCustomizations.forEach(cu=>{
       if(cu&&typeof cu==='object'&&cu.sauceOverride&&!sauces[cu.sauceOverride])cu.sauceOverride=null;
     });
+    if(Number(d.version)<SAVE_VERSION){
+      ensurePizzaCustomizations();syncEveningPizzas(calc());
+      const legacy=workshop.batch,zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if(legacy){
+        evenings.active=EveningCore.migrateLegacy(legacy,captureEveningTemplate(),calc(),zone);bindEveningRun();
+      }
+      evenings.history=workshop.history.map(b=>EveningCore.migrateLegacy(b,null,recipePlanSummary(b.recipe),zone));
+      if(d.workshop?.batch&&!legacy)eveningNotice=L('De oude actieve batch kon niet worden hersteld. Andere geldige gegevens zijn behouden.','The legacy active batch could not be recovered. Other valid data was retained.');
+    }
 
     suppressCustom=false;
     document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===currentMethod;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
     // Oude versiesleutels opruimen zodat ze niet jaren later terugkomen.
     // Keep the last valid legacy copy if writing the migrated state fails.
-    if(saveState())LEGACY_KEYS.forEach(k=>SAFE.del(k));
+    const droppedLegacyData=Number(d.version)<SAVE_VERSION&&d.workshop&&(
+      (d.workshop.batch&&!workshop.batch)||
+      (Array.isArray(d.workshop.history)&&d.workshop.history.length!==workshop.history.length)||
+      (Array.isArray(d.workshop.recipes)&&d.workshop.recipes.length!==workshop.recipes.length)||
+      (Array.isArray(d.workshop.profiles)&&d.workshop.profiles.length!==workshop.profiles.length));
+    if(droppedLegacyData)eveningNotice=L('Niet alle oude gegevens konden worden hersteld. De oorspronkelijke opslag blijft bewaard voor herstel.','Some legacy data could not be recovered. The original stored copy remains available for recovery.');
+    if(saveState()&&!droppedLegacyData)LEGACY_KEYS.forEach(k=>SAFE.del(k));
     return true;
   }catch(e){return false}
 }
@@ -7572,6 +8445,7 @@ function wireEvents(){
     el.addEventListener('focus',()=>rememberNumericEditStart(el));
     el.addEventListener('input',()=>{
       if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
+      if(el.id==='bakeDay'&&!activeEvening())evenings.draft.date='';
       if(el.classList.contains('pct')) markCustomField(el.id);
       else if(PRESET_TECHNICAL_FIELDS.has(el.id)) markCustom(false);
       _deferDependentStatePrune=el.id==='pizzas';
@@ -7658,7 +8532,9 @@ function wireEvents(){
   $('practical').addEventListener('change',()=>{markCustom(false);update();});
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
+  try{
+  await acquireStorageWriter();
   document.querySelectorAll('[data-experience]').forEach(button=>button.addEventListener('click',()=>setExperienceMode(button.dataset.experience)));
   const search=$('pizzaPickerSearch');
   if(search){
@@ -7671,7 +8547,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   initRecipeOptions();
   wireEvents();
+  wirePanelInteractions();
   wireWorkshopEvents();
+  wireEveningEvents();
 
   const wizardNav=$('stepsNav');
   if(wizardNav){
@@ -7689,13 +8567,22 @@ document.addEventListener('DOMContentLoaded',()=>{
   applyAppModeUI();
   // Herladen tijdens het bakken bracht je altijd terug naar het keuzescherm.
   if(restored && _restoredWizardPage>0 && wizardPages().includes(_restoredWizardPage)) showPage(_restoredWizardPage);
-  else showModeChooser();
+  else showPage(1);
   initI18n();
+  showStorageOwnership();
   refreshBakeDayClock();
   window.addEventListener('focus',refreshBakeDayClock);
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible')refreshBakeDayClock();
   });
+  document.querySelector('.app').inert=false;
+  document.querySelector('.app').setAttribute('aria-busy','false');
+  $('startupStatus').hidden=true;
+  document.documentElement.dataset.appReady='true';
+  }catch(error){
+    $('startupStatus').textContent='Laden mislukt. Herlaad de pagina. / Loading failed. Reload the page.';
+    console.error(error);
+  }
 });
 </script>
 <div class="float-actions hidden" id="floatingActions">

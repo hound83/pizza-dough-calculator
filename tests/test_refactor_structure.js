@@ -42,6 +42,7 @@ const V1_3_0_CANDIDATE_BASELINE=require('./baselines/v1.3.0-candidate.json');
 const V1_4_0_CANDIDATE_BASELINE=require('./baselines/v1.4.0-candidate.json');
 const V1_4_0_RELEASE_BASELINE=require('./baselines/v1.4.0-release.json');
 const V1_4_1_RELEASE_BASELINE=require('./baselines/v1.4.1-release.json');
+const V2_0_0_CANDIDATE_BASELINE=require('./baselines/v2.0.0-candidate.json');
 function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}
 
@@ -52,7 +53,7 @@ const css=built.css;
 const combinedJavaScript=built.javascript;
 const scripts=[...sourceHtml.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*><\/script>/gi)].map(match=>match[1]);
 assert(JSON.stringify(scripts)===JSON.stringify(EXPECTED_SCRIPTS),`Unexpected script order: ${scripts.join(', ')}`);
-pass('source HTML loads the fifteen responsibility-based scripts in the documented order');
+pass('source HTML loads the eighteen responsibility-based scripts in the documented order');
 
 assert(!/<style(?:\s[^>]*)?>/i.test(sourceHtml),'Source HTML contains an inline stylesheet.');
 assert(!/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>/i.test(sourceHtml),'Source HTML contains inline JavaScript.');
@@ -80,10 +81,10 @@ for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.inclu
 pass('released v1.1.1 hashes remain documented');
 
 for(const hash of Object.values(V1_2_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.0 baseline hash is missing from product guardrails: ${hash}`);
-assert(sha256(bundledHtml)===V1_4_1_RELEASE_BASELINE.singleFile,'Standalone differs from the documented v1.4.1 release baseline.');
-assert(sha256(css)===V1_4_1_RELEASE_BASELINE.css,'CSS differs from the documented v1.4.1 release baseline.');
-assert(sha256(combinedJavaScript)===V1_4_1_RELEASE_BASELINE.javascript,'JavaScript differs from the documented v1.4.1 release baseline.');
-for(const hash of [...Object.values(V1_3_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_RELEASE_BASELINE),...Object.values(V1_4_1_RELEASE_BASELINE)])assert(guardrails.includes(hash),`Candidate/release hash is not documented: ${hash}`);
+assert(sha256(bundledHtml)===V2_0_0_CANDIDATE_BASELINE.singleFile,'Standalone differs from the documented v2.0.0 candidate baseline.');
+assert(sha256(css)===V2_0_0_CANDIDATE_BASELINE.css,'CSS differs from the documented v2.0.0 candidate baseline.');
+assert(sha256(combinedJavaScript)===V2_0_0_CANDIDATE_BASELINE.javascript,'JavaScript differs from the documented v2.0.0 candidate baseline.');
+for(const hash of [...Object.values(V1_3_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_RELEASE_BASELINE),...Object.values(V1_4_1_RELEASE_BASELINE),...Object.values(V2_0_0_CANDIDATE_BASELINE)])assert(guardrails.includes(hash),`Candidate/release hash is not documented: ${hash}`);
 for(const hash of Object.values(V1_2_1_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.1 baseline hash is missing from product guardrails: ${hash}`);
 pass('released v1.2.0 and v1.2.1 baselines are pinned and documented');
 
