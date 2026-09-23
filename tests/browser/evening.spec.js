@@ -88,7 +88,8 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
   test('a second tab cannot overwrite events and takes over only after the writer closes',async({page,context})=>{
     await open(page);await start(page);await page.locator('[data-evening-action="event-now"]').click();
     const second=await context.newPage();await second.goto(path);await expect(second.locator('html')).toHaveAttribute('data-app-ready','true');await expect(second.locator('#storageOwnerNotice')).toBeVisible();
-    const before=await page.evaluate(()=>localStorage.getItem(SAVE_KEY));
+    // Flush the writer's pending UI save before asserting that the reader cannot change its bytes.
+    const before=await page.evaluate(()=>{saveState();return localStorage.getItem(SAVE_KEY);});
     expect(await second.evaluate(()=>saveState())).toBe(false);await second.evaluate(()=>resetCalculator());expect(await page.evaluate(()=>localStorage.getItem(SAVE_KEY))).toBe(before);
     await page.close();await second.reload();await expect(second.locator('html')).toHaveAttribute('data-app-ready','true');await expect(second.locator('#storageOwnerNotice')).toHaveCount(0);expect(await second.evaluate(()=>activeBatch().events.bulkStart)).toBeGreaterThan(0);await second.close();
   });
