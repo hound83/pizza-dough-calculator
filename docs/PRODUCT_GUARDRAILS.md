@@ -397,3 +397,13 @@ Startup remains inert until state recovery and writer ownership resolve; unknown
 | singleFile | `259d3cce0186604c3f47a19783d6a2f88b3cec5d79a98c13ac9973f500832bfe` |
 | css | `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9` |
 | javascript | `ca4537f62217ce7ec80dc398cf77342e63b03c9572d4ee8d632c1552a7a6f8ff` |
+
+### v2.0.0 final keyboard-focus correction
+
+Michael authorized the remaining keyboard-focus fix from Claude’s second review. After a focused action is replaced, focus stays on the same action if it survives, otherwise on the panel’s next primary action (or first action if none remains). Focus outside the panel is not moved. The existing keyboard test covers both replacement and ordinary redraw. Download behavior and tests are unchanged. This remains the v2.0.0 candidate; previous hashes are historical evidence.
+
+| Artifact | SHA-256 |
+|---|---|
+| singleFile | `830c2fddd81b0a9baf88cc1c488e69874bf745048f6e207627b0a1fe090990db` |
+| css | `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9` |
+| javascript | `c3293b9fb0447187e4f43d323177ae2ba93eca2ca823d2ee9393978b2a69a23c` |

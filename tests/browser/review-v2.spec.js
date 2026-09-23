@@ -68,11 +68,13 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 review ${p
     await page.locator('#kitchenDoughTemp').fill('24');await page.keyboard.press('Tab');
     await expect(page.locator('[data-evening-action="event-now"]')).toBeFocused();await page.keyboard.press('Enter');
     await expect(page.locator('#kitchenWorkspace h2')).toHaveText('Bulkrijs');
+    await expect(page.locator('[data-evening-action="event-now"][data-key="fridgeIn"]')).toBeFocused();
     expect(await page.evaluate(()=>activeBatch().measurements.doughTemp)).toBe(24);
     await page.locator('[data-evening-action="event-now"]').dispatchEvent('pointerdown',{pointerId:1});
     await page.evaluate(()=>{eveningNotice='Canceled touch';renderKitchen(calc());});
     await page.locator('[data-evening-action="event-now"]').dispatchEvent('pointercancel',{pointerId:1});
     await expect(page.locator('#kitchenWorkspace')).toContainText('Canceled touch');
+    await expect(page.locator('[data-evening-action="event-now"][data-key="fridgeIn"]')).toBeFocused();
     await page.waitForTimeout(550);await page.locator('[data-evening-action="event-now"]').click();
     await expect(page.locator('#kitchenWorkspace h2')).toHaveText('Koude fermentatie');
   });

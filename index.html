@@ -7579,7 +7579,11 @@ function replaceWorkshopPanel(id,html){
     });
   }
   if(focusId){const input=$(focusId);if(input){if(focusValue!==null)input.value=focusValue;input.focus({preventScroll:true});}}
-  else if(actionData){[...root.querySelectorAll(actionSelector)].find(el=>JSON.stringify(el.dataset)===actionData)?.focus({preventScroll:true});}
+  else if(actionData){
+    const same=[...root.querySelectorAll(actionSelector)].find(el=>JSON.stringify(el.dataset)===actionData);
+    // A completed action may disappear; continue at this panel's next main action.
+    (same||root.querySelector('.btn.primary[data-evening-action],.btn.primary[data-workshop-action]')||root.querySelector(actionSelector))?.focus({preventScroll:true});
+  }
 }
 function collectWorkshopDrafts(){
   for(const id of workshopPanels)for(const el of $(id)?.querySelectorAll('[data-draft]')||[])workshopDrafts[el.id]=el.value;

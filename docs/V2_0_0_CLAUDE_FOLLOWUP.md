@@ -20,3 +20,9 @@ No thermal or yeast constants, ingredient allocation, recipe percentages, mixer/
 The required suite is `npm test`: 15 structure checks, 31 pure-core cases, 106 regressions per publication and 139 browser cases. Both standalone and modular publications are covered, including six viewport widths and NL/EN. Browser retries are now zero, so a passing run cannot conceal a failed first attempt. See the current PR HEAD's Actions check for execution evidence.
 
 Local Chromium installation again failed because the downloaded archive was unusable. Local fast checks and the complete GitHub Chromium suite are reported separately; installation failure is not a passing browser test. Actual iPhone/Android, physical wake lock, device suspension, cross-zone device transfer and 200% text zoom remain manual follow-ups.
+
+## Final keyboard-focus correction
+
+Claude's [second review](Claude_v2.0.0_PR16_crosscheck_followup.md) confirms the three original fixes and finds one minor keyboard issue: after Enter completes an action, its replacement no longer has the same dataset, leaving focus on the document. Michael authorized this correction only. Panel rendering now retains the same action when possible, otherwise focuses the next primary action in that panel, then its first available action as a fallback. It does not move focus when focus was outside the panel.
+
+The existing keyboard/cancellation browser scenario now also asserts focus on `fridgeIn` after Enter and after a redraw without an action change, for both publications. The suite remains 139 browser cases with zero retries. The intermittently canceled Edge/Windows download test and the export implementation are intentionally unchanged; no application download defect has been demonstrated. This patch remains part of the unshipped v2.0.0 candidate.
