@@ -14,8 +14,8 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 review ${p
     const page=await context.newPage();
     try{
       await page.goto('http://127.0.0.1:4173'+path);await ready(page);await start(page);
-      await page.locator('#kitchenDoughMeasurement > summary').click();
-      await page.locator('#kitchenDoughTemp').pressSequentially('26');
+      await page.locator('#stepDoughMeasurement > summary').click();
+      await page.locator('#stepDoughTemp').pressSequentially('26');
       const transition=page.locator('[data-evening-action="event-now"]');
       if(touch)await transition.tap();else await transition.click();
       await expect(page.locator('#kitchenWorkspace h2')).toHaveText('Bulkrijs');
@@ -35,22 +35,22 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 review ${p
   });
   test('Basic has optional readings; Plan switches preserve recipe, readings and progress',async({page})=>{
     await open(page);await expect(page.locator('#experienceBasic')).toBeVisible();
-    await start(page);await expect(page.locator('#kitchenDoughTemp')).toBeHidden();
-    await expect(page.locator('#kitchenDoughMeasurement > summary')).toContainText('optioneel');
+    await start(page);await expect(page.locator('#stepDoughTemp')).toBeHidden();
+    await expect(page.locator('#stepDoughMeasurement > summary')).toContainText('optioneel');
     const before=await page.evaluate(()=>({recipe:snapshotRecipe(),events:activeBatch().events,progress:completedSteps}));
-    await page.locator('#kitchenDoughMeasurement > summary').click();await page.locator('#kitchenDoughTemp').fill('25');await page.locator('#kitchenDoughTemp').blur();
+    await page.locator('#stepDoughMeasurement > summary').click();await page.locator('#stepDoughTemp').fill('25');await page.locator('#stepDoughTemp').blur();
     await page.locator('[data-workspace="plan"]').click();await page.locator('#experienceFull').click();
-    await page.locator('[data-workspace="kitchen"]').click();await expect(page.locator('#kitchenDoughTemp')).toBeVisible();await expect(page.locator('#kitchenDoughTemp')).toHaveValue('25');
+    await page.locator('[data-workspace="kitchen"]').click();await expect(page.locator('#stepDoughTemp')).toBeVisible();await expect(page.locator('#stepDoughTemp')).toHaveValue('25');
     await page.locator('[data-workspace="plan"]').click();await page.locator('#experienceBasic').click();await page.locator('[data-workspace="kitchen"]').click();
-    await expect(page.locator('#kitchenDoughTemp')).toBeHidden();await expect(page.locator('#kitchenDoughMeasurement > summary')).toContainText('25');
+    await expect(page.locator('#stepDoughTemp')).toBeHidden();await expect(page.locator('#stepDoughMeasurement > summary')).toContainText('25');
     expect(await page.evaluate(()=>({recipe:snapshotRecipe(),events:activeBatch().events,progress:completedSteps}))).toEqual(before);
     await page.locator('#kitchenInstructions > summary').click();
     await expect(page.locator('#stepDoughMeasurement')).toBeVisible();await expect(page.locator('#stepDoughMeasurement input')).toBeHidden();
     await expect(page.locator('#stepsList [data-step-key="s-doughtemp"]')).toHaveCount(0);
     await expect(page.locator('#stepFridgeMeasurement input')).toBeHidden();
-    await page.locator('#langEn').click();await expect(page.locator('#kitchenDoughMeasurement > summary')).toContainText('optional');
+    await page.locator('#langEn').click();await expect(page.locator('#stepDoughMeasurement > summary')).toContainText('optional');
     await expect(page.locator('#stepFridgeMeasurement > summary')).toContainText('optional');
-    await page.reload();await ready(page);await expect(page.locator('#kitchenDoughTemp')).toBeHidden();
+    await page.reload();await ready(page);await expect(page.locator('#stepDoughTemp')).toBeHidden();
     expect(await page.evaluate(()=>liveMeasurementValue('doughTemp'))).toBe(25);
   });
   test('blank readings never block progress and unknown actions follow chronological order',async({page})=>{
@@ -64,9 +64,11 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 review ${p
     expect(await page.evaluate(()=>activeBatch().measurements)).toMatchObject({doughTemp:null,fridgeTemp:null});
   });
   test('keyboard after typing and a canceled pointer leave controls usable',async({page})=>{
-    await open(page);await start(page);await page.locator('#kitchenDoughMeasurement > summary').click();
-    await page.locator('#kitchenDoughTemp').fill('24');await page.keyboard.press('Tab');
-    await expect(page.locator('[data-evening-action="event-now"]')).toBeFocused();await page.keyboard.press('Enter');
+    await open(page);await start(page);await page.locator('#stepDoughMeasurement > summary').click();
+    await page.locator('#stepDoughTemp').fill('24');await page.keyboard.press('Tab');
+    await expect(page.locator('#step-check-s-manualfinish')).toBeFocused();
+    await page.keyboard.press('Space');await expect(page.locator('#step-check-s-manualfinish')).toBeChecked();
+    await page.locator('[data-evening-action="event-now"]').focus();await page.keyboard.press('Enter');
     await expect(page.locator('#kitchenWorkspace h2')).toHaveText('Bulkrijs');
     await expect(page.locator('[data-evening-action="event-now"][data-key="fridgeIn"]')).toBeFocused();
     expect(await page.evaluate(()=>activeBatch().measurements.doughTemp)).toBe(24);

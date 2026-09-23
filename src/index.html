@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v2.0.0</title>
+<title>Pizzadeegcalculator v2.0.1</title>
 <link href="assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
@@ -432,21 +432,15 @@
 <button class="btn secondary" onclick="previousWizardPage(2)" type="button">← Vorige</button>
 <button class="btn primary" onclick="nextWizardPage(2)" type="button">Volgende →</button>
 </div>
-</section><section class="page" id="page4"><div class="card kitchen-workspace" id="kitchenWorkspace"></div><details id="kitchenInstructions"><summary id="instructionsSummary">Alle instructies, tijdlijn en logboek</summary><div class="wizard-page-intro">
-<div class="wizard-kicker" id="finalStepKicker">Laatste stap</div>
-<h2>Stappenplan</h2>
-<p>Hier komt alles samen: kneden, fermenteren, saus, beleggen, tijdlijn, oven en bakken.</p>
-</div>
-<div class="grid">
-<div>
-<div class="card">
-<div class="workshop-panel batch-runner" id="batchRunner"></div>
-<h2>Jouw tijdlijn</h2>
-<p class="hint">Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen. Zonder baktijd zie je de totale doorlooptijd en wat er achter elkaar gebeurt.</p>
-<div class="timeline" id="timeline"></div>
-</div>
-<div class="card">
-<h2>Alle stappen</h2><div class="steps-progress" id="stepsProgress">
+</section><section class="page" id="page4">
+<div class="card kitchen-workspace" id="kitchenWorkspace"></div>
+<div class="kitchen-layout">
+<section class="kitchen-steps-panel" aria-labelledby="kitchenStepsTitle">
+<div class="kitchen-section-heading"><span class="kitchen-section-icon" aria-hidden="true">🥣</span><div><span class="eyebrow" id="kitchenStepsKicker">Jouw werkblad</span><h2 id="kitchenStepsTitle">Stap voor stap</h2><p class="hint" id="kitchenStepsHint">Iedere handeling apart. Vink af op jouw tempo en kijk gerust vooruit.</p></div></div>
+<nav class="kitchen-jumps" aria-label="Stappenplan" id="kitchenStepNavigation">
+<button type="button" data-kitchen-jump="kitchen-make">Deeg maken</button><button type="button" data-kitchen-jump="kitchen-proof">Rijzen</button><button type="button" data-kitchen-jump="kitchen-bake">Bakken</button>
+</nav>
+<div class="steps-progress" id="stepsProgress">
 <div class="steps-progress-copy">
 <b id="stepsProgressText">0 van 0 stappen afgerond</b>
 <span>Vink iedere stap af terwijl je bezig bent.</span>
@@ -454,19 +448,17 @@
 <button class="btn ghost step-progress-reset" onclick="clearStepProgress()" type="button">Vinkjes wissen</button>
 <div class="steps-progress-track"><span id="stepsProgressBar"></span></div>
 </div>
-<div class="workshop-panel" id="doughHelp"></div>
 <div class="step-list" id="stepsList"></div>
+</section>
+<aside class="kitchen-sidebar" aria-label="Naast je stappenplan" id="kitchenSidebar">
+<div class="card kitchen-timeline"><h2>Jouw tijdlijn</h2>
+<p class="hint">Met een gewenste baktijd rekent de calculator terug wanneer je moet beginnen. Zonder baktijd zie je de totale doorlooptijd en wat er achter elkaar gebeurt.</p>
+<div class="timeline" id="timeline"></div>
 </div>
-</div>
-<div>
-<div class="card mode-sauce" id="shoppingCard">
-<h2 id="shoppingHeading">Ingrediënten voor de pizza's</h2>
-<div id="shoppingList"></div>
-</div>
-<div class="card">
-<h2>Oven</h2>
-<div id="ovenCard"></div>
-</div>
+<div class="card kitchen-oven"><h2>Oven</h2><div id="ovenCard"></div></div>
+<details class="card kitchen-reference mode-sauce" id="shoppingCard"><summary id="shoppingHeading">Ingrediënten voor de pizza's</summary><div id="shoppingList"></div></details>
+<div class="card kitchen-help"><div class="workshop-panel" id="doughHelp"></div></div>
+<details class="card kitchen-reference" id="kitchenInstructions"><summary id="instructionsSummary">Tijden aanpassen en logboek</summary><div class="workshop-panel batch-runner" id="batchRunner"></div>
 <div class="card">
 <h2>Deeglogboek &amp; vergelijkingen</h2>
 <p class="hint" id="bakeLogHint">De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v1.4.0 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.</p>
@@ -501,14 +493,15 @@
 <div id="bakeLogSummary"></div>
 <div class="workshop-panel" id="bakeComparison"></div>
 </div>
+</details>
 <div class="card">
 <h2>Wanneer zijn de bollen klaar?</h2>
 <div class="callout"><b>Kijk naar het deeg:</b> duidelijk groter, zacht, luchtig en ontspannen. Kleine gasbelletjes zijn goed. Bij zacht indrukken veert het langzaam gedeeltelijk terug.</div>
 <div class="warning">De klok is een richtlijn. Als het deeg nog strak en compact is, geef het langer. Als het heel slap wordt en nauwelijks spanning houdt, zit je richting overrijs.</div>
 </div>
+</aside>
 </div>
-</div>
-</details></section>
+</section>
 <footer class="footer-note app-version" id="appVersion"></footer>
 </div>
 <script src="assets/js/calculation-core.js"></script>

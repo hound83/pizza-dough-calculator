@@ -411,3 +411,15 @@ Michael authorized the remaining keyboard-focus fix from Claude’s second revie
 ## v2.0.0 release authorization
 
 Michael authorized publishing the reviewed v2.0.0 application, including the final keyboard-focus correction. The preceding candidate hashes are now also the release baseline: standalone `830c2fddd81b0a9baf88cc1c488e69874bf745048f6e207627b0a1fe090990db`, CSS `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9`, combined JavaScript `c3293b9fb0447187e4f43d323177ae2ba93eca2ca823d2ee9393978b2a69a23c`. Release preparation changes documentation only, with no application, calculation, schema or timing changes. See [the release record](V2_0_0_RELEASE.md); all earlier status statements and hashes remain historical evidence.
+
+## v2.0.1 kitchen workbench candidate
+
+Michael requested restoring the individual kitchen checklist and a visual treatment consistent with the mode chooser and recipe picker. Plan and Kitchen remain separate. The complete existing numbered checklist is directly visible, with broad section headings and optional jump links; no extra cooking steps or forced progression are introduced. A recipe can still be followed without starting a tracked evening. Stable step keys, per-run progress, actual checkpoint semantics and all calculation/mixing/rest contracts are preserved. The former duplicate mixing programme is removed; the existing optional post-knead field in the checklist becomes the single reading control. Its pending value must survive repaint and commit before changing phase or run. Basic keeps optional readings collapsed; Full exposes them.
+
+The changed presentation is a v2.0.1 review candidate based on released v2.0.0 (`2028e408`). No migration or numerical changes are included. The live release remains v2.0.0 pending review. Earlier hashes remain historical evidence.
+
+| Candidate artifact | SHA-256 |
+|---|---|
+| singleFile | `a09543c83708cfc90cca86b18939a1de21bb71761e77ecd20f922e56e3cf2990` |
+| css | `9f6d267de1c52ad864ff1704aefb4a1b060aa6bcd921e732c509d6b365da6e55` |
+| javascript | `8c61b9ff8b77a53f05e86798d8607fb7f0948f3377b26c5bc068a0c47f981ddf` |

@@ -470,7 +470,7 @@ function step(n,title,text,detail='',id=null){
   const moment=_stepSchedule&&momentKey?scheduleMoment(_stepSchedule,momentKey):'';
   return `<div class="step-card${checked?' completed':''}" data-step-key="${key}">
     <label class="step-check" title="${currentLang==='en'?'Mark step complete':'Stap afvinken'}">
-      <input type="checkbox" aria-labelledby="step-title-${key}" data-step-key="${key}" ${checked?'checked':''} onchange="toggleStepComplete(this)">
+      <input id="step-check-${key}" type="checkbox" aria-labelledby="step-title-${key}" data-step-key="${key}" ${checked?'checked':''} onchange="toggleStepComplete(this)">
       <span class="step-check-mark"></span>
     </label>
     <div class="num">${n}</div>
@@ -497,6 +497,8 @@ function updateStepProgress(){
     ? `${done} of ${total} steps completed`
     : `${done} van ${total} stappen afgerond`;
   if(bar)bar.style.width=total?`${done/total*100}%`:'0%';
+  const next=cards.find(card=>!card.querySelector('.step-check input:checked'));
+  cards.forEach(card=>card.classList.toggle('is-next',card===next));
 }
 
 function clearStepProgress(){
@@ -656,11 +658,14 @@ function waterTemperatureGuidance(c,wt){
   return {reserveLine,mainLine,notes:notes.join('')};
 }
 
+function kitchenStepSection(id,icon,title){
+  return `<div class="kitchen-step-section" id="${id}" tabindex="-1"><span aria-hidden="true">${icon}</span><h3>${title}</h3></div>`;
+}
 function buildSteps(c){
   ensurePizzaCustomizations();
   const m=methodInstructions(c),aggSauce=aggregateSauceNeeds(c),bake=stoneProfile(c.stoneTemp),live=liveFermentationPlan(c);
   const oilText=c.o>0?L(` Voeg <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g olijfolie</b> pas tegen het einde van het kneden toe.`,` Add <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g olive oil</b> only towards the end of the kneading.`):'';
-  let i=1,steps=[];
+  let i=1,steps=[kitchenStepSection('kitchen-make','🥣',L('Deeg maken','Make the dough'))];
   _stepKeys=[];
   _stepSchedule=live.effective;
   const wt=waterTempAdvice(c);
@@ -691,6 +696,7 @@ function buildSteps(c){
   steps.push(step(i++,L('Controleer deegontwikkeling','Check dough development'),
     L('Laat een klein stukje eerst 1–2 min ontspannen en rek het dan rustig uit. Stop wanneer het deeg glad, soepel en elastisch is en voldoende dun kan uitrekken zonder direct te scheuren.','Let a small piece relax for 1–2 min, then stretch it gently. Stop when the dough is smooth, supple and elastic, and can stretch sufficiently thin without tearing immediately.'),
     L('Tijd, deegtemperatuur, gevoel en windowpane tellen samen. De doeltemperatuur bereiken bewijst niet dat de gluten voldoende ontwikkeld zijn. Scheurt een ontspannen stukje direct? Neem het herstelpad en beoordeel opnieuw; sterk maar strak deeg heeft vooral rust nodig.','Time, dough temperature, feel, and windowpane work together. Reaching the target temperature does not prove sufficient gluten development. Does a relaxed piece tear immediately? Use the recovery steps and assess again; strong but tight dough mainly needs rest.'),'devcheck'));
+  steps.push(kitchenStepSection('kitchen-proof','◷',L('Rijzen en opbollen','Proof and shape')));
   const fs=fermentationSteps(c,i,live);steps.push(...fs.html);i=fs.next;
   steps.push(step(i++,L('Kijk naar het deeg, niet alleen naar de klok','Watch the dough, not just the clock'),
     L(`Richtwaarde bulk: <b>${sci.rise.bulk}</b>. Voor het bakken: <b>${sci.rise.final}</b>.`,
@@ -698,6 +704,7 @@ function buildSteps(c){
     L(`Bij duidelijk sneller of trager rijzen mag je de tijd aanpassen; temperatuur, bloem en gistpartij verschillen in de praktijk.`,
       `If it rises clearly faster or slower, adjust the timing; temperature, flour and yeast batch all vary in practice.`),'visual'));
 
+  steps.push(kitchenStepSection('kitchen-bake','🍕',L('Voorbereiden en bakken','Prepare and bake')));
   if(aggSauce.enabled){
     if(usesCombinedTomatoPurchase(aggSauce)){
       const p=aggSauce.tomatoPurchase;

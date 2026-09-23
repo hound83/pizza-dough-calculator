@@ -2,7 +2,7 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v2.0.0-76c990)](docs/V2_0_0_RELEASE.md)
+[![Version](https://img.shields.io/badge/version-v2.0.1--candidate-f0b45a)](docs/V2_0_1_KITCHEN_REVIEW.md)
 [![Tests](https://img.shields.io/badge/regression_tests-106_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
@@ -13,7 +13,7 @@ The downloadable application remains one self-contained `index.html`. The reposi
 
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v2.0.0 release notes](docs/V2_0_0_RELEASE.md)
 
-> **v2.0.0 release.** The reviewed evening workflow is published through GitHub Pages. Tag v1.0.0 and all earlier baselines are preserved. Schema 53 migrates existing schema-52 data.
+> **v2.0.1 kitchen review candidate.** This branch restores the visible individual checklist and refines Kitchen styling. The live page remains v2.0.0 while this change is reviewed. Tag v1.0.0 and all earlier baselines are preserved. Schema 53 migrates existing schema-52 data.
 
 **New in v2:** freely switch between Plan and Kitchen, plan around availability, split dough into independent mixer runs, follow a queue with actual oven-in/out times, get contextual dough help, and reuse complete evening templates or transfer private backups. The visible version, dynamic weekdays and previous improvements remain intact. [Implementation and review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
@@ -207,7 +207,7 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Current release:** v2.0.0; tag v1.0.0 and all earlier baselines remain preserved.
+- **Review candidate:** [v2.0.1 kitchen workbench](docs/V2_0_1_KITCHEN_REVIEW.md); live remains v2.0.0; tag v1.0.0 and all earlier baselines remain preserved.
 - **Architecture:** static HTML, CSS and eighteen JavaScript modules generate the standalone publication for GitHub Pages.
 - **Review:** both independent v2 crosschecks, resolved findings and verification evidence are linked in [the release notes](docs/V2_0_0_RELEASE.md).
 - **Included:** all six evening workflow improvements, schema-53 migration, dynamic weekdays and the existing workshop/calculation contracts.
