@@ -420,6 +420,6 @@ The changed presentation is a v2.0.1 review candidate based on released v2.0.0 (
 
 | Candidate artifact | SHA-256 |
 |---|---|
-| singleFile | `20d6ac2d55550fb0adb8db13ef24c407dc72a94571847c6aa37c19979ec19c31` |
-| css | `09b7bfcc1f03d9f4b99e3dba4a228b5055653c79e78873609b8b681327558847` |
+| singleFile | `dc4f91763b2be5b602a6591fd46d79da1a23c0ac3f262ad4fea4101e143f2b27` |
+| css | `215f807463030d980c0d814b114c3b9f02a04e4bc3f793ca6fa4256ea4b263ff` |
 | javascript | `96c0bc3b87735034bd20b0d2fd939cd003d997a6da3f7af4f9593a75f8ffd6f1` |

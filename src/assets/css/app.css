@@ -1271,7 +1271,11 @@ body[data-active-workspace="kitchen"] .wizard-nav-shell{display:none}
 .kitchen-sidebar .timeitem b{font-size:12px}
 .kitchen-sidebar .timeitem span{font-size:12px}
 .kitchen-sidebar .card .card{padding:16px;margin-top:16px;box-shadow:none}
-.kitchen-sidebar .form-grid{grid-template-columns:1fr}
+.kitchen-sidebar .form-grid,.kitchen-sidebar .workshop-grid{grid-template-columns:1fr}
+.kitchen-oven .stats{grid-template-columns:1fr}
+.kitchen-oven .stat{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;padding:12px}
+.kitchen-oven .stat span{min-width:0}
+.kitchen-oven .stat b{flex:0 0 auto;font-size:14px;text-align:right}
 .kitchen-sidebar .btnrow .btn{white-space:normal}
 .kitchen-sidebar .hint{font-size:12px;line-height:1.65}
 .kitchen-reference>summary{min-height:44px;cursor:pointer;font-weight:700;font-size:14px;line-height:1.5}
