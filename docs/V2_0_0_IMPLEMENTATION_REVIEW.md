@@ -1,5 +1,7 @@
 # v2.0.0 — evening workflow review candidate
 
+> Release update: Michael authorized publication as v2.0.0 after both reviews and the final keyboard-focus correction. See [the release record](V2_0_0_RELEASE.md). Candidate/live-status statements below describe the historical review snapshot.
+
 ## Start here
 
 Michael requested the six accepted workflow proposals together in v2.0, without intermediate public releases, with Claude available for review. This candidate starts from released v1.4.1 / main `0674eed4249eb96eb60e4ce931a4508482337a08`. The earlier seven workshop additions and eight resolved Claude 1.4 findings are retained. Review `feature/v2.0-kitchen-workflow` against main in [PR #16](https://github.com/hound83/pizza-dough-calculator/pull/16). Main stays at v1.4.1 until review.

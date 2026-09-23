@@ -407,3 +407,7 @@ Michael authorized the remaining keyboard-focus fix from Claude’s second revie
 | singleFile | `830c2fddd81b0a9baf88cc1c488e69874bf745048f6e207627b0a1fe090990db` |
 | css | `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9` |
 | javascript | `c3293b9fb0447187e4f43d323177ae2ba93eca2ca823d2ee9393978b2a69a23c` |
+
+## v2.0.0 release authorization
+
+Michael authorized publishing the reviewed v2.0.0 application, including the final keyboard-focus correction. The preceding candidate hashes are now also the release baseline: standalone `830c2fddd81b0a9baf88cc1c488e69874bf745048f6e207627b0a1fe090990db`, CSS `5a6f1dcb860ab8dece22b7a088ba1727fb4a7f6a472f4ddd2b47b7b4c96129c9`, combined JavaScript `c3293b9fb0447187e4f43d323177ae2ba93eca2ca823d2ee9393978b2a69a23c`. Release preparation changes documentation only, with no application, calculation, schema or timing changes. See [the release record](V2_0_0_RELEASE.md); all earlier status statements and hashes remain historical evidence.

@@ -2,7 +2,7 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v2.0.0--candidate-f0b45a)](docs/V2_0_0_IMPLEMENTATION_REVIEW.md)
+[![Version](https://img.shields.io/badge/version-v2.0.0-76c990)](docs/V2_0_0_RELEASE.md)
 [![Tests](https://img.shields.io/badge/regression_tests-106_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
@@ -11,13 +11,13 @@ A comprehensive Dutch and English calculator for pizza dough, fermentation, sauc
 
 The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
 
-**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v1.4.0 release notes](docs/V1_4_0_RELEASE_REVIEW.md)
+**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v2.0.0 release notes](docs/V2_0_0_RELEASE.md)
 
-> **v2.0.0 review candidate.** The live page remains at v1.4.1 until review is addressed. Tag v1.0.0 and all earlier baselines are preserved. Schema 53 migrates existing schema-52 data.
+> **v2.0.0 release.** The reviewed evening workflow is published through GitHub Pages. Tag v1.0.0 and all earlier baselines are preserved. Schema 53 migrates existing schema-52 data.
 
 **New in v2:** freely switch between Plan and Kitchen, plan around availability, split dough into independent mixer runs, follow a queue with actual oven-in/out times, get contextual dough help, and reuse complete evening templates or transfer private backups. The visible version, dynamic weekdays and previous improvements remain intact. [Implementation and review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
-**For Claude/reviewers:** [start here](CLAUDE.md#v200-review-current-candidate). The [full original review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) and current implementation roadmap are stored in this branch; separate attachments are unnecessary.
+**For Claude/reviewers:** [start here](CLAUDE.md#v200-release). The [full original review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) and current implementation roadmap are stored in this branch; separate attachments are unnecessary.
 
 ## Features
 
@@ -178,7 +178,7 @@ The project uses semantic versioning from the first golden release onward:
 | **v1.2.0** | Staged, route-aware main-water and final-dough-temperature calculation |
 | **v1.2.1** | Backward-compatible localization, recipe-data, and sauce-choice cleanup |
 | **v1.4.0** | Batch tracking, recipe profiles, kitchen guidance and the improved 1.3 planning |
-| **v2.0.0** | Reserved for a genuinely breaking change |
+| **v2.0.0** | Integrated Plan/Kitchen workflow, independent mixer runs, pizza queue and schema-53 migration |
 
 Historic working versions such as v50 remain where technically necessary in storage migrations, test names, and audit documents. They are no longer used as public product versions.
 
@@ -189,7 +189,7 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`index.html`](index.html) | Generated standalone publication for Pages and offline use |
 | [`src/index.html`](src/index.html) | Semantic source HTML and fixed asset-loading order |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Complete presentation and responsive layout |
-| [`src/assets/js/`](src/assets/js/) | Fifteen ordered responsibility-based modules |
+| [`src/assets/js/`](src/assets/js/) | Eighteen ordered responsibility-based modules |
 | [`tools/bundle.js`](tools/bundle.js) | Dependency-free standalone bundler and drift check |
 | [`tests/test_v50.js`](tests/test_v50.js) | Fast Node/VM functional regression suite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architecture, integrity, and golden-equivalence tests |
@@ -207,9 +207,9 @@ The standalone root `index.html` remains the downloadable and directly published
 
 ## Status and roadmap
 
-- **Review candidate:** v2.0.0; live remains v1.4.1; tag v1.0.0 and all earlier baselines remain preserved.
+- **Current release:** v2.0.0; tag v1.0.0 and all earlier baselines remain preserved.
 - **Architecture:** static HTML, CSS and eighteen JavaScript modules generate the standalone publication for GitHub Pages.
-- **Review:** Claude's independent 1.4 crosscheck and the response to all eight findings are recorded in [the release review](docs/V1_4_0_RELEASE_REVIEW.md).
+- **Review:** both independent v2 crosschecks, resolved findings and verification evidence are linked in [the release notes](docs/V2_0_0_RELEASE.md).
 - **Included:** all six evening workflow improvements, schema-53 migration, dynamic weekdays and the existing workshop/calculation contracts.
 - **Deferred:** app development and the three proposed physical-model investigations.
 - **Feedback:** anonymous feedback/Cloudflare remains separate work; PR #12 is not included in this release.

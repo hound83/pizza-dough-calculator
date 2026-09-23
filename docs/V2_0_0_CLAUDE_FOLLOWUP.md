@@ -1,5 +1,7 @@
 # v2.0.0 review response
 
+> Release update: Michael authorized publication as v2.0.0 after both reviews and the final keyboard-focus correction. See [the release record](V2_0_0_RELEASE.md). Candidate/live-status statements below describe the historical review snapshot.
+
 Michael requested implementation of all three findings in [Claude's crosscheck](Claude_v2.0.0_PR16_crosscheck.md), plus the Basic/Full proposal discussed afterwards. The starting HEAD was `cf1669a` (review document only); application code matched reviewed `81c06ec`. This remains the v2.0.0 candidate in PR #16. Main/live stays v1.4.1 until publication is requested.
 
 | Finding | Correction | Verification |

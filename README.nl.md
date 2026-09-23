@@ -4,7 +4,7 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v2.0.0--candidate-f0b45a)](docs/V2_0_0_IMPLEMENTATION_REVIEW.md)
+[![Versie](https://img.shields.io/badge/versie-v2.0.0-76c990)](docs/V2_0_0_RELEASE.md)
 [![Tests](https://img.shields.io/badge/regressietests-106_tests-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
@@ -13,13 +13,13 @@ Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fe
 
 De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies de standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
 
-**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v1.4.0-releasenotities](docs/V1_4_0_RELEASE_REVIEW.md)
+**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v2.0.0-releasenotities](docs/V2_0_0_RELEASE.md)
 
-> **v2.0.0 reviewkandidaat.** De live pagina blijft op v1.4.1 tot de review is verwerkt. Tag v1.0.0 en alle eerdere baselines blijven behouden. Schema 53 migreert bestaande gegevens uit schema 52.
+> **v2.0.0-release.** De gereviewde avondworkflow wordt via GitHub Pages gepubliceerd. Tag v1.0.0 en alle eerdere baselines blijven behouden. Schema 53 migreert bestaande gegevens uit schema 52.
 
 **Nieuw in v2:** vrij wisselen tussen Plan en Keuken, plannen rond beschikbaarheid, verdelen over aparte mixerbeurten, een bakvolgorde met echte in-/uithaaltijden, gerichte deeghulp en complete avondsjablonen plus privéback-ups. De versieweergave, dynamische weekdagen en eerdere verbeteringen blijven behouden. [Implementatie en review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
-**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v200-review-current-candidate). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
+**Voor Claude/reviewers:** [begin hier](CLAUDE.md#v200-release). De [volledige oorspronkelijke review](docs/Pizza_Calculator_Volledige_Review_2026-09-21.md) en het actuele implementatieplan staan op deze branch; losse bijlagen zijn niet nodig.
 
 ## Wat kan de calculator?
 
@@ -180,7 +180,7 @@ Vanaf de eerste golden release gebruikt het project semantic versioning:
 | **v1.2.0** | Gefaseerde, route-afhankelijke berekening van hoofdwater en einddeegtemperatuur |
 | **v1.2.1** | Achterwaarts compatibele opschoning van vertalingen, receptdata en sauskeuze |
 | **v1.4.0** | Batchregistratie, receptprofielen, praktische keukenhulpen en de verbeterde 1.3-planning |
-| **v2.0.0** | Alleen nodig bij een werkelijk brekende wijziging |
+| **v2.0.0** | Geïntegreerde Plan/Keuken-workflow, aparte mixerbeurten, bakvolgorde en schema-53-migratie |
 
 Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigraties, testbestanden en auditdocumenten. Ze worden niet langer als publieke productversie doorgeteld.
 
@@ -191,7 +191,7 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 | [`index.html`](index.html) | Gegenereerde standalone publicatie voor Pages en lokaal gebruik |
 | [`src/index.html`](src/index.html) | Semantische bron-HTML en de vaste laadvolgorde van de statische assets |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Volledige presentatie en responsive layout |
-| [`src/assets/js/`](src/assets/js/) | Vijftien geordende modules per verantwoordelijkheid |
+| [`src/assets/js/`](src/assets/js/) | Achttien geordende modules per verantwoordelijkheid |
 | [`tools/bundle.js`](tools/bundle.js) | Dependencyvrije standalone bundler en driftcontrole |
 | [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architectuur-, integriteits- en golden-equivalentietests |
@@ -209,9 +209,9 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Reviewkandidaat:** v2.0.0; live blijft v1.4.1; tag v1.0.0 en alle eerdere baselines blijven behouden.
+- **Huidige release:** v2.0.0; tag v1.0.0 en alle eerdere baselines blijven behouden.
 - **Architectuur:** statische HTML, CSS en achttien JavaScriptmodules genereren de standalone publicatie voor GitHub Pages.
-- **Review:** Claude’s onafhankelijke 1.4-crosscheck en de reactie op alle acht bevindingen staan in [het releaseverslag](docs/V1_4_0_RELEASE_REVIEW.md).
+- **Review:** beide onafhankelijke v2-crosschecks, verwerkte bevindingen en testresultaten staan gelinkt in [de releasenotities](docs/V2_0_0_RELEASE.md).
 - **Inbegrepen:** alle zes verbeteringen voor de pizza-avond, schema-53-migratie, dynamische weekdagen en de bestaande workshop- en rekenafspraken.
 - **Geparkeerd:** appontwikkeling en de drie voorgestelde onderzoeken naar het fysieke model.
 - **Feedback:** anonieme feedback/Cloudflare blijft afzonderlijk werk; PR #12 zit niet in deze release.
