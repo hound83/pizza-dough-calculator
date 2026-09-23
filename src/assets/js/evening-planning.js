@@ -53,8 +53,8 @@ function applyEveningTemplate(template){
 function renderEvening(c){
   if(!$('eveningPlan'))return;
   syncEveningRun();syncEveningPizzas(c);renderEveningPlan(c);renderEveningCollection();renderKitchen(c);
-  document.body.dataset.workspace=currentWizardPage===4?'kitchen':'plan';
-  document.querySelectorAll('[data-workspace]').forEach(button=>{
+  document.body.dataset.activeWorkspace=currentWizardPage===4?'kitchen':'plan';
+  document.querySelectorAll('.workspace-tab[data-workspace]').forEach(button=>{
     const kitchen=button.dataset.workspace==='kitchen',selected=kitchen===(currentWizardPage===4);
     const label=kitchen?L('Keuken','Kitchen'):'Plan';
     button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));button.setAttribute('aria-label',label);
@@ -151,7 +151,7 @@ async function handleEveningAction(button){
   }
 }
 function wireEveningEvents(){
-  document.querySelectorAll('[data-workspace]').forEach(button=>button.addEventListener('click',()=>showPage(button.dataset.workspace==='kitchen'?4:1)));
+  document.querySelectorAll('.workspace-tab[data-workspace]').forEach(button=>button.addEventListener('click',()=>showPage(button.dataset.workspace==='kitchen'?4:1)));
   document.querySelectorAll('[data-kitchen-jump]').forEach(button=>button.addEventListener('click',()=>{const target=$(button.dataset.kitchenJump);if(target){target.focus({preventScroll:true});target.scrollIntoView({block:'start',behavior:'auto'});}}));
   for(const id of eveningPanels){
     const root=$(id);if(!root)continue;

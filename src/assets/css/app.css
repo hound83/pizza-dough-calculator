@@ -1206,7 +1206,7 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 .workspace-copy b{font-size:18px;letter-spacing:-.02em}
 .workspace-copy small{font-size:12px;font-weight:400;color:var(--muted);line-height:1.4}
 .workspace-arrow{margin-left:auto;color:var(--muted);font-size:21px;font-weight:400}
-body[data-workspace="kitchen"] .wizard-nav-shell{display:none}
+body[data-active-workspace="kitchen"] .wizard-nav-shell{display:none}
 .kitchen-workspace{padding:26px;border-radius:24px;border-color:rgba(240,180,90,.28);background:linear-gradient(115deg,rgba(240,180,90,.07),transparent 70%),var(--panel);margin-bottom:28px}
 .kitchen-heading{align-items:center;gap:20px}
 .kitchen-heading-copy{display:flex;gap:18px;align-items:flex-start;min-width:0;flex:1}
