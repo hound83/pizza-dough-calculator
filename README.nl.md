@@ -4,7 +4,7 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v2.0.0-76c990)](docs/V2_0_0_RELEASE.md)
+[![Versie](https://img.shields.io/badge/versie-v2.0.1--candidate-f0b45a)](docs/V2_0_1_KITCHEN_REVIEW.md)
 [![Tests](https://img.shields.io/badge/regressietests-106_tests-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
@@ -15,7 +15,7 @@ De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v2.0.0-releasenotities](docs/V2_0_0_RELEASE.md)
 
-> **v2.0.0-release.** De gereviewde avondworkflow wordt via GitHub Pages gepubliceerd. Tag v1.0.0 en alle eerdere baselines blijven behouden. Schema 53 migreert bestaande gegevens uit schema 52.
+> **v2.0.1-keukenreview.** Deze branch maakt de losse afvinkstappen weer direct zichtbaar en verbetert de vormgeving van Keuken. De livepagina blijft v2.0.0 tijdens de review. Tag v1.0.0 en alle eerdere baselines blijven behouden. Schema 53 migreert bestaande gegevens uit schema 52.
 
 **Nieuw in v2:** vrij wisselen tussen Plan en Keuken, plannen rond beschikbaarheid, verdelen over aparte mixerbeurten, een bakvolgorde met echte in-/uithaaltijden, gerichte deeghulp en complete avondsjablonen plus privéback-ups. De versieweergave, dynamische weekdagen en eerdere verbeteringen blijven behouden. [Implementatie en review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
@@ -209,7 +209,7 @@ De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepublice
 
 ## Status en roadmap
 
-- **Huidige release:** v2.0.0; tag v1.0.0 en alle eerdere baselines blijven behouden.
+- **Reviewkandidaat:** [v2.0.1-keukenwerkblad](docs/V2_0_1_KITCHEN_REVIEW.md); live blijft v2.0.0; tag v1.0.0 en alle eerdere baselines blijven behouden.
 - **Architectuur:** statische HTML, CSS en achttien JavaScriptmodules genereren de standalone publicatie voor GitHub Pages.
 - **Review:** beide onafhankelijke v2-crosschecks, verwerkte bevindingen en testresultaten staan gelinkt in [de releasenotities](docs/V2_0_0_RELEASE.md).
 - **Inbegrepen:** alle zes verbeteringen voor de pizza-avond, schema-53-migratie, dynamische weekdagen en de bestaande workshop- en rekenafspraken.

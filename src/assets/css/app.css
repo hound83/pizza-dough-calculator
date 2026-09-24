@@ -1194,3 +1194,110 @@ button:disabled,input:disabled,select:disabled{cursor:not-allowed;opacity:.65}
 .evening-plan{margin-bottom:20px}
 
 .share-file-content{white-space:pre-wrap;overflow-wrap:anywhere;max-height:20rem;overflow:auto;font-size:.8rem}
+
+/* v2.0.1: the kitchen shares the chooser's card language and keeps every step visible. */
+.workspace-nav{gap:14px;margin:22px 0}
+.workspace-tab{display:flex;align-items:center;gap:14px;text-align:left;min-height:88px;padding:17px 20px;border-radius:20px;background:var(--panel);transition:border-color .16s ease,background .16s ease}
+.workspace-tab:hover{border-color:#596267;background:#1b1f21}
+.workspace-tab.active{color:var(--text);border-color:rgba(238,107,73,.65);background:linear-gradient(120deg,rgba(238,107,73,.14),rgba(240,180,90,.04)),var(--panel)}
+.workspace-icon,.kitchen-hero-icon,.kitchen-section-icon{display:grid;place-items:center;flex:0 0 auto;width:46px;height:46px;border:1px solid var(--line);border-radius:15px;background:#222628;font-size:24px}
+.workspace-tab.active .workspace-icon{border-color:rgba(238,107,73,.38);background:rgba(238,107,73,.13)}
+.workspace-copy{display:grid;gap:3px;min-width:0}
+.workspace-copy b{font-size:18px;letter-spacing:-.02em}
+.workspace-copy small{font-size:12px;font-weight:400;color:var(--muted);line-height:1.4}
+.workspace-arrow{margin-left:auto;color:var(--muted);font-size:21px;font-weight:400}
+body[data-active-workspace="kitchen"] .wizard-nav-shell{display:none}
+.kitchen-workspace{padding:26px;border-radius:24px;border-color:rgba(240,180,90,.28);background:linear-gradient(115deg,rgba(240,180,90,.07),transparent 70%),var(--panel);margin-bottom:28px}
+.kitchen-heading{align-items:center;gap:20px}
+.kitchen-heading-copy{display:flex;gap:18px;align-items:flex-start;min-width:0;flex:1}
+.kitchen-heading-copy>div{min-width:0}
+.kitchen-hero-icon{width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,rgba(238,107,73,.2),rgba(240,180,90,.12));border-color:rgba(240,180,90,.25);font-size:30px}
+.kitchen-heading h2{font-size:clamp(24px,3vw,31px);line-height:1.2;margin:6px 0 9px;letter-spacing:-.035em}
+.kitchen-heading p{color:var(--muted);font-size:14px;line-height:1.6;margin:0;max-width:660px}
+.kitchen-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.kitchen-meta span{padding:5px 10px;border-radius:999px;background:#202426;border:1px solid var(--line);color:#d8dcde;font-size:12px}
+.kitchen-current-action{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 20px;margin-top:20px;border-radius:16px;background:#121617;border:1px solid var(--line)}
+.kitchen-current-action p{font-size:13px;color:var(--muted);margin:5px 0 0}
+.kitchen-current-action .eyebrow{font-size:10px;color:var(--muted)}
+.kitchen-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px;align-items:start}
+.kitchen-tools>details{min-width:0;border:1px solid var(--line);border-radius:14px;padding:0 14px;margin:0}
+.kitchen-tools>details>summary{font-size:13px;font-weight:650;padding:12px 0;min-height:48px}
+.kitchen-tools>details[open]{padding-bottom:14px}
+.kitchen-workspace>.btnrow{margin-top:14px}
+.kitchen-workspace>.btnrow .btn.ghost{font-size:12px;padding:9px 12px}
+.kitchen-workspace>#bakingWorkspace{border:1px solid var(--line);border-radius:16px;padding:4px 18px;background:#131719}
+.kitchen-workspace>#bakingWorkspace>summary{font-weight:750}
+.kitchen-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;align-items:start;gap:28px}
+.kitchen-steps-panel,.kitchen-sidebar{min-width:0}
+.kitchen-section-heading{display:flex;gap:14px;align-items:center;margin:0 0 18px}
+.kitchen-section-heading h2{font-size:27px;letter-spacing:-.03em;margin:3px 0 5px}
+.kitchen-section-heading .eyebrow{font-size:10px;color:var(--muted)}
+.kitchen-section-heading .hint{margin:0;font-size:13px;max-width:480px;line-height:1.5}
+.kitchen-section-icon{background:var(--panel);font-size:22px}
+.kitchen-jumps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.kitchen-jumps button{min-height:44px;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:#d8dcde;font-size:12px;cursor:pointer}
+.kitchen-jumps button:hover{border-color:var(--accent);color:var(--text)}
+.kitchen-steps-panel .steps-progress{margin:0 0 12px;background:var(--panel);border-radius:18px;padding:16px 18px;gap:12px}
+.kitchen-steps-panel .steps-progress-copy b{font-size:14px}
+.kitchen-steps-panel .steps-progress-copy span{font-size:12px;line-height:1.6}
+.kitchen-steps-panel .step-progress-reset{min-height:44px;font-size:11px;border-color:transparent}
+.kitchen-steps-panel .step-list{gap:14px}
+.kitchen-step-section{display:flex;align-items:center;gap:10px;margin:14px 0 2px;scroll-margin-top:20px}
+.kitchen-step-section>span{color:var(--accent2);font-size:20px}
+.kitchen-step-section h3{margin:0;color:#dce0e2;font-size:15px;font-weight:750;letter-spacing:.01em}
+.kitchen-step-section:after{content:'';height:1px;flex:1;background:var(--line);margin-left:7px}
+.kitchen-steps-panel .step-card{grid-template-columns:40px minmax(0,1fr) 36px;gap:14px;padding:22px 19px;border-radius:20px;background:var(--panel);box-shadow:0 5px 18px rgba(0,0,0,.1)}
+.kitchen-steps-panel .step-card .num{grid-column:1;grid-row:1;width:36px;height:36px;border-radius:12px;background:#252a2c;border:1px solid #3b4246;color:#cdd2d5;font-size:14px}
+.kitchen-steps-panel .step-content{grid-column:2;grid-row:1;min-width:0}
+.kitchen-steps-panel .step-check{grid-column:3;grid-row:1;width:44px;height:44px;margin:-4px -4px 0;position:relative}
+.kitchen-steps-panel .step-check input{inset:0;width:44px;height:44px;margin:0;cursor:pointer;pointer-events:auto}
+.kitchen-steps-panel .step-check-mark{width:28px;height:28px;border-radius:9px;pointer-events:none}
+.kitchen-steps-panel .step-card h3{font-size:17px;line-height:1.35;margin:4px 0 10px;letter-spacing:-.015em}
+.kitchen-steps-panel .step-card p{font-size:14px;line-height:1.75;color:#d8dcde}
+.kitchen-steps-panel .step-card .detail{font-size:12px;line-height:1.7;margin-top:12px}
+.kitchen-steps-panel .step-card.is-next{border-color:rgba(238,107,73,.7);background:linear-gradient(120deg,rgba(238,107,73,.065),transparent 65%),var(--panel)}
+.kitchen-steps-panel .step-card.is-next .num{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#23150f}
+.kitchen-steps-panel .step-card.completed{border-color:rgba(118,201,144,.25);background:rgba(118,201,144,.045)}
+.kitchen-steps-panel .step-card.completed .step-content{opacity:.78}
+.kitchen-steps-panel .step-card.completed .num{background:#22352a;border-color:#395343;color:#a4d8b4}
+.kitchen-steps-panel .step-moment{font-size:12px;margin:0 0 10px;line-height:1.5;color:var(--accent2)}
+.kitchen-steps-panel .step-measurement{margin:0}
+.kitchen-steps-panel .measurement-disclosure{margin:0;padding:10px 16px;background:#141819;border-radius:15px}
+.kitchen-steps-panel .measurement-disclosure>summary{font-size:12px;color:var(--muted)}
+.kitchen-sidebar{display:grid;gap:18px}
+.kitchen-sidebar>.card{margin:0;padding:20px;border-radius:20px;background:#15191b;box-shadow:none}
+.kitchen-sidebar h2{font-size:17px;margin-bottom:10px}
+.kitchen-sidebar .timeitem{grid-template-columns:1fr;gap:3px;padding:11px 0}
+.kitchen-sidebar .timeitem b{font-size:12px}
+.kitchen-sidebar .timeitem span{font-size:12px}
+.kitchen-sidebar .card .card{padding:16px;margin-top:16px;box-shadow:none}
+.kitchen-sidebar .form-grid,.kitchen-sidebar .workshop-grid{grid-template-columns:1fr}
+.kitchen-oven .stats{grid-template-columns:1fr}
+.kitchen-oven .stat{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;padding:12px}
+.kitchen-oven .stat span{min-width:0}
+.kitchen-oven .stat b{flex:0 0 auto;font-size:14px;text-align:right}
+.kitchen-sidebar .btnrow .btn{white-space:normal}
+.kitchen-sidebar .hint{font-size:12px;line-height:1.65}
+.kitchen-reference>summary{min-height:44px;cursor:pointer;font-weight:700;font-size:14px;line-height:1.5}
+.kitchen-help .workshop-panel{margin:0;padding:0;border:0}
+.kitchen-help summary{cursor:pointer;min-height:44px;font-size:14px}
+#kitchenInstructions{padding:16px 20px;border-radius:20px;border-color:var(--line)}
+#kitchenInstructions>summary{padding:0;font-size:14px}
+#kitchenInstructions .batch-runner{margin-top:16px}
+@media(max-width:1050px){.kitchen-layout{grid-template-columns:minmax(0,1fr) 280px;gap:20px}.kitchen-steps-panel .step-card{padding:18px 15px;gap:10px}}
+@media(max-width:860px){.kitchen-layout{grid-template-columns:1fr}.kitchen-sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.kitchen-sidebar>#kitchenInstructions{grid-column:1/-1}}
+@media(max-width:560px){
+ .workspace-nav{gap:9px;margin:16px 0 20px}.workspace-tab{gap:9px;padding:13px 12px;border-radius:17px;min-height:86px}.workspace-icon{width:32px;height:36px;border-radius:11px;font-size:20px}.workspace-copy b{font-size:16px}.workspace-copy small{font-size:10px}.workspace-arrow{display:none}
+ .kitchen-workspace{padding:19px 16px;border-radius:21px;margin-bottom:24px}.kitchen-heading-copy{gap:12px}.kitchen-hero-icon{width:42px;height:46px;font-size:24px;border-radius:13px}.kitchen-heading .eyebrow{font-size:10px}.kitchen-heading h2{font-size:24px}.kitchen-heading p{font-size:13px}.kitchen-heading>.btn{margin-left:54px}.kitchen-meta{margin-top:10px;gap:5px}.kitchen-meta span{font-size:11px}
+ .kitchen-tools{grid-template-columns:1fr;gap:9px}.kitchen-current-action{padding:14px;gap:12px}.kitchen-current-action>.btn{width:100%}.kitchen-sidebar{grid-template-columns:1fr}.kitchen-section-heading{gap:11px}.kitchen-section-heading h2{font-size:24px}.kitchen-section-icon{width:40px;height:40px;font-size:21px}.kitchen-jumps{gap:6px}.kitchen-jumps button{padding:8px 12px}
+ .kitchen-steps-panel .step-card{grid-template-columns:29px minmax(0,1fr) 28px;gap:9px;padding:16px 13px;border-radius:17px}.kitchen-steps-panel .step-card .num{width:29px;height:31px;border-radius:10px;font-size:12px}.kitchen-steps-panel .step-card h3{font-size:16px;margin:3px 0 9px}.kitchen-steps-panel .step-card p{font-size:13px;line-height:1.7}.kitchen-steps-panel .step-card .detail{font-size:12px}.kitchen-steps-panel .step-check{margin:-6px -8px 0}.kitchen-steps-panel .step-check-mark{width:25px;height:25px}.kitchen-steps-panel .steps-progress{padding:14px;grid-template-columns:minmax(0,1fr) auto}.kitchen-steps-panel .step-progress-reset{justify-self:end;padding:6px}.kitchen-steps-panel .steps-progress-track{grid-column:1/-1}
+}
+@media print{.workspace-nav,.kitchen-jumps,.kitchen-heading>.btn{display:none!important}.kitchen-layout{display:block}.kitchen-steps-panel .step-card,.kitchen-sidebar>.card,.kitchen-workspace{background:#fff;box-shadow:none;color:#000}.kitchen-steps-panel .step-card p,.kitchen-steps-panel .step-card .detail{color:#333}.kitchen-step-section{break-after:avoid}.kitchen-steps-panel .step-card{break-inside:avoid}}
+@media(max-width:560px){
+ .kitchen-steps-panel .step-content{display:contents}
+ .kitchen-steps-panel .step-content>h3{grid-column:2;grid-row:1;margin:3px 0 4px}
+ .kitchen-steps-panel .step-content>p,.kitchen-steps-panel .step-content>.detail,.kitchen-steps-panel .step-content>.step-moment{grid-column:1/-1}
+ .kitchen-steps-panel .step-content>.detail{margin-top:2px}
+ .kitchen-steps-panel .step-content>.step-moment{margin:0}
+ .kitchen-steps-panel .step-card.completed .step-content>*{opacity:.78}
+}

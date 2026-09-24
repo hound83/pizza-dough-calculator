@@ -75,9 +75,9 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v2.0.0');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v2.0.1');
         await expect(page.locator('#page1')).toHaveClass(/\bactive\b/);
-        await expect(page.locator('#appVersion')).toHaveText('v2.0.0');
+        await expect(page.locator('#appVersion')).toHaveText('v2.0.1');
         await expect(page.locator('#appVersion')).toBeVisible();
         await expect(page.locator('#eveningPlan')).toBeVisible();
 
@@ -86,7 +86,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'2.0.0',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'2.0.1',hasCalculator:true,horizontalOverflow:0});
         await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
         await expect(page.locator('#scheduleSummary')).toBeVisible();
         await expect(page.locator('#scheduleSummary')).toContainText('1 u 54 min');
@@ -97,7 +97,10 @@ for(const publication of PUBLICATIONS){
         await page.evaluate(()=>{showPage(4);$('kitchenInstructions').open=true;});
         await expect(page.locator('#timeline')).toContainText('Koelkast uit');
         const timeline=await page.locator('#timeline').boundingBox(),steps=await page.locator('#stepsList').boundingBox();
-        expect(timeline.y).toBeLessThan(steps.y);
+        if(viewport.width<=860)expect(timeline.y).toBeGreaterThan(steps.y+steps.height);
+        else expect(timeline.x).toBeGreaterThan(steps.x+steps.width);
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBe(0);
+        await page.screenshot({path:test.info().outputPath('kitchen-steps.png'),fullPage:true});
         await expect(page.locator('#stepDoughMeasurement')).toBeVisible();
         await expect(page.locator('#stepDoughTemp')).toBeHidden();
         await expect(page.locator('[data-method="kitchenaid"]')).toHaveAttribute('aria-pressed','true');
@@ -126,7 +129,7 @@ for(const publication of PUBLICATIONS){
         await page.locator('#bakeDay').selectOption('2');
         await page.locator('#langEn').click();
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('In 2 days – Wednesday');
-        await expect(page.locator('#appVersion')).toHaveText('v2.0.0');
+        await expect(page.locator('#appVersion')).toHaveText('v2.0.1');
         await page.locator('#langNl').click();
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
         await page.clock.fastForward(11*60_000);

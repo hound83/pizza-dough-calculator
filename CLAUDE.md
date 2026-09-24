@@ -8,6 +8,10 @@ Before proposing or making changes, read these files completely:
 
 Treat `docs/PRODUCT_GUARDRAILS.md` as the canonical source for non-negotiable product behavior. Maintainable application sources live under `src/`; root `index.html` is generated with `npm run bundle` and must not be edited directly. Run `npm test` before declaring work complete, and never change the golden hashes without an explicitly approved functional baseline change.
 
+## v2.0.1 kitchen review
+
+Michael requested restoring the individual checklist and a visual treatment consistent with the mode chooser and recipe picker. Read [the kitchen review map](docs/V2_0_1_KITCHEN_REVIEW.md). Compare this candidate with released v2.0.0 (`2028e408`), focusing on direct access to steps, independent/persisted per-run checkmarks, keyboard focus, one optional measurement field and six viewport widths in both languages. No calculation or migration change is intended. Live remains v2.0.0 pending review.
+
 ## v2.0.0 release
 
 Michael authorized publication after both reviews and the final keyboard-focus correction. Start with [the release record](docs/V2_0_0_RELEASE.md). The following review instructions describe the pre-release comparison; v1.4.1 remains the historical comparison base.

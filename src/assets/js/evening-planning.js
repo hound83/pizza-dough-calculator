@@ -53,13 +53,23 @@ function applyEveningTemplate(template){
 function renderEvening(c){
   if(!$('eveningPlan'))return;
   syncEveningRun();syncEveningPizzas(c);renderEveningPlan(c);renderEveningCollection();renderKitchen(c);
-  document.querySelectorAll('[data-workspace]').forEach(button=>{const selected=button.dataset.workspace===(currentWizardPage===4?'kitchen':'plan');button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));button.textContent=button.dataset.workspace==='kitchen'?L('Keuken','Kitchen'):'Plan';});
-  if($('instructionsSummary'))$('instructionsSummary').textContent=L('Alle instructies, tijdlijn en logboek','All instructions, timeline and logbook');
+  document.body.dataset.activeWorkspace=currentWizardPage===4?'kitchen':'plan';
+  document.querySelectorAll('.workspace-tab[data-workspace]').forEach(button=>{
+    const kitchen=button.dataset.workspace==='kitchen',selected=kitchen===(currentWizardPage===4);
+    const label=kitchen?L('Keuken','Kitchen'):'Plan';
+    button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));button.setAttribute('aria-label',label);
+    button.innerHTML=`<span class="workspace-icon" aria-hidden="true">${kitchen?'🥣':'📋'}</span><span class="workspace-copy"><b>${label}</b><small>${kitchen?L('Maken, afvinken en bakken','Make, check off and bake'):L('Recept, hoeveelheden en tijd','Recipe, quantities and timing')}</small></span><span class="workspace-arrow" aria-hidden="true">↗</span>`;
+  });
+  const copy={instructionsSummary:L('Tijden aanpassen en logboek','Adjust timing and bake log'),kitchenStepsKicker:L('Jouw werkblad','Your workbench'),kitchenStepsTitle:L('Stap voor stap','Step by step'),kitchenStepsHint:L('Iedere handeling apart. Vink af op jouw tempo en kijk gerust vooruit.','One task at a time. Check off at your own pace and look ahead whenever you like.')};
+  for(const [id,text] of Object.entries(copy))if($(id))$(id).textContent=text;
+  $('kitchenStepNavigation')?.setAttribute('aria-label',L('Stappenplan','Cooking steps'));
+  $('kitchenSidebar')?.setAttribute('aria-label',L('Naast je stappenplan','Alongside your steps'));
+  document.querySelectorAll('[data-kitchen-jump]').forEach(button=>{button.textContent=({ 'kitchen-make':L('Deeg maken','Make dough'),'kitchen-proof':L('Rijzen','Proof'),'kitchen-bake':L('Bakken','Bake')})[button.dataset.kitchenJump];});
 }
 async function handleEveningAction(button){
   // A repaint can preserve a focused value without the browser's pending change
   // event. Commit the visible reading before replacing its phase or run.
-  const temperature=$('kitchenDoughTemp');
+  const temperature=$('stepDoughTemp');
   if(temperature&&activeBatch()){
     const raw=temperature.value.trim(),value=validMeasured(raw,10,40);
     if(raw!==''&&value===null)throw new Error(L('Vul een deegtemperatuur van 10–40 °C in, of laat het veld leeg.','Enter a dough temperature between 10–40 °C, or leave the field blank.'));
@@ -89,7 +99,7 @@ async function handleEveningAction(button){
     eveningNotice=L('Avond bewaard. Niet gebakken pizza’s blijven als niet gebakken geregistreerd.','Evening saved. Unbaked pizzas remain recorded as unbaked.');showPage(1);
   }else if(action==='help'){
     const key=kitchenCurrentKey();workshopDrafts.helpStage=key==='bulkStart'?'mix':key==='bake'||!key?'open':'proof';
-    renderDoughHelp();$('kitchenInstructions').open=true;$('doughHelpDetails').open=true;$('doughHelp').scrollIntoView({block:'center'});
+    renderDoughHelp();$('doughHelpDetails').open=true;$('doughHelp').scrollIntoView({block:'center'});
   }else if(action==='start-timer'){
     const minutes=Number($('restTimerMinutes').value);if(!Number.isFinite(minutes)||minutes<1||minutes>1440)throw new Error(L('Kies 1–1440 minuten.','Choose 1–1440 minutes.'));
     const next=WorkflowCore.clone(e);next.timer={startedAt:Date.now(),endAt:Date.now()+minutes*60000,runId:e.selectedRun,label:'rest'};commitEvening(next);
@@ -141,7 +151,8 @@ async function handleEveningAction(button){
   }
 }
 function wireEveningEvents(){
-  document.querySelectorAll('[data-workspace]').forEach(button=>button.addEventListener('click',()=>showPage(button.dataset.workspace==='kitchen'?4:1)));
+  document.querySelectorAll('.workspace-tab[data-workspace]').forEach(button=>button.addEventListener('click',()=>showPage(button.dataset.workspace==='kitchen'?4:1)));
+  document.querySelectorAll('[data-kitchen-jump]').forEach(button=>button.addEventListener('click',()=>{const target=$(button.dataset.kitchenJump);if(target){target.focus({preventScroll:true});target.scrollIntoView({block:'start',behavior:'auto'});}}));
   for(const id of eveningPanels){
     const root=$(id);if(!root)continue;
     root.addEventListener('click',async event=>{const button=event.target.closest('[data-evening-action]');if(!button||button.disabled)return;try{await handleEveningAction(button);}catch(error){eveningFailure(error);}});
@@ -159,7 +170,7 @@ function wireEveningEvents(){
           else if(el.id==='splitUnit')evenings.draft.split.unit=el.value;
           else{const value=el.value===''?null:Number(el.value);if(value!==null&&(!Number.isFinite(value)||value<1||value>50000))throw new Error('capacity');evenings.draft.split.capacity=value;}
           saveState();update();
-        }else if(el.id==='kitchenDoughTemp'){setLiveMeasurement('doughTemp',el.value);saveState();}
+        }
         else if(el.dataset.pizzaName){const e=WorkflowCore.clone(activeEvening()),p=e.pizzas.find(p=>p.id===el.dataset.pizzaName);if(p&&p.events.in==null){p.name=el.value.trim().slice(0,80);commitEvening(e);}}
         else if(el.id==='eveningGap'){const e=WorkflowCore.clone(activeEvening()),value=el.value===''?null:Number(el.value);if(value!==null&&(!Number.isFinite(value)||value<0||value>60))throw new Error(L('Gebruik 0–60 minuten.','Use 0–60 minutes.'));e.manualGap=value===null?null:value*60;commitEvening(e);}
         else if(el.id==='eveningImportFile'){

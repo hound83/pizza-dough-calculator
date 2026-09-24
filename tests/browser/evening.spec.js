@@ -11,7 +11,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
   }
   for(const width of [320,390,430,760,1024,1280])test(`Plan and Kitchen fit in Dutch/English at ${width}px`,async({page})=>{
     const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewportSize({width,height:900});await open(page);
-    await expect(page.locator('#page1')).toHaveClass(/active/);await expect(page.locator('#appVersion')).toHaveText('v2.0.0');
+    await expect(page.locator('#page1')).toHaveClass(/active/);await expect(page.locator('#appVersion')).toHaveText('v2.0.1');
     for(const lang of ['nl','en']){
       await page.locator(lang==='nl'?'#langNl':'#langEn').click();
       await expect(page.locator('#eveningPlan')).toBeVisible();
@@ -32,19 +32,19 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
     await open(page);await page.locator('#pizzas').fill('8');await page.locator('#pizzas').blur();
     await page.locator('#eveningSplitDetails summary').click();await page.locator('#splitCapacity').fill('900');await page.locator('#splitCapacity').blur();
     await expect(page.locator('#eveningSplitDetails')).toContainText('4 + 4');await start(page);
-    await page.locator('#kitchenDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#kitchenDoughTemp').fill('25');await page.locator('#kitchenDoughTemp').blur();
+    await page.locator('#stepDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#stepDoughTemp').fill('25');await page.locator('#stepDoughTemp').blur();
     await page.locator('[data-evening-action="event-now"]').click();
-    await page.locator('[data-evening-action="start-run"]').click();await page.locator('#kitchenDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#kitchenDoughTemp').fill('23');await page.locator('#kitchenDoughTemp').blur();
+    await page.locator('[data-evening-action="start-run"]').click();await page.locator('#stepDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#stepDoughTemp').fill('23');await page.locator('#stepDoughTemp').blur();
     const before=await page.evaluate(()=>({ids:activeEvening().runs.map(r=>r.id),temps:activeEvening().runs.map(r=>r.batch.measurements.doughTemp),events:activeEvening().runs.map(r=>r.batch.events),yeast:calc().yeast}));
     expect(before.temps).toEqual([25,23]);expect(before.events[0].bulkStart).toBeGreaterThan(0);expect(before.events[1].bulkStart).toBeUndefined();
     await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');await expect(page.locator('#kitchenWorkspace')).toContainText('Beurt 2/2');
     expect(await page.evaluate(()=>({ids:activeEvening().runs.map(r=>r.id),temps:activeEvening().runs.map(r=>r.batch.measurements.doughTemp),events:activeEvening().runs.map(r=>r.batch.events),yeast:calc().yeast}))).toEqual(before);
-    await page.locator('[data-evening-action="select-run"]').first().click();await expect(page.locator('#kitchenDoughTemp')).toHaveCount(0);
+    await page.locator('[data-evening-action="select-run"]').first().click();await expect(page.locator('#stepDoughTemp')).toHaveValue('25');
   });
   test('unknown history, correction and undo never invent times or discard measurements',async({page})=>{
-    await open(page);await start(page);await page.locator('#kitchenDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#kitchenDoughTemp').fill('25');
+    await open(page);await start(page);await page.locator('#stepDoughMeasurement').evaluate(el=>el.open=true);await page.locator('#stepDoughTemp').fill('25');
     // Repaint while still editing: native pending change state belongs to the old node.
-    await page.evaluate(()=>{eveningNotice='Current phase refreshed';renderKitchen(calc());});
+    await page.evaluate(()=>{eveningNotice='Current phase refreshed';buildSteps(runCalculation(calc()));renderKitchen(calc());});
     await unknownThroughProof(page);
     expect(await page.evaluate(()=>({unknown:activeBatch().unknownEvents,temp:activeBatch().measurements.doughTemp,proposal:batchProposal().reason}))).toEqual({unknown:['bulkStart','fridgeIn','fridgeOut'],temp:25,proposal:'unknown-history'});
     await page.locator('[data-evening-action="undo"]').click();
@@ -88,7 +88,8 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
   test('a second tab cannot overwrite events and takes over only after the writer closes',async({page,context})=>{
     await open(page);await start(page);await page.locator('[data-evening-action="event-now"]').click();
     const second=await context.newPage();await second.goto(path);await expect(second.locator('html')).toHaveAttribute('data-app-ready','true');await expect(second.locator('#storageOwnerNotice')).toBeVisible();
-    const before=await page.evaluate(()=>localStorage.getItem(SAVE_KEY));
+    // Flush the writer's pending UI save before asserting that the reader cannot change its bytes.
+    const before=await page.evaluate(()=>{saveState();return localStorage.getItem(SAVE_KEY);});
     expect(await second.evaluate(()=>saveState())).toBe(false);await second.evaluate(()=>resetCalculator());expect(await page.evaluate(()=>localStorage.getItem(SAVE_KEY))).toBe(before);
     await page.close();await second.reload();await expect(second.locator('html')).toHaveAttribute('data-app-ready','true');await expect(second.locator('#storageOwnerNotice')).toHaveCount(0);expect(await second.evaluate(()=>activeBatch().events.bulkStart)).toBeGreaterThan(0);await second.close();
   });
