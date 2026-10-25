@@ -11,7 +11,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${
   }
   for(const width of [320,390,430,760,1024,1280])test(`Plan and Kitchen fit in Dutch/English at ${width}px`,async({page})=>{
     const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewportSize({width,height:900});await open(page);
-    await expect(page.locator('#page1')).toHaveClass(/active/);await expect(page.locator('#appVersion')).toHaveText('v2.0.1');
+    await expect(page.locator('#page1')).toHaveClass(/active/);await expect(page.locator('#appVersion')).toHaveText('v2.1.0');
     for(const lang of ['nl','en']){
       await page.locator(lang==='nl'?'#langNl':'#langEn').click();
       await expect(page.locator('#eveningPlan')).toBeVisible();

@@ -1,6 +1,6 @@
 {
   "name": "pizza-dough-calculator",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "private": true,
   "description": "Pizza dough, fermentation, sauce and topping calculator",
   "scripts": {

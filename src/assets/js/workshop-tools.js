@@ -7,6 +7,83 @@ function workshopSelect(id,label,options,value,{draft=false,disabled=false}={}){
 function recipePlanSummary(recipe){return WorkflowCore.summary(recipe,Object.fromEntries(Object.entries(doughStyles).map(([key,value])=>[key,value.factor])),DoughCore);}
 function mixerMethodName(method){return ({hand:L('Met de hand','By hand'),kitchenaid:'KitchenAid',kenwood:'Kenwood',pro:L('Spiraalkneder','Spiral mixer')})[method]||method;}
 
+// A fragment is never submitted to GitHub Pages. The payload uses the existing
+// private-data-free dough recipe exchange contract, not an evening backup.
+let incomingDoughRecipe=null;
+let outgoingDoughUrl='';
+let doughLinkNotice='';
+function encodeDoughLink(value){
+  const json=JSON.stringify(value);
+  if(json.length>6000)throw new Error('format');
+  const bytes=new TextEncoder().encode(json);
+  return btoa(Array.from(bytes,b=>String.fromCharCode(b)).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function decodeDoughLink(payload){
+  if(typeof payload!=='string'||payload.length>12000||!/^[A-Za-z0-9_-]+$/.test(payload))return null;
+  try{
+    const binary=atob(payload.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-payload.length%4)%4));
+    const bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));
+    const json=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+    if(json.length>6000)return null;
+    return WorkflowCore.importRecipe(JSON.parse(json));
+  }catch{return null;}
+}
+function clearDoughLinkHash(){
+  if(location.hash.startsWith('#dough='))history.replaceState(history.state,'',location.pathname+location.search);
+}
+function initIncomingDoughLink(){
+  if(!location.hash.startsWith('#dough='))return;
+  incomingDoughRecipe=decodeDoughLink(location.hash.slice(7));
+  doughLinkNotice=incomingDoughRecipe?'':L('Deze receptlink is ongeldig of wordt niet ondersteund. Je bestaande recept is niet veranderd.','This recipe link is invalid or unsupported. Your existing recipe has not changed.');
+  renderRecipeLinkPanel();
+}
+function makeDoughShareLink(){
+  const recipe=activeEvening()?.recipe||snapshotRecipe();
+  const shared=WorkflowCore.exportRecipe('Pizza dough',recipe);
+  outgoingDoughUrl=`${location.origin}${location.pathname}#dough=${encodeDoughLink(shared)}`;
+  doughLinkNotice='';renderRecipeLinkPanel();
+}
+function renderRecipeLinkPanel(){
+  const panel=$('recipeLinkPanel');if(!panel)return;
+  const visible=!!incomingDoughRecipe||!!outgoingDoughUrl||!!doughLinkNotice;
+  panel.classList.toggle('hidden',!visible);
+  if(!visible)return;
+  const shared=incomingDoughRecipe;
+  const preview=shared?recipePlanSummary(shared.recipe):null;
+  const incoming=shared?`<h2>${L('Gedeeld deegrecept ontvangen','Shared dough recipe received')}</h2><p><b>${esc(shared.name)}</b> · ${preview.pizzas} ${L('bollen','balls')} · ${fmt(preview.actualH,1)}% ${L('hydratatie','hydration')} · ${mixerMethodName(shared.recipe.method)}</p><p class="hint">${L('Alleen het deegrecept en de fermentatie-instellingen worden geladen. Pizza’s, boodschappen en privégegevens zitten niet in deze link. Je huidige planning wordt pas na bevestiging aangepast.','Only the dough recipe and fermentation settings will load. Pizzas, shopping and private data are not in this link. Your current plan changes only after confirmation.')}</p><div class="btnrow"><button type="button" class="btn primary" data-dough-link-action="apply" ${activeEvening()||!_storageWriter?'disabled':''}>${L('Als nieuw deegplan laden','Load as new dough plan')}</button><button type="button" class="btn ghost" data-dough-link-action="cancel">${L('Annuleren','Cancel')}</button></div>${activeEvening()?`<p class="warning">${L('Rond eerst de lopende pizza-avond af.','Finish the active pizza evening first.')}</p>`:''}`:'';
+  const outgoing=outgoingDoughUrl?`<h2>${L('Deel je deegrecept','Share your dough recipe')}</h2><p class="hint">${L('Deze link bevat je deeginstellingen, maar geen toppings, metingen, notities of datums. Iedereen met de link kan het recept bekijken.','This link contains your dough settings but no toppings, measurements, notes or dates. Anyone with the link can view the recipe.')}</p><label>${L('Receptlink','Recipe link')}<input class="field" data-dough-share-url readonly value="${esc(outgoingDoughUrl)}"></label><div class="btnrow"><button type="button" class="btn primary" data-dough-link-action="copy">${L('Link kopiëren','Copy link')}</button><button type="button" class="btn ghost" data-dough-link-action="close">${L('Sluiten','Close')}</button></div>`:'';
+  replaceWorkshopPanel('recipeLinkPanel',`${incoming}${outgoing}${doughLinkNotice?`<p class="${shared||outgoingDoughUrl?'info':'warning'}" role="status">${esc(doughLinkNotice)}</p>`:''}${!shared&&!outgoingDoughUrl?`<button class="btn ghost" data-dough-link-action="cancel" type="button">${L('Sluiten','Close')}</button>`:''}`);
+}
+async function handleDoughLinkAction(action){
+  if(action==='copy'){
+    const input=$('recipeLinkPanel').querySelector('[data-dough-share-url]');
+    try{await navigator.clipboard.writeText(outgoingDoughUrl);doughLinkNotice=L('Link gekopieerd.','Link copied.');}
+    catch{input?.focus();input?.select();doughLinkNotice=L('Selecteer en kopieer de link hierboven.','Select and copy the link above.');}
+  }else if(action==='apply'){
+    if(!incomingDoughRecipe||activeEvening()||!_storageWriter)return;
+    const previous={recipe:snapshotRecipe(),measurements:{...liveMeasurements},steps:{...completedSteps},cache:_livePlanCache,date:evenings.draft.date,bakeDay:$('bakeDay').value};
+    if(!restoreRecipe(incomingDoughRecipe.recipe,false))throw new Error('format');
+    liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};_livePlanCache={key:null,value:null};
+    $('bakeDay').value='';evenings.draft.date='';
+    if(!saveState()){
+      restoreRecipe(previous.recipe,false);liveMeasurements=previous.measurements;completedSteps=previous.steps;_livePlanCache=previous.cache;
+      evenings.draft.date=previous.date;$('bakeDay').value=previous.bakeDay;update();throw new Error('storage');
+    }
+    incomingDoughRecipe=null;clearDoughLinkHash();doughLinkNotice='';update();
+  }else if(action==='cancel'){
+    incomingDoughRecipe=null;clearDoughLinkHash();doughLinkNotice='';
+  }else if(action==='close'){outgoingDoughUrl='';doughLinkNotice='';}
+  renderRecipeLinkPanel();
+}
+function wireDoughLinkEvents(){
+  $('shareDoughButton').textContent=L('🔗 Deegrecept delen via link','🔗 Share dough recipe link');
+  $('shareDoughButton').addEventListener('click',()=>{try{makeDoughShareLink();}catch{doughLinkNotice=L('Controleer eerst je deegrecept.','Check your dough recipe first.');renderRecipeLinkPanel();}});
+  $('recipeLinkPanel').addEventListener('click',async event=>{
+    const button=event.target.closest('[data-dough-link-action]');if(!button||button.disabled)return;
+    try{await handleDoughLinkAction(button.dataset.doughLinkAction);}catch(error){doughLinkNotice=L('Kon het recept niet laden. Je huidige planning is behouden.','Could not load the recipe. Your current plan is intact.');renderRecipeLinkPanel();}
+  });
+}
+
 function renderScalePlanner(c){
   const scale=activeBatch()?.scale??workshop.scale,w=WorkflowCore.weighing(c.yeast,scale);
   const mixed=!!activeBatch()||liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null;

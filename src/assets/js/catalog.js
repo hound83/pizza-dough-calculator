@@ -197,10 +197,10 @@ const sauces={
     desc:'Ongekookt. Tomaten met de hand fijnknijpen.',
     descEn:'Uncooked. Crush the tomatoes by hand.',
     ingredients:(batch,p)=>[
-      ['San Marzano gepelde tomaten',`${fmt(batch,0)} g`],
-      ['Fijn zeezout',`${fmt(batch*0.01,1)} g`],
-      ['Basilicum',`${p}–${Math.ceil(p*1.5)} ${L('blaadjes','leaves')}`],
-      ['EVOO',L('optioneel, klein scheutje','optional, small drizzle')]
+      ['San Marzano gepelde tomaten',`${fmt(batch,0)} g`,batch,'g'],
+      ['Fijn zeezout',`${fmt(batch*0.01,1)} g`,batch*0.01,'g'],
+      ['Basilicum',`${p}–${Math.ceil(p*1.5)} ${L('blaadjes','leaves')}`,p,'blaadjes'],
+      ['EVOO',L('optioneel, klein scheutje','optional, small drizzle'),null,null]
     ]
   },
   marinara:{
@@ -208,11 +208,11 @@ const sauces={
     desc:'Ongekookte tomatenbasis met knoflook en oregano.',
     descEn:'Uncooked tomato base with garlic and oregano.',
     ingredients:(batch,p)=>[
-      ['San Marzano tomaten',`${fmt(batch,0)} g`],
-      ['Fijn zeezout',`${fmt(batch*0.01,1)} g`],
-      ['Knoflook',`${Math.max(1,Math.ceil(batch/250))} ${L('teen/tenen','clove(s)')}`],
-      ['Gedroogde oregano',`${fmt(batch*0.002,1)} g`],
-      ['EVOO',`${fmt(batch*0.015,1)} g`]
+      ['San Marzano tomaten',`${fmt(batch,0)} g`,batch,'g'],
+      ['Fijn zeezout',`${fmt(batch*0.01,1)} g`,batch*0.01,'g'],
+      ['Knoflook',`${Math.max(1,Math.ceil(batch/250))} ${L('teen/tenen','clove(s)')}`,Math.max(1,Math.ceil(batch/250)),'st'],
+      ['Gedroogde oregano',`${fmt(batch*0.002,1)} g`,batch*0.002,'g'],
+      ['EVOO',`${fmt(batch*0.015,1)} g`,batch*0.015,'g']
     ]
   },
   ny:{
@@ -220,12 +220,12 @@ const sauces={
     desc:'Kort gekookte, iets krachtigere tomatensaus.',
     descEn:'Briefly cooked, slightly richer tomato sauce.',
     ingredients:(batch,p)=>[
-      ['Tomaten',`${fmt(batch,0)} g`],
-      ['Zout',`${fmt(batch*0.012,1)} g`],
-      ['EVOO',`${fmt(batch*0.02,1)} g`],
-      ['Oregano',`${fmt(batch*0.0025,1)} g`],
-      ['Knoflook',`${Math.max(1,Math.ceil(batch/300))} ${L('teen/tenen','clove(s)')}`],
-      ['Suiker',L('optioneel, alleen indien de tomaten zuur zijn','optional, only if the tomatoes are sharp')]
+      ['Tomaten',`${fmt(batch,0)} g`,batch,'g'],
+      ['Zout',`${fmt(batch*0.012,1)} g`,batch*0.012,'g'],
+      ['EVOO',`${fmt(batch*0.02,1)} g`,batch*0.02,'g'],
+      ['Oregano',`${fmt(batch*0.0025,1)} g`,batch*0.0025,'g'],
+      ['Knoflook',`${Math.max(1,Math.ceil(batch/300))} ${L('teen/tenen','clove(s)')}`,Math.max(1,Math.ceil(batch/300)),'st'],
+      ['Suiker',L('optioneel, alleen indien de tomaten zuur zijn','optional, only if the tomatoes are sharp'),null,null]
     ]
   },
   bianca:{
@@ -233,8 +233,8 @@ const sauces={
     desc:'Traditionelere witte basis zonder saus: alleen een dun laagje extra vierge olijfolie.',
     descEn:'More traditional white base with no sauce: just a thin layer of extra virgin olive oil.',
     ingredients:(batch,p)=>[
-      ['Extra vierge olijfolie',`${fmt(batch,0)} g`],
-      ['Fijn zout',L('heel licht, naar smaak','very light, to taste')]
+      ['Extra vierge olijfolie',`${fmt(batch,0)} g`,batch,'g'],
+      ['Fijn zout',L('heel licht, naar smaak','very light, to taste'),null,null]
     ]
   },
   white:{
@@ -242,11 +242,11 @@ const sauces={
     desc:'Romige, minder traditionele witte pizzabasis met crème fraîche. Dun aanbrengen; vooral geschikt voor aardappel, kip, kaas en groenten.',
     descEn:'Creamy, less traditional white pizza base with crème fraîche. Spread thinly; especially good with potato, chicken, cheese and vegetables.',
     ingredients:(batch,p)=>[
-      ['Crème fraîche',`${fmt(batch*0.88,0)} g`],
-      ['Parmigiano Reggiano',`${fmt(batch*0.10,0)} g`],
-      ['Knoflook',`${Math.max(1,Math.ceil(batch/300))} ${L('teen/tenen','clove(s)')}`],
-      ['Fijn zout',L('heel licht, naar smaak','very light, to taste')],
-      ['Zwarte peper',L('naar smaak','to taste')]
+      ['Crème fraîche',`${fmt(batch*0.88,0)} g`,batch*0.88,'g'],
+      ['Parmigiano Reggiano',`${fmt(batch*0.10,0)} g`,batch*0.10,'g'],
+      ['Knoflook',`${Math.max(1,Math.ceil(batch/300))} ${L('teen/tenen','clove(s)')}`,Math.max(1,Math.ceil(batch/300)),'st'],
+      ['Fijn zout',L('heel licht, naar smaak','very light, to taste'),null,null],
+      ['Zwarte peper',L('naar smaak','to taste'),null,null]
     ]
   },
   bbq:{
@@ -254,7 +254,7 @@ const sauces={
     desc:'Dunne laag BBQ-saus; gebruik wat minder dan tomatensaus omdat deze zoeter en geconcentreerder is.',
     descEn:'Thin layer of BBQ sauce; use a little less than tomato sauce because it is sweeter and more concentrated.',
     ingredients:(batch,p)=>[
-      ['BBQ-saus',`${fmt(batch,0)} g`]
+      ['BBQ-saus',`${fmt(batch,0)} g`,batch,'g']
     ]
   },
   pesto:{
@@ -262,7 +262,7 @@ const sauces={
     desc:'Dunne pestolaag; voeg bij zeer hete pizzaovens liever een deel na het bakken toe.',
     descEn:'Thin layer of pesto; with very hot pizza ovens, add part of it after baking.',
     ingredients:(batch,p)=>[
-      ['Pesto',`${fmt(batch,0)} g`]
+      ['Pesto',`${fmt(batch,0)} g`,batch,'g']
     ]
   }
 };

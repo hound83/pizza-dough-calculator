@@ -15,18 +15,18 @@ for(const path of ['/index.html','/src/index.html']){
         }
         if(blocked){
           const write=Storage.prototype.setItem;
-          Storage.prototype.setItem=function(key,value){if(key==='pizzaCalcV53')throw new DOMException('Test quota','QuotaExceededError');return write.call(this,key,value);};
+          Storage.prototype.setItem=function(key,value){if(key==='pizzaCalcV54')throw new DOMException('Test quota','QuotaExceededError');return write.call(this,key,value);};
         }
       },{legacy,blocked});
       await page.goto(path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
-      const read=()=>page.evaluate(()=>({diameter:$('diameter').value,pizzas:calc().pizzas,hydration:calc().h,yeastPct:calc().y,lang:currentLang,mode:experienceMode,temp:liveMeasurementValue('doughTemp'),fridge:liveMeasurementValue('fridgeTemp'),checked:completedSteps['s-weigh'],log:bakeLog[0].notes,recipes:pizzaSelections.length,old:localStorage.getItem('pizzaCalcV51'),version:JSON.parse(localStorage.getItem('pizzaCalcV53')||'null')?.version??null}));
+      const read=()=>page.evaluate(()=>({diameter:$('diameter').value,pizzas:calc().pizzas,hydration:calc().h,yeastPct:calc().y,lang:currentLang,mode:experienceMode,temp:liveMeasurementValue('doughTemp'),fridge:liveMeasurementValue('fridgeTemp'),checked:completedSteps['s-weigh'],log:bakeLog[0].notes,recipes:pizzaSelections.length,old:localStorage.getItem('pizzaCalcV51'),version:JSON.parse(localStorage.getItem('pizzaCalcV54')||'null')?.version??null}));
       const state=await read();
       expect(state).toMatchObject({diameter:'32',pizzas:6,hydration:66,yeastPct:.17345,lang:'en',mode:'full',temp:25.5,fridge:4.5,checked:true,log:'Legacy bake note',recipes:6});
       if(blocked){
         expect(state.old).toBe(JSON.stringify(legacy));expect(state.version).toBeNull();
         await expect(page.locator('#storageWarning')).toBeVisible();
       }else{
-        expect(state.old).toBeNull();expect(state.version).toBe(53);
+        expect(state.old).toBeNull();expect(state.version).toBe(54);
         await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');expect(await read()).toEqual(state);
       }
     });

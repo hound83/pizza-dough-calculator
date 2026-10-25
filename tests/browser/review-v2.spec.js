@@ -87,7 +87,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 review ${p
       const gate=new Promise(resolve=>{window.releaseTestStartup=resolve;});
       navigator.locks.request=async(...args)=>{await gate;return request(...args);};
       window.testWrites=0;const set=Storage.prototype.setItem;
-      Storage.prototype.setItem=function(key,value){if(key==='pizzaCalcV53')window.testWrites++;return set.call(this,key,value);};
+      Storage.prototype.setItem=function(key,value){if(key==='pizzaCalcV54')window.testWrites++;return set.call(this,key,value);};
     });
     await page.goto(path);
     await expect(page.locator('.app')).toHaveAttribute('inert','');await expect(page.locator('#startupStatus')).toBeVisible();

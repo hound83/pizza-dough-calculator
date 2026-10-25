@@ -494,61 +494,131 @@ function sauceAmountLabel(g,agg=null){
   return `${base} • ${nl?'maken':'make'} ${fmt(g.batch,0)} g${cook}${buy}`;
 }
 
-function buildShopping(c){
-  const aggSauce=aggregateSauceNeeds(c);
-
-  if(appMode==='sauce'){
-    const groups=aggSauce.enabled ? aggSauce.groups : [];
-    if(!groups.length){
-      $('shoppingList').innerHTML=`<div class="hint">${L('Saus meerekenen staat uit.','Include sauce is turned off.')}</div>`;
-      return;
-    }
-    $('shoppingList').innerHTML=groups.map(g=>`<div class="recipebox">
-      <div class="titleline"><h3>${sauceName(g.type)}</h3><span class="tag">${pizzaCountLabel(c.pizzas)}</span></div>
-      <div class="list">
-        <div class="list-row"><span>${L(g.pizzas.length===1?'Nodig op pizza':"Nodig op pizza's",g.pizzas.length===1?'Needed on pizza':'Needed on pizzas')}</span><span>${fmt(g.need,0)} g</span></div>
-        ${g.s.tomato?`<div class="list-row"><span>${L('Maken','Make')}</span><span>${fmt(g.batch,0)} g${g.yieldFactor&&g.yieldFactor<1?L(' rauw (incl. inkoken)',' raw (incl. reduction)'):''}</span></div>${usesCombinedTomatoPurchase(aggSauce)?'':`<div class="list-row"><span>${L('Kopen','Buy')}</span><span>${g.tins}× 400 g</span></div>`}`:''}
-        ${g.ingredients.map(x=>`<div class="list-row"><span>${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')}
-      </div>
-    </div>`).join('')+(usesCombinedTomatoPurchase(aggSauce)?`<div class="recipebox"><div class="titleline"><h3>${L('Gezamenlijke tomateninkoop','Combined tomato purchase')}</h3></div><div class="list">${tomatoPurchaseRowHtml(aggSauce)}</div></div>`:'');
-    return;
+const SHOPPING_UNITS=['g','kg','ml','l','st','pak'];
+function emptyShoppingState(){return {checked:{},manual:[]};}
+function emptyShoppingStorage(){return {draft:emptyShoppingState(),byEvening:{},byTemplate:{}};}
+function shoppingState(){
+  const id=activeEvening()?.id;
+  if(id){
+    if(!evenings.shopping.byEvening[id])evenings.shopping.byEvening[id]=WorkflowCore.clone(evenings.shopping.draft);
+    return evenings.shopping.byEvening[id];
   }
-
-  ensurePizzaSelections();
-  const totals={};
-  ensurePizzaCustomizations();
-  pizzaSelections.forEach((id,idx)=>{
-    includedItemsForBall(idx).forEach(x=>{
-      const key=`${x[0]}|${x[2]}`;
-      if(!totals[key]) totals[key]={name:x[0],unit:x[2],qty:0};
-      totals[key].qty+=x[1];
-    });
-    const cheese=extraCheeseAdvice(idx,c);
-    if(pizzaCustomizations[idx].extraCheese && cheese.allowed){
-      const key=`${cheese.name}|g`;
-      if(!totals[key]) totals[key]={name:cheese.name,unit:'g',qty:0};
-      totals[key].qty+=cheese.amount;
+  return evenings.shopping.draft;
+}
+function deriveShoppingRows(c){
+  const rows=new Map();
+  const add=(group,name,qty,unit,note='',nameEn='')=>{
+    if(qty!==null&&(!Number.isFinite(qty)||qty<=0))return;
+    const key=`${name.trim().toLocaleLowerCase('en-US')}|${unit||'?'}`;
+    const existing=rows.get(key);
+    if(existing&&qty!==null&&existing.qty!==null)existing.qty+=qty;
+    else if(!existing)rows.set(key,{key,group,name,nameEn,qty,unit,note});
+  };
+  add('dough','Pizzabloem',c.flour,'g','','Pizza flour');
+  add('dough','Water',c.water,'g');
+  add('dough','Fijn zeezout',c.salt,'g','','Fine sea salt');
+  add('dough',yeastTypes[c.yeastType]?.name||'Instant droge gist',c.yeast,'g','',yeastTypes[c.yeastType]?.nameEn||'Instant dry yeast');
+  add('dough','EVOO',c.oil,'g');
+  const sauce=aggregateSauceNeeds(c);
+  if(sauce.enabled){
+    if(sauce.tomatoPurchase){
+      add('sauce','Tomaten voor saus',sauce.tomatoPurchase.buy,'g',`${sauce.tomatoPurchase.tins}× 400 g`,'Tomatoes for sauce');
     }
-  });
-
-  const pizzaCounts=aggregatePizzaCounts();
-  const pizzaRows=Object.entries(pizzaCounts).map(([id,count])=>{
-    const r=recipeById(id);
-    return `<div class="list-row"><span>${recipeNameText(r)}</span><span>${count}×</span></div>`;
+    sauce.groups.forEach(g=>g.ingredients.forEach(([name,label,qty,unit])=>{
+      if(g.s.tomato&&['San Marzano gepelde tomaten','San Marzano tomaten','Tomaten'].includes(name))return;
+      add('sauce',name,qty,unit,qty===null?label:'');
+    }));
+  }
+  if(appMode==='full'){
+    ensurePizzaSelections();ensurePizzaCustomizations();
+    pizzaSelections.forEach((id,i)=>{
+      includedItemsForBall(i).forEach(([name,qty,unit])=>add('toppings',name,qty,unit));
+      const cheese=extraCheeseAdvice(i,c);
+      if(pizzaCustomizations[i].extraCheese&&cheese.allowed)add('toppings',cheese.name,cheese.amount,'g');
+    });
+  }
+  return [...rows.values()].map(row=>({...row,signature:row.qty===null?'unquantified':String(Number(row.qty.toFixed(3)))}));
+}
+let shoppingEditId='';
+function shoppingUnitOptions(selected){return SHOPPING_UNITS.map(unit=>`<option value="${unit}" ${unit===selected?'selected':''}>${unit==='st'?L('stuks','pieces'):unit==='pak'?L('verpakkingen','packages'):unit}</option>`).join('');}
+function shoppingRowHtml(row,state){
+  const prior=state.checked[row.key];
+  const checked=!!prior?.checked&&prior.signature===row.signature;
+  const changed=prior?.checked&&prior.signature!==row.signature;
+  const qty=row.qty===null?esc(row.note||L('naar smaak','to taste')):`${ingredientAmount(row.qty)} ${tUnit(row.unit,row.qty)}`;
+  return `<label class="shopping-item ${checked?'is-done':''}"><input type="checkbox" data-shopping-check="${esc(row.key)}" data-shopping-signature="${esc(row.signature)}" ${checked?'checked':''} ${!_storageWriter?'disabled':''}><span class="shopping-item-name">${esc(currentLang==='en'&&row.nameEn?row.nameEn:tItem(row.name))}${changed?`<small class="shopping-changed">${L('Hoeveelheid gewijzigd · opnieuw controleren','Quantity changed · check again')}</small>`:''}</span><span class="shopping-item-qty">${qty}${row.note&&row.qty!==null?` <small>(${esc(row.note)})</small>`:''}</span></label>`;
+}
+function shoppingManualHtml(item){
+  const disabled=!_storageWriter?'disabled':'';
+  if(shoppingEditId===item.id)return `<div class="shopping-edit" data-shopping-edit-form="${esc(item.id)}"><input class="field" data-shopping-name maxlength="100" aria-label="${L('Naam','Name')}" value="${esc(item.name)}"><input class="field" data-shopping-quantity type="number" min="0.01" max="100000" step="any" aria-label="${L('Hoeveelheid','Quantity')}" value="${item.quantity}"><select class="field" data-shopping-unit aria-label="${L('Eenheid','Unit')}">${shoppingUnitOptions(item.unit)}</select><button class="btn primary" type="button" data-shopping-action="save-edit" data-id="${esc(item.id)}">${L('Bewaar','Save')}</button><button class="btn ghost" type="button" data-shopping-action="cancel-edit">${L('Annuleren','Cancel')}</button></div>`;
+  return `<div class="shopping-manual-row"><label class="shopping-item ${item.checked?'is-done':''}"><input type="checkbox" data-shopping-manual="${esc(item.id)}" ${item.checked?'checked':''} ${disabled}><span class="shopping-item-name">${esc(item.name)}</span><span class="shopping-item-qty">${ingredientAmount(item.quantity)} ${esc(item.unit)}</span></label><div class="shopping-manual-actions"><button class="btn ghost" type="button" data-shopping-action="edit" data-id="${esc(item.id)}" ${disabled}>${L('Wijzig','Edit')}</button><button class="btn ghost" type="button" data-shopping-action="remove" data-id="${esc(item.id)}" ${disabled} aria-label="${esc(L('Verwijder','Remove')+' '+item.name)}">${L('Verwijder','Remove')}</button></div></div>`;
+}
+function buildShopping(c){
+  const rows=deriveShoppingRows(c),state=shoppingState();
+  const headings={dough:L('Deeg','Dough'),sauce:L('Saus','Sauce'),toppings:L('Toppings','Toppings')};
+  const sections=Object.entries(headings).map(([group,title])=>{
+    const items=rows.filter(row=>row.group===group);
+    return items.length?`<div class="shopping-section"><h3>${title}</h3>${items.map(row=>shoppingRowHtml(row,state)).join('')}</div>`:'';
   }).join('');
-  const ingredientRows=Object.values(totals).map(x=>`<div class="list-row"><span>${tItem(x.name)}</span><span>${ingredientAmount(x.qty)} ${tUnit(x.unit,x.qty)}</span></div>`).join('');
-  const sauceRows=aggSauce.enabled?aggSauce.groups.map(g=>`<div class="list-row"><span>${sauceName(g.type)}</span><span>${sauceAmountLabel(g,aggSauce)}</span></div>`).join(''):'';
-  const tomatoPurchaseRow=tomatoPurchaseRowHtml(aggSauce);
-  // De sub-ingrediënten van de saus (knoflook, oregano, zout, olie) stonden
-  // alleen in het stappenplan en ontbraken volledig op de boodschappenlijst.
-  const sauceIngredientRows=aggSauce.enabled?aggSauce.groups.map(g=>
-    g.ingredients.map(x=>`<div class="list-row sub"><span>↳ ${tItem(x[0])}</span><span>${x[1]}</span></div>`).join('')
-  ).join(''):'';
-
-  $('shoppingList').innerHTML=`<div class="recipebox">
-    <div class="titleline"><h3>${pizzaCountLabel(c.pizzas)}</h3><span class="tag">${L('gemengd','mixed')}</span></div>
-    <div class="list">${pizzaRows}</div><hr><div class="list">${sauceRows}${tomatoPurchaseRow}${sauceIngredientRows}${ingredientRows}</div>
-  </div>`;
+  const manual=state.manual.map(shoppingManualHtml).join('');
+  const add=`<div class="shopping-add-form"><label>${L('Zelf toevoegen','Add an item')}<input class="field" data-shopping-name maxlength="100" placeholder="${L('Bijv. frisdrank','E.g. drinks')}"></label><label>${L('Hoeveelheid','Quantity')}<input class="field" data-shopping-quantity type="number" min="0.01" max="100000" step="any" value="1"></label><label>${L('Eenheid','Unit')}<select class="field" data-shopping-unit>${shoppingUnitOptions('st')}</select></label><button type="button" class="btn secondary" data-shopping-action="add" ${!_storageWriter?'disabled':''}>${L('Toevoegen','Add')}</button></div>`;
+  const html=`<p class="hint">${L('Boodschappen voor deze pizza-avond. Vink af tijdens het winkelen. Hoeveelheden worden opnieuw berekend als het recept verandert.','Shopping for this pizza evening. Check items while shopping. Quantities recalculate when the recipe changes.')}</p>${sections}<div class="shopping-section"><h3>${L('Zelf toegevoegd','Added by you')}</h3>${manual||`<p class="hint">${L('Nog geen extra boodschappen.','No extra items yet.')}</p>`}${add}</div>`;
+  for(const id of ['shoppingPlan','shoppingList'])if($(id))$(id).innerHTML=html;
+  if($('shoppingPlanHeading'))$('shoppingPlanHeading').textContent=L('Boodschappenlijst · deeg, saus en toppings','Shopping list · dough, sauce and toppings');
+  if($('shoppingHeading'))$('shoppingHeading').textContent=L('Boodschappenlijst','Shopping list');
+}
+function readShoppingForm(form){
+  const name=String(form?.querySelector('[data-shopping-name]')?.value||'').trim();
+  const quantity=Number(form?.querySelector('[data-shopping-quantity]')?.value);
+  const unit=form?.querySelector('[data-shopping-unit]')?.value;
+  if(!name||name.length>100||!Number.isFinite(quantity)||quantity<=0||quantity>100000||!SHOPPING_UNITS.includes(unit))throw new Error(L('Vul een naam, positieve hoeveelheid en eenheid in.','Enter a name, positive quantity and unit.'));
+  return {name,quantity,unit};
+}
+function wireShoppingEvents(){
+  for(const rootId of ['shoppingPlan','shoppingList']){
+    const root=$(rootId);if(!root)continue;
+    root.addEventListener('change',event=>{
+      const el=event.target;if(!_storageWriter)return;
+      const state=shoppingState(),previous=WorkflowCore.clone(state);
+      if(el.dataset.shoppingCheck!==undefined){state.checked[el.dataset.shoppingCheck]={signature:el.dataset.shoppingSignature,checked:el.checked};}
+      else if(el.dataset.shoppingManual!==undefined){const item=state.manual.find(x=>x.id===el.dataset.shoppingManual);if(item)item.checked=el.checked;}
+      else return;
+      if(!saveState()){
+        Object.assign(state,previous);eveningFailure(new Error('storage'));return;
+      }
+      // Both Plan and Kitchen show the same list. Update the mirrored checkbox
+      // without replacing the focused input after a native keyboard/pointer action.
+      const attribute=el.dataset.shoppingCheck!==undefined?'data-shopping-check':'data-shopping-manual';
+      const key=el.getAttribute(attribute);
+      for(const id of ['shoppingPlan','shoppingList']){
+        $(id)?.querySelectorAll(`[${attribute}]`).forEach(checkbox=>{
+          if(checkbox.getAttribute(attribute)!==key)return;
+          checkbox.checked=el.checked;
+          checkbox.closest('.shopping-item')?.classList.toggle('is-done',el.checked);
+          if(el.checked)checkbox.closest('.shopping-item')?.querySelector('.shopping-changed')?.remove();
+        });
+      }
+    });
+    root.addEventListener('click',event=>{
+      const button=event.target.closest('[data-shopping-action]');if(!button||button.disabled||!_storageWriter)return;
+      const action=button.dataset.shoppingAction,state=shoppingState();
+      try{
+        if(action==='add'){
+          if(state.manual.length>=50)throw new Error(L('Maximaal 50 extra boodschappen.','At most 50 extra items.'));
+          state.manual.push({id:workshopId(),...readShoppingForm(button.closest('.shopping-add-form')),checked:false});
+        }else if(action==='remove')state.manual=state.manual.filter(item=>item.id!==button.dataset.id);
+        else if(action==='edit'){shoppingEditId=button.dataset.id;buildShopping(calc());return;}
+        else if(action==='cancel-edit'){shoppingEditId='';buildShopping(calc());return;}
+        else if(action==='save-edit'){
+          const item=state.manual.find(item=>item.id===button.dataset.id);if(!item)return;
+          const values=readShoppingForm(button.closest('[data-shopping-edit-form]'));
+          Object.assign(item,values,{checked:false});shoppingEditId='';
+        }
+        if(!saveState())throw new Error('storage');
+        buildShopping(calc());
+      }catch(error){eveningFailure(error);}
+    });
+  }
 }
 
 function buildStoneAdvice(c){
