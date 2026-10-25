@@ -4,18 +4,18 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v2.0.1--candidate-f0b45a)](docs/V2_0_1_KITCHEN_REVIEW.md)
+[![Versie](https://img.shields.io/badge/versie-v2.0.1-f0b45a)](docs/V2_0_1_KITCHEN_REVIEW.md)
 [![Tests](https://img.shields.io/badge/regressietests-106_tests-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
 Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fermentatie, saus, toppings en een compleet praktisch stappenplan.
 
-De downloadbare applicatie blijft één zelfvoorzienend `index.html`-bestand. De repository bewaart de onderhoudbare HTML-, CSS- en JavaScriptbronnen onder `src/` en genereert daaruit zonder runtime-dependencies de standalone root-`index.html` voor GitHub Pages en lokaal gebruik.
+De GitHub Pages-website is voortaan de officiële gebruiksversie. Een losse, downloadbare HTML-versie wordt niet meer aangeboden. De kleine root-`index.html` laadt de onderhoudbare CSS- en JavaScriptbestanden vanuit `src/`; er is geen framework of backend nodig.
 
 **[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v2.0.0-releasenotities](docs/V2_0_0_RELEASE.md)
 
-> **v2.0.1-keukenreview.** Deze branch maakt de losse afvinkstappen weer direct zichtbaar en verbetert de vormgeving van Keuken. De livepagina blijft v2.0.0 tijdens de review. Tag v1.0.0 en alle eerdere baselines blijven behouden. Schema 53 migreert bestaande gegevens uit schema 52.
+> **v2.0.1-keukenrelease.** De losse afvinkstappen zijn weer direct zichtbaar en de vormgeving van Keuken is verbeterd. Tag v1.0.0 en alle eerdere baselines blijven behouden. Schema 53 migreert bestaande gegevens uit schema 52.
 
 **Nieuw in v2:** vrij wisselen tussen Plan en Keuken, plannen rond beschikbaarheid, verdelen over aparte mixerbeurten, een bakvolgorde met echte in-/uithaaltijden, gerichte deeghulp en complete avondsjablonen plus privéback-ups. De versieweergave, dynamische weekdagen en eerdere verbeteringen blijven behouden. [Implementatie en review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
@@ -78,24 +78,24 @@ Dit is bewust **geen gevalideerd laboratoriummodel** en ook geen officiële AVPN
 ## Taal, privacy en opslag
 
 - De interface kan direct wisselen tussen Nederlands en Engels.
-- Er is geen account of server nodig.
+- Er is geen account of backend nodig; gebruik de website.
 - Recepten, avonden, voortgang en het deeglogboek blijven in je browser. Eén tabblad kan tegelijk opslaan; sluit dat tabblad en herlaad een ander om verder te gaan. Als vergrendeling of opslag ontbreekt, meldt de app dat opslaan niet lukt.
 - Deelbare avondsjablonen bevatten geen privénamen of echte geschiedenis. Privéback-ups bevatten die wel en vragen bevestiging voor het vervangen van lokale gegevens; het zijn momentopnamen, geen synchronisatie.
 - De app verstuurt geen recept- of logboekgegevens naar een backend.
 - `Reset` wist de lokaal opgeslagen calculatorstate; de taalkeuze blijft behouden.
 
-## Lokaal draaien
+## Lokaal ontwikkelen
 
-De eenvoudigste manier is `index.html` downloaden en rechtstreeks in een moderne browser openen.
+Voor normaal gebruik open je de [website](https://hound83.github.io/pizza-dough-calculator/). Alleen `index.html` downloaden is niet genoeg, omdat de site afzonderlijke bestanden laadt.
 
-Je kunt de repository ook klonen:
+Ontwikkelaars kunnen de volledige repository klonen:
 
 ```bash
 git clone https://github.com/hound83/pizza-dough-calculator.git
 cd pizza-dough-calculator
 ```
 
-Open daarna `index.html`, of start bij voorkeur een eenvoudige lokale webserver:
+Start vanuit de hoofdmap een eenvoudige lokale webserver:
 
 ```bash
 python -m http.server 8000
@@ -105,7 +105,7 @@ Ga vervolgens naar `http://localhost:8000`.
 
 ## Publiceren met GitHub Pages
 
-Omdat de complete publicatie al `index.html` heet, is geen productiebuildconfiguratie nodig:
+De gegenereerde root-`index.html` verwijst naar `src/assets/` op dezelfde site. GitHub Pages kan deze statische bestanden zonder aparte productiebouwservice publiceren:
 
 1. open in GitHub **Settings → Pages**;
 2. kies **Deploy from a branch**;
@@ -140,7 +140,7 @@ Releasecontroles (zie de Actions-uitslag bij de PR voor de uitvoerstatus):
 ```text
 15 refactor-structure tests
 31 pure-core tests
-106 bundle regression tests
+106 website-entry regression tests
 106 source regression tests
 139 Chromium browser/layout tests
 ```
@@ -158,13 +158,13 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de achttien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, bundle-actualiteit, exacte reconstructie van de huidige featurebundle, de onveranderlijke historische releasehashes, de historische v1.3.0- en v1.4.0-kandidaatbaselines en de afzonderlijke v1.4.0/v1.4.1-releasebaselines. Playwright opent beide publicaties op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert daarnaast de achttien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, actualiteit van de website-entry, verwijzingen naar assets, historische release- en kandidaat-hashes en reconstructie van de oude v2.0.1-single-file-basislijn in het geheugen. Playwright opent zowel de gepubliceerde website-entry als de bron-entry op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
 ```bash
-npm run bundle        # genereer root-index.html opnieuw vanuit src/
-npm run check:bundle  # faal wanneer de gecommitteerde bundle achterloopt
+npm run bundle        # genereer website-index.html opnieuw vanuit src/
+npm run check:bundle  # faal wanneer de gecommitteerde website-entry achterloopt
 ```
 
 ## Versienummering
@@ -188,11 +188,11 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 
 | Pad | Doel |
 |---|---|
-| [`index.html`](index.html) | Gegenereerde standalone publicatie voor Pages en lokaal gebruik |
+| [`index.html`](index.html) | Gegenereerde website-entry voor GitHub Pages met losse assets |
 | [`src/index.html`](src/index.html) | Semantische bron-HTML en de vaste laadvolgorde van de statische assets |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Volledige presentatie en responsive layout |
 | [`src/assets/js/`](src/assets/js/) | Achttien geordende modules per verantwoordelijkheid |
-| [`tools/bundle.js`](tools/bundle.js) | Dependencyvrije standalone bundler en driftcontrole |
+| [`tools/bundle.js`](tools/bundle.js) | Dependencyvrije websitegenerator, driftcontrole en reconstructie van historische hashes |
 | [`tests/test_v50.js`](tests/test_v50.js) | Snelle Node/VM-regressiesuite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architectuur-, integriteits- en golden-equivalentietests |
 | [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromiumtests voor laden, responsive layout en pickerinteractie |
@@ -205,12 +205,12 @@ Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigratie
 | [`README.md`](README.md) | Canonieke Engelse projectdocumentatie |
 | [`docs/`](docs/) | Audit-handoffs, wijzigingsonderbouwing en testinstructies |
 
-De standalone root-`index.html` blijft de downloadbare en rechtstreeks gepubliceerde calculator. De modulaire `src/` geeft ontwikkelaars kleinere bestanden, expliciete verantwoordelijkheden en automatische bescherming tegen een achterlopende bundle of onbedoelde gedragswijzigingen.
+De root-`index.html` bedient de website, maar is geen losse offline-editie meer. De modulaire `src/` blijft de bron van waarheid, met automatische controles tegen achterlopende publicatiebestanden en onbedoelde gedragswijzigingen.
 
 ## Status en roadmap
 
-- **Reviewkandidaat:** [v2.0.1-keukenwerkblad](docs/V2_0_1_KITCHEN_REVIEW.md); live blijft v2.0.0; tag v1.0.0 en alle eerdere baselines blijven behouden.
-- **Architectuur:** statische HTML, CSS en achttien JavaScriptmodules genereren de standalone publicatie voor GitHub Pages.
+- **Huidige release:** [v2.0.1-keukenwerkblad](docs/V2_0_1_KITCHEN_REVIEW.md); tag v1.0.0 en alle eerdere baselines blijven behouden.
+- **Architectuur:** GitHub Pages levert een statische website-entry en achttien onderhoudbare JavaScriptmodules; geen losse HTML-download meer.
 - **Review:** beide onafhankelijke v2-crosschecks, verwerkte bevindingen en testresultaten staan gelinkt in [de releasenotities](docs/V2_0_0_RELEASE.md).
 - **Inbegrepen:** alle zes verbeteringen voor de pizza-avond, schema-53-migratie, dynamische weekdagen en de bestaande workshop- en rekenafspraken.
 - **Geparkeerd:** appontwikkeling en de drie voorgestelde onderzoeken naar het fysieke model.

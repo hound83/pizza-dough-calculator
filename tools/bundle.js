@@ -8,6 +8,7 @@ const PROJECT_ROOT=path.resolve(__dirname,'..');
 const SOURCE_ROOT=path.join(PROJECT_ROOT,'src');
 const OUTPUT_PATH=path.join(PROJECT_ROOT,'index.html');
 const STYLE_LINK='<link href="assets/css/app.css" rel="stylesheet"/>';
+const SITE_STYLE_LINK='<link href="src/assets/css/app.css" rel="stylesheet"/>';
 const EXPECTED_SCRIPTS=[
   'assets/js/calculation-core.js',
   'assets/js/workflow-core.js',
@@ -29,6 +30,7 @@ const EXPECTED_SCRIPTS=[
   'assets/js/persistence-bootstrap.js'
 ];
 const SCRIPT_TAGS=EXPECTED_SCRIPTS.map(src=>`<script src="${src}"></script>`).join('\n');
+const SITE_SCRIPT_TAGS=EXPECTED_SCRIPTS.map(src=>`<script src="src/${src}"></script>`).join('\n');
 
 function sha256(content){
   return crypto.createHash('sha256').update(content,'utf8').digest('hex');
@@ -52,12 +54,22 @@ function buildBundle(sourceRoot=SOURCE_ROOT){
   return {html,css:source.css,javascript};
 }
 
+// GitHub Pages serves a small entry document and requests the maintained assets.
+// buildBundle remains available only to verify immutable historical release hashes.
+function buildSite(sourceRoot=SOURCE_ROOT){
+  const source=readBundleInputs(sourceRoot);
+  const html=source.html
+    .replace(STYLE_LINK,SITE_STYLE_LINK)
+    .replace(SCRIPT_TAGS,SITE_SCRIPT_TAGS);
+  return {html,css:source.css,javascript:source.modules.join('')};
+}
+
 function writeOrCheck({sourceRoot=SOURCE_ROOT,outputPath=OUTPUT_PATH,checkOnly=false}={}){
-  const bundle=buildBundle(sourceRoot);
+  const bundle=buildSite(sourceRoot);
   if(checkOnly){
-    if(!fs.existsSync(outputPath))throw new Error(`Missing generated bundle: ${outputPath}`);
+    if(!fs.existsSync(outputPath))throw new Error(`Missing generated website entry: ${outputPath}`);
     const current=fs.readFileSync(outputPath,'utf8');
-    if(current!==bundle.html)throw new Error(`Generated bundle is stale: ${outputPath}`);
+    if(current!==bundle.html)throw new Error(`Generated website entry is stale: ${outputPath}`);
   }else{
     fs.writeFileSync(outputPath,bundle.html,'utf8');
   }
@@ -87,9 +99,12 @@ module.exports={
   OUTPUT_PATH,
   PROJECT_ROOT,
   SCRIPT_TAGS,
+  SITE_SCRIPT_TAGS,
+  SITE_STYLE_LINK,
   SOURCE_ROOT,
   STYLE_LINK,
   buildBundle,
+  buildSite,
   readBundleInputs,
   sha256,
   writeOrCheck

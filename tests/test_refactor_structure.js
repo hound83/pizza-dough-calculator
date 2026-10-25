@@ -6,9 +6,12 @@ const vm=require('vm');
 const {
   EXPECTED_SCRIPTS,
   SCRIPT_TAGS,
+  SITE_SCRIPT_TAGS,
+  SITE_STYLE_LINK,
   SOURCE_ROOT,
   STYLE_LINK,
   buildBundle,
+  buildSite,
   sha256
 }=require('../tools/bundle');
 
@@ -48,8 +51,9 @@ function assert(condition,message){if(!condition)throw new Error(message);}
 function pass(message){console.log(`PASS ${message}`);}
 
 const sourceHtml=fs.readFileSync(path.join(SOURCE_ROOT,'index.html'),'utf8');
-const bundledHtml=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
-const built=buildBundle(SOURCE_ROOT);
+const publishedHtml=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+const built=buildSite(SOURCE_ROOT);
+const historicalBundle=buildBundle(SOURCE_ROOT);
 const css=built.css;
 const combinedJavaScript=built.javascript;
 const scripts=[...sourceHtml.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*><\/script>/gi)].map(match=>match[1]);
@@ -61,11 +65,13 @@ assert(!/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>/i.test(sourceHtml),'Source HTML 
 assert(sourceHtml.includes(STYLE_LINK),'Source HTML does not reference assets/css/app.css.');
 pass('source HTML contains no inline CSS or JavaScript');
 
-assert(!/<script\s+[^>]*src=/i.test(bundledHtml)&&!/<link\s+[^>]*href=["']assets\//i.test(bundledHtml),'Standalone bundle still references source assets.');
-pass('root index.html is a self-contained standalone bundle');
+assert(publishedHtml.includes(SITE_STYLE_LINK)&&publishedHtml.includes(SITE_SCRIPT_TAGS),'Website entry does not reference the maintained CSS and JavaScript assets.');
+assert(!/<style(?:\s[^>]*)?>/i.test(publishedHtml)&&!/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>/i.test(publishedHtml),'Website entry contains inline CSS or JavaScript.');
+for(const asset of ['assets/css/app.css',...EXPECTED_SCRIPTS])assert(fs.existsSync(path.join(SOURCE_ROOT,asset)),`Missing published website asset: ${asset}`);
+pass('root index.html loads existing modular assets, without an offline single-file distribution');
 
-assert(bundledHtml===built.html,'Committed standalone bundle differs from the source reconstruction.');
-pass('committed standalone bundle is current');
+assert(publishedHtml===built.html,'Committed website entry differs from the source reconstruction.');
+pass('committed website entry is current');
 
 const moduleSources=EXPECTED_SCRIPTS.map(src=>fs.readFileSync(path.join(SOURCE_ROOT,src),'utf8'));
 assert(!sourceHtml.includes('assets/js/app.js')&&!fs.existsSync(path.join(SOURCE_ROOT,'assets','js','app.js')),'Legacy app.js is still part of the source refactor.');
@@ -82,7 +88,7 @@ for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.inclu
 pass('released v1.1.1 hashes remain documented');
 
 for(const hash of Object.values(V1_2_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.0 baseline hash is missing from product guardrails: ${hash}`);
-assert(sha256(bundledHtml)===V2_0_1_CANDIDATE_BASELINE.singleFile,'Standalone differs from the documented v2.0.1 candidate baseline.');
+assert(sha256(historicalBundle.html)===V2_0_1_CANDIDATE_BASELINE.singleFile,'Historical v2.0.1 reconstruction differs from the documented candidate baseline.');
 assert(sha256(css)===V2_0_1_CANDIDATE_BASELINE.css,'CSS differs from the documented v2.0.1 candidate baseline.');
 assert(sha256(combinedJavaScript)===V2_0_1_CANDIDATE_BASELINE.javascript,'JavaScript differs from the documented v2.0.1 candidate baseline.');
 for(const hash of [...Object.values(V1_3_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_RELEASE_BASELINE),...Object.values(V1_4_1_RELEASE_BASELINE),...Object.values(V2_0_0_CANDIDATE_BASELINE),...Object.values(V2_0_1_CANDIDATE_BASELINE)])assert(guardrails.includes(hash),`Candidate/release hash is not documented: ${hash}`);
@@ -95,8 +101,8 @@ pass('recombined JavaScript parses successfully');
 const reconstructed=sourceHtml
   .replace(STYLE_LINK,`<style>${css}</style>`)
   .replace(SCRIPT_TAGS,`<script>${combinedJavaScript}</script>`);
-assert(reconstructed===built.html,'Source reconstruction differs from the generated feature bundle.');
-pass('the complete modular source reconstructs the current feature bundle exactly');
+assert(reconstructed===historicalBundle.html,'Historical single-file reconstruction differs from the archived v2.0.1 candidate.');
+pass('the complete modular source still reconstructs the archived v2.0.1 candidate exactly');
 
 const contracts=[
   ['calculation-core.js','const DoughCore'],
