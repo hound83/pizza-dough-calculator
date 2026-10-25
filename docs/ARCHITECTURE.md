@@ -6,7 +6,7 @@ This architecture preserves the established calculation contracts while supporti
 
 1. Tag `v1.0.0` remains the immutable functional reference; `main` may advance through behavior-equivalent architecture and documentation changes.
 2. The shipped application requires no framework, package dependency, transpiler, or production build at runtime.
-3. GitHub Pages serves the generated standalone root `index.html` directly.
+3. GitHub Pages serves the generated root `index.html` referencing the maintained static assets.
 4. Maintainable sources live under `src/`; eighteen classic browser scripts load there in a fixed order.
 5. Historical v1.0.0 hashes remain immutable evidence. Approved feature versions may change the current bundle with focused regression coverage and an explicit migration path.
 
@@ -14,7 +14,7 @@ Classic scripts are a deliberate intermediate architecture. They preserve the ex
 
 ## Distribution model
 
-`src/` is the source of truth for application code. `tools/bundle.js` reads `src/index.html`, inlines the stylesheet and the eighteen scripts without changing their bytes, and writes the standalone root `index.html`. The generated root file is committed so GitHub Pages and downloaded offline use require no build step.
+`src/` is the source of truth for application code. `tools/bundle.js` reads `src/index.html`, adjusts the stylesheet and eighteen script URLs to point at `src/assets/`, and writes the small root `index.html`. GitHub Pages serves these files together; the website is the sole supported distribution, not a downloadable single-file app.
 
 ```text
 src/index.html + src/assets/css/app.css + src/assets/js/*.js
@@ -22,10 +22,10 @@ src/index.html + src/assets/css/app.css + src/assets/js/*.js
                        tools/bundle.js
                               │
                               ▼
-                   index.html (standalone)
+            index.html + linked src/assets/
 ```
 
-`npm run check:bundle` fails if the committed distribution differs from a fresh source reconstruction.
+`npm run check:bundle` fails if the committed website entry differs from a fresh source reconstruction. `buildBundle()` remains available only in test code to reconstruct the historical self-contained v2.0.1 artifact in memory and verify its immutable hash. No standalone artifact is written to disk.
 
 ## Load order and responsibilities
 
@@ -73,19 +73,19 @@ The order is a contract: later modules may use functions and state from earlier 
 | v1.0.0 CSS | `262e12b5356f5a50c63aa7cd7249b3c5c8b101d8954f076de1360efbc222b896` |
 | v1.0.0 JavaScript | `2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7` |
 
-The current release bundle is no longer expected to equal the historical hashes. The test reconstructs the current standalone file exactly from `src/`, keeps the historical v1.0.0 and released v1.1.0 hashes documented, preserves the released v1.1.1, v1.2.0, and v1.2.1 baselines and pins the explicitly requested v1.3.0 and v1.4.0 candidates separately, pins the v1.4.0 and v1.4.1 releases, and validates JavaScript parsing, module order, unique HTML IDs, all inline-handler functions, exclusive persistence/bootstrap ownership, and the committed bundle.
+The published website entry is no longer a self-contained file. The test reconstructs the previously released v2.0.1 standalone artifact in memory from the unchanged source and checks its historical hash. It preserves all earlier release and candidate baselines, and validates JavaScript parsing, module order, unique HTML IDs, inline handlers, persistence/bootstrap ownership, asset references and the committed website entry.
 
-`tests/test_v50.js` runs all 106 functional regressions against both the modular source and the standalone bundle. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, the separate 30-minute cold-autolyse and 20-minute hydration-rest paths, the full hand/machine preparation-time matrix, exact two-minute KitchenAid speed-2 stage, rested-windowpane recovery without extra machine time, and displayed reserve-water portions that exactly sum to the displayed total. v1.2 calculation coverage adds the heat-capacity equilibrium, exact thermal stage order, shared rest constants, eight approved nominal outputs, affine prediction, room-temperature slope pins, honest unattainable metadata, bilingual main/reserved-water guidance, route-correct hot-water warnings, and a 1,920-case normal-kitchen DDT matrix. Basic-mode coverage distinguishes ordinary recipe inputs from intentional technical overrides. Patch coverage also protects the 30 cm / 220 g default without overwriting a saved 32 cm recipe, percentage spinner grids including the first off-grid preset snap, localized count grammar including rounded English hour labels, shared dough-ball-weight formatting, the repaired translation set, Marinara's distinct sauce and 5 g finishing-EVOO layers without duplicated garlic or oregano, and the complete two-group sauce-choice partition.
+`tests/test_v50.js` runs all 106 functional regressions against both the source entry and the generated website entry. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, the separate 30-minute cold-autolyse and 20-minute hydration-rest paths, the full hand/machine preparation-time matrix, exact two-minute KitchenAid speed-2 stage, rested-windowpane recovery without extra machine time, and displayed reserve-water portions that exactly sum to the displayed total. v1.2 calculation coverage adds the heat-capacity equilibrium, exact thermal stage order, shared rest constants, eight approved nominal outputs, affine prediction, room-temperature slope pins, honest unattainable metadata, bilingual main/reserved-water guidance, route-correct hot-water warnings, and a 1,920-case normal-kitchen DDT matrix. Basic-mode coverage distinguishes ordinary recipe inputs from intentional technical overrides. Patch coverage also protects the 30 cm / 220 g default without overwriting a saved 32 cm recipe, percentage spinner grids including the first off-grid preset snap, localized count grammar including rounded English hour labels, shared dough-ball-weight formatting, the repaired translation set, Marinara's distinct sauce and 5 g finishing-EVOO layers without duplicated garlic or oregano, and the complete two-group sauce-choice partition.
 
-`tests/browser/refactor.spec.js` and `tests/browser/workshop.spec.js` run 89 Chromium checks. One infrastructure contract protects the implicit `/favicon.ico` request made by full Chromium. The remaining checks cover the standalone bundle and modular source: six viewport widths (320, 390, 430, 760, 1024, and 1280 px) verify initialization, page/console/request failures, and horizontal fit, while focused checks protect the Basic/Full contract, ordinary Basic input, explicit yeast-advice application, persistence, migration, real ArrowUp/ArrowDown percentage grids without loss of manually typed precision, bilingual main/reserved-water output, cold-tap versus ice-water guidance, route-correct hot-water warnings, both native collapsed sauce-disclosure surfaces, and keyboard activation of the summary and sauce choice. The spinner test starts from the untouched 0.17% default yeast value, verifies the browser's first alignment to 0.175%, and then verifies the full 0.025-point step to 0.2%. The three phone sizes additionally protect the full-height single-pane recipe catalogue, non-autofocused search, the horizontally scrollable filter row, the catalogue-to-customization transition, back navigation, modal fit, and explicit click selection that cannot be changed by hover.
+`tests/browser/refactor.spec.js` and `tests/browser/workshop.spec.js` run Chromium checks. One infrastructure contract protects the implicit `/favicon.ico` request made by full Chromium. The remaining checks cover the generated website entry and modular source: six viewport widths (320, 390, 430, 760, 1024, and 1280 px) verify initialization, page/console/request failures, and horizontal fit, while focused checks protect the Basic/Full contract, ordinary Basic input, explicit yeast-advice application, persistence, migration, real ArrowUp/ArrowDown percentage grids without loss of manually typed precision, bilingual main/reserved-water output, cold-tap versus ice-water guidance, route-correct hot-water warnings, both native collapsed sauce-disclosure surfaces, and keyboard activation of the summary and sauce choice. The spinner test starts from the untouched 0.17% default yeast value, verifies the browser's first alignment to 0.175%, and then verifies the full 0.025-point step to 0.2%. The three phone sizes additionally protect the full-height single-pane recipe catalogue, non-autofocused search, the horizontally scrollable filter row, the catalogue-to-customization transition, back navigation, modal fit, and explicit click selection that cannot be changed by hover.
 
-Playwright is a development-only dependency. It is not bundled into `index.html`, loaded by the application, or required by GitHub Pages and offline users.
+Playwright is a development-only dependency. It is not loaded by the application or required by GitHub Pages visitors. An offline single-file edition is no longer supported.
 
 ## Change workflow
 
 1. Identify the module that owns the behavior.
 2. Add a focused regression test before fixing a bug or adding a feature.
-3. Edit source files under `src/` and run `npm run bundle`.
+3. Edit source files under `src/` and run `npm run bundle` to regenerate the website entry.
 4. Run `npm test`; use `npm run test:fast` only when intentionally skipping the local browser layer during intermediate work.
 5. Do not automatically update golden hashes after an intentional behavioral change; first document why the branch is no longer behavior-neutral and establish the reviewed new baseline.
 6. Test layout, keyboard behavior, and native browser signals in Chromium at the relevant viewports.

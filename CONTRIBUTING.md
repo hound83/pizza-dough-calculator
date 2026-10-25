@@ -24,7 +24,7 @@
 - Add new translation data to `translations.js` and dynamic bilingual text through the existing i18n helpers.
 - Put new catalogue data in `catalog.js` and validate references with an invariant test.
 - Document every intentional deviation from the v1.0.0 golden hashes.
-- Treat generated root `index.html` as a distribution artefact: edit `src/`, run `npm run bundle`, and commit both source and bundle.
+- Treat generated root `index.html` as the GitHub Pages entry: edit `src/`, run `npm run bundle`, and commit both source and the website entry. Do not add a separate HTML download.
 
 ## Required checks
 
@@ -38,7 +38,7 @@ Changes to layout, focus, native events, persistence, or asset loading also requ
 
 - [ ] The change is located in the owning module.
 - [ ] A focused regression test covers the new or repaired behavior.
-- [ ] The committed root bundle is current.
+- [ ] The committed root website entry is current and its asset references resolve.
 - [ ] All architecture and functional tests pass.
 - [ ] Storage compatibility and AVPN rules remain intact or are explicitly migrated.
 - [ ] Dutch and English have both been checked.

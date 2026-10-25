@@ -2,18 +2,18 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v2.0.1--candidate-f0b45a)](docs/V2_0_1_KITCHEN_REVIEW.md)
+[![Version](https://img.shields.io/badge/version-v2.0.1-f0b45a)](docs/V2_0_1_KITCHEN_REVIEW.md)
 [![Tests](https://img.shields.io/badge/regression_tests-106_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
 A comprehensive Dutch and English calculator for pizza dough, fermentation, sauce, toppings, and a complete practical workflow.
 
-The downloadable application remains one self-contained `index.html`. The repository keeps maintainable HTML, CSS, and JavaScript sources under `src/` and generates the standalone root `index.html` for GitHub Pages and offline use without runtime dependencies.
+The GitHub Pages website is the official way to use the calculator. A separate downloadable, self-contained HTML edition is no longer distributed. The small root `index.html` loads the maintained CSS and JavaScript files from `src/`; no runtime framework or backend is required.
 
 **[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v2.0.0 release notes](docs/V2_0_0_RELEASE.md)
 
-> **v2.0.1 kitchen review candidate.** This branch restores the visible individual checklist and refines Kitchen styling. The live page remains v2.0.0 while this change is reviewed. Tag v1.0.0 and all earlier baselines are preserved. Schema 53 migrates existing schema-52 data.
+> **v2.0.1 kitchen release.** The individual checklist is visible again and Kitchen styling is improved. Tag v1.0.0 and all earlier baselines are preserved. Schema 53 migrates existing schema-52 data.
 
 **New in v2:** freely switch between Plan and Kitchen, plan around availability, split dough into independent mixer runs, follow a queue with actual oven-in/out times, get contextual dough help, and reuse complete evening templates or transfer private backups. The visible version, dynamic weekdays and previous improvements remain intact. [Implementation and review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
@@ -76,24 +76,24 @@ This is intentionally **not a validated laboratory model** or an official AVPN c
 ## Language, privacy, and storage
 
 - The interface switches immediately between Dutch and English.
-- No account or server is required.
+- No account or backend service is required; use the hosted website.
 - Recipes, evenings, progress and the dough log stay in your browser. One tab can write at a time; close it and reload another to take over. If locking or storage is unavailable, the app reports that it cannot save.
 - Shareable evening templates omit private names and actual history. Private backups include them and require confirmation before replacing local data; they are snapshots, not synchronization.
 - The app sends no recipe or log data to a backend.
 - `Reset` removes the locally stored calculator state but preserves the language choice.
 
-## Running locally
+## Local development
 
-The simplest option is to download `index.html` and open it directly in a modern browser.
+For normal use, open the [hosted calculator](https://hound83.github.io/pizza-dough-calculator/). A downloaded `index.html` alone is not a working copy, because the website loads its assets separately.
 
-You can also clone the repository:
+Developers can clone the complete repository:
 
 ```bash
 git clone https://github.com/hound83/pizza-dough-calculator.git
 cd pizza-dough-calculator
 ```
 
-Then open `index.html`, or preferably start a small local web server:
+Start a local web server from the repository root:
 
 ```bash
 python -m http.server 8000
@@ -103,7 +103,7 @@ Open `http://localhost:8000`.
 
 ## Publishing with GitHub Pages
 
-Because the complete distributable app is already named `index.html`, no production build configuration is required:
+The generated root `index.html` references `src/assets/` on the same site. GitHub Pages can publish this static structure without a production build service:
 
 1. open **Settings → Pages** in GitHub;
 2. choose **Deploy from a branch**;
@@ -138,7 +138,7 @@ Release verification suite (see the PR Actions result for execution status):
 ```text
 15 refactor-structure tests
 31 pure-core tests
-106 bundle regression tests
+106 website-entry regression tests
 106 source regression tests
 139 Chromium browser/layout tests
 ```
@@ -156,13 +156,13 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eighteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, bundle freshness, exact reconstruction of the current feature bundle, the immutable historical release hashes, the historical v1.3.0 and v1.4.0 candidate baselines, and the separate v1.4.0/v1.4.1 release baselines. Playwright opens both publications at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the eighteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, website-entry freshness, linked asset paths, historical release and candidate hashes, and reconstruction of the archived v2.0.1 single-file baseline in memory. Playwright opens the published website entry and the source entry at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
 
 Use the following commands when working on the modular sources:
 
 ```bash
-npm run bundle        # regenerate root index.html from src/
-npm run check:bundle  # fail if the committed bundle is stale
+npm run bundle        # regenerate the website entry from src/
+npm run check:bundle  # fail if the committed website entry is stale
 ```
 
 ## Versioning
@@ -186,11 +186,11 @@ Historic working versions such as v50 remain where technically necessary in stor
 
 | Path | Purpose |
 |---|---|
-| [`index.html`](index.html) | Generated standalone publication for Pages and offline use |
+| [`index.html`](index.html) | Generated GitHub Pages entry referencing the modular assets |
 | [`src/index.html`](src/index.html) | Semantic source HTML and fixed asset-loading order |
 | [`src/assets/css/app.css`](src/assets/css/app.css) | Complete presentation and responsive layout |
 | [`src/assets/js/`](src/assets/js/) | Eighteen ordered responsibility-based modules |
-| [`tools/bundle.js`](tools/bundle.js) | Dependency-free standalone bundler and drift check |
+| [`tools/bundle.js`](tools/bundle.js) | Dependency-free website-entry generator, drift check and historical hash reconstruction |
 | [`tests/test_v50.js`](tests/test_v50.js) | Fast Node/VM functional regression suite |
 | [`tests/test_refactor_structure.js`](tests/test_refactor_structure.js) | Architecture, integrity, and golden-equivalence tests |
 | [`tests/browser/refactor.spec.js`](tests/browser/refactor.spec.js) | Chromium loading, responsive layout, and picker interaction tests |
@@ -203,12 +203,12 @@ Historic working versions such as v50 remain where technically necessary in stor
 | [`README.nl.md`](README.nl.md) | Complete Dutch project documentation |
 | [`docs/`](docs/) | Audit handoffs, rationale, and test instructions |
 
-The standalone root `index.html` remains the downloadable and directly published calculator. The modular `src/` gives developers smaller files, explicit ownership, and automatic protection against a stale bundle or accidental behavioral drift.
+The root `index.html` serves the website, but is no longer a downloadable offline edition. The modular `src/` remains the source of truth, with automatic checks against stale publication files and accidental behavioral drift.
 
 ## Status and roadmap
 
-- **Review candidate:** [v2.0.1 kitchen workbench](docs/V2_0_1_KITCHEN_REVIEW.md); live remains v2.0.0; tag v1.0.0 and all earlier baselines remain preserved.
-- **Architecture:** static HTML, CSS and eighteen JavaScript modules generate the standalone publication for GitHub Pages.
+- **Current release:** [v2.0.1 kitchen workbench](docs/V2_0_1_KITCHEN_REVIEW.md); tag v1.0.0 and all earlier baselines remain preserved.
+- **Architecture:** GitHub Pages serves a static entry and eighteen maintained JavaScript modules; no separate HTML download is offered.
 - **Review:** both independent v2 crosschecks, resolved findings and verification evidence are linked in [the release notes](docs/V2_0_0_RELEASE.md).
 - **Included:** all six evening workflow improvements, schema-53 migration, dynamic weekdays and the existing workshop/calculation contracts.
 - **Deferred:** app development and the three proposed physical-model investigations.

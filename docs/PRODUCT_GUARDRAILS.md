@@ -423,3 +423,9 @@ The changed presentation is a v2.0.1 review candidate based on released v2.0.0 (
 | singleFile | `c573dbbb8010006472cbd5af4b1d1c0197e3d0907c1cae017de72d6f103589f7` |
 | css | `b78c64fdb44798eacf1c6ca644f96955260aabc91387fda397a6a691cee5182e` |
 | javascript | `96c0bc3b87735034bd20b0d2fd939cd003d997a6da3f7af4f9593a75f8ffd6f1` |
+
+## Website-only distribution after v2.0.1
+
+Michael chose the GitHub Pages website as the only supported way to use the calculator; a separate downloadable, single-file HTML edition is no longer offered. Root `index.html` is a generated website entry that loads the unchanged CSS and eighteen JavaScript modules from `src/assets/`. The generated entry and its linked assets must be deployed together. Browser-local data continues to use the same origin, storage schema 53, and user-controlled JSON backup/transfer contracts. No recipe, calculation, kitchen timing, interface mode, or persistence behavior is changed.
+
+The released v2.0.1 standalone hash above remains immutable evidence. The test suite reconstructs that historical artifact in memory for verification; the production generator no longer writes it. This distribution decision requires no recalibration, storage migration, or change to the earlier release baselines. A standalone offline HTML download is no longer an intended supported behavior.
