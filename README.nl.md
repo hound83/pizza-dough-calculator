@@ -146,7 +146,7 @@ Releasecontroles (zie de Actions-uitslag bij de PR voor de uitvoerstatus):
 31 pure-core tests
 108 website-entry regression tests
 108 source regression tests
-149 Chromium browser/layout tests (inclusief tien nieuwe v2.1-controles)
+153 Chromium browser/layout tests (inclusief tien nieuwe v2.1-controles)
 ```
 
 De suite controleert onder meer:

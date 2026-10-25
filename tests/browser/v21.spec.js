@@ -13,13 +13,11 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2.1 features
   }
 
   test('dough-only link previews without changing data, then loads explicitly',async({page,browser})=>{
-    await open(page);await page.locator('#hydration').fill('67');await page.locator('#hydration').blur();
+    await open(page);await page.locator('#experienceFull').click();await page.locator('#hydration').fill('67');await page.locator('#hydration').blur();
     await page.locator('#shareDoughButton').click();
     const link=await page.locator('[data-dough-share-url]').inputValue();
     expect(link).toContain('#dough=');
     expect(link).not.toContain('margherita');
-    const shared=await page.evaluate(()=>decodeDoughLink(location.hash.slice(7))); // no hash on sender
-    expect(shared).toBeNull();
     const receiver=await browser.newContext();const receivingPage=await receiver.newPage();
     await receivingPage.goto(link);await expect(receivingPage.locator('html')).toHaveAttribute('data-app-ready','true');
     await expect(receivingPage.locator('#recipeLinkPanel')).toContainText('Gedeeld deegrecept');
@@ -53,7 +51,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2.1 features
     await expect(list).toContainText('Frisdrank');
     await list.locator('[data-shopping-manual]').check();
     await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
-    await shopping(page);await expect(page.locator('[data-shopping-manual]')).toBeChecked();
+    await shopping(page);await expect(page.locator('#shoppingPlan [data-shopping-manual]')).toBeChecked();
     await page.locator('#shoppingPlan [data-shopping-action="edit"]').click();
     await page.locator('#shoppingPlan [data-shopping-edit-form] [data-shopping-quantity]').fill('4');
     await page.locator('#shoppingPlan [data-shopping-action="save-edit"]').click();

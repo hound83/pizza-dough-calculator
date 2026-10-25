@@ -579,11 +579,25 @@ function wireShoppingEvents(){
     const root=$(rootId);if(!root)continue;
     root.addEventListener('change',event=>{
       const el=event.target;if(!_storageWriter)return;
-      const state=shoppingState();
+      const state=shoppingState(),previous=WorkflowCore.clone(state);
       if(el.dataset.shoppingCheck!==undefined){state.checked[el.dataset.shoppingCheck]={signature:el.dataset.shoppingSignature,checked:el.checked};}
       else if(el.dataset.shoppingManual!==undefined){const item=state.manual.find(x=>x.id===el.dataset.shoppingManual);if(item)item.checked=el.checked;}
       else return;
-      if(!saveState())eveningFailure(new Error('storage'));
+      if(!saveState()){
+        Object.assign(state,previous);eveningFailure(new Error('storage'));return;
+      }
+      // Both Plan and Kitchen show the same list. Update the mirrored checkbox
+      // without replacing the focused input after a native keyboard/pointer action.
+      const attribute=el.dataset.shoppingCheck!==undefined?'data-shopping-check':'data-shopping-manual';
+      const key=el.getAttribute(attribute);
+      for(const id of ['shoppingPlan','shoppingList']){
+        $(id)?.querySelectorAll(`[${attribute}]`).forEach(checkbox=>{
+          if(checkbox.getAttribute(attribute)!==key)return;
+          checkbox.checked=el.checked;
+          checkbox.closest('.shopping-item')?.classList.toggle('is-done',el.checked);
+          if(el.checked)checkbox.closest('.shopping-item')?.querySelector('.shopping-changed')?.remove();
+        });
+      }
     });
     root.addEventListener('click',event=>{
       const button=event.target.closest('[data-shopping-action]');if(!button||button.disabled||!_storageWriter)return;

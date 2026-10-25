@@ -144,7 +144,7 @@ Release verification suite (see the PR Actions result for execution status):
 31 pure-core tests
 108 website-entry regression tests
 108 source regression tests
-149 Chromium browser/layout tests (including ten new v2.1 checks)
+153 Chromium browser/layout tests (including ten new v2.1 checks)
 ```
 
 The suite covers, among other things:

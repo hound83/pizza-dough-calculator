@@ -446,6 +446,6 @@ No v2.1 feature may alter the numerical dough/yeast/temperature model, proofing 
 |---|---|
 | generated website entry | `7baf3064b63d63aee24dcbe472aa359a11eba1ead3e7ca71a0e1ab932cc35b08` |
 | CSS | `f69655e5fa81af5b4931bba1533c8fa9a15d81b2b4c4fecbd5e490ef3b490923` |
-| combined JavaScript | `c4bb7c97d94e69e858a6cae48d058b2eb2dc25dd3a5e1cfdaee0e7685441c455` |
+| combined JavaScript | `9ea15e52d22d01e36263de89f16af32ad82ed367ad6d012cb63ebb21409bbbca` |
 
 These are candidate hashes until the v2.1 branch clears review and is published. See [v2.1 release handoff](V2_1_0_RELEASE.md) for verification and limitations.

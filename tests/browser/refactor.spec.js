@@ -3,7 +3,7 @@
 const {expect,test}=require('playwright/test');
 
 const PUBLICATIONS=[
-  {name:'standalone bundle',path:'/index.html'},
+  {name:'published website entry',path:'/index.html'},
   {name:'modular source',path:'/src/index.html'}
 ];
 
@@ -86,7 +86,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'2.0.1',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'2.1.0',hasCalculator:true,horizontalOverflow:0});
         await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
         await expect(page.locator('#scheduleSummary')).toBeVisible();
         await expect(page.locator('#scheduleSummary')).toContainText('1 u 54 min');

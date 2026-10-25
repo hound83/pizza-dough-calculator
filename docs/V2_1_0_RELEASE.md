@@ -29,7 +29,7 @@ No changes to dough mathematics, yeast recommendations, staged water temperature
 
 - `npm run bundle` and `npm run check:bundle`: deterministic generated website entry.
 - `npm run test:fast`: 15 structure tests, pure-core suite and 108 functional regressions on each of the two site entries, including new v2.1 URL, shopping and migration cases.
-- `npm test`: additionally executes 149 Chromium browser/layout cases across the root website entry and source entry, including ten v2.1 interactions (real link import, invalid URL, shopping edits/changes, favorite repeat, schema-53 evening migration).
+- `npm test`: additionally executes 153 Chromium browser/layout cases across the root website entry and source entry, including ten v2.1 interactions (real link import, invalid URL, shopping edits/changes, favorite repeat, schema-53 evening migration).
 - Verify existing v1.0 through v2.0.1 historical hashes are **preserved in documentation**, but do not claim the new v2.1 site is byte-equivalent to old standalone releases.
 - Confirm GitHub Actions checks pass before publishing and verify the GitHub Pages site loads the version label and assets after merge.
 
