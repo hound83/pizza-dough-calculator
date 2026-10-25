@@ -429,3 +429,23 @@ The changed presentation is a v2.0.1 review candidate based on released v2.0.0 (
 Michael chose the GitHub Pages website as the only supported way to use the calculator; a separate downloadable, single-file HTML edition is no longer offered. Root `index.html` is a generated website entry that loads the unchanged CSS and eighteen JavaScript modules from `src/assets/`. The generated entry and its linked assets must be deployed together. Browser-local data continues to use the same origin, storage schema 53, and user-controlled JSON backup/transfer contracts. No recipe, calculation, kitchen timing, interface mode, or persistence behavior is changed.
 
 The released v2.0.1 standalone hash above remains immutable evidence. The test suite reconstructs that historical artifact in memory for verification; the production generator no longer writes it. This distribution decision requires no recalibration, storage migration, or change to the earlier release baselines. A standalone offline HTML download is no longer an intended supported behavior.
+
+## v2.1.0 authorized feature scope
+
+Michael explicitly approved the first of two feature phases. This v2.1 candidate adds only:
+
+- **Dough-only sharing:** a compact `#dough=` URL fragment containing the existing validated portable dough-recipe contract. The receiving browser previews the import and requires explicit confirmation. It never automatically overwrites the current plan, includes no toppings, pizza selections, names, dates, measurements or history, and is blocked while an evening is active. Malformed payloads must leave state intact.
+- **Actionable shopping:** Plan and Kitchen show the same list derived from dough, sauce and topping quantities, with group labels, checked state and automatic recalculation. A material quantity change invalidates the old checked state and requests a new check. Sauce items combine only when their names and units match; tomato purchase consolidation continues to use the existing aggregator.
+- **Manual shopping entries:** a positive numeric amount and selected unit are required. Custom entries can be added, checked, edited or deleted, and remain part of that evening. An edit resets its checkmark.
+- **Favorite repetition:** a saved complete-evening template can be starred for one-tap loading. Pizza, sauce and manual shopping choices return; planned date, measurements, progress and purchase checkmarks do not. Archived previous evenings remain distinguishable from templates.
+- **Schema 54 migration:** schema-53 active evening, history, templates, frozen recipe and progress migrate without destructive reset. Prior storage is retained until the new save succeeds; invalid imported or persisted shopping structures are rejected or normalized. The existing single-writer browser storage contract is unchanged.
+
+No v2.1 feature may alter the numerical dough/yeast/temperature model, proofing durations, oven queue, existing checklist, privacy model or website-only distribution. The existing eighteen classic JavaScript modules remain; there is no framework, account or server. Ingredient finder and richer baking report are deferred to v2.2. The historical v2.0.1 self-contained hash above is **archival evidence, not an equivalence target** for intentionally modified v2.1 source; tests now rebuild the current source in memory.
+
+| v2.1 candidate artifact | SHA-256 |
+|---|---|
+| generated website entry | `7baf3064b63d63aee24dcbe472aa359a11eba1ead3e7ca71a0e1ab932cc35b08` |
+| CSS | `f69655e5fa81af5b4931bba1533c8fa9a15d81b2b4c4fecbd5e490ef3b490923` |
+| combined JavaScript | `c4bb7c97d94e69e858a6cae48d058b2eb2dc25dd3a5e1cfdaee0e7685441c455` |
+
+These are candidate hashes until the v2.1 branch clears review and is published. See [v2.1 release handoff](V2_1_0_RELEASE.md) for verification and limitations.

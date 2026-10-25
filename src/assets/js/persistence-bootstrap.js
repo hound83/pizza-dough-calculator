@@ -1,6 +1,6 @@
-const SAVE_KEY='pizzaCalcV53';
-const SAVE_VERSION=53;
-const LEGACY_KEYS=Array.from({length:27},(_,i)=>`pizzaCalcV${52-i}`);
+const SAVE_KEY='pizzaCalcV54';
+const SAVE_VERSION=54;
+const LEGACY_KEYS=Array.from({length:28},(_,i)=>`pizzaCalcV${53-i}`);
 const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
 // Only these controls override the technical dough profile owned by a preset.
@@ -92,6 +92,43 @@ function sanitizeExactOverride(v){
   return Object.keys(out).length?out:null;
 }
 
+function sanitizeShoppingState(value){
+  const state=emptyShoppingState();
+  if(!value||typeof value!=='object'||Array.isArray(value))return state;
+  if(value.checked&&typeof value.checked==='object'&&!Array.isArray(value.checked)){
+    for(const [key,record] of Object.entries(value.checked).slice(0,300)){
+      if(key.length>180||!record||typeof record!=='object'||typeof record.signature!=='string'||record.signature.length>50||typeof record.checked!=='boolean')continue;
+      state.checked[key]={signature:record.signature,checked:record.checked};
+    }
+  }
+  if(Array.isArray(value.manual)){
+    const ids=new Set();
+    for(const item of value.manual.slice(0,50)){
+      if(!item||typeof item!=='object'||typeof item.id!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(item.id)||ids.has(item.id))continue;
+      if(typeof item.name!=='string'||!item.name.trim()||item.name.length>100||!Number.isFinite(item.quantity)||item.quantity<=0||item.quantity>100000||!SHOPPING_UNITS.includes(item.unit))continue;
+      ids.add(item.id);state.manual.push({id:item.id,name:item.name.trim(),quantity:item.quantity,unit:item.unit,checked:item.checked===true});
+    }
+  }
+  return state;
+}
+function sanitizeShoppingStorage(value,active,history,templates){
+  const result=emptyShoppingStorage();
+  if(!value||typeof value!=='object')return result;
+  result.draft=sanitizeShoppingState(value.draft);
+  const ids=new Set([active?.id,...history.map(e=>e.id)].filter(Boolean));
+  if(value.byEvening&&typeof value.byEvening==='object'&&!Array.isArray(value.byEvening)){
+    for(const [id,state] of Object.entries(value.byEvening))if(ids.has(id))result.byEvening[id]=sanitizeShoppingState(state);
+  }
+  const templateIds=new Set(templates.map(t=>t.id));
+  if(value.byTemplate&&typeof value.byTemplate==='object'&&!Array.isArray(value.byTemplate)){
+    for(const [id,manual] of Object.entries(value.byTemplate)){
+      if(!templateIds.has(id)||!Array.isArray(manual))continue;
+      result.byTemplate[id]=sanitizeShoppingState({manual}).manual;
+    }
+  }
+  return result;
+}
+
 function sanitizeEvenings(value){
   if(!value||typeof value!=='object'||!Array.isArray(value.templates)||!Array.isArray(value.history)||!value.draft)return null;
   if(value.templates.length>30||value.history.length>20)return null;
@@ -111,11 +148,13 @@ function sanitizeEvenings(value){
   if(d.unavailable.some(x=>!x||!Number.isFinite(x.start)||!Number.isFinite(x.end)||x.start<0||x.end<=x.start))return null;
   if(!d.split||!['flour','dough'].includes(d.split.unit)||d.split.capacity!==null&&(!Number.isFinite(d.split.capacity)||d.split.capacity<1||d.split.capacity>50000))return null;
   if(!Number.isFinite(d.cleanup)||d.cleanup<0||d.cleanup>60)return null;
-  return {active,templates,history,draft:{pizzas,date,earliest,unavailable:d.unavailable.map(x=>({start:x.start,end:x.end})),cleanup:d.cleanup,split:{...d.split},fold:d.fold==='second'?'second':'first'}};
+  const favoriteIds=Array.isArray(value.favoriteIds)?[...new Set(value.favoriteIds.filter(id=>templates.some(t=>t.id===id)))]:[];
+  const shopping=sanitizeShoppingStorage(value.shopping,active,history,templates);
+  return {active,templates,history,favoriteIds,shopping,draft:{pizzas,date,earliest,unavailable:d.unavailable.map(x=>({start:x.start,end:x.end})),cleanup:d.cleanup,split:{...d.split},fold:d.fold==='second'?'second':'first'}};
 }
 function validateEveningBackup(file){
   if(!file||file.format!=='pizza-private-backup'||file.version!==1||!Number.isFinite(file.createdAt)||file.createdAt<0)return null;
-  const d=file.state;if(!d||d.version!==SAVE_VERSION||!['dough','sauce','full'].includes(d.appMode)||!['basic','full'].includes(d.experienceMode)||!['nl','en'].includes(d.currentLang))return null;
+  const d=file.state;if(!d||![53,SAVE_VERSION].includes(d.version)||!['dough','sauce','full'].includes(d.appMode)||!['basic','full'].includes(d.experienceMode)||!['nl','en'].includes(d.currentLang))return null;
   const fields=Object.fromEntries(WorkflowCore.FIELD_IDS.map(id=>[id,d[id]])),checks=Object.fromEntries(WorkflowCore.CHECK_FIELDS.map(id=>[id,d[id]]));
   if(!WorkflowCore.recipe({fields,checks,method:d.currentMethod,preset:d.preset,exact:d.exactOverride}))return null;
   const next=sanitizeEvenings(d.evenings);if(!next)return null;
@@ -123,7 +162,7 @@ function validateEveningBackup(file){
   if(!d.workshop||!Array.isArray(d.workshop.recipes)||!Array.isArray(d.workshop.profiles)||!Array.isArray(d.bakeLog)||w.recipes.length!==d.workshop.recipes.length||w.profiles.length!==d.workshop.profiles.length||sanitizeBakeLog(d.bakeLog).length!==d.bakeLog.length)return null;
   if(!Array.isArray(d.pizzaSelections)||d.pizzaSelections.length!==Number(d.pizzas)||d.pizzaSelections.some(id=>!pizzaRecipes.some(r=>r.id===id))||!Array.isArray(d.pizzaCustomizations)||d.pizzaCustomizations.length!==d.pizzaSelections.length)return null;
   if(!sauces[d.sauceType])return null;
-  return {...WorkflowCore.clone(d),evenings:next,workshop:w};
+  return {...WorkflowCore.clone(d),version:SAVE_VERSION,evenings:next,workshop:w};
 }
 function restoreEveningBackup(candidate){
   if(!_storageWriter)throw new Error('storage');
@@ -210,7 +249,7 @@ function loadState(provided=null){
       else if((SAVE_IDS.includes(k)||k==='preset')&&$(k))$(k).value=v;
     });
 
-    if(Number(d.version)===SAVE_VERSION){
+    if(Number(d.version)>=53&&Number(d.version)<=SAVE_VERSION){
       const restored=sanitizeEvenings(d.evenings);
       if(!restored){_storageCorrupt=true;eveningNotice=L('Een opgeslagen avond is ongeldig. De oorspronkelijke gegevens zijn behouden; herstel een geldige back-up.','A saved evening is invalid. Original data is preserved; restore a valid backup.');}
       else{evenings=restored;bindEveningRun();if(activeEvening())projectEveningPizzas(activeEvening().pizzas);}
@@ -248,7 +287,7 @@ function loadState(provided=null){
     pizzaCustomizations.forEach(cu=>{
       if(cu&&typeof cu==='object'&&cu.sauceOverride&&!sauces[cu.sauceOverride])cu.sauceOverride=null;
     });
-    if(Number(d.version)<SAVE_VERSION){
+    if(Number(d.version)<53){
       ensurePizzaCustomizations();syncEveningPizzas(calc());
       const legacy=workshop.batch,zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
       if(legacy){
@@ -262,7 +301,7 @@ function loadState(provided=null){
     document.querySelectorAll('.method').forEach(b=>{const active=b.dataset.method===currentMethod;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
     // Oude versiesleutels opruimen zodat ze niet jaren later terugkomen.
     // Keep the last valid legacy copy if writing the migrated state fails.
-    const droppedLegacyData=Number(d.version)<SAVE_VERSION&&d.workshop&&(
+    const droppedLegacyData=Number(d.version)<53&&d.workshop&&(
       (d.workshop.batch&&!workshop.batch)||
       (Array.isArray(d.workshop.history)&&d.workshop.history.length!==workshop.history.length)||
       (Array.isArray(d.workshop.recipes)&&d.workshop.recipes.length!==workshop.recipes.length)||
@@ -383,6 +422,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
   wirePanelInteractions();
   wireWorkshopEvents();
   wireEveningEvents();
+  wireShoppingEvents();
+  wireDoughLinkEvents();
 
   const wizardNav=$('stepsNav');
   if(wizardNav){
@@ -401,6 +442,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // Herladen tijdens het bakken bracht je altijd terug naar het keuzescherm.
   if(restored && _restoredWizardPage>0 && wizardPages().includes(_restoredWizardPage)) showPage(_restoredWizardPage);
   else showPage(1);
+  initIncomingDoughLink();
   initI18n();
   showStorageOwnership();
   refreshBakeDayClock();

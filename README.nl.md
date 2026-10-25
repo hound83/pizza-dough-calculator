@@ -4,8 +4,8 @@
 
 > `README.md` is de canonieke ontwikkelversie. Deze Nederlandse README houdt dezelfde inhoudelijke scope en structuur aan.
 
-[![Versie](https://img.shields.io/badge/versie-v2.0.1-f0b45a)](docs/V2_0_1_KITCHEN_REVIEW.md)
-[![Tests](https://img.shields.io/badge/regressietests-106_tests-76c990)](tests/test_v50.js)
+[![Versie](https://img.shields.io/badge/versie-v2.1.0-f0b45a)](docs/V2_1_0_RELEASE.md)
+[![Tests](https://img.shields.io/badge/regressietests-108_tests-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-statische_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Talen](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#taal-privacy-en-opslag)
 
@@ -13,9 +13,9 @@ Een uitgebreide, Nederlandstalige én Engelstalige calculator voor pizzadeeg, fe
 
 De GitHub Pages-website is voortaan de officiële gebruiksversie. Een losse, downloadbare HTML-versie wordt niet meer aangeboden. De kleine root-`index.html` laadt de onderhoudbare CSS- en JavaScriptbestanden vanuit `src/`; er is geen framework of backend nodig.
 
-**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v2.0.0-releasenotities](docs/V2_0_0_RELEASE.md)
+**[Open de live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Lees de v2.1.0-releasenotities](docs/V2_1_0_RELEASE.md)
 
-> **v2.0.1-keukenrelease.** De losse afvinkstappen zijn weer direct zichtbaar en de vormgeving van Keuken is verbeterd. Tag v1.0.0 en alle eerdere baselines blijven behouden. Schema 53 migreert bestaande gegevens uit schema 52.
+> **v2.1.0 — delen en herhalen.** Deel een deegrecept via een gecontroleerde link, vink boodschappen voor deeg/saus/toppings af, voeg zelf boodschappen met hoeveelheden toe en markeer avondsjablonen als favoriet. Schema 54 migreert schema 53 zonder opgeslagen avonden te verwijderen. Eerdere releasebaselines blijven ongewijzigd.
 
 **Nieuw in v2:** vrij wisselen tussen Plan en Keuken, plannen rond beschikbaarheid, verdelen over aparte mixerbeurten, een bakvolgorde met echte in-/uithaaltijden, gerichte deeghulp en complete avondsjablonen plus privéback-ups. De versieweergave, dynamische weekdagen en eerdere verbeteringen blijven behouden. [Implementatie en review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
@@ -48,6 +48,8 @@ Belangrijkste mogelijkheden:
 - per deegbol een eigen recept, sausvariant, pizzastijl en toppingaanpassing;
 - toppings automatisch schalen op basis van het pizza-oppervlak;
 - gecombineerde sausberekening, ingrediëntenoverzicht en boodschappenhoeveelheden;
+- afvinkbare boodschappen voor deeg, saus en toppings, handmatige producten met hoeveelheden en signalering bij gewijzigde hoeveelheden;
+- links om alleen het deegrecept te delen en favoriete avondsjablonen om snel te herhalen;
 - planning terugrekenen vanaf een gewenste bakdag en baktijd;
 - afvinkbaar stappenplan, printweergave en kopieerbare recepten;
 - optionele live temperatuurmetingen en een lokaal deeglogboek;
@@ -81,6 +83,8 @@ Dit is bewust **geen gevalideerd laboratoriummodel** en ook geen officiële AVPN
 - Er is geen account of backend nodig; gebruik de website.
 - Recepten, avonden, voortgang en het deeglogboek blijven in je browser. Eén tabblad kan tegelijk opslaan; sluit dat tabblad en herlaad een ander om verder te gaan. Als vergrendeling of opslag ontbreekt, meldt de app dat opslaan niet lukt.
 - Deelbare avondsjablonen bevatten geen privénamen of echte geschiedenis. Privéback-ups bevatten die wel en vragen bevestiging voor het vervangen van lokale gegevens; het zijn momentopnamen, geen synchronisatie.
+- Deegreceptlinks plaatsen de instellingen in het URL-fragment, zonder toppings, namen, datums of bakgeschiedenis; de ontvanger ziet eerst een voorbeeld en moet laden bevestigen.
+- Boodschappenvinkjes en eigen boodschappen horen bij het huidige plan of de actieve avond. Bij het herhalen van een favoriet beginnen de vinkjes opnieuw leeg.
 - De app verstuurt geen recept- of logboekgegevens naar een backend.
 - `Reset` wist de lokaal opgeslagen calculatorstate; de taalkeuze blijft behouden.
 
@@ -140,9 +144,9 @@ Releasecontroles (zie de Actions-uitslag bij de PR voor de uitvoerstatus):
 ```text
 15 refactor-structure tests
 31 pure-core tests
-106 website-entry regression tests
-106 source regression tests
-139 Chromium browser/layout tests
+108 website-entry regression tests
+108 source regression tests
+149 Chromium browser/layout tests (inclusief tien nieuwe v2.1-controles)
 ```
 
 De suite controleert onder meer:
@@ -158,7 +162,7 @@ De suite controleert onder meer:
 - sausaggregatie, boodschappenhoeveelheden en kopieerbare uitvoer;
 - render-smokes over talen, modi en deegstijlen.
 
-De structuurtest controleert daarnaast de achttien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, actualiteit van de website-entry, verwijzingen naar assets, historische release- en kandidaat-hashes en reconstructie van de oude v2.0.1-single-file-basislijn in het geheugen. Playwright opent zowel de gepubliceerde website-entry als de bron-entry op 320, 390, 430, 760, 1024 en 1280 px en controleert foutloos laden en horizontale passing. Gerichte browsertests bewaken ook de tweetalige tekst voor hoofd- en reservewater, koud kraanwater versus ijswater, routecorrecte waarschuwingen voor heet water, beide ingeklapte en gegroepeerde sausoverride-oppervlakken en toetsenbordbediening. De telefoontests beschermen de schermvullende receptenlijst met één paneel, bewust zoekfocusgedrag, filterscrollen, navigatie van receptenlijst naar aanpassen en het klik-versus-hover-selectiecontract. Chromium bedient bovendien de praktische percentagevelden echt met ArrowUp en ArrowDown.
+De structuurtest controleert de achttien vaste modulegrenzen, scriptvolgorde, unieke HTML-id's, inline-handlercontracten, één eigenaar voor opslag/bootstrap, actualiteit van de website-entry, verwijzingen naar assets, historische release- en kandidaat-hashes en reconstructie van de huidige modules in het geheugen. Playwright opent website- en bron-entry op 320, 390, 430, 760, 1024 en 1280 px en controleert laadfouten en horizontale passing. Gerichte browsertests beschermen de tweetalige adviezen, mobiele receptenlijst, toetsenbordbediening, deegreceptlinks, boodschappen, herhalen van favorieten en de migratie van schema 53. De oude v2.0.1-single-file-hash blijft vastgelegd als historische releasebaseline; nieuwe v2.1-code hoort daarmee niet identiek te zijn.
 
 Gebruik bij wijzigingen aan de modulaire broncode deze commando's:
 
@@ -181,6 +185,7 @@ Vanaf de eerste golden release gebruikt het project semantic versioning:
 | **v1.2.1** | Achterwaarts compatibele opschoning van vertalingen, receptdata en sauskeuze |
 | **v1.4.0** | Batchregistratie, receptprofielen, praktische keukenhulpen en de verbeterde 1.3-planning |
 | **v2.0.0** | Geïntegreerde Plan/Keuken-workflow, aparte mixerbeurten, bakvolgorde en schema-53-migratie |
+| **v2.1.0** | Alleen deegrecept delen, afvinkbare boodschappen met handmatige hoeveelheden en favoriete avonden |
 
 Historische werknummers zoals v50 blijven waar nodig zichtbaar in opslagmigraties, testbestanden en auditdocumenten. Ze worden niet langer als publieke productversie doorgeteld.
 
@@ -209,10 +214,10 @@ De root-`index.html` bedient de website, maar is geen losse offline-editie meer.
 
 ## Status en roadmap
 
-- **Huidige release:** [v2.0.1-keukenwerkblad](docs/V2_0_1_KITCHEN_REVIEW.md); tag v1.0.0 en alle eerdere baselines blijven behouden.
+- **Huidige versie:** [v2.1.0 plannen, delen en boodschappen](docs/V2_1_0_RELEASE.md); tag v1.0.0 en alle eerdere baselines blijven behouden.
 - **Architectuur:** GitHub Pages levert een statische website-entry en achttien onderhoudbare JavaScriptmodules; geen losse HTML-download meer.
 - **Review:** beide onafhankelijke v2-crosschecks, verwerkte bevindingen en testresultaten staan gelinkt in [de releasenotities](docs/V2_0_0_RELEASE.md).
-- **Inbegrepen:** alle zes verbeteringen voor de pizza-avond, schema-53-migratie, dynamische weekdagen en de bestaande workshop- en rekenafspraken.
+- **Inbegrepen:** eerdere pizza-avondfunctionaliteit plus deegreceptlinks, afvinkbare boodschappen in Plan en Keuken, handmatige producten en favorieten. Schema 54 behoudt de bestaande berekeningsafspraken.
 - **Geparkeerd:** appontwikkeling en de drie voorgestelde onderzoeken naar het fysieke model.
 - **Feedback:** anonieme feedback/Cloudflare blijft afzonderlijk werk; PR #12 zit niet in deze release.
 

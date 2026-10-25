@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v2.0.1</title>
+<title>Pizzadeegcalculator v2.1.0</title>
 <link href="src/assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
@@ -72,6 +72,10 @@
 <p class="experience-note" id="experienceNote">Basis gebruikt betrouwbare presetwaarden en houdt de technische instellingen uit beeld. Wisselen verandert je recept niet.</p>
 
 <div class="card evening-plan" id="eveningPlan"></div>
+<div class="plan-share"><button class="btn secondary" type="button" id="shareDoughButton">Deegrecept delen / Share dough recipe</button></div>
+<div class="card" id="favoriteQuickPanel"></div>
+<div class="card" id="recipeLinkPanel"></div>
+<details class="card shopping-plan" id="shoppingPlanCard"><summary id="shoppingPlanHeading">Boodschappenlijst · deeg, saus en toppings</summary><div id="shoppingPlan"></div></details>
 <div class="grid">
 <div>
 <div class="card">
@@ -456,7 +460,7 @@
 <div class="timeline" id="timeline"></div>
 </div>
 <div class="card kitchen-oven"><h2>Oven</h2><div id="ovenCard"></div></div>
-<details class="card kitchen-reference mode-sauce" id="shoppingCard"><summary id="shoppingHeading">Ingrediënten voor de pizza's</summary><div id="shoppingList"></div></details>
+<details class="card kitchen-reference" id="shoppingCard"><summary id="shoppingHeading">Boodschappenlijst</summary><div id="shoppingList"></div></details>
 <div class="card kitchen-help"><div class="workshop-panel" id="doughHelp"></div></div>
 <details class="card kitchen-reference" id="kitchenInstructions"><summary id="instructionsSummary">Tijden aanpassen en logboek</summary><div class="workshop-panel batch-runner" id="batchRunner"></div>
 <div class="card">

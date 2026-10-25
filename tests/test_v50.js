@@ -1,6 +1,7 @@
 const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
+const {TextEncoder,TextDecoder}=require('util');
 
 const requestedCalculator=process.argv[2]?path.resolve(process.cwd(),process.argv[2]):null;
 const calculatorPath=[
@@ -93,6 +94,7 @@ const document={
 };
 const ctx={
   console,document,localStorage:storage,
+  TextEncoder,TextDecoder,btoa,atob,location:{origin:'https://example.test',pathname:'/pizza/',hash:'',search:''},history:{state:null,replaceState(){}},
   navigator:{clipboard:{writeText:async()=>{}}},
   window:{addEventListener(){},scrollTo(){},confirm(){return true;},setTimeout,clearTimeout,isSecureContext:true},
   alert(){},confirm(){return true;},MutationObserver:class{observe(){} disconnect(){}},
@@ -172,12 +174,30 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('v2.0.1 release uses schema 53 with v52 migration',()=>{
+test('v2.1 release uses schema 54 with v53 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='2.0.1'&&x.key==='pizzaCalcV53'&&x.version===53&&x.legacy==='pizzaCalcV52',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v2.0.1'&&x.titleEn==='Pizza dough calculator v2.0.1',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v2.0.1')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v2.0.1</title>'),'static document title is not v2.0.1');
+  assert(x.app==='2.1.0'&&x.key==='pizzaCalcV54'&&x.version===54&&x.legacy==='pizzaCalcV53',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v2.1.0'&&x.titleEn==='Pizza dough calculator v2.1.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v2.1.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v2.1.0</title>'),'static document title is not v2.1.0');
+});
+
+test('v2.1 share link round-trips exactly the validated dough contract, never pizza data',()=>{
+  defaults();
+  const x=run(`(()=>{const payload=WorkflowCore.exportRecipe('Pizza dough',snapshotRecipe());const link=encodeDoughLink(payload);const decoded=decodeDoughLink(link);return {fields:decoded.recipe.fields,method:decoded.recipe.method,format:payload.format,json:JSON.stringify(payload),invalid:decodeDoughLink('invalid!'),long:decodeDoughLink('a'.repeat(12001))};})()`);
+  assert(x.fields.pizzas==='4'&&x.method==='kitchenaid'&&x.format==='pizza-dough-recipe',JSON.stringify(x));
+  assert(!x.json.includes('pizzaSelections')&&!x.json.includes('notes')&&!x.json.includes('bakeLog'),x.json);
+  assert(x.invalid===null&&x.long===null,'Untrusted links must be rejected.');
+});
+
+test('v2.1 shopping derives dough/sauce/toppings with numeric sauce ingredients and manual validation',()=>{
+  defaults();
+  const x=run(`(()=>{appMode='full';$('pizzas').value='4';pizzaSelections=Array(4).fill('marinara');pizzaCustomizations=[];const rows=deriveShoppingRows(calc());const lookup=name=>rows.find(row=>row.name===name);const sauce=aggregateSauceNeeds(calc());return {dough:lookup('Pizzabloem')?.qty,tomatoes:lookup('Tomaten voor saus')?.qty,evoo:lookup('EVOO')?.qty,garlic:lookup('Knoflook')?.qty,groups:[...new Set(rows.map(row=>row.group))],sauceItems:sauce.groups[0].ingredients.length};})()`);
+  assert(x.dough>0&&x.tomatoes===400&&x.evoo>16&&x.garlic>=1,JSON.stringify(x));
+  assert(JSON.stringify(x.groups)===JSON.stringify(['dough','sauce']),'Marinara has no non-sauce toppings except combined EVOO.');
+  assert(x.sauceItems===5,JSON.stringify(x));
+  const sanitized=run(`sanitizeShoppingState({checked:{'Pizzabloem|g':{signature:'500',checked:true}},manual:[{id:'w-test',name:'Drankjes',quantity:2,unit:'l',checked:true},{id:'x',name:'Hack',quantity:-3,unit:'st',checked:true}]})`);
+  assert(sanitized.manual.length===1&&sanitized.manual[0].name==='Drankjes'&&sanitized.checked['Pizzabloem|g'].checked,JSON.stringify(sanitized));
 });
 
 test('standard preset uses a 30 cm peel-friendly default and practical percentage steps',()=>{
@@ -197,7 +217,7 @@ test('30 cm default does not overwrite an existing saved 32 cm recipe',()=>{
   storage.data.set('pizzaCalcV51',JSON.stringify({version:51,preset:'kodaNight',diameter:'32'}));
   const x=run(`(()=>{const loaded=loadState();return {loaded,preset:$('preset').value,diameter:$('diameter').value,saved:JSON.parse(SAFE.get(SAVE_KEY))};})()`);
   assert(x.loaded&&x.preset==='kodaNight'&&x.diameter==='32',JSON.stringify(x));
-  assert(x.saved.version===53&&x.saved.diameter==='32',JSON.stringify(x.saved));
+  assert(x.saved.version===54&&x.saved.diameter==='32',JSON.stringify(x.saved));
   storage.data.clear();
   defaults();
 });
@@ -341,10 +361,10 @@ test('empty measurement fields remain null after sanitizing and reload logic',()
   assert(x.water===null&&x.dough===null&&x.fridge===null&&x.ddt===null&&x.stats.count===0&&x.stats.median===null,JSON.stringify(x));
 });
 
-test('v49 state migrates through the legacy chain to v53 and keeps live/log data',()=>{
+test('v49 state migrates through the legacy chain to v54 and keeps live/log data',()=>{
   storage.data.clear();
   storage.data.set('pizzaCalcV49',JSON.stringify({version:49,pizzas:'999',hydration:'99',fridgeTemp:'14',currentMethod:'kenwood',liveMeasurements:{doughTemp:25,fridgeTemp:5},bakeLog:[{ts:123456,method:'kenwood',preset:'kodaNight',fridgePlanned:4,ddtCorrection:12}]}));
-  const x=run(`(()=>{const ok=loadState();return {ok,pizzas:$('pizzas').value,hydration:$('hydration').value,plannedFridge:$('fridgeTemp').value,method:currentMethod,dough:liveMeasurements.doughTemp,fridge:liveMeasurements.fridgeTemp,loggedFridge:bakeLog[0]?.fridgePlanned,old:SAFE.get('pizzaCalcV49'),fresh:!!SAFE.get('pizzaCalcV53')};})()`);
+  const x=run(`(()=>{const ok=loadState();return {ok,pizzas:$('pizzas').value,hydration:$('hydration').value,plannedFridge:$('fridgeTemp').value,method:currentMethod,dough:liveMeasurements.doughTemp,fridge:liveMeasurements.fridgeTemp,loggedFridge:bakeLog[0]?.fridgePlanned,old:SAFE.get('pizzaCalcV49'),fresh:!!SAFE.get('pizzaCalcV54')};})()`);
   assert(x.ok&&x.pizzas==='24'&&x.hydration==='85'&&x.plannedFridge==='14'&&x.method==='kenwood'&&x.dough===25&&x.fridge===5&&x.loggedFridge===4&&x.old===null&&x.fresh,JSON.stringify(x));
 });
 
@@ -472,7 +492,7 @@ test('stored blank required fields recover before they can be persisted again',(
   defaults();
   storage.data.clear();
   storage.data.set('pizzaCalcV49',JSON.stringify({version:49,hydration:'',saltPct:'',yeastPct:'',bulkHours:'',finalDoughTemp:'',flourW:'',saucePerPizza:''}));
-  const x=run(`(()=>{const ok=loadState();return {ok,hydration:$('hydration').value,salt:$('saltPct').value,yeast:$('yeastPct').value,bulk:$('bulkHours').value,dough:$('finalDoughTemp').value,w:$('flourW').value,sauce:$('saucePerPizza').value,saved:JSON.parse(SAFE.get('pizzaCalcV53'))};})()`);
+  const x=run(`(()=>{const ok=loadState();return {ok,hydration:$('hydration').value,salt:$('saltPct').value,yeast:$('yeastPct').value,bulk:$('bulkHours').value,dough:$('finalDoughTemp').value,w:$('flourW').value,sauce:$('saucePerPizza').value,saved:JSON.parse(SAFE.get('pizzaCalcV54'))};})()`);
   assert(x.ok&&x.hydration==='63'&&x.salt==='3'&&x.yeast==='0.17'&&x.bulk==='1',JSON.stringify(x));
   assert(x.dough===''&&x.w===''&&x.sauce===''&&x.saved.hydration==='63'&&x.saved.yeastPct==='0.17',JSON.stringify(x));
 });
@@ -625,7 +645,7 @@ test('English recipe names and Marinara composition preserve distinct sauce and 
   assert(JSON.stringify(x.recipeItems)===JSON.stringify([['EVOO',5,'g']]),`Unexpected Marinara finishing layer: ${JSON.stringify(x.recipeItems)}`);
   assert(x.sauceItems.Knoflook==='2 clove(s)'&&x.sauceItems['Gedroogde oregano']==='0.6 g'&&x.sauceItems.EVOO==='4.8 g',JSON.stringify(x.sauceItems));
   assert(x.madeSauceItems.Knoflook==='2 clove(s)'&&x.madeSauceItems['Gedroogde oregano']==='0.6 g'&&x.madeSauceItems.EVOO==='4.4 g',JSON.stringify(x.madeSauceItems));
-  assert(x.shoppingHtml.includes('<span>↳ EVOO</span><span>4.4 g</span>')&&x.shoppingHtml.includes('<span>EVOO</span><span>16 g</span>'),x.shoppingHtml);
+  assert(x.shoppingHtml.includes('EVOO')&&x.shoppingHtml.includes('20 g'),x.shoppingHtml);
   assert(x.note.toLowerCase().includes('garlic and oregano')&&x.note.includes('additional EVOO'),x.note);
 });
 
@@ -1164,7 +1184,7 @@ test('saved plan summaries equal the calculator for every preset, mixer and weig
 
 test('schema 51 migration preserves the legacy backup when the new storage write fails',()=>{
   defaults();storage.data.clear();storage.data.set('pizzaCalcV51',JSON.stringify({version:51,preset:'kodaNight',diameter:'32'}));
-  const x=run(`(()=>{const original=SAFE.set;SAFE.set=()=>false;const loaded=loadState();SAFE.set=original;return {loaded,old:!!SAFE.get('pizzaCalcV51'),fresh:SAFE.get('pizzaCalcV53')};})()`);
+  const x=run(`(()=>{const original=SAFE.set;SAFE.set=()=>false;const loaded=loadState();SAFE.set=original;return {loaded,old:!!SAFE.get('pizzaCalcV51'),fresh:SAFE.get('pizzaCalcV54')};})()`);
   assert(x.loaded&&x.old&&x.fresh===null,JSON.stringify(x));storage.data.clear();
 });
 

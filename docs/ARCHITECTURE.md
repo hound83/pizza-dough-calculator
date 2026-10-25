@@ -25,7 +25,7 @@ src/index.html + src/assets/css/app.css + src/assets/js/*.js
             index.html + linked src/assets/
 ```
 
-`npm run check:bundle` fails if the committed website entry differs from a fresh source reconstruction. `buildBundle()` remains available only in test code to reconstruct the historical self-contained v2.0.1 artifact in memory and verify its immutable hash. No standalone artifact is written to disk.
+`npm run check:bundle` fails if the committed website entry differs from a fresh source reconstruction. `buildBundle()` remains available in test code to reconstruct the **current** modules in memory and verify that the JavaScript still parses. The self-contained v2.0.1 release hash is archived as historical evidence; a new feature release is not expected to reproduce it. No standalone artifact is written to disk.
 
 ## Load order and responsibilities
 
@@ -42,13 +42,13 @@ src/index.html + src/assets/css/app.css + src/assets/js/*.js
 | 9 | `dough-fermentation.js` | Calculator adapter, yeast advice, presets and main update cycle |
 | 10 | `sauce-recipes.js` | Sauce aggregation, recipe summaries and kneading instructions |
 | 11 | `fermentation-live.js` | DDT, untracked live solver, measurement controls and workflow steps |
-| 12 | `planning-shopping.js` | Calendar planning, shared timeline, shopping and oven advice |
+| 12 | `planning-shopping.js` | Calendar planning, shared timeline, grouped shopping with purchase states, and oven advice |
 | 13 | `navigation-logbook.js` | Wizard modes and bake-log observations |
 | 14 | `batch-workflow.js` | Frozen recipes, actual batch lifecycle, checkpoint/timing presentation and event delegation |
-| 15 | `workshop-tools.js` | Named recipes, comparison, scale/container controls, equipment profiles and symptom guidance |
+| 15 | `workshop-tools.js` | Named recipes, dough-only recipe links, comparison, scale/container controls, equipment profiles and symptom guidance |
 | 16 | `evening-workflow.js` | Current kitchen phase, linked actual events, run selection, oven queue, absolute timers and calendar |
-| 17 | `evening-planning.js` | Plan overview, optional availability/splitting, templates, import preview and explicit replacement choices |
-| 18 | `persistence-bootstrap.js` | Schema-53 persistence, migration, event registration and sole bootstrap |
+| 17 | `evening-planning.js` | Plan overview, optional availability/splitting, favorited templates, import preview and explicit replacement choices |
+| 18 | `persistence-bootstrap.js` | Schema-54 persistence, migration, event registration and sole bootstrap |
 
 The order is a contract: later modules may use functions and state from earlier modules. Function declarations may also call later-loaded functions after user interaction, because all eighteen scripts have loaded before the user can operate the application.
 
@@ -73,11 +73,11 @@ The order is a contract: later modules may use functions and state from earlier 
 | v1.0.0 CSS | `262e12b5356f5a50c63aa7cd7249b3c5c8b101d8954f076de1360efbc222b896` |
 | v1.0.0 JavaScript | `2897bfe7eda16d93c872d49f4dc8256f99549defe1927688903009f2a98483e7` |
 
-The published website entry is no longer a self-contained file. The test reconstructs the previously released v2.0.1 standalone artifact in memory from the unchanged source and checks its historical hash. It preserves all earlier release and candidate baselines, and validates JavaScript parsing, module order, unique HTML IDs, inline handlers, persistence/bootstrap ownership, asset references and the committed website entry.
+The published website entry is no longer a self-contained file. The structure test rebuilds the **current** v2.1 modules in memory, documents historical baselines without modifying them, and validates JavaScript parsing, module order, unique HTML IDs, inline handlers, persistence/bootstrap ownership, asset references and the committed website entry.
 
-`tests/test_v50.js` runs all 106 functional regressions against both the source entry and the generated website entry. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, the separate 30-minute cold-autolyse and 20-minute hydration-rest paths, the full hand/machine preparation-time matrix, exact two-minute KitchenAid speed-2 stage, rested-windowpane recovery without extra machine time, and displayed reserve-water portions that exactly sum to the displayed total. v1.2 calculation coverage adds the heat-capacity equilibrium, exact thermal stage order, shared rest constants, eight approved nominal outputs, affine prediction, room-temperature slope pins, honest unattainable metadata, bilingual main/reserved-water guidance, route-correct hot-water warnings, and a 1,920-case normal-kitchen DDT matrix. Basic-mode coverage distinguishes ordinary recipe inputs from intentional technical overrides. Patch coverage also protects the 30 cm / 220 g default without overwriting a saved 32 cm recipe, percentage spinner grids including the first off-grid preset snap, localized count grammar including rounded English hour labels, shared dough-ball-weight formatting, the repaired translation set, Marinara's distinct sauce and 5 g finishing-EVOO layers without duplicated garlic or oregano, and the complete two-group sauce-choice partition.
+`tests/test_v50.js` runs all 108 functional regressions against both the source entry and the generated website entry. Mixer-specific coverage protects the bilingual staged KitchenAid and Kenwood guidance, the separate 30-minute cold-autolyse and 20-minute hydration-rest paths, the full hand/machine preparation-time matrix, exact two-minute KitchenAid speed-2 stage, rested-windowpane recovery without extra machine time, and displayed reserve-water portions that exactly sum to the displayed total. v1.2 calculation coverage adds the heat-capacity equilibrium, exact thermal stage order, shared rest constants, eight approved nominal outputs, affine prediction, room-temperature slope pins, honest unattainable metadata, bilingual main/reserved-water guidance, route-correct hot-water warnings, and a 1,920-case normal-kitchen DDT matrix. Basic-mode coverage distinguishes ordinary recipe inputs from intentional technical overrides. v2.1 adds validated dough-only URL roundtrips, grouped shopping quantities, and schema-54 migration coverage without modifying numerical inputs or physical constants.
 
-`tests/browser/refactor.spec.js` and `tests/browser/workshop.spec.js` run Chromium checks. One infrastructure contract protects the implicit `/favicon.ico` request made by full Chromium. The remaining checks cover the generated website entry and modular source: six viewport widths (320, 390, 430, 760, 1024, and 1280 px) verify initialization, page/console/request failures, and horizontal fit, while focused checks protect the Basic/Full contract, ordinary Basic input, explicit yeast-advice application, persistence, migration, real ArrowUp/ArrowDown percentage grids without loss of manually typed precision, bilingual main/reserved-water output, cold-tap versus ice-water guidance, route-correct hot-water warnings, both native collapsed sauce-disclosure surfaces, and keyboard activation of the summary and sauce choice. The spinner test starts from the untouched 0.17% default yeast value, verifies the browser's first alignment to 0.175%, and then verifies the full 0.025-point step to 0.2%. The three phone sizes additionally protect the full-height single-pane recipe catalogue, non-autofocused search, the horizontally scrollable filter row, the catalogue-to-customization transition, back navigation, modal fit, and explicit click selection that cannot be changed by hover.
+The Chromium suite covers both the generated website entry and the modular source at six viewport widths (320, 390, 430, 760, 1024, and 1280 px), native controls, focus/keyboard behavior, bilingual guidance, archive workflows and mobile catalogue navigation. `tests/browser/v21.spec.js` adds ten focused checks (five scenarios against each entry) for share-link confirmation, malformed URLs, live shopping quantities, manually added items, favorite replay and schema-53 migration.
 
 Playwright is a development-only dependency. It is not loaded by the application or required by GitHub Pages visitors. An offline single-file edition is no longer supported.
 

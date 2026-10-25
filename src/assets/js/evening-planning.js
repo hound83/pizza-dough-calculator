@@ -30,13 +30,20 @@ function templateResolutionHtml(){
 function eveningArchiveHtml(e){
   return `<details class="evening-archive"><summary>${L('Momenten en metingen bekijken','View checkpoints and readings')}</summary><p>${L('Geplande bakstart','Planned bake start')}: ${niceDate(new Date(e.bakeAt))}</p>${e.runs.map((r,i)=>r.batch?`<h4>${L('Beurt','Run')} ${i+1} · ${r.balls} ${L('bollen','balls')}</h4>${WorkflowCore.eventKeys(r.batch.route).map(key=>`<div class="checkpoint-row"><span>${batchEventName(key)}<small>${r.batch.events[key]!=null?niceDate(new Date(r.batch.events[key])):WorkflowCore.eventDone(r.batch,key)?L('Gedaan, tijd onbekend','Done, time unknown'):L('Niet geregistreerd','Not recorded')}</small></span></div>`).join('')}<p>${L('Gemeten na kneden','Measured after kneading')}: ${r.batch.measurements.doughTemp==null?'—':fmt(r.batch.measurements.doughTemp,1)+' °C'} · ${L('Gemeten koelkast','Measured fridge')}: ${r.batch.measurements.fridgeTemp==null?'—':fmt(r.batch.measurements.fridgeTemp,1)+' °C'}</p>`:`<p>${L('Beurt','Run')} ${i+1}: ${L('Niet gestart','Not started')}</p>`).join('')}</details>`;
 }
+function renderFavoriteShortcuts(){
+  const panel=$('favoriteQuickPanel');if(!panel)return;
+  const favorites=evenings.templates.filter(t=>evenings.favoriteIds.includes(t.id));
+  panel.classList.toggle('hidden',favorites.length===0);
+  if(!favorites.length)return;
+  eveningPanel('favoriteQuickPanel',`<h2>★ ${L('Favoriete pizza-avonden','Favorite pizza evenings')}</h2><p class="hint">${L('Start snel een nieuwe planning met dezelfde pizza’s, sauzen en extra boodschappen. Datums, metingen en vinkjes beginnen opnieuw.','Quickly start a new plan with the same pizzas, sauces and extra shopping items. Dates, readings and checkmarks start fresh.')}</p><div class="favorite-quick-list">${favorites.slice(0,3).map(t=>eveningButton('load-template',t.name,`data-id="${esc(t.id)}" ${activeEvening()?'disabled':''}`)).join('')}</div>`);
+}
 function renderEveningCollection(){
   const templates=evenings.templates,history=evenings.history;
   const sharePreview=eveningShare?`<div class="restore-preview" id="eveningSharePreview"><h3>${L('Dit ga je delen','What you will share')}</h3><p>${L('Deegrecept, sauzen, toppings, volgorde, verdeling en materiaal. Namen, programmanotities, datums, metingen en werkelijke geschiedenis zijn weggelaten.','Dough recipe, sauces, toppings, order, allocation and equipment. Names, programme notes, dates, readings and actual history are omitted.')}</p><ol>${eveningShare.template.pizzas.map(p=>`<li>${esc(currentLang==='en'?p.snapshot.nameEn:p.snapshot.name)}</li>`).join('')}</ol><details><summary>${L('Volledige bestandsinhoud','Full file contents')}</summary><pre class="share-file-content">${esc(JSON.stringify(eveningShare,null,2))}</pre></details><div class="btnrow">${eveningButton('download-shared',L('Bestand downloaden','Download file'))}${eveningButton('cancel-share',L('Annuleren','Cancel'),'','ghost')}</div></div>`:'';
   const preview=eveningImport?`<div class="restore-preview"><h3>${eveningImport.kind==='backup'?L('Back-up herstellen','Restore backup'):L('Avondsjabloon toevoegen','Add evening template')}</h3><p>${esc(eveningImport.description)}</p>${eveningImport.kind==='backup'?`<p class="warning">${L('Dit vervangt alle lokale gegevens, ook een lopende avond. Download eventueel eerst je huidige back-up.','This replaces all local data, including a running evening. Download your current backup first if needed.')}</p>${eveningButton('backup',L('Huidige back-up downloaden','Download current backup'))}`:''}${eveningButton('confirm-import',L('Herstellen bevestigen','Confirm restore'))}${eveningButton('cancel-import',L('Annuleren','Cancel'),'','ghost')}</div>`:'';
-  eveningPanel('eveningCollection',`<details id="eveningCollectionDetails"><summary>${L('Avonden bewaren, herhalen en overzetten','Save, repeat and transfer evenings')}</summary>${eveningField('eveningTemplateName',L('Naam voor deze avond','Name for this evening'),workshopDrafts.eveningTemplateName||'')}<div class="btnrow">${eveningButton('save-template',L('Als avondsjabloon bewaren','Save as evening template'))}${eveningButton('share-template',L('Avond delen (.json)','Share evening (.json)'))}</div><p class="hint">${L('Een sjabloon bewaart het recept, toppings, volgorde en materiaal. Nieuwe avonden beginnen zonder datum, metingen of voortgang. Gedeelde bestanden bevatten geen namen of privégeschiedenis.','A template keeps the recipe, toppings, order and equipment. New evenings start without a date, readings or progress. Shared files contain no names or private history.')}</p>${templates.map(t=>`<div class="collection-row"><b>${esc(t.name)}</b><div>${eveningButton('load-template',L('Opnieuw maken','Make again'),`data-id="${esc(t.id)}" ${activeEvening()?'disabled':''}`)}${eveningButton('delete-template',L('Verwijderen','Delete'),`data-id="${esc(t.id)}"`,'ghost')}</div></div>`).join('')}${history.length?`<details id="eveningHistory"><summary>${L('Eerdere avonden','Previous evenings')} (${history.length})</summary>${history.slice().reverse().map(e=>`<div class="collection-row"><span>${niceDate(new Date(e.createdAt))}<small>${e.legacyUnknownToppings?L('Oude batch · toppings onbekend','Legacy batch · toppings unknown'):L(`${e.pizzas.filter(p=>p.events.out!=null).length}/${e.pizzas.length} pizza’s uit oven geregistreerd`,`${e.pizzas.filter(p=>p.events.out!=null).length}/${e.pizzas.length} pizzas recorded out of oven`)}</small></span>${eveningButton('reopen-evening',L('Openen','Open'),`data-id="${esc(e.id)}" ${activeEvening()||e.legacyUnknownToppings?'disabled':''}`)}${eveningButton('repeat-evening',L('Opnieuw maken','Make again'),`data-id="${esc(e.id)}" ${activeEvening()||e.legacyUnknownToppings?'disabled':''}`)}</div>${eveningArchiveHtml(e)}`).join('')}</details>`:''}<hr><div class="btnrow">${eveningButton('backup',L('Privéback-up downloaden','Download private backup'))}</div><label>${L('Sjabloon of privéback-up openen (.json)','Open template or private backup (.json)')}<input class="field" type="file" accept=".json,application/json" id="eveningImportFile"></label><p class="hint">${L('Een privéback-up bevat alle lokale gegevens, inclusief echte tijden, namen en notities. Herstel om op een ander apparaat verder te gaan; werk daarna op één apparaat. Dit is een momentopname, geen synchronisatie.','A private backup contains all local data, including actual times, names and notes. Restore it to continue on another device; then work on one device. This is a snapshot, not synchronization.')}</p>${preview}${sharePreview}${templateResolutionHtml()}</details>`);
+  eveningPanel('eveningCollection',`<details id="eveningCollectionDetails"><summary>${L('Avonden bewaren, herhalen en overzetten','Save, repeat and transfer evenings')}</summary>${eveningField('eveningTemplateName',L('Naam voor deze avond','Name for this evening'),workshopDrafts.eveningTemplateName||'')}<div class="btnrow">${eveningButton('save-template',L('Als avondsjabloon bewaren','Save as evening template'))}${eveningButton('share-template',L('Avond delen (.json)','Share evening (.json)'))}</div><p class="hint">${L('Bewaar een avond en markeer haar met een ster voor een snelle herhaling. Nieuwe avonden beginnen zonder datum, metingen of voortgang. De .json-overdracht bevat geen persoonlijke geschiedenis.','Save an evening and star it for quick repeat. New evenings start without dates, readings or progress. The .json transfer contains no personal history.')}</p>${templates.map(t=>`<div class="collection-row"><b>${esc(t.name)}</b><div>${eveningButton('toggle-favorite',evenings.favoriteIds.includes(t.id)?L('★ Favoriet','★ Favorite'):L('☆ Favoriet maken','☆ Add favorite'),`data-id="${esc(t.id)}" aria-pressed="${evenings.favoriteIds.includes(t.id)}"`)}${eveningButton('load-template',L('Opnieuw maken','Make again'),`data-id="${esc(t.id)}" ${activeEvening()?'disabled':''}`)}${eveningButton('delete-template',L('Verwijderen','Delete'),`data-id="${esc(t.id)}"`,'ghost')}</div></div>`).join('')}${history.length?`<details id="eveningHistory"><summary>${L('Eerdere avonden','Previous evenings')} (${history.length})</summary>${history.slice().reverse().map(e=>`<div class="collection-row"><span>${niceDate(new Date(e.createdAt))}<small>${e.legacyUnknownToppings?L('Oude batch · toppings onbekend','Legacy batch · toppings unknown'):L(`${e.pizzas.filter(p=>p.events.out!=null).length}/${e.pizzas.length} pizza’s uit oven geregistreerd`,`${e.pizzas.filter(p=>p.events.out!=null).length}/${e.pizzas.length} pizzas recorded out of oven`)}</small></span>${eveningButton('reopen-evening',L('Openen','Open'),`data-id="${esc(e.id)}" ${activeEvening()||e.legacyUnknownToppings?'disabled':''}`)}${eveningButton('repeat-evening',L('Opnieuw maken','Make again'),`data-id="${esc(e.id)}" ${activeEvening()||e.legacyUnknownToppings?'disabled':''}`)}</div>${eveningArchiveHtml(e)}`).join('')}</details>`:''}<hr><div class="btnrow">${eveningButton('backup',L('Privéback-up downloaden','Download private backup'))}</div><label>${L('Sjabloon of privéback-up openen (.json)','Open template or private backup (.json)')}<input class="field" type="file" accept=".json,application/json" id="eveningImportFile"></label><p class="hint">${L('Een privéback-up bevat alle lokale gegevens, inclusief echte tijden, namen en notities. Herstel om op een ander apparaat verder te gaan; werk daarna op één apparaat. Dit is een momentopname, geen synchronisatie.','A private backup contains all local data, including actual times, names and notes. Restore it to continue on another device; then work on one device. This is a snapshot, not synchronization.')}</p>${preview}${sharePreview}${templateResolutionHtml()}</details>`);
 }
-function applyEveningTemplate(template){
+function applyEveningTemplate(template,manualItems=null){
   if(activeEvening())return;
   const t=EveningCore.cleanTemplate(template);if(!t)throw new Error('format');
   // Unknown catalogue references must be resolved explicitly, never mapped to Margherita.
@@ -45,6 +52,7 @@ function applyEveningTemplate(template){
   pendingEveningTemplate=null;
   restoreRecipe(t.recipe,false);appMode=t.mode;projectEveningPizzas(t.pizzas);
   evenings.draft={pizzas:WorkflowCore.clone(t.pizzas).map(p=>({...p,id:workshopId(),events:{},runId:''})),date:'',earliest:'',unavailable:[],cleanup:0,split:WorkflowCore.clone(t.split)};
+  evenings.shopping.draft={checked:{},manual:WorkflowCore.clone((manualItems||evenings.shopping.byTemplate[t.id]||[])).map(item=>({...item,id:workshopId(),checked:false}))};
   workshop.storage=t.storage;workshop.scale=t.scale;
   if(t.profile){if(!workshop.profiles.some(p=>p.id===t.profile.id))workshop.profiles=[...workshop.profiles,t.profile].slice(-20);workshop.profileId=t.profile.id;}
   $('includeSauce').checked=t.sauce.enabled;$('autoSauceFromPizzas').checked=t.sauce.automatic;$('sauceType').value=t.sauce.type;$('saucePerPizza').value=t.sauce.grams;
@@ -52,7 +60,8 @@ function applyEveningTemplate(template){
 }
 function renderEvening(c){
   if(!$('eveningPlan'))return;
-  syncEveningRun();syncEveningPizzas(c);renderEveningPlan(c);renderEveningCollection();renderKitchen(c);
+  syncEveningRun();syncEveningPizzas(c);renderEveningPlan(c);renderFavoriteShortcuts();renderEveningCollection();renderKitchen(c);renderRecipeLinkPanel();
+  $('shareDoughButton').textContent=L('🔗 Deegrecept delen via link','🔗 Share dough recipe link');
   document.body.dataset.activeWorkspace=currentWizardPage===4?'kitchen':'plan';
   document.querySelectorAll('.workspace-tab[data-workspace]').forEach(button=>{
     const kitchen=button.dataset.workspace==='kitchen',selected=kitchen===(currentWizardPage===4);
@@ -95,6 +104,9 @@ async function handleEveningAction(button){
   else if(action==='finish'){
     syncEveningRun();const previous=WorkflowCore.clone(evenings);const archived=EveningCore.close(e,Date.now());archived.template=captureEveningTemplate(e.name);evenings.history=[...evenings.history,archived].slice(-20);workshop.history=[...workshop.history,...archived.runs.filter(r=>r.batch).map(r=>r.batch)].slice(-20);evenings.active=null;workshop.batch=null;
     liveMeasurements={doughTemp:null,fridgeTemp:null};completedSteps={};evenings.draft.date='';$('bakeDay').value='';
+    // Keep the finished evening's checklist (for reopening), but prune evicted history.
+    const keep=new Set(evenings.history.map(h=>h.id));
+    for(const id of Object.keys(evenings.shopping.byEvening))if(!keep.has(id))delete evenings.shopping.byEvening[id];
     if(!saveState()){evenings=previous;bindEveningRun();throw new Error('storage');}
     eveningNotice=L('Avond bewaard. Niet gebakken pizza’s blijven als niet gebakken geregistreerd.','Evening saved. Unbaked pizzas remain recorded as unbaked.');showPage(1);
   }else if(action==='help'){
@@ -117,11 +129,25 @@ async function handleEveningAction(button){
     evenings.draft.date=localDateTime(selectedBakeDate().getTime()+minutes*60000);$('bakeDay').value='';saveState();update();
   }else if(action==='save-template'){
     if(evenings.templates.length>=30)throw new Error('collection-full');const name=$('eveningTemplateName').value.trim();if(!name)throw new Error(L('Geef de avond een naam.','Give the evening a name.'));
-    const template=captureEveningTemplate(name);if(!template)throw new Error('format');evenings.templates.push(template);if(!saveState()){evenings.templates.pop();throw new Error('storage');}eveningNotice=L('Avondsjabloon bewaard.','Evening template saved.');renderEvening(calc());
+    const template=captureEveningTemplate(name);if(!template)throw new Error('format');evenings.templates.push(template);
+    evenings.shopping.byTemplate[template.id]=WorkflowCore.clone(shoppingState().manual).map(item=>({...item,checked:false}));
+    if(!saveState()){evenings.templates.pop();delete evenings.shopping.byTemplate[template.id];throw new Error('storage');}eveningNotice=L('Avondsjabloon bewaard. Markeer met de ster om snel te herhalen.','Evening template saved. Star it for quick repeat.');renderEvening(calc());
   }else if(action==='load-template')applyEveningTemplate(evenings.templates.find(t=>t.id===button.dataset.id));
+  else if(action==='toggle-favorite'){
+    const id=button.dataset.id;if(!evenings.templates.some(t=>t.id===id))return;
+    const previous=[...evenings.favoriteIds];evenings.favoriteIds=previous.includes(id)?previous.filter(x=>x!==id):[...previous,id];
+    if(!saveState()){evenings.favoriteIds=previous;throw new Error('storage');}renderEvening(calc());
+  }
   else if(action==='reopen-evening')reopenEvening(button.dataset.id);
-  else if(action==='repeat-evening')applyEveningTemplate(evenings.history.find(h=>h.id===button.dataset.id)?.template);
-  else if(action==='delete-template'){const previous=evenings.templates;evenings.templates=previous.filter(t=>t.id!==button.dataset.id);if(!saveState()){evenings.templates=previous;throw new Error('storage');}renderEvening(calc());}
+  else if(action==='repeat-evening'){
+    const previous=evenings.history.find(h=>h.id===button.dataset.id);
+    if(previous)applyEveningTemplate(previous.template,evenings.shopping.byEvening[previous.id]?.manual||[]);
+  }
+  else if(action==='delete-template'){
+    const previous=WorkflowCore.clone(evenings);evenings.templates=evenings.templates.filter(t=>t.id!==button.dataset.id);
+    evenings.favoriteIds=evenings.favoriteIds.filter(id=>id!==button.dataset.id);delete evenings.shopping.byTemplate[button.dataset.id];
+    if(!saveState()){evenings=previous;throw new Error('storage');}renderEvening(calc());
+  }
   else if(action==='share-template'){
     eveningShare=EveningCore.exportTemplate(captureEveningTemplate());renderEveningCollection();$('eveningCollectionDetails').open=true;
   }else if(action==='download-shared'){downloadEveningFile(eveningShare,'pizza-evening.json');}

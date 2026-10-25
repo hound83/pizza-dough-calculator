@@ -2,8 +2,8 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v2.0.1-f0b45a)](docs/V2_0_1_KITCHEN_REVIEW.md)
-[![Tests](https://img.shields.io/badge/regression_tests-106_cases-76c990)](tests/test_v50.js)
+[![Version](https://img.shields.io/badge/version-v2.1.0-f0b45a)](docs/V2_1_0_RELEASE.md)
+[![Tests](https://img.shields.io/badge/regression_tests-108_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
 
@@ -11,9 +11,9 @@ A comprehensive Dutch and English calculator for pizza dough, fermentation, sauc
 
 The GitHub Pages website is the official way to use the calculator. A separate downloadable, self-contained HTML edition is no longer distributed. The small root `index.html` loads the maintained CSS and JavaScript files from `src/`; no runtime framework or backend is required.
 
-**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v2.0.0 release notes](docs/V2_0_0_RELEASE.md)
+**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v2.1.0 release notes](docs/V2_1_0_RELEASE.md)
 
-> **v2.0.1 kitchen release.** The individual checklist is visible again and Kitchen styling is improved. Tag v1.0.0 and all earlier baselines are preserved. Schema 53 migrates existing schema-52 data.
+> **v2.1.0 — share and repeat.** Share a dough recipe through a validated link, check off an evening-specific shopping list for dough/sauce/toppings, add or edit manual items with amounts, and star evening templates for quick repeat. Schema 54 migrates schema 53 without discarding saved evenings. Earlier release baselines remain immutable.
 
 **New in v2:** freely switch between Plan and Kitchen, plan around availability, split dough into independent mixer runs, follow a queue with actual oven-in/out times, get contextual dough help, and reuse complete evening templates or transfer private backups. The visible version, dynamic weekdays and previous improvements remain intact. [Implementation and review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
@@ -46,6 +46,8 @@ Highlights:
 - an individual recipe, sauce, pizza style, and topping customization for every dough ball;
 - topping quantities scaled automatically by pizza surface area;
 - combined sauce batches, ingredient summaries, and shopping quantities;
+- checkable dough/sauce/toppings shopping lists, manually added items with quantities, and quantity-change detection;
+- dough-only recipe links and favorite evening templates for quick repeat;
 - backward planning from a desired baking day and time;
 - checkable steps, print layout, and copyable recipes;
 - optional live temperature measurements and a local dough log;
@@ -79,6 +81,8 @@ This is intentionally **not a validated laboratory model** or an official AVPN c
 - No account or backend service is required; use the hosted website.
 - Recipes, evenings, progress and the dough log stay in your browser. One tab can write at a time; close it and reload another to take over. If locking or storage is unavailable, the app reports that it cannot save.
 - Shareable evening templates omit private names and actual history. Private backups include them and require confirmation before replacing local data; they are snapshots, not synchronization.
+- Dough-only recipe links keep their settings in the URL fragment, without toppings, names, dates or bake history; the receiving browser previews the recipe before applying it.
+- Shopping checkmarks, including manual purchases, are local to the current plan or evening. A repeated favorite starts with unchecked items.
 - The app sends no recipe or log data to a backend.
 - `Reset` removes the locally stored calculator state but preserves the language choice.
 
@@ -138,9 +142,9 @@ Release verification suite (see the PR Actions result for execution status):
 ```text
 15 refactor-structure tests
 31 pure-core tests
-106 website-entry regression tests
-106 source regression tests
-139 Chromium browser/layout tests
+108 website-entry regression tests
+108 source regression tests
+149 Chromium browser/layout tests (including ten new v2.1 checks)
 ```
 
 The suite covers, among other things:
@@ -156,7 +160,7 @@ The suite covers, among other things:
 - sauce aggregation, shopping quantities, and copyable output;
 - render smoke tests across languages, modes, and dough styles.
 
-The structure suite also checks the eighteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, website-entry freshness, linked asset paths, historical release and candidate hashes, and reconstruction of the archived v2.0.1 single-file baseline in memory. Playwright opens the published website entry and the source entry at 320, 390, 430, 760, 1024, and 1280 px and verifies error-free loading and horizontal fit. Focused browser checks also protect bilingual main/reserved-water wording, cold-tap versus ice-water guidance, route-correct hot-water warnings, both collapsed grouped sauce-override surfaces, and keyboard activation. Phone coverage protects the full-height single-pane recipe catalogue, deliberate search focus, filter scrolling, catalogue-to-customization navigation, and the click-versus-hover selection contract. Chromium also exercises the practical percentage-field ArrowUp/ArrowDown increments.
+The structure suite also checks the eighteen fixed module boundaries, script order, unique HTML IDs, inline-handler contracts, sole ownership of persistence/bootstrap, website-entry freshness, linked asset paths, archived release and candidate hashes, and reconstruction of the current source modules in memory. Playwright opens the website and source entries at 320, 390, 430, 760, 1024, and 1280 px, checking load errors and horizontal fit. Focused checks protect bilingual guidance, mobile recipe picking, keyboard access, dough-only link import, shopping state, favorite repetition and schema-53 migration. The archived v2.0.1 single-file hash remains preserved as historical release evidence; it is not expected to match new v2.1 code.
 
 Use the following commands when working on the modular sources:
 
@@ -179,6 +183,7 @@ The project uses semantic versioning from the first golden release onward:
 | **v1.2.1** | Backward-compatible localization, recipe-data, and sauce-choice cleanup |
 | **v1.4.0** | Batch tracking, recipe profiles, kitchen guidance and the improved 1.3 planning |
 | **v2.0.0** | Integrated Plan/Kitchen workflow, independent mixer runs, pizza queue and schema-53 migration |
+| **v2.1.0** | Dough-only share links, checkable shopping with manual quantities, and favorite evening shortcuts |
 
 Historic working versions such as v50 remain where technically necessary in storage migrations, test names, and audit documents. They are no longer used as public product versions.
 
@@ -207,10 +212,10 @@ The root `index.html` serves the website, but is no longer a downloadable offlin
 
 ## Status and roadmap
 
-- **Current release:** [v2.0.1 kitchen workbench](docs/V2_0_1_KITCHEN_REVIEW.md); tag v1.0.0 and all earlier baselines remain preserved.
+- **Current version:** [v2.1.0 planning, sharing and shopping](docs/V2_1_0_RELEASE.md); tag v1.0.0 and all earlier baselines remain preserved.
 - **Architecture:** GitHub Pages serves a static entry and eighteen maintained JavaScript modules; no separate HTML download is offered.
 - **Review:** both independent v2 crosschecks, resolved findings and verification evidence are linked in [the release notes](docs/V2_0_0_RELEASE.md).
-- **Included:** all six evening workflow improvements, schema-53 migration, dynamic weekdays and the existing workshop/calculation contracts.
+- **Included:** prior evening workflow plus recipe-only links, actionable shopping in Plan and Kitchen, manually added items and quick favorite repeat. Schema 54 retains the prior calculation contracts.
 - **Deferred:** app development and the three proposed physical-model investigations.
 - **Feedback:** anonymous feedback/Cloudflare remains separate work; PR #12 is not included in this release.
 

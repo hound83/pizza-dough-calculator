@@ -179,9 +179,7 @@ function applyAppModeUI(){
         ? 'Your dough-ball recipes are already selected. Keep automatic sauce enabled to calculate the required sauces from those recipes, or disable it to use one sauce for all pizzas.'
         : 'Je recepten per bol zijn al gekozen. Laat automatische saus aan om de benodigde sauzen daaruit te berekenen, of zet hem uit om één saus voor alle pizza’s te gebruiken.');
 
-  $('shoppingHeading').textContent=appMode==='sauce'
-    ? (currentLang==='en'?'Ingredients for the sauce':'Ingrediënten voor de saus')
-    : (currentLang==='en'?'Ingredients for the pizzas':"Ingrediënten voor de pizza's");
+  $('shoppingHeading').textContent=L('Boodschappenlijst','Shopping list');
 
   $('brandSubtitle').textContent=appMode==='dough'
     ? (currentLang==='en'?'Dough • fermentation • workflow':'Deeg • fermentatie • stappenplan')

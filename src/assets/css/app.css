@@ -111,6 +111,24 @@ label{display:block;color:#d9dcde;font-size:13px;font-weight:700}
 .list-row{display:flex;justify-content:space-between;gap:18px;padding:9px 10px;background:#121517;border:1px solid #292f32;border-radius:11px}
 .list-row span:first-child{color:#dfe1e2}.list-row span:last-child{font-weight:800;text-align:right}
 .recipebox{background:#121517;border:1px solid var(--line);border-radius:15px;padding:14px;margin-top:10px}
+.shopping-plan{margin:14px 0 18px}
+.plan-share{margin:9px 0 15px}.favorite-quick-list{display:flex;flex-wrap:wrap;gap:8px}.favorite-quick-list .btn{white-space:normal}
+.shopping-plan>summary{font-size:16px;font-weight:800;cursor:pointer}
+.shopping-section{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:12px;background:var(--panel3)}
+.shopping-section h3{margin:0 0 9px}
+.shopping-item{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer;min-width:0}
+.shopping-item:last-child{border-bottom:0}
+.shopping-item input[type=checkbox]{width:20px;height:20px;flex:0 0 20px;accent-color:var(--good)}
+.shopping-item-name{flex:1;min-width:0;overflow-wrap:anywhere;font-size:14px}
+.shopping-item-qty{font-size:14px;font-weight:800;text-align:right;overflow-wrap:anywhere}
+.shopping-item.is-done .shopping-item-name{text-decoration:line-through;color:var(--muted)}
+.shopping-changed{display:block;color:var(--warn);text-decoration:none;font-weight:600}
+.shopping-add-form,.shopping-edit{display:grid;grid-template-columns:minmax(130px,2fr) minmax(75px,1fr) minmax(90px,1fr) auto;gap:8px;align-items:end;margin-top:12px}
+.shopping-manual-row{border-bottom:1px solid var(--line)}
+.shopping-manual-row .shopping-item{border:0}
+.shopping-manual-actions{display:flex;gap:6px;justify-content:flex-end;padding-bottom:9px}
+.shopping-manual-actions .btn{padding:6px 9px;font-size:12px}
+@media(max-width:760px){.shopping-add-form,.shopping-edit{grid-template-columns:repeat(2,minmax(0,1fr))}.shopping-add-form label:first-child,.shopping-edit [data-shopping-name]{grid-column:1/-1}.shopping-item-qty{max-width:40%}}
 .recipebox .titleline{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .recipebox h3{margin:0 0 4px}.tag{font-size:11px;padding:4px 8px;border-radius:99px;background:#282e31;color:#d9dddf;border:1px solid #3b4246;white-space:nowrap}
 .footer-note{color:var(--muted);font-size:12px;margin-top:15px}

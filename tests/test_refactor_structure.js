@@ -88,9 +88,9 @@ for(const hash of Object.values(V1_1_1_RELEASE_BASELINE))assert(guardrails.inclu
 pass('released v1.1.1 hashes remain documented');
 
 for(const hash of Object.values(V1_2_0_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.0 baseline hash is missing from product guardrails: ${hash}`);
-assert(sha256(historicalBundle.html)===V2_0_1_CANDIDATE_BASELINE.singleFile,'Historical v2.0.1 reconstruction differs from the documented candidate baseline.');
-assert(sha256(css)===V2_0_1_CANDIDATE_BASELINE.css,'CSS differs from the documented v2.0.1 candidate baseline.');
-assert(sha256(combinedJavaScript)===V2_0_1_CANDIDATE_BASELINE.javascript,'JavaScript differs from the documented v2.0.1 candidate baseline.');
+// The historical v2.0.1 hashes remain immutable evidence. New feature source
+// must no longer be expected to reconstruct those old bytes.
+assert(sha256(historicalBundle.html)!==V2_0_1_CANDIDATE_BASELINE.singleFile,'v2.1 unintentionally reproduces the old v2.0.1 bundle.');
 for(const hash of [...Object.values(V1_3_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_CANDIDATE_BASELINE),...Object.values(V1_4_0_RELEASE_BASELINE),...Object.values(V1_4_1_RELEASE_BASELINE),...Object.values(V2_0_0_CANDIDATE_BASELINE),...Object.values(V2_0_1_CANDIDATE_BASELINE)])assert(guardrails.includes(hash),`Candidate/release hash is not documented: ${hash}`);
 for(const hash of Object.values(V1_2_1_RELEASE_BASELINE))assert(guardrails.includes(hash),`Released v1.2.1 baseline hash is missing from product guardrails: ${hash}`);
 pass('released v1.2.0 and v1.2.1 baselines are pinned and documented');
@@ -101,8 +101,8 @@ pass('recombined JavaScript parses successfully');
 const reconstructed=sourceHtml
   .replace(STYLE_LINK,`<style>${css}</style>`)
   .replace(SCRIPT_TAGS,`<script>${combinedJavaScript}</script>`);
-assert(reconstructed===historicalBundle.html,'Historical single-file reconstruction differs from the archived v2.0.1 candidate.');
-pass('the complete modular source still reconstructs the archived v2.0.1 candidate exactly');
+assert(reconstructed===historicalBundle.html,'In-memory source reconstruction differs from the current v2.1 modules.');
+pass('the current modular source reconstructs an in-memory website snapshot without writing a standalone download');
 
 const contracts=[
   ['calculation-core.js','const DoughCore'],

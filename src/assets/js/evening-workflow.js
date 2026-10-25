@@ -1,5 +1,5 @@
 /* The evening owns run and pizza identities; the legacy batch view is an adapter. */
-let evenings={active:null,history:[],templates:[],draft:{pizzas:[],date:'',earliest:'',unavailable:[],cleanup:0,split:{unit:'dough',capacity:null}}};
+let evenings={active:null,history:[],templates:[],favoriteIds:[],shopping:emptyShoppingStorage(),draft:{pizzas:[],date:'',earliest:'',unavailable:[],cleanup:0,split:{unit:'dough',capacity:null}}};
 let eveningNotice='';
 let eveningImport=null;
 let eveningShare=null;
@@ -7,7 +7,7 @@ let pendingEveningTemplate=null;
 let eveningWakeLock=null;
 let eveningWakeWanted=false;
 let kitchenQueueOpenedFor='';
-const eveningPanels=['eveningPlan','eveningOptions','eveningCollection','kitchenWorkspace'];
+const eveningPanels=['eveningPlan','favoriteQuickPanel','eveningOptions','eveningCollection','kitchenWorkspace'];
 function activeEvening(){return evenings.active;}
 function selectedRun(){return activeEvening()?.runs.find(r=>r.id===activeEvening().selectedRun)||null;}
 function bindEveningRun(){
@@ -106,6 +106,7 @@ function startEvening(){
   const plan={preparation:prepHours(),bulk:c.bulk,cold:c.cold,ball:c.ball};
   const next=EveningCore.createEvening({id:workshopId(),template,allocation,startedAt,bakeAt,plan,zone:Intl.DateTimeFormat().resolvedOptions().timeZone});
   if(entered){next.runs[0].batch.measurements={...liveMeasurements};next.runs[0].batch.progress={...completedSteps};}
+  evenings.shopping.byEvening[next.id]=WorkflowCore.clone(evenings.shopping.draft);
   eveningNotice='';commitEvening(next);showPage(4);
 }
 function recordEveningEvent(key,at,unknown=false){
