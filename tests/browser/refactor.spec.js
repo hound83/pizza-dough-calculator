@@ -69,6 +69,28 @@ async function openPicker(page,publication){
 
 for(const publication of PUBLICATIONS){
   test.describe(publication.name,()=>{
+    test('a fresh visit offers all three recipe paths and a reload resumes the chosen step',async({page})=>{
+      await page.goto(publication.path);
+      await expect(page.getByRole('heading',{name:'Wat wil je maken?'})).toBeVisible();
+      await page.getByRole('button',{name:'English',exact:true}).click();
+      await expect(page.locator('[data-mode-card="dough"]')).toContainText('Dough only');
+      await expect(page.locator('[data-mode-card="sauce"]')).toContainText('Dough + sauce');
+      await expect(page.locator('[data-mode-card="full"]')).toContainText('Complete pizzas');
+
+      for(const [mode,next] of [['dough',4],['sauce',2],['full',3]]){
+        await page.locator(`[data-mode-card="${mode}"]`).press('Enter');
+        await expect(page.locator('#page1')).toBeVisible();
+        await expect(page.locator('#eveningMode')).toHaveValue(mode);
+        await page.locator('#floatNext').click();
+        await page.reload();
+        await expect(page.locator(`#page${next}`)).toBeVisible();
+        await page.getByRole('button',{name:'Plan',exact:true}).click();
+        await page.locator('.mode-choice-nav').click();
+        await page.reload();
+        await expect(page.locator('#page0')).toBeVisible();
+      }
+    });
+
     for(const viewport of VIEWPORTS){
       test(`loads without browser or horizontal-layout failures at ${viewport.name}`,async({page})=>{
         const failures=observeBrowserFailures(page);
@@ -76,10 +98,10 @@ for(const publication of PUBLICATIONS){
         await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
 
         await expect(page).toHaveTitle('Pizzadeegcalculator v2.1.0');
-        await expect(page.locator('#page1')).toHaveClass(/\bactive\b/);
+        await expect(page.locator('#page0')).toBeVisible();
         await expect(page.locator('#appVersion')).toHaveText('v2.1.0');
         await expect(page.locator('#appVersion')).toBeVisible();
-        await expect(page.locator('#eveningPlan')).toBeVisible();
+        await expect(page.locator('#eveningPlan')).toBeHidden();
 
         const runtime=await page.evaluate(()=>({
           appVersion:APP_VERSION,
@@ -87,7 +109,8 @@ for(const publication of PUBLICATIONS){
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
         expect(runtime).toEqual({appVersion:'2.1.0',hasCalculator:true,horizontalOverflow:0});
-        await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();
+        await page.locator('[data-mode-card="dough"]').click();
+        await expect(page.locator('#eveningPlan')).toBeVisible();
         await expect(page.locator('#scheduleSummary')).toBeVisible();
         await expect(page.locator('#scheduleSummary')).toContainText('1 u 54 min');
         await expect(page.locator('#yeastAdviceDetail')).toContainText('vuistregelmarge');

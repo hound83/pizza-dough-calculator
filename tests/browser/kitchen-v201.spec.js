@@ -20,7 +20,8 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`kitchen workb
     await page.locator('#step-check-s-rest').uncheck();await expect(page.locator('#step-check-s-weigh')).toBeChecked();
   });
   test('step checkmarks belong to the selected mixer run',async({page})=>{
-    await open(page);await page.locator('#pizzas').fill('8');await page.locator('#pizzas').blur();
+    await open(page);await page.locator('[data-mode-card="full"]').click();
+    await page.locator('#pizzas').fill('8');await page.locator('#pizzas').blur();
     await page.locator('#eveningSplitDetails > summary').click();await page.locator('#splitCapacity').fill('900');await page.locator('#splitCapacity').blur();
     await page.locator('#eveningPlan [data-evening-action="start"]').click();
     await page.locator('#step-check-s-weigh').check();await page.locator('#step-check-s-devcheck').check();

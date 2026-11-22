@@ -58,7 +58,7 @@ Highlights:
 
 ## Usage
 
-1. Start in Plan. Choose what you are making; Basic/Full remains available through the display choices.
+1. On your first visit, choose **Dough only**, **Dough + sauce**, or **Complete pizzas**. Plan opens with the relevant steps and its Basic/Full switch. A return visit opens your last step. Use **← Mode** to pick another path.
 2. Select a preset or enter your own dough values.
 3. Choose diameter or dough-ball weight as the leading measurement.
 4. Configure fermentation, temperatures, and optionally a target baking time.

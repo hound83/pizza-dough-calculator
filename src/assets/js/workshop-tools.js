@@ -32,10 +32,10 @@ function clearDoughLinkHash(){
   if(location.hash.startsWith('#dough='))history.replaceState(history.state,'',location.pathname+location.search);
 }
 function initIncomingDoughLink(){
-  if(!location.hash.startsWith('#dough='))return;
+  if(!location.hash.startsWith('#dough='))return false;
   incomingDoughRecipe=decodeDoughLink(location.hash.slice(7));
   doughLinkNotice=incomingDoughRecipe?'':L('Deze receptlink is ongeldig of wordt niet ondersteund. Je bestaande recept is niet veranderd.','This recipe link is invalid or unsupported. Your existing recipe has not changed.');
-  renderRecipeLinkPanel();
+  return true;
 }
 function makeDoughShareLink(){
   const recipe=activeEvening()?.recipe||snapshotRecipe();

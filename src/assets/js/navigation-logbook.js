@@ -181,7 +181,9 @@ function applyAppModeUI(){
 
   $('shoppingHeading').textContent=L('Boodschappenlijst','Shopping list');
 
-  $('brandSubtitle').textContent=appMode==='dough'
+  $('brandSubtitle').textContent=currentWizardPage===0
+    ? L("Van alleen deeg tot complete pizza's • kies wat je nodig hebt",'From dough only to complete pizzas • choose what you need')
+    : appMode==='dough'
     ? (currentLang==='en'?'Dough • fermentation • workflow':'Deeg • fermentatie • stappenplan')
     : appMode==='sauce'
       ? (currentLang==='en'?'Dough • sauce • workflow':'Deeg • saus • stappenplan')
@@ -213,16 +215,15 @@ function selectAppMode(mode){
 }
 
 function showModeChooser(){
+  const changed=currentWizardPage!==0;
   currentWizardPage=0;
   ['page1','page2','page3','page4'].forEach(id=>$(id)?.classList.remove('active'));
   $('page0').classList.add('active');
   $('stepsNav').classList.add('hidden');
   $('wizardNavShell').classList.add('hidden');
   $('floatingActions').classList.add('hidden');
-  renderModeChooser();
-  $('brandSubtitle').textContent=currentLang==='en'
-    ? 'From dough only to complete pizzas • choose what you need'
-    : "Van alleen deeg tot complete pizza's • kies wat je nodig hebt";
+  applyAppModeUI();
+  if(changed)saveState();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -231,6 +232,7 @@ function showPage(n){
   if(!available.includes(n))n=available[0];
 
   if(n!==4&&eveningWakeLock){eveningWakeWanted=false;eveningWakeLock.release().catch(()=>{});eveningWakeLock=null;}
+  const changed=currentWizardPage!==n;
   currentWizardPage=n;
   $('page0').classList.remove('active');
   [1,2,3,4].forEach(page=>$(`page${page}`)?.classList.toggle('active',page===n));
@@ -242,6 +244,7 @@ function showPage(n){
   updateWizardNav(n);
   window.scrollTo({top:0,behavior:'smooth'});
   update();
+  if(changed)saveState();
 }
 
 function copyRecipe(){

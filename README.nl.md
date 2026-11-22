@@ -60,7 +60,7 @@ Belangrijkste mogelijkheden:
 
 ## Zo gebruik je hem
 
-1. Begin in Plan en kies wat je wilt maken. Basis/Uitgebreid blijft beschikbaar via de weergavekeuze.
+1. Kies bij je eerste bezoek **Alleen deeg**, **Deeg + saus** of **Volledige pizza’s**. Plan opent met de bijbehorende stappen en de keuze Basis/Uitgebreid. Bij een volgend bezoek ga je verder waar je was. Via **← Keuze** kun je opnieuw kiezen.
 2. Selecteer een preset of vul je eigen deegwaarden in.
 3. Kies diameter of bolgewicht als leidende maat.
 4. Stel fermentatie, temperaturen en eventueel een gewenste baktijd in.

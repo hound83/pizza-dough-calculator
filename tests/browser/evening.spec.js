@@ -1,7 +1,11 @@
 'use strict';
 const {test,expect}=require('playwright/test');
 for(const path of ['/index.html','/src/index.html'])test.describe(`v2 evening ${path}`,()=>{
-  async function open(page){await page.goto(path);await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');await expect(page.locator('#eveningPlan h2')).toContainText('4');}
+  async function open(page){
+    await page.goto(path);
+    await page.locator('[data-mode-card="full"]').click();
+    await expect(page.locator('#eveningPlan h2')).toContainText('4');
+  }
   async function expand(page,id){if(!await page.locator(id).evaluate(el=>el.open))await page.locator(`${id} > summary`).click();}
   async function action(page,name){await page.waitForTimeout(550);await page.locator(`[data-evening-action="${name}"]`).click();}
   async function start(page){await page.locator('#eveningPlan [data-evening-action="start"]').click();await expect(page.locator('#kitchenWorkspace')).toContainText('Mengen, rusten en kneden');}
