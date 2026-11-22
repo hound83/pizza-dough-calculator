@@ -58,7 +58,7 @@ Highlights:
 
 ## Usage
 
-1. Start in Plan. Choose what you are making; Basic/Full remains available through the display choices.
+1. On your first visit, choose **Dough only**, **Dough + sauce**, or **Complete pizzas**. Plan opens with the relevant steps and its Basic/Full switch. A return visit opens your last step. Use **← Mode** to pick another path.
 2. Select a preset or enter your own dough values.
 3. Choose diameter or dough-ball weight as the leading measurement.
 4. Configure fermentation, temperatures, and optionally a target baking time.
@@ -105,7 +105,9 @@ python -m http.server 8000
 
 Open `http://localhost:8000`.
 
-## Publishing with GitHub Pages
+## Publishing with GitHub Pages and Cloudflare
+
+The [Cloudflare calculator](https://pizza.hound83.workers.dev/) serves the same website entry and assets. The connected Worker uses `npx wrangler deploy` for production and `npx wrangler preview` for branches. The committed files are ready to deploy.
 
 The generated root `index.html` references `src/assets/` on the same site. GitHub Pages can publish this static structure without a production build service:
 

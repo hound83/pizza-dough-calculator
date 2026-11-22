@@ -60,7 +60,7 @@ Belangrijkste mogelijkheden:
 
 ## Zo gebruik je hem
 
-1. Begin in Plan en kies wat je wilt maken. Basis/Uitgebreid blijft beschikbaar via de weergavekeuze.
+1. Kies bij je eerste bezoek **Alleen deeg**, **Deeg + saus** of **Volledige pizza’s**. Plan opent met de bijbehorende stappen en de keuze Basis/Uitgebreid. Bij een volgend bezoek ga je verder waar je was. Via **← Keuze** kun je opnieuw kiezen.
 2. Selecteer een preset of vul je eigen deegwaarden in.
 3. Kies diameter of bolgewicht als leidende maat.
 4. Stel fermentatie, temperaturen en eventueel een gewenste baktijd in.
@@ -107,7 +107,9 @@ python -m http.server 8000
 
 Ga vervolgens naar `http://localhost:8000`.
 
-## Publiceren met GitHub Pages
+## Publiceren met GitHub Pages en Cloudflare
+
+De [calculator op Cloudflare](https://pizza.hound83.workers.dev/) gebruikt dezelfde startpagina en bestanden. De gekoppelde Worker kan rechtstreeks uit de repository publiceren met `npx wrangler deploy`. Voor een preview van een branch gebruik je `npx wrangler preview`.
 
 De gegenereerde root-`index.html` verwijst naar `src/assets/` op dezelfde site. GitHub Pages kan deze statische bestanden zonder aparte productiebouwservice publiceren:
 

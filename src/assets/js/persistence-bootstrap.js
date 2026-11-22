@@ -214,7 +214,6 @@ function sanitizeBakeLog(v){
   }).filter(Boolean);
 }
 
-let _restoredWizardPage=0;
 function loadState(provided=null){
   try{
     let raw=SAFE.get(SAVE_KEY);
@@ -237,7 +236,6 @@ function loadState(provided=null){
       else if(k==='experienceMode')experienceMode=v==='full'?'full':'basic';
       else if(k==='exactOverride')exactOverride=sanitizeExactOverride(v);
       else if(k==='previousYeastType')previousYeastType=yeastTypes[v]?v:'idy';
-      else if(k==='currentWizardPage')_restoredWizardPage=Number.isFinite(Number(v))?Math.max(0,Math.round(Number(v))):0;
       else if(k==='completedSteps')completedSteps=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
       else if(k==='workshop')workshop=WorkflowCore.sanitize(v);
       else if(k==='bakeLog')bakeLog=sanitizeBakeLog(v);
@@ -307,6 +305,9 @@ function loadState(provided=null){
       (Array.isArray(d.workshop.recipes)&&d.workshop.recipes.length!==workshop.recipes.length)||
       (Array.isArray(d.workshop.profiles)&&d.workshop.profiles.length!==workshop.profiles.length));
     if(droppedLegacyData)eveningNotice=L('Niet alle oude gegevens konden worden hersteld. De oorspronkelijke opslag blijft bewaard voor herstel.','Some legacy data could not be recovered. The original stored copy remains available for recovery.');
+    // Keep the current step in the first save, including when migrating an older recipe.
+    const savedPage=Number(d.currentWizardPage??NaN);
+    currentWizardPage=savedPage===0||wizardPages().includes(savedPage)?savedPage:1;
     if(saveState()&&!droppedLegacyData)LEGACY_KEYS.forEach(k=>SAFE.del(k));
     return true;
   }catch(e){return false}
@@ -431,18 +432,15 @@ document.addEventListener('DOMContentLoaded',async()=>{
   }
   window.addEventListener('resize',()=>refreshWizardNav(true),{passive:true});
 
-  let restored=false;
   if(!loadState()){
     $('sizeFromDiameter').checked=true;    // standaard AAN: diameter invoeren -> bolgewicht berekenen
     $('practical').checked=true;           // standaard: praktisch afronden
     $('autolyse').checked=true;            // standaard: traditionele autolyse
     applyPreset('kodaNight');
-  }else{ update(); restored=true; }
-  applyAppModeUI();
-  // Herladen tijdens het bakken bracht je altijd terug naar het keuzescherm.
-  if(restored && _restoredWizardPage>0 && wizardPages().includes(_restoredWizardPage)) showPage(_restoredWizardPage);
-  else showPage(1);
-  initIncomingDoughLink();
+  }else{ update(); }
+  if(initIncomingDoughLink())showPage(1);
+  else if(currentWizardPage===0)showModeChooser();
+  else showPage(currentWizardPage);
   initI18n();
   showStorageOwnership();
   refreshBakeDayClock();

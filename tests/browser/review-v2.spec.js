@@ -3,7 +3,11 @@ const {test,expect}=require('playwright/test');
 
 for(const path of ['/index.html','/src/index.html'])test.describe(`v2 review ${path}`,()=>{
   async function ready(page){await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');}
-  async function open(page){await page.goto(path);await ready(page);}
+  async function open(page,url=path){
+    await page.goto(url);
+    await ready(page);
+    await page.locator('[data-mode-card="full"]').click();
+  }
   async function start(page){await page.locator('#eveningPlan [data-evening-action="start"]').click();}
   async function nextUnknown(page){
     await page.waitForTimeout(550);
@@ -13,7 +17,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2 review ${p
     const context=await browser.newContext({hasTouch:touch,viewport:{width:390,height:844}});
     const page=await context.newPage();
     try{
-      await page.goto('http://127.0.0.1:4173'+path);await ready(page);await start(page);
+      await open(page,'http://127.0.0.1:4173'+path);await start(page);
       await page.locator('#stepDoughMeasurement > summary').click();
       await page.locator('#stepDoughTemp').pressSequentially('26');
       const transition=page.locator('[data-evening-action="event-now"]');

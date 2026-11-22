@@ -2,7 +2,10 @@
 const {test,expect}=require('playwright/test');
 
 for(const path of ['/index.html','/src/index.html'])test.describe(`v2.1 features ${path}`,()=>{
-  async function open(page){await page.goto(path);await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');}
+  async function open(page){
+    await page.goto(path);
+    await page.locator('[data-mode-card="full"]').click();
+  }
   async function shopping(page){await page.locator('#shoppingPlanCard > summary').click();}
   async function addManual(page,name,quantity='2',unit='st'){
     const form=page.locator('#shoppingPlan .shopping-add-form');
@@ -20,6 +23,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2.1 features
     expect(link).not.toContain('margherita');
     const receiver=await browser.newContext();const receivingPage=await receiver.newPage();
     await receivingPage.goto(link);await expect(receivingPage.locator('html')).toHaveAttribute('data-app-ready','true');
+    await expect(receivingPage.locator('#recipeLinkPanel')).toBeVisible();
     await expect(receivingPage.locator('#recipeLinkPanel')).toContainText('Gedeeld deegrecept');
     await expect(receivingPage.locator('#hydration')).toHaveValue('63');
     await receivingPage.locator('[data-dough-link-action="apply"]').click();
@@ -31,6 +35,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2.1 features
   test('invalid share fragment leaves existing dough unchanged',async({page})=>{
     await page.goto(`${path}#dough=invalid-encoding`);
     await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
+    await expect(page.locator('#recipeLinkPanel')).toBeVisible();
     await expect(page.locator('#recipeLinkPanel')).toContainText('ongeldig');
     await expect(page.locator('#hydration')).toHaveValue('63');
     await page.locator('[data-dough-link-action="close"]').count().then(count=>expect(count).toBe(0));
