@@ -1,0 +1,7 @@
+# Keep the published entry, its assets and the existing /src/ entry.
+/*
+!/index.html
+!/src/
+/src/*
+!/src/index.html
+!/src/assets/

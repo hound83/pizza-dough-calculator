@@ -1,0 +1,12 @@
+{
+  "name": "pizza",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "."
+  },
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": false }
+  },
+  "previews": {}
+}

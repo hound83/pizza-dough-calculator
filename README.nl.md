@@ -107,7 +107,9 @@ python -m http.server 8000
 
 Ga vervolgens naar `http://localhost:8000`.
 
-## Publiceren met GitHub Pages
+## Publiceren met GitHub Pages en Cloudflare
+
+De [calculator op Cloudflare](https://pizza.hound83.workers.dev/) gebruikt dezelfde startpagina en bestanden. De gekoppelde Worker kan rechtstreeks uit de repository publiceren met `npx wrangler deploy`. Voor een preview van een branch gebruik je `npx wrangler preview`.
 
 De gegenereerde root-`index.html` verwijst naar `src/assets/` op dezelfde site. GitHub Pages kan deze statische bestanden zonder aparte productiebouwservice publiceren:
 

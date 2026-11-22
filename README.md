@@ -105,7 +105,9 @@ python -m http.server 8000
 
 Open `http://localhost:8000`.
 
-## Publishing with GitHub Pages
+## Publishing with GitHub Pages and Cloudflare
+
+The [Cloudflare calculator](https://pizza.hound83.workers.dev/) serves the same website entry and assets. The connected Worker uses `npx wrangler deploy` for production and `npx wrangler preview` for branches. The committed files are ready to deploy.
 
 The generated root `index.html` references `src/assets/` on the same site. GitHub Pages can publish this static structure without a production build service:
 
