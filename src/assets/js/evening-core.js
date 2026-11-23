@@ -160,13 +160,13 @@ const EveningCore=(()=>{
     return {bakeSeconds,gapSeconds,observed:baked.length,gaps:gaps.length,remaining:queued+(inOven?1:0),finishAt:now+(ovenRemaining+queued*bakeSeconds+Math.max(0,queued-(inOven?0:1))*gapSeconds)*1000,firstReadyAt:baked[0]?.events.out??now+(inOven?ovenRemaining:bakeSeconds)*1000};
   }
 
-  function schedule({plan,route,runBalls,bakeAt,autolyse,cleanup=0,preheat=30,bakeMinutes=20,sauceMinutes=0}){
+  function schedule({plan,route,runBalls,bakeAt,autolyse,restMinutes=autolyse?30:20,cleanup=0,preheat=30,bakeMinutes=20,sauceMinutes=0}){
     const tasks=[],base=bakeAt-(plan.preparation+plan.bulk+(route==='room'?0:plan.cold)+plan.ball)*H;
     const add=(kind,start,minutes,run,active=true)=>tasks.push({kind,start,end:start+minutes*M,run,active});
-    const prep=plan.preparation*60,rest=autolyse?30:20,mix=4,finish=prep-rest-mix;
+    const prep=plan.preparation*60,rest=restMinutes,mix=4,finish=prep-rest-mix;
     for(let i=0;i<runBalls.length;i++){
       const start=base+i*(prep+cleanup)*M,bulk=start+prep*M;
-      add('mix',start,mix,i);add('rest',start+mix*M,rest,i,false);add('finish',start+(mix+rest)*M,finish,i);
+      add('mix',start,mix,i);if(rest>0)add('rest',start+mix*M,rest,i,false);add('finish',start+(mix+rest)*M,finish,i);
       if(cleanup)add('cleanup',bulk,cleanup,i);
       const inAt=bulk+plan.bulk*H,outAt=inAt+(route==='room'?0:plan.cold)*H;
       if(route==='room')add('shape',inAt,Math.max(3,runBalls[i]*1.2),i);

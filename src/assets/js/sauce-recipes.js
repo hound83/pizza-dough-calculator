@@ -190,6 +190,12 @@ function buildPizzaCustomize(c){
 function methodInstructions(c){
   const displayedReserve=c.runAllocation?c.reserve:Math.round(c.reserve),firstReserve=c.runAllocation?c.reserveFirst:Math.floor(displayedReserve/2),remainingReserve=c.runAllocation?c.reserveLast:displayedReserve-firstReserve;
   const f=fmt(c.flour,c.runAllocation&&!c.practical?1:0),mw=fmt(c.mainWater,c.runAllocation&&!c.practical?1:0),rw=fmt(displayedReserve,c.runAllocation&&!c.practical?1:0),firstRw=fmt(firstReserve,c.runAllocation&&!c.practical?1:0),remainingRw=fmt(remainingReserve,c.runAllocation&&!c.practical?1:0),y=fmt(c.yeast,c.runAllocation?runDoseDecimals(c.yeast):2),s=fmt(c.salt,c.runAllocation&&!c.practical?1:0),yn=yeastName(c.yeastType).toLowerCase();
+  if(c.mixRoute==='express'){
+    const activate=c.yeastType==='ady'?L(' Roer de gist eerst door het lauwwarme water en wacht ongeveer 5 minuten.',' Stir the yeast into the lukewarm water first and wait about 5 minutes.'):'';
+    return {mix:L(`Gebruik alle ${mw} g water, ${f} g bloem, ${s} g zout en ${y} g ${yn}.`,`Use all ${mw} g water, ${f} g flour, ${s} g salt and ${y} g ${yn}.`)+activate+L(' Meng alles tot één deeg.',' Mix everything into a dough.'),
+      add:'',knead:currentMethod==='hand'?L('Kneed met de hand 8–10 minuten tot het deeg glad en soepel is.','Knead by hand for 8–10 minutes until smooth and supple.'):L('Meng met de deeghaak op lage stand, ongeveer 4 minuten in totaal. Stop als het deeg glad en samenhangend is.','Use the dough hook on low for about 4 minutes in total. Stop when the dough is smooth and cohesive.'),
+      note:currentMethod==='kitchenaid'?L('Gebruik voor gistdeeg maximaal stand 2.','Use no higher than speed 2 for yeast dough.'):'',finish:'',finishNote:'',autolyseCooling:''};
+  }
   const first=c.autolyse
     ? L(`Meng <b>${f} g bloem</b> met <b>${mw} g water</b>. <b>Nog geen gist of zout.</b>`,
         `Mix <b>${f} g flour</b> with <b>${mw} g water</b>. <b>No yeast or salt yet.</b>`)

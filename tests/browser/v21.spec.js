@@ -28,7 +28,7 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2.1 features
     await expect(receivingPage.locator('#hydration')).toHaveValue('63');
     await receivingPage.locator('[data-dough-link-action="apply"]').click();
     await expect(receivingPage.locator('#hydration')).toHaveValue('67');
-    expect(await receivingPage.evaluate(()=>({fragment:location.hash,mode:appMode,selected:pizzaSelections[0],saved:JSON.parse(localStorage.getItem(SAVE_KEY)).version}))).toEqual({fragment:'',mode:'full',selected:'margherita',saved:54});
+    expect(await receivingPage.evaluate(()=>({fragment:location.hash,mode:appMode,selected:pizzaSelections[0],saved:JSON.parse(localStorage.getItem(SAVE_KEY)).version}))).toEqual({fragment:'',mode:'full',selected:'margherita',saved:55});
     await receiver.close();
   });
 
@@ -79,17 +79,17 @@ for(const path of ['/index.html','/src/index.html'])test.describe(`v2.1 features
     expect(await page.evaluate(()=>({favorites:evenings.favoriteIds.length,manual:evenings.shopping.draft.manual.length,date:evenings.draft.date}))).toEqual({favorites:1,manual:1,date:''});
   });
 
-  test('schema 53 active evening, history and templates migrate intact to 54',async({page})=>{
+  test('schema 53 active evening, history and templates migrate intact to the current schema',async({page})=>{
     await open(page);await page.locator('#eveningCollectionDetails > summary').click();
     await page.locator('#eveningTemplateName').fill('Legacy favorite');
     await page.locator('[data-evening-action="save-template"]').click();
     await page.locator('#eveningPlan [data-evening-action="start"]').click();
     const before=await page.evaluate(()=>{
       const state=stateSnapshot();state.version=53;delete state.evenings.shopping;delete state.evenings.favoriteIds;
-      localStorage.setItem('pizzaCalcV53',JSON.stringify(state));localStorage.removeItem('pizzaCalcV54');
+      localStorage.setItem('pizzaCalcV53',JSON.stringify(state));localStorage.removeItem('pizzaCalcV55');
       return {evening:state.evenings.active.id,templates:state.evenings.templates.length};
     });
     await page.reload();await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
-    expect(await page.evaluate(()=>({evening:activeEvening()?.id,templates:evenings.templates.length,version:JSON.parse(localStorage.getItem('pizzaCalcV54')).version,legacy:localStorage.getItem('pizzaCalcV53')}))).toEqual({evening:before.evening,templates:before.templates,version:54,legacy:null});
+    expect(await page.evaluate(()=>({evening:activeEvening()?.id,templates:evenings.templates.length,version:JSON.parse(localStorage.getItem('pizzaCalcV55')).version,legacy:localStorage.getItem('pizzaCalcV53')}))).toEqual({evening:before.evening,templates:before.templates,version:55,legacy:null});
   });
 });

@@ -97,9 +97,9 @@ for(const publication of PUBLICATIONS){
         await page.setViewportSize({width:viewport.width,height:viewport.height});
         await page.goto(publication.path,{waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
 
-        await expect(page).toHaveTitle('Pizzadeegcalculator v2.1.0');
+        await expect(page).toHaveTitle('Pizzadeegcalculator v2.2.0');
         await expect(page.locator('#page0')).toBeVisible();
-        await expect(page.locator('#appVersion')).toHaveText('v2.1.0');
+        await expect(page.locator('#appVersion')).toHaveText('v2.2.0');
         await expect(page.locator('#appVersion')).toBeVisible();
         await expect(page.locator('#eveningPlan')).toBeHidden();
 
@@ -108,7 +108,7 @@ for(const publication of PUBLICATIONS){
           hasCalculator:typeof calc==='function',
           horizontalOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
         }));
-        expect(runtime).toEqual({appVersion:'2.1.0',hasCalculator:true,horizontalOverflow:0});
+        expect(runtime).toEqual({appVersion:'2.2.0',hasCalculator:true,horizontalOverflow:0});
         await page.locator('[data-mode-card="dough"]').click();
         await expect(page.locator('#eveningPlan')).toBeVisible();
         await expect(page.locator('#scheduleSummary')).toBeVisible();
@@ -152,7 +152,7 @@ for(const publication of PUBLICATIONS){
         await page.locator('#bakeDay').selectOption('2');
         await page.locator('#langEn').click();
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('In 2 days – Wednesday');
-        await expect(page.locator('#appVersion')).toHaveText('v2.1.0');
+        await expect(page.locator('#appVersion')).toHaveText('v2.2.0');
         await page.locator('#langNl').click();
         await expect(page.locator('#bakeDay option[value="2"]')).toHaveText('Overmorgen – woensdag');
         await page.clock.fastForward(11*60_000);
@@ -208,7 +208,7 @@ for(const publication of PUBLICATIONS){
       await page.locator('[data-workspace="plan"]').click();await page.locator('#experienceBasic').click();
       await page.waitForTimeout(350);
       expect(await page.evaluate(()=>localStorage.getItem('pizzaCalcV50'))).toBeNull();
-      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV54')).version)).toBe(54);
+      expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pizzaCalcV55')).version)).toBe(55);
       await page.reload({waitUntil:'load'});await expect(page.locator('html')).toHaveAttribute('data-app-ready','true');
       await expect(page.locator('#experienceBasic')).toHaveAttribute('aria-pressed','true');
       await page.evaluate(()=>showModeChooser());await page.locator('[data-mode-card="dough"]').click();

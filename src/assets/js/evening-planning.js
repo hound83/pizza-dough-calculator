@@ -6,7 +6,7 @@ function eveningTaskName(task){
 function eveningSchedule(c,bakeAt=selectedBakeDate()?.getTime()){
   const allocation=EveningCore.allocate(c,evenings.draft.split);if(!allocation.ok||!bakeAt)return null;
   const sauce=aggregateSauceNeeds(c),sauceMinutes=appMode==='dough'||!sauce.enabled?0:sauce.groups.reduce((n,g)=>n+8+(g.s.cooked?5:0),0);
-  return EveningCore.schedule({plan:{preparation:prepHours(),bulk:c.bulk,cold:c.cold,ball:c.ball},route:c.ferm,runBalls:allocation.runs.map(r=>r.balls),bakeAt,autolyse:c.autolyse,cleanup:evenings.draft.cleanup,preheat:c.preheat,bakeMinutes:bakeSessionRange(c).high,sauceMinutes});
+  return EveningCore.schedule({plan:{preparation:prepHours(),bulk:c.bulk,cold:c.cold,ball:c.ball},route:c.ferm,runBalls:allocation.runs.map(r=>r.balls),bakeAt,autolyse:c.autolyse,restMinutes:DoughCore.restHours(c.autolyse,c.autolyseMinutes,c.mixRoute)*60,cleanup:evenings.draft.cleanup,preheat:c.preheat,bakeMinutes:bakeSessionRange(c).high,sauceMinutes});
 }
 function eveningConstraints(){return {earliest:evenings.draft.earliest?parseEveningTime(evenings.draft.earliest,evenings.draft.fold):null,unavailable:evenings.draft.unavailable};}
 let _lastEveningTransition=0;

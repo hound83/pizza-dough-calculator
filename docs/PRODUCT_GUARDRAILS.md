@@ -449,3 +449,7 @@ No v2.1 feature may alter the numerical dough/yeast/temperature model, proofing 
 | combined JavaScript | `9ea15e52d22d01e36263de89f16af32ad82ed367ad6d012cb63ebb21409bbbca` |
 
 These are candidate hashes until the v2.1 branch clears review and is published. See [v2.1 release handoff](V2_1_0_RELEASE.md) for verification and limitations.
+
+## v2.2.0 · Dough routes and temperature
+
+The owner approved an adjustable cold rest, a distinct Express recipe, separate core and outer fermentation temperatures, and a first-ball check. The 30-minute cold rest and all previous direct-route defaults remain available. The [release baseline](V2_2_0_RELEASE.md) records the new numerical results, household assumptions, independent comparisons, privacy boundaries and migration from schema 54. Earlier numerical pins remain historical release evidence.

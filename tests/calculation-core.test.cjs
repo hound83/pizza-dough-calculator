@@ -53,3 +53,47 @@ test('zero-duration phases stay valid and never introduce phantom fridge time',(
   assert.equal(core.simulateFermentation(c).gas,0);
   assert.throws(()=>core.scheduleOffsets({...c,bulk:-1},.9),RangeError);
 });
+test('heat crosses the outside before the core and survives phase changes',()=>{
+  const plan={...reference,doughTemp:20,room:20,bulk:0,cold:1,ball:2};
+  const {phases}=core.simulateFermentation(plan);
+  const chilled=phases[1],warm=phases[2];
+  assert.ok(chilled.shellEnd<chilled.endTemp && chilled.endTemp<chilled.coreEnd && chilled.coreEnd<20);
+  assert.equal(warm.coreStart,chilled.coreEnd);
+  assert.equal(warm.shellStart,chilled.shellEnd);
+  assert.ok(warm.shellEnd>warm.coreEnd);
+  const equilibrium=core.simulateFermentation({...plan,fridge:20}).phases;
+  assert.ok(equilibrium.every(p=>p.coreEnd===20 && p.shellEnd===20));
+});
+
+test('bulk depth, amount per box and shelf exposure affect only the applicable phases',()=>{
+  const base={...reference,doughTemp:20,room:20,bulk:0,cold:2,ball:0};
+  const cold=(storage,ferm='hybrid')=>core.simulateFermentation({...base,storage,ferm}).phases[1].coreEnd;
+  assert.ok(cold({depth:3,measuredDepth:true}) < cold({depth:7,measuredDepth:true}));
+  assert.ok(cold({bulkBoxes:2}) < cold({bulkBoxes:1}));
+  assert.ok(cold({layout:'stacked'}) > cold({layout:'single'}));
+  assert.equal(cold({bulkBoxes:3,depth:3,measuredDepth:true},'coldBalls'),cold({},'coldBalls'));
+  const range=core.warmupWindow(reference);
+  assert.ok(range.fast>0 && range.slow>range.fast);
+  assert.equal(core.warmupWindow({...reference,room:17}).reachable,false);
+});
+
+test('rest choice and express preparation use distinct elapsed times',()=>{
+  assert.equal(core.preparationHours(true,'kitchenaid',60),1.4);
+  assert.equal(core.preparationHours(true,'kitchenaid',30),.9);
+  assert.equal(core.preparationHours(false,'kitchenaid',60),.6);
+  assert.ok(core.preparationHours(false,'hand',30,'express')<=.3);
+});
+
+test('cold bulk scenario follows the independent Nippala core readings at the stated mass bound',()=>{
+  const dough={...reference,total:1000,room:19.9,doughTemp:19.9,fridge:3,bulk:0,ball:0};
+  for(const [hours,reading] of [[1,17.9],[2,12.8],[4,7.3],[8,4.0]]){
+    const sample=core.simulateFermentation({...dough,cold:hours}).phases[1];
+    assert.ok(Math.abs(sample.coreEnd-reading)<1.5,`hour ${hours}: ${sample.coreEnd}`);
+  }
+  // Lehmann reported a 2–2.5 hour crossing for a group up to 340 g.
+  const lab={...reference,total:340,actualBall:340,doughTemp:1.67,room:20.55,fridge:1.67,bulk:0,cold:24,ferm:'coldBalls'};
+  const window=core.warmupWindow(lab,10);
+  assert.ok(window.fast<=2 && window.slow>=2.5);
+  const room={...reference,ferm:'room'};
+  assert.deepEqual(core.simulateFermentation(room),core.simulateFermentation({...room,storage:{bulkBoxes:4,depth:2,measuredDepth:true,layout:'stacked'}}));
+});
