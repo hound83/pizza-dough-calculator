@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Pizzadeegcalculator v2.1.0</title>
+<title>Pizzadeegcalculator v2.2.0</title>
 <link href="src/assets/css/app.css" rel="stylesheet"/>
 </head>
 <body>
@@ -83,11 +83,12 @@
 <div class="experience-custom-badge hidden" id="experienceCustomBadge">Eigen instellingen actief</div>
 <p class="hint" id="presetSummaryHint">Deze preset komt uit op <b id="presetSummaryValue">–</b> (bloem – water – zout – gist).</p>
 <div class="form-grid align-fields">
-<label class="wide">Preset
+<label class="wide"><span>Welk deeg wil je maken?</span>
               <select class="field" id="preset">
 <option value="avpnMid">AVPN • 28,5 cm • 58,8% • 18 uur</option>
-<option value="sameDay">Napolitaans • 32 cm • 63% • 8 uur</option>
-<option selected="" value="kodaNight">Mijn standaardrecept • 30 cm • 63% • 25 uur</option>
+<option value="express">Express · ongeveer 1 uur</option>
+<option value="sameDay">Vandaag · 8 uur rijs</option>
+<option selected="" value="kodaNight">Morgen · 25 uur rijs · mijn standaardrecept</option>
 <option value="cold48">Napolitaans • 32 cm • 65% • 48 uur</option>
 <option value="cold72">Napolitaans • 32 cm • 65% • 72 uur</option>
 <option value="canotto">Canotto • 32 cm • 68% • 25 uur</option>
@@ -95,6 +96,8 @@
 <option value="custom">Eigen instellingen</option>
 </select>
 </label>
+<input type="hidden" id="mixRoute" value="standard"/>
+<p class="wide hint" id="routeHint"></p>
 <div class="wide info avpn-preset-info hidden" id="avpnPresetInfo">
 <b>AVPN middenprofiel:</b> 28,5 cm • 240 g per bol • 58,8% hydratatie • 2,94% zout • W285 • 18 uur totale fermentatie • 19 °C rijsomgeving • 405 °C steen.
               Verse gist: rekenkundig midden van de AVPN-range, <b>1,55 g per liter water</b>.
@@ -161,13 +164,18 @@
 </div>
 <label class="switch"><input aria-labelledby="lblPractical" checked="" id="practical" type="checkbox"/><span class="slider"></span></label>
 </div>
-<div class="toggle-row experience-full-only">
+<div class="toggle-row experience-full-only" id="autolyseToggle">
 <div>
 <b id="lblAutolyse">Autolyse (bloem + water)</b>
 <div class="hint" style="margin:2px 0 0">Ja = eerst alleen bloem + water; gist en zout pas na de rust.</div>
 </div>
 <label class="switch"><input aria-labelledby="lblAutolyse" checked="" id="autolyse" type="checkbox"/><span class="slider"></span></label>
 </div>
+<label id="restChoice" class="rest-choice"><span>Rust vóór het kneden</span>
+<select id="autolyseMinutes" class="field" aria-describedby="restChoiceHint">
+<option value="30">Kort · 30 minuten</option><option value="60">Ruim · 60 minuten</option>
+</select>
+<small class="input-help" id="restChoiceHint">Laat bloem en water afgedekt in de koelkast staan. Voeg daarna de gist toe. Deze rust komt boven op de rijstijd.</small></label>
 </div>
 <div class="card">
 <h2>Fermentatie &amp; gistadvies</h2>
@@ -200,7 +208,7 @@
 </label>
 </div>
 <div class="form-grid align-fields fermentation-temperature-grid" style="margin-top:12px">
-<label>Kamertemperatuur (°C)
+<label><span id="roomTempLabel">Kamertemperatuur (°C)</span>
               <input class="field" id="roomTemp" max="35" min="10" step="0.5" type="number" value="21"/>
 </label>
 <label>Verwachte gemiddelde koelkasttemp. (°C)
@@ -263,6 +271,7 @@
 <div class="workshop-panel" id="recipeWorkbench"></div>
 <div class="yeast-range experience-full-only" id="yeastRangeBar"></div>
 <div class="ferment-dashboard experience-full-only" id="fermentDashboard"></div>
+<p class="info hidden" id="thermalWindow"></p>
 <div id="fermentWarnings"></div>
 <details class="advanced-panel experience-full-only" id="advancedFermentation">
 <summary>⚙️ Geavanceerde deeginstellingen <span>optioneel</span></summary>

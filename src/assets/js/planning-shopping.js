@@ -113,6 +113,7 @@ function deadlineRecommendation(c,bake){
   // Onder 4 uur vanaf nu adviseren we geen vers pizzadeeg.
   // Dit is geen biologische absolute grens: gist kan sneller gas maken,
   // maar gasproductie is niet hetzelfde als een goed gerijpt pizzadeeg.
+  if(until>=1 && until<4 && c.mixRoute!=='express')return {status:'express',until,currentStart};
   if(until<4)return {status:'tooShort',until,currentStart,usable:Math.max(0,until-prepHours())};
 
   // Voorbereiding volgens kneedmethode + 15 min praktische startbuffer.
@@ -190,6 +191,11 @@ function buildDeadlineAdvice(c){
     return;
   }
 
+  if(r.status==='express'){
+    box.classList.add('warn');
+    box.innerHTML=`<b>${L('Met Express kun je vandaag nog bakken','Express can fit today')}</b><p>${L('Dit recept vraagt ongeveer een uur op een warme plek. De hoeveelheden en de werkwijze veranderen.','Allow about an hour in a warm place. This changes the ingredient amounts and the mixing method.')}</p><button class="btn secondary" type="button" id="deadlineExpress" ${liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null?'disabled':''}>${L('Kies het Expressrecept','Choose the Express recipe')}</button>`;
+    return;
+  }
   if(r.status==='tooShort'){
     box.classList.add('hot');
     box.innerHTML=`
@@ -200,8 +206,8 @@ function buildDeadlineAdvice(c){
         <div class="deadline-mini"><span>${nl?'Huidig schema':'Current schedule'}</span><b>${durationLabel(timelineTotalHours(c))}</b></div>
       </div>
       <div class="deadline-plan">${nl
-        ? '<b>Plan B:</b> dit is korter dan de 4-uurs kwaliteitsvloer van deze calculator. Gist kan biologisch sneller gas maken, maar voor pizzadeeg willen we niet doen alsof “meer gist” hetzelfde is als rijping. 🏃 Tijd om naar de supermarkt te lopen voor vers pizzadeeg of een goede bodem — óf de baktijd later te zetten.'
-        : '<b>Plan B:</b> this is shorter than this calculator’s 4-hour quality floor. Yeast can biologically produce gas faster, but for pizza dough we do not pretend that “more yeast” is the same as maturation. 🏃 Time for supermarket fresh dough or a good ready-made base — or move the bake time later.'}</div>`;
+        ? 'Voor een nieuw Expressdeeg is ongeveer een uur nodig op een warme plek. Gebruik deeg dat al gerezen is of kies een later bakmoment.'
+        : 'A fresh Express dough needs about an hour in a warm spot. Use dough that has already risen or choose a later bake time.'}</div>`;
     return;
   }
 
@@ -260,7 +266,7 @@ function applyDeadlinePlan(){
 
 // Kritieke voorbereiding vóór de fermentatie: elapsed time, niet actieve arbeid.
 function prepHours(){
-  return DoughCore.preparationHours($('autolyse')?.checked,currentMethod);
+  return DoughCore.preparationHours($('autolyse')?.checked,currentMethod,$('autolyseMinutes').value,$('mixRoute').value,$('yeastType').value);
 }
 
 // Actieve voorbereiding is iets anders dan doorlooptijd: wegen, mengen/kneden,
@@ -337,7 +343,7 @@ function buildScheduleSummary(c){
   const live=liveFermentationPlan(c),p=live.effective;
   const offsets=scheduleView(p).offsets;
   const phases=[
-    [L('Mengen, rust & kneden','Mix, rest & knead'),`± ${durationLabel(offsets.preparation)}`],
+    [c.mixRoute==='express'?L('Wegen, mengen en kneden','Weigh, mix and knead'):L('Mengen, rust & kneden','Mix, rest & knead'),`± ${durationLabel(offsets.preparation)}`],
     [L('Bulk buiten','Bulk at room temperature'),`${durationLabel(p.bulk)} · ${fmt(p.room,1)} °C`]
   ];
   if(p.ferm!=='room')phases.push([p.ferm==='coldBalls'?L('Koelkast · bollen','Fridge · balls'):L('Koelkast · één massa','Fridge · one mass'),`${durationLabel(p.cold)} · ${fmt(p.fridge,1)} °C`]);
@@ -364,7 +370,7 @@ function buildTimeline(c){
   if(!bake){
     const ifStartNow=new Date(Date.now()+totalHours*3600000);
     let rows=[
-      [L('Wegen, mengen, rust & kneden','Weighing, mixing, rest & kneading'),`±${Math.round(prepHours()*60)} min`],
+      [c.mixRoute==='express'?L('Wegen, mengen en kneden','Weigh, mix and knead'):L('Wegen, mengen, rust & kneden','Weighing, mixing, rest & kneading'),`±${Math.round(prepHours()*60)} min`],
       [L('Bulk buiten','Bulk at room temp'),`${fmt(c.bulk,2)} ${L('u','h')} @ ${fmt(c.room,1)} °C`]
     ];
     if(c.ferm!=='room'){

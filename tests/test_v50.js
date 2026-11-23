@@ -121,6 +121,7 @@ function defaults(){
   setField('diameter',30,{min:20,max:40});
   setField('ballWeight',220,{min:100,max:1000});
   setField('doughStyle','neapolitan');
+  setField('mixRoute','standard');setField('autolyseMinutes','30');
   setField('hydration',63,{min:45,max:85});
   setField('saltPct',3,{min:0,max:5});
   setField('yeastType','idy');
@@ -174,12 +175,12 @@ function ensureFormEventsWired(){
   formEventsWired=true;
 }
 
-test('v2.1 release uses schema 54 with v53 migration',()=>{
+test('v2.2 release uses schema 55 with v54 migration',()=>{
   const x=run(`(()=>{currentLang='nl';updateLanguageSwitch();const titleNl=document.title;currentLang='en';updateLanguageSwitch();const titleEn=document.title;bakeLog=[];renderBakeLog(calc());const log=$('bakeLogSummary').innerHTML;currentLang='nl';updateLanguageSwitch();return {app:APP_VERSION,key:SAVE_KEY,version:SAVE_VERSION,legacy:LEGACY_KEYS[0],titleNl,titleEn,log,stale:EN_TEXT['De einddeeg- en koelkasttemperatuur worden rechtstreeks uit het stappenplan overgenomen. Voeg na het bakken je werkelijke watertemperatuur en beoordeling toe. Het logboek bewaart de informatie als referentie, maar v50 past op basis van vorige bakes bewust géén DDT-, gist- of tijdmodel automatisch aan.']};})()`);
-  assert(x.app==='2.1.0'&&x.key==='pizzaCalcV54'&&x.version===54&&x.legacy==='pizzaCalcV53',JSON.stringify(x));
-  assert(x.titleNl==='Pizzadeegcalculator v2.1.0'&&x.titleEn==='Pizza dough calculator v2.1.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
-  assert(x.log.includes('v2.1.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
-  assert(html.includes('<title>Pizzadeegcalculator v2.1.0</title>'),'static document title is not v2.1.0');
+  assert(x.app==='2.2.0'&&x.key==='pizzaCalcV55'&&x.version===55&&x.legacy==='pizzaCalcV54',JSON.stringify(x));
+  assert(x.titleNl==='Pizzadeegcalculator v2.2.0'&&x.titleEn==='Pizza dough calculator v2.2.0',JSON.stringify({nl:x.titleNl,en:x.titleEn}));
+  assert(x.log.includes('v2.2.0')&&!x.log.includes('v50')&&x.stale===undefined,x.log);
+  assert(html.includes('<title>Pizzadeegcalculator v2.2.0</title>'),'static document title is not v2.2.0');
 });
 
 test('v2.1 share link round-trips exactly the validated dough contract, never pizza data',()=>{
@@ -207,7 +208,7 @@ test('standard preset uses a 30 cm peel-friendly default and practical percentag
   assert(x.name==='Mijn standaardrecept • 30 cm • 63% • 25 uur',JSON.stringify(x));
   assert(x.presetDiameter===30&&x.field==='30'&&x.target===30&&x.ball===220,JSON.stringify(x));
   assert(inputTag('diameter').includes('value="30"'),inputTag('diameter'));
-  assert(html.includes('<option selected="" value="kodaNight">Mijn standaardrecept • 30 cm • 63% • 25 uur</option>'),'selected preset label is not 30 cm');
+  assert(html.includes('<option selected="" value="kodaNight">Morgen · 25 uur rijs · mijn standaardrecept</option>'),'selected preset label is not 30 cm');
   assert(step('hydration')==='0.5'&&step('saltPct')==='0.25'&&step('yeastPct')==='0.025'&&step('oilPct')==='0.25',JSON.stringify({hydration:step('hydration'),salt:step('saltPct'),yeast:step('yeastPct'),oil:step('oilPct')}));
 });
 
@@ -217,7 +218,7 @@ test('30 cm default does not overwrite an existing saved 32 cm recipe',()=>{
   storage.data.set('pizzaCalcV51',JSON.stringify({version:51,preset:'kodaNight',diameter:'32'}));
   const x=run(`(()=>{const loaded=loadState();return {loaded,preset:$('preset').value,diameter:$('diameter').value,saved:JSON.parse(SAFE.get(SAVE_KEY))};})()`);
   assert(x.loaded&&x.preset==='kodaNight'&&x.diameter==='32',JSON.stringify(x));
-  assert(x.saved.version===54&&x.saved.diameter==='32',JSON.stringify(x.saved));
+  assert(x.saved.version===55&&x.saved.diameter==='32',JSON.stringify(x.saved));
   storage.data.clear();
   defaults();
 });
@@ -364,7 +365,7 @@ test('empty measurement fields remain null after sanitizing and reload logic',()
 test('v49 state migrates through the legacy chain to v54 and keeps live/log data',()=>{
   storage.data.clear();
   storage.data.set('pizzaCalcV49',JSON.stringify({version:49,pizzas:'999',hydration:'99',fridgeTemp:'14',currentMethod:'kenwood',liveMeasurements:{doughTemp:25,fridgeTemp:5},bakeLog:[{ts:123456,method:'kenwood',preset:'kodaNight',fridgePlanned:4,ddtCorrection:12}]}));
-  const x=run(`(()=>{const ok=loadState();return {ok,pizzas:$('pizzas').value,hydration:$('hydration').value,plannedFridge:$('fridgeTemp').value,method:currentMethod,dough:liveMeasurements.doughTemp,fridge:liveMeasurements.fridgeTemp,loggedFridge:bakeLog[0]?.fridgePlanned,old:SAFE.get('pizzaCalcV49'),fresh:!!SAFE.get('pizzaCalcV54')};})()`);
+  const x=run(`(()=>{const ok=loadState();return {ok,pizzas:$('pizzas').value,hydration:$('hydration').value,plannedFridge:$('fridgeTemp').value,method:currentMethod,dough:liveMeasurements.doughTemp,fridge:liveMeasurements.fridgeTemp,loggedFridge:bakeLog[0]?.fridgePlanned,old:SAFE.get('pizzaCalcV49'),fresh:!!SAFE.get('pizzaCalcV55')};})()`);
   assert(x.ok&&x.pizzas==='24'&&x.hydration==='85'&&x.plannedFridge==='14'&&x.method==='kenwood'&&x.dough===25&&x.fridge===5&&x.loggedFridge===4&&x.old===null&&x.fresh,JSON.stringify(x));
 });
 
@@ -492,7 +493,7 @@ test('stored blank required fields recover before they can be persisted again',(
   defaults();
   storage.data.clear();
   storage.data.set('pizzaCalcV49',JSON.stringify({version:49,hydration:'',saltPct:'',yeastPct:'',bulkHours:'',finalDoughTemp:'',flourW:'',saucePerPizza:''}));
-  const x=run(`(()=>{const ok=loadState();return {ok,hydration:$('hydration').value,salt:$('saltPct').value,yeast:$('yeastPct').value,bulk:$('bulkHours').value,dough:$('finalDoughTemp').value,w:$('flourW').value,sauce:$('saucePerPizza').value,saved:JSON.parse(SAFE.get('pizzaCalcV54'))};})()`);
+  const x=run(`(()=>{const ok=loadState();return {ok,hydration:$('hydration').value,salt:$('saltPct').value,yeast:$('yeastPct').value,bulk:$('bulkHours').value,dough:$('finalDoughTemp').value,w:$('flourW').value,sauce:$('saucePerPizza').value,saved:JSON.parse(SAFE.get('pizzaCalcV55'))};})()`);
   assert(x.ok&&x.hydration==='63'&&x.salt==='3'&&x.yeast==='0.17'&&x.bulk==='1',JSON.stringify(x));
   assert(x.dough===''&&x.w===''&&x.sauce===''&&x.saved.hydration==='63'&&x.saved.yeastPct==='0.17',JSON.stringify(x));
 });
@@ -1184,7 +1185,7 @@ test('saved plan summaries equal the calculator for every preset, mixer and weig
 
 test('schema 51 migration preserves the legacy backup when the new storage write fails',()=>{
   defaults();storage.data.clear();storage.data.set('pizzaCalcV51',JSON.stringify({version:51,preset:'kodaNight',diameter:'32'}));
-  const x=run(`(()=>{const original=SAFE.set;SAFE.set=()=>false;const loaded=loadState();SAFE.set=original;return {loaded,old:!!SAFE.get('pizzaCalcV51'),fresh:SAFE.get('pizzaCalcV54')};})()`);
+  const x=run(`(()=>{const original=SAFE.set;SAFE.set=()=>false;const loaded=loadState();SAFE.set=original;return {loaded,old:!!SAFE.get('pizzaCalcV51'),fresh:SAFE.get('pizzaCalcV55')};})()`);
   assert(x.loaded&&x.old&&x.fresh===null,JSON.stringify(x));storage.data.clear();
 });
 
@@ -1289,7 +1290,7 @@ test('Claude review: a too-short deadline deducts the actual route preparation a
     liveMeasurements={doughTemp:null,fridgeTemp:null};const failures=[];
     for(const method of ['hand','kitchenaid','kenwood','pro'])for(const autolyse of [true,false]){
       currentMethod=method;$('autolyse').checked=autolyse;
-      const r=deadlineRecommendation(calc(),new Date(Date.now()+3*3600000));
+      const r=deadlineRecommendation(calc(),new Date(Date.now()+0.95*3600000));
       if(r.status!=='tooShort'||Math.abs(r.usable-(r.until-prepHours()))>1e-9)failures.push({method,autolyse,r});
     }
     return failures;

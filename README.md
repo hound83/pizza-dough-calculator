@@ -2,7 +2,7 @@
 
 [English](README.md) | [Nederlands](README.nl.md)
 
-[![Version](https://img.shields.io/badge/version-v2.1.0-f0b45a)](docs/V2_1_0_RELEASE.md)
+[![Version](https://img.shields.io/badge/version-v2.2.0-f0b45a)](docs/V2_2_0_RELEASE.md)
 [![Tests](https://img.shields.io/badge/regression_tests-108_cases-76c990)](tests/test_v50.js)
 [![App](https://img.shields.io/badge/refactor-static_HTML%2FCSS%2FJS-f0b45a)](docs/ARCHITECTURE.md)
 [![Languages](https://img.shields.io/badge/interface-NL_%7C_EN-7eaadc)](#language-privacy-and-storage)
@@ -11,9 +11,9 @@ A comprehensive Dutch and English calculator for pizza dough, fermentation, sauc
 
 The GitHub Pages website is the official way to use the calculator. A separate downloadable, self-contained HTML edition is no longer distributed. The small root `index.html` loads the maintained CSS and JavaScript files from `src/`; no runtime framework or backend is required.
 
-**[Open the live calculator](https://hound83.github.io/pizza-dough-calculator/)** · [Read the v2.1.0 release notes](docs/V2_1_0_RELEASE.md)
+**[Open the live calculator](https://pizza.hound83.workers.dev/)** · [Read the v2.2.0 release notes](docs/V2_2_0_RELEASE.md)
 
-> **v2.1.0 — share and repeat.** Share a dough recipe through a validated link, check off an evening-specific shopping list for dough/sauce/toppings, add or edit manual items with amounts, and star evening templates for quick repeat. Schema 54 migrates schema 53 without discarding saved evenings. Earlier release baselines remain immutable.
+> **v2.2.0 · Dough routes.** Choose Express, Today or Tomorrow. Rest flour and water in the fridge for 30 or 60 minutes. The first-ball check helps you decide when to shape. The warm-up estimate accounts for the core, outer dough and container.
 
 **New in v2:** freely switch between Plan and Kitchen, plan around availability, split dough into independent mixer runs, follow a queue with actual oven-in/out times, get contextual dough help, and reuse complete evening templates or transfer private backups. The visible version, dynamic weekdays and previous improvements remain intact. [Implementation and review](docs/V2_0_0_IMPLEMENTATION_REVIEW.md).
 
@@ -35,7 +35,7 @@ Highlights:
 
 - calculate from pizza diameter or target dough-ball weight;
 - up to 24 pizzas between 20 and 40 cm;
-- seven dough presets plus fully custom settings;
+- eight dough presets plus fully custom settings;
 - five dough styles: Neapolitan, AVPN midpoint profile, Canotto, New York, and thin/crispy;
 - hydration, salt, oil, and IDY, ADY, or fresh yeast;
 - hybrid, cold, or all-room-temperature fermentation;
@@ -143,10 +143,10 @@ Release verification suite (see the PR Actions result for execution status):
 
 ```text
 15 refactor-structure tests
-31 pure-core tests
+37 pure-core tests
 108 website-entry regression tests
 108 source regression tests
-153 Chromium browser/layout tests (including ten new v2.1 checks)
+164 Chromium browser/layout tests
 ```
 
 The suite covers, among other things:
@@ -186,6 +186,7 @@ The project uses semantic versioning from the first golden release onward:
 | **v1.4.0** | Batch tracking, recipe profiles, kitchen guidance and the improved 1.3 planning |
 | **v2.0.0** | Integrated Plan/Kitchen workflow, independent mixer runs, pizza queue and schema-53 migration |
 | **v2.1.0** | Dough-only share links, checkable shopping with manual quantities, and favorite evening shortcuts |
+| **v2.2.0** | Dough routes, adjustable rest, core temperature and first-ball check |
 
 Historic working versions such as v50 remain where technically necessary in storage migrations, test names, and audit documents. They are no longer used as public product versions.
 
@@ -214,11 +215,11 @@ The root `index.html` serves the website, but is no longer a downloadable offlin
 
 ## Status and roadmap
 
-- **Current version:** [v2.1.0 planning, sharing and shopping](docs/V2_1_0_RELEASE.md); tag v1.0.0 and all earlier baselines remain preserved.
+- [v2.2.0 · Dough routes and temperature](docs/V2_2_0_RELEASE.md)
 - **Architecture:** GitHub Pages serves a static entry and eighteen maintained JavaScript modules; no separate HTML download is offered.
 - **Review:** both independent v2 crosschecks, resolved findings and verification evidence are linked in [the release notes](docs/V2_0_0_RELEASE.md).
-- **Included:** prior evening workflow plus recipe-only links, actionable shopping in Plan and Kitchen, manually added items and quick favorite repeat. Schema 54 retains the prior calculation contracts.
-- **Deferred:** app development and the three proposed physical-model investigations.
+- Dough recipe links, shopping lists, favorite evenings, dough routes and the first-ball check.
+- Future model checks compare core temperatures and ease of stretching in additional households.
 - **Feedback:** anonymous feedback/Cloudflare remains separate work; PR #12 is not included in this release.
 
 ## Background

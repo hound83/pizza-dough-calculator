@@ -105,3 +105,30 @@ test('scale differences remove floating-point negative zero while retaining real
   assert.equal(W.weighing(.17,.1).delta,.03);
   assert.equal(W.weighing(.17,1).delta,-.17);
 });
+
+test('older recipes gain their original 30 minute rest and Express retains its own recipe on exchange',()=>{
+  const legacy=snapshot();
+  const old=W.recipe(legacy);
+  assert.equal(old.fields.autolyseMinutes,'30');
+  assert.equal(old.fields.mixRoute,'standard');
+  const exp=structuredClone(old);
+  Object.assign(exp.fields,{mixRoute:'express',fermentationMethod:'room',yeastType:'fresh',yeastPct:'4'});
+  exp.checks.autolyse=false;
+  const imported=W.importRecipe(W.exportRecipe('Express',exp)).recipe;
+  const comparison=W.summary(imported,factors,D);
+  assert.equal(comparison.mixRoute,'express');
+  assert.equal(comparison.reserve,0);
+  assert.equal(comparison.mainWater,comparison.water);
+  assert.equal(comparison.y,4);
+  assert.equal(W.finalProofProposal(batch(),comparison,{},D).reason,'express');
+  assert.equal(W.recipe({...exp,checks:{...exp.checks,autolyse:true}}),null);
+  assert.equal(W.recipe({...exp,fields:{...exp.fields,mixRoute:'standard'}}),null);
+});
+
+test('first ball observations stay with the batch and out of shared recipes',()=>{
+  const b=batch();b.openingCheck={feel:'tight',checkAt:start+15*60000};
+  assert.deepEqual(W.sanitizeBatch(b).openingCheck,b.openingCheck);
+  assert.equal(W.openingCheck({feel:'invalid'}),null);
+  assert.equal(W.openingCheck({feel:'ready',checkAt:start}).checkAt,null);
+  assert.ok(!JSON.stringify(W.exportRecipe('Pizza',b.recipe)).includes('checkAt'));
+});

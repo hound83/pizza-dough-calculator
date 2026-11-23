@@ -1,7 +1,7 @@
-const SAVE_KEY='pizzaCalcV54';
-const SAVE_VERSION=54;
-const LEGACY_KEYS=Array.from({length:28},(_,i)=>`pizzaCalcV${53-i}`);
-const SAVE_IDS=['pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
+const SAVE_KEY='pizzaCalcV55';
+const SAVE_VERSION=55;
+const LEGACY_KEYS=Array.from({length:29},(_,i)=>`pizzaCalcV${54-i}`);
+const SAVE_IDS=['mixRoute','autolyseMinutes','pizzas','diameter','ballWeight','doughStyle','hydration','saltPct','yeastType','yeastPct','oilPct','stoneTemp','preheatMinutes',
   'fermentationMethod','coldStorageMode','bulkHours','coldHours','ballHours','roomTemp','fridgeTemp','finalDoughTemp','flourType','flourW','bakeDay','bakeTime','sauceType','saucePerPizza'];
 // Only these controls override the technical dough profile owned by a preset.
 // Practical recipe inputs such as pizza count, diameter, room/refrigerator
@@ -61,7 +61,7 @@ function stateSnapshot(){
   captureBatchOven();
   if(activeBatch())workshop.batch.progress={...completedSteps};
   syncEveningRun();
-  const data={version:SAVE_VERSION,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
+  const data={version:SAVE_VERSION,draftOpeningCheck,currentMethod,exactOverride,previousYeastType,appMode,experienceMode,currentLang,completedSteps,bakeLog,liveMeasurements,
     currentWizardPage,workshop:{...workshop,batch:activeEvening()?null:workshop.batch},evenings,revision:_storageRevision,
     practical:$('practical').checked,autolyse:$('autolyse').checked,
     sizeFromDiameter:$('sizeFromDiameter').checked,includeSauce:$('includeSauce').checked,
@@ -84,9 +84,9 @@ function saveState(){
 // Een opgeslagen blob is niet te vertrouwen: hij kan uit een oudere versie
 // komen, half leeg zijn of met de hand aangepast. Alles wat de berekening
 // kan laten ontsporen wordt daarom gecontroleerd voordat het wordt gebruikt.
-function sanitizeExactOverride(v){
+function sanitizeExactOverride(v,maxYeast=3){
   if(!v||typeof v!=='object'||Array.isArray(v))return null;
-  const bounds={h:[45,85],s:[0,5],o:[0,10],ySelected:[0,3]};
+  const bounds={h:[45,85],s:[0,5],o:[0,10],ySelected:[0,maxYeast]};
   const out={};
   ['h','s','o','ySelected'].forEach(k=>{ if(Number.isFinite(v[k])) out[k]=clamp(v[k],bounds[k][0],bounds[k][1]); });
   return Object.keys(out).length?out:null;
@@ -154,7 +154,7 @@ function sanitizeEvenings(value){
 }
 function validateEveningBackup(file){
   if(!file||file.format!=='pizza-private-backup'||file.version!==1||!Number.isFinite(file.createdAt)||file.createdAt<0)return null;
-  const d=file.state;if(!d||![53,SAVE_VERSION].includes(d.version)||!['dough','sauce','full'].includes(d.appMode)||!['basic','full'].includes(d.experienceMode)||!['nl','en'].includes(d.currentLang))return null;
+  const d=file.state;if(!d||![53,54,SAVE_VERSION].includes(d.version)||!['dough','sauce','full'].includes(d.appMode)||!['basic','full'].includes(d.experienceMode)||!['nl','en'].includes(d.currentLang))return null;
   const fields=Object.fromEntries(WorkflowCore.FIELD_IDS.map(id=>[id,d[id]])),checks=Object.fromEntries(WorkflowCore.CHECK_FIELDS.map(id=>[id,d[id]]));
   if(!WorkflowCore.recipe({fields,checks,method:d.currentMethod,preset:d.preset,exact:d.exactOverride}))return null;
   const next=sanitizeEvenings(d.evenings);if(!next)return null;
@@ -207,6 +207,7 @@ function sanitizeBakeLog(v){
       notes:typeof x.notes==='string'?x.notes.slice(0,500):'',
       profile:WorkflowCore.profile(x.profile),batchId:typeof x.batchId==='string'?x.batchId.slice(0,80):null,
       totalDough:numOrNull(x.totalDough,0,30000),mixMinutes:numOrNull(x.mixMinutes,0,120),autolyse:typeof x.autolyse==='boolean'?x.autolyse:null,
+      openingCheck:WorkflowCore.openingCheck(x.openingCheck),autolyseMinutes:x.autolyseMinutes===60?60:30,mixRoute:x.mixRoute==='express'?'express':'standard',
       route:['room','hybrid','coldBalls'].includes(x.route)?x.route:null,
       observedHours:x.observedHours&&typeof x.observedHours==='object'?{bulk:numOrNull(x.observedHours.bulk,0,10000),cold:numOrNull(x.observedHours.cold,0,10000),ball:numOrNull(x.observedHours.ball,0,10000)}:null,
       storage:x.storage&&typeof x.storage==='object'?WorkflowCore.storage(x.storage):null
@@ -228,13 +229,16 @@ function loadState(provided=null){
       ? (d.experienceMode==='full'?'full':'basic')
       : 'full';
     suppressCustom=true;
+    draftOpeningCheck=WorkflowCore.openingCheck(d.draftOpeningCheck);
+    $('mixRoute').value='standard';
+    $('autolyseMinutes').value='30';
     Object.entries(d).forEach(([k,v])=>{
       if(k==='version')return;
       else if(k==='currentMethod')currentMethod=['hand','kitchenaid','kenwood','pro'].includes(v)?v:'kitchenaid';
       else if(k==='currentLang')currentLang=v==='en'?'en':'nl';
       else if(k==='appMode')appMode=['dough','sauce','full'].includes(v)?v:'full';
       else if(k==='experienceMode')experienceMode=v==='full'?'full':'basic';
-      else if(k==='exactOverride')exactOverride=sanitizeExactOverride(v);
+      else if(k==='exactOverride')exactOverride=sanitizeExactOverride(v,d.mixRoute==='express'&&d.yeastType==='fresh'?4:3);
       else if(k==='previousYeastType')previousYeastType=yeastTypes[v]?v:'idy';
       else if(k==='completedSteps')completedSteps=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
       else if(k==='workshop')workshop=WorkflowCore.sanitize(v);
@@ -280,6 +284,9 @@ function loadState(provided=null){
     // Opgeslagen waarden mogen uit een oudere, ruimere of handmatig bewerkte
     // state komen. Eénmalig normaliseren is veilig; tijdens typen gebeurt dit
     // juist nooit.
+    if($('autolyseMinutes').value!=='60')$('autolyseMinutes').value='30';
+    if($('mixRoute').value!=='express'||$('autolyse').checked||$('fermentationMethod').value!=='room')$('mixRoute').value='standard';
+    refreshYeastLimit();
     normalizeStoredNumberInputs();
 
     pizzaCustomizations.forEach(cu=>{
@@ -314,9 +321,15 @@ function loadState(provided=null){
 }
 
 function wireEvents(){
+  $('stepsList').addEventListener('click',chooseBallFeel);
+  $('deadlineAdvice').addEventListener('click',event=>{
+    if(event.target.id!=='deadlineExpress'||activeBatch()||liveMeasurementValue('doughTemp')!=null||liveMeasurementValue('fridgeTemp')!=null)return;
+    applyPreset('express',true);
+  });
   document.querySelectorAll('input,select').forEach(el=>{
     el.addEventListener('focus',()=>rememberNumericEditStart(el));
     el.addEventListener('input',()=>{
+      if(el.id==='fermentationMethod' && el.value!=='room') $('mixRoute').value='standard';
       if(el.id==='pizzaPickerSearch') return;   // zoekveld hoort niet bij het deegformulier
       if(el.id==='bakeDay'&&!activeEvening())evenings.draft.date='';
       if(el.classList.contains('pct')) markCustomField(el.id);

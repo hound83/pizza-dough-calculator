@@ -1319,3 +1319,9 @@ body[data-active-workspace="kitchen"] .wizard-nav-shell{display:none}
  .kitchen-steps-panel .step-content>.step-moment{margin:0}
  .kitchen-steps-panel .step-card.completed .step-content>*{opacity:.78}
 }
+
+.rest-choice { display: grid; gap: .45rem; margin-top: 1rem; }
+.rest-choice small { font-weight: normal; }
+.ball-check { margin-block: .8rem; }
+.ball-check .btnrow { flex-wrap: wrap; }
+.ball-check button[aria-pressed="true"] { border-color: var(--accent); }

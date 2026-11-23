@@ -306,7 +306,7 @@ function saveBakeLogEntry(){
     waterTemp:Number.isFinite(water)?water:null,finalDoughTemp:Number.isFinite(finalT)?finalT:null,
     ddtCorrection,rating,notes,
     profile:currentMixerProfile()?WorkflowCore.clone(currentMixerProfile()):null,
-    batchId:activeBatch()?.id||null,totalDough:c.total,autolyse:c.autolyse,
+    batchId:activeBatch()?.id||null,totalDough:c.total,autolyse:c.autolyse,autolyseMinutes:c.autolyseMinutes,mixRoute:c.mixRoute,openingCheck:currentOpeningCheck(),
     route:c.ferm,observedHours:observedBatchHours(),storage:WorkflowCore.clone(activeBatch()?.storage||workshop.storage),
     mixMinutes:validMeasured($('logMixMinutes')?.value,0,120)
   });
@@ -346,8 +346,9 @@ function renderBakeLog(c){
     const d=dt.toLocaleDateString(currentLang==='en'?'en-GB':'nl-NL',{day:'2-digit',month:'short'});
     const temp=(x.waterTemp!=null&&x.finalDoughTemp!=null)?` • ${fmt(x.waterTemp,1)}→${fmt(x.finalDoughTemp,1)} °C`:'';
     const fridge=x.fridgeTempActual!=null?` • ${L('koelkast','fridge')} ${fmt(x.fridgeTempActual,1)} °C`:'';
+    const feel=x.openingCheck?' • '+openingLabels()[x.openingCheck.feel]:'';
     const corr=x.ddtCorrection!=null?` • ${L('DDT-index','DDT index')} ${fmt(x.ddtCorrection,1)} °C`:'';
-    return `<div class="list-row"><span>${d} • ${ratingLabel(x.rating)}${temp}${fridge}${corr}</span><span>${x.notes?esc(x.notes):'—'}</span></div>`;
+    return `<div class="list-row"><span>${d} • ${ratingLabel(x.rating)}${temp}${fridge}${corr}${feel}</span><span>${x.notes?esc(x.notes):'—'}</span></div>`;
   }).join('')}</div>`:L('<div class="hint" style="margin-top:10px">Nog geen bakresultaten opgeslagen.</div>','<div class="hint" style="margin-top:10px">No bake results saved yet.</div>');
   box.innerHTML=calText+modelText+list;
 }

@@ -48,7 +48,7 @@ src/index.html + src/assets/css/app.css + src/assets/js/*.js
 | 15 | `workshop-tools.js` | Named recipes, dough-only recipe links, comparison, scale/container controls, equipment profiles and symptom guidance |
 | 16 | `evening-workflow.js` | Current kitchen phase, linked actual events, run selection, oven queue, absolute timers and calendar |
 | 17 | `evening-planning.js` | Plan overview, optional availability/splitting, favorited templates, import preview and explicit replacement choices |
-| 18 | `persistence-bootstrap.js` | Schema-54 persistence, migration, event registration and sole bootstrap |
+| 18 | `persistence-bootstrap.js` | Schema-55 persistence, migration, event registration and sole bootstrap |
 
 The order is a contract: later modules may use functions and state from earlier modules. Function declarations may also call later-loaded functions after user interaction, because all eighteen scripts have loaded before the user can operate the application.
 
@@ -120,3 +120,7 @@ Bootstrap keeps the application inert until state recovery and Web Lock ownershi
 Panel rendering is held through pointer activation and keyboard focus transfer; data mutation and saving remain synchronous. Cancellation releases the hold. Deferred rendering uses current state and restores the focused action when it still exists. The baking queue moves only when its position changes.
 
 Basic/Full is directly available on Plan and changes disclosure visibility without recalculating the recipe. Optional reading disclosures share one control per surface; the classic step list does not count a reading as another cooking step. Existing legacy reading check flags remain stored but do not affect the current progress total.
+
+## v2.2 dough routes
+
+The numerical core owns heat exchange, yeast integration and the exposure scenarios. The pre-kneading water solver uses the selected cold rest. Recipe snapshots carry the mixing route and rest minutes. Local storage settings supply the dough geometry and fridge exposure. Each mixer run retains its own first-ball observation and reminder alongside its frozen recipe. The [release baseline](V2_2_0_RELEASE.md) covers the migration, numerical comparisons and practical limits.

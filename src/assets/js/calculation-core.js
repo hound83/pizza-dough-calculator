@@ -89,35 +89,108 @@ function simulateThermalPhase(startTemp,envTemp,hours,tau,name,kind){
   return {name,kind,hours,envTemp,startTemp,endTemp:t,gas,maturity,tau};
 }
 
+// Two heat capacities exchange energy through the dough. Only the outside
+// exchanges heat with the kitchen or fridge. Rates are per hour.
+const DOUGH_DENSITY=1100; // kg/m³
+const DOUGH_HEAT_CAPACITY=2700; // J/(kg·K)
+const DOUGH_CONDUCTIVITY=.40; // W/(m·K)
+const CORE_FRACTION=0.4;
+const SHELL_FRACTION=1-CORE_FRACTION;
+function thermalGeometry(c,balls,storage={}){
+  const boxes=clamp(Number(storage.bulkBoxes)||1,1,24);
+  const kg=(balls?c.actualBall:c.total/boxes)/1000;
+  const volume=kg/DOUGH_DENSITY;
+  const radius=Math.cbrt(3*volume/(4*Math.PI));
+  const height=balls?1.55*radius:storage.measuredDepth?clamp(storage.depth,1,30)/100:1.55*radius;
+  const z=height/2, r=Math.sqrt(3*volume/(4*Math.PI*z));
+  const p=1.6075;
+  const area=4*Math.PI*Math.pow((Math.pow(r*r,p)+2*Math.pow(r*z,p))/3,1/p);
+  const capacity=kg*DOUGH_HEAT_CAPACITY;
+  // Diffusion length for an ellipsoid; the spherical limit is 6*alpha/R².
+  const inside=3600*2*(DOUGH_CONDUCTIVITY/(DOUGH_DENSITY*DOUGH_HEAT_CAPACITY))*(2/(r*r)+1/(z*z));
+  return {inside,outside:3600*area/(SHELL_FRACTION*capacity)};
+}
+function exchangeRate(cold,storage,exposure=1){
+  const stacked=storage.layout==='stacked';
+  const base=cold?6.5:8;
+  return base*exposure*(cold&&stacked?.72:1)*(cold&&storage.load==='full'?.85:1);
+}
+// Exact matrix exponential for core/outside temperatures relative to ambient.
+// Stable for long holds and for short, thin layers where explicit Euler fails.
+function zoneStep(geometry,exchange,hours){
+  const a=geometry.inside,b=a*CORE_FRACTION/SHELL_FRACTION,d=geometry.outside*exchange;
+  const sum=a+b+d, gap=Math.sqrt((a-b-d)**2+4*a*b);
+  const slow=2*a*d/(sum+gap),fast=(sum+gap)/2;
+  const fastDecay=Math.exp(-fast*hours);
+  const scale=(Math.exp(-slow*hours)-fastDecay)/gap;
+  return {cc:fastDecay+(fast-a)*scale,cs:a*scale,sc:b*scale,ss:fastDecay+(fast-b-d)*scale};
+}
+function advanceZones(state,env,m){
+  const core=state.core-env,shell=state.shell-env;
+  return {core:env+m.cc*core+m.cs*shell,shell:env+m.sc*core+m.ss*shell};
+}
+function zoneMean(state){return CORE_FRACTION*state.core+SHELL_FRACTION*state.shell;}
+
 function simulateFermentation(c){
-  const massKg=Math.max(.25,c.total/1000);
-  const ballWeight=Math.max(100,c.actualBall);
-  const bulkTau=thermalTauHours(massKg,false,ballWeight);
-  const ballTau=thermalTauHours(ballWeight/1000,true,ballWeight);
-  let t=c.doughTemp,phases=[];
-
-  const add=(env,hours,tau,name,kind)=>{
-    const p=simulateThermalPhase(t,env,hours,tau,name,kind);phases.push(p);t=p.endTemp;
-  };
-
-  add(c.room,c.bulk,bulkTau,'Bulk at room temp','bulk');
-  if(c.ferm==='hybrid'){
-    add(c.fridge,c.cold,bulkTau,'Fridge • bulk','coldBulk');
-    add(c.room,c.ball,ballTau,'Ball proof / warm-up','ballWarm');
-  }else if(c.ferm==='coldBalls'){
-    add(c.fridge,c.cold,ballTau,'Fridge • balls','coldBalls');
-    add(c.room,c.ball,ballTau,'Final warm-up','ballWarm');
-  }else{
-    add(c.room,c.ball,ballTau,'Ball proof at room temp','ballRoom');
+  const storage=c.storage||{};
+  const bulk=thermalGeometry(c,false),ball=thermalGeometry(c,true);
+  let state={core:c.doughTemp,shell:c.doughTemp};
+  const phases=[];
+  function add(env,hours,geometry,name,kind,cold=false){
+    const start=state;
+    const steps=Math.max(1,Math.ceil(hours/.12)),dt=hours/steps;
+    const m=zoneStep(geometry,exchangeRate(cold,storage),dt);
+    let gas=0,maturity=0;
+    for(let i=0;i<steps&&hours>0;i++){
+      const next=advanceZones(state,env,m);
+      const core=(state.core+next.core)/2,shell=(state.shell+next.shell)/2;
+      gas+=dt*(CORE_FRACTION*yeastTempActivity(core)+SHELL_FRACTION*yeastTempActivity(shell));
+      maturity+=dt*(CORE_FRACTION*maturationActivity(core)+SHELL_FRACTION*maturationActivity(shell));
+      state=next;
+    }
+    phases.push({name,kind,hours,envTemp:env,startTemp:zoneMean(start),endTemp:zoneMean(state),
+      coreStart:start.core,shellStart:start.shell,coreEnd:state.core,shellEnd:state.shell,gas,maturity});
   }
+  add(c.room,c.bulk,bulk,'Bulk at room temp','bulk');
+  if(c.ferm!=='room'){
+    const asBalls=c.ferm==='coldBalls';
+    add(c.fridge,c.cold,asBalls?ball:thermalGeometry(c,false,storage),asBalls?'Fridge • balls':'Fridge • bulk',asBalls?'coldBalls':'coldBulk',true);
+  }
+  add(c.room,c.ball,ball,c.ferm==='room'?'Ball proof at room temp':'Final warm-up',c.ferm==='room'?'ballRoom':'ballWarm');
+  return {phases,gas:phases.reduce((v,p)=>v+p.gas,0),maturity:phases.reduce((v,p)=>v+p.maturity,0),
+    endTemp:zoneMean(state),coreEnd:state.core,shellEnd:state.shell,massKg:c.total/1000,ballWeight:c.actualBall};
+}
 
-  return {
-    phases,
-    gas:phases.reduce((a,p)=>a+p.gas,0),
-    maturity:phases.reduce((a,p)=>a+p.maturity,0),
-    endTemp:t,
-    bulkTau,ballTau,massKg,ballWeight
-  };
+// Time from fridge exit to a reference core temperature. The two exposure
+// scenarios are illustrative kitchen conditions, not statistical percentiles.
+function warmupWindow(c,target=18){
+  if(c.ferm==='room'||!c.cold)return null;
+  const storage=c.storage||{};
+  const bulk=thermalGeometry(c,false),ball=thermalGeometry(c,true);
+  const coldGeometry=c.ferm==='coldBalls'?ball:thermalGeometry(c,false,storage);
+  function crossing(coolFactor,warmFactor){
+    const initial={core:c.doughTemp,shell:c.doughTemp};
+    const beforeCold=advanceZones(initial,c.room,zoneStep(bulk,exchangeRate(false,storage),c.bulk));
+    const atExit=advanceZones(beforeCold,c.fridge,zoneStep(coldGeometry,exchangeRate(true,storage,coolFactor),c.cold));
+    if(atExit.core>=target)return 0;
+    if(c.room<=target)return Infinity;
+    const h=exchangeRate(false,storage,warmFactor);
+    const tempAt=t=>advanceZones(atExit,c.room,zoneStep(ball,h,t)).core;
+    let low=0,high=1;
+    while(high<96 && tempAt(high)<target)high*=2;
+    if(tempAt(high)<target)return Infinity;
+    for(let i=0;i<18;i++){
+      const mid=(low+high)/2;
+      if(tempAt(mid)<target)low=mid;else high=mid;
+    }
+    return high;
+  }
+  const exposure=[.4,1.8];
+  // A fridge can be warmer than a very cold starting batch. Check both
+  // cooling assumptions against both warming assumptions before ordering.
+  const times=exposure.flatMap(cooling=>exposure.map(warming=>crossing(cooling,warming)));
+  const fast=Math.min(...times),slow=Math.max(...times);
+  return {target,fast,slow,reachable:Number.isFinite(slow)};
 }
 
 function genericYeastModel(c,sim){
@@ -160,8 +233,13 @@ function doughQuantities({pizzas,targetBall,h,s,y,o,practical}){
 }
 
 // Elapsed preparation includes the existing rest and all mixing stages.
-function preparationHours(autolyse,method){
-  if(autolyse)return AUTOLYSE_REST_HOURS+0.4;
+function restHours(autolyse,minutes=30,mixRoute='standard'){
+  if(mixRoute==='express')return 0;
+  return autolyse?(Number(minutes)===60?1:AUTOLYSE_REST_HOURS):DIRECT_REST_HOURS;
+}
+function preparationHours(autolyse,method,minutes=30,mixRoute='standard',yeastType='idy'){
+  if(mixRoute==='express')return ((method==='hand'?16:12)+(yeastType==='ady'?5:0))/60;
+  if(autolyse)return restHours(true,minutes)+0.4;
   return DIRECT_REST_HOURS+(method==='hand'?5/12:4/15);
 }
 
@@ -179,6 +257,6 @@ function scheduleOffsets(c,preparation){
     bake:ballStart+ball,fermentation:bulk+cold+ball,
     beforeFridge:coldRoute?fridgeIn:null,preparation};
 }
-return Object.freeze({doughQuantities,CP_FLOUR,CP_WATER,CP_SALT,CP_OIL,AUTOLYSE_REST_HOURS,DIRECT_REST_HOURS,EFFECTIVE_REST_TAU_HOURS,YEAST_TEMP_CURVE,thermalEquilibrium,thermalEndTemperature,interpolateCurve,yeastTempActivity,maturationActivity,thermalTauHours,simulateThermalPhase,simulateFermentation,genericYeastModel,preparationHours,scheduleOffsets});
+return Object.freeze({doughQuantities,CP_FLOUR,CP_WATER,CP_SALT,CP_OIL,AUTOLYSE_REST_HOURS,DIRECT_REST_HOURS,EFFECTIVE_REST_TAU_HOURS,YEAST_TEMP_CURVE,thermalEquilibrium,thermalEndTemperature,interpolateCurve,yeastTempActivity,maturationActivity,thermalTauHours,simulateThermalPhase,simulateFermentation,warmupWindow,restHours,genericYeastModel,preparationHours,scheduleOffsets});
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=DoughCore;

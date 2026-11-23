@@ -3,8 +3,8 @@ const WorkflowCore=(()=>{
   'use strict';
   const HOUR=3600000;
   const METHODS=['hand','kitchenaid','kenwood','pro'];
-  const NUMBER_FIELDS={pizzas:[1,24],diameter:[20,40],ballWeight:[100,1000],hydration:[45,85],saltPct:[0,5],yeastPct:[0,3],oilPct:[0,10],stoneTemp:[180,520],preheatMinutes:[5,120],bulkHours:[0,48],coldHours:[0,120],ballHours:[0,48],roomTemp:[10,35],fridgeTemp:[0,15],finalDoughTemp:[10,35],flourW:[90,450]};
-  const SELECT_FIELDS={doughStyle:['neapolitan','avpn','canotto','ny','thin'],yeastType:['idy','ady','fresh'],fermentationMethod:['room','hybrid'],coldStorageMode:['bulk','balls'],flourType:['caputoPizzeria','tipo00','manitoba','tarwebloem','speltWit','speltVolkoren','volkorenTarwe','custom']};
+  const NUMBER_FIELDS={pizzas:[1,24],diameter:[20,40],ballWeight:[100,1000],hydration:[45,85],saltPct:[0,5],yeastPct:[0,4],oilPct:[0,10],stoneTemp:[180,520],preheatMinutes:[5,120],bulkHours:[0,48],coldHours:[0,120],ballHours:[0,48],roomTemp:[10,35],fridgeTemp:[0,15],finalDoughTemp:[10,35],flourW:[90,450]};
+  const SELECT_FIELDS={mixRoute:['standard','express'],autolyseMinutes:['30','60'],doughStyle:['neapolitan','avpn','canotto','ny','thin'],yeastType:['idy','ady','fresh'],fermentationMethod:['room','hybrid'],coldStorageMode:['bulk','balls'],flourType:['caputoPizzeria','tipo00','manitoba','tarwebloem','speltWit','speltVolkoren','volkorenTarwe','custom']};
   const CHECK_FIELDS=['practical','autolyse','sizeFromDiameter'];
   const FIELD_IDS=[...Object.keys(NUMBER_FIELDS),...Object.keys(SELECT_FIELDS)];
   const clone=value=>JSON.parse(JSON.stringify(value));
@@ -26,13 +26,17 @@ const WorkflowCore=(()=>{
     }
     if(!Number.isInteger(Number(fields.pizzas)))return null;
     for(const [key,options] of Object.entries(SELECT_FIELDS)){
-      if(!options.includes(value.fields[key]))return null;
-      fields[key]=value.fields[key];
+      const legacyDefault={mixRoute:'standard',autolyseMinutes:'30'};
+      const selected=value.fields[key]===undefined?legacyDefault[key]:value.fields[key];
+      if(!options.includes(selected))return null;
+      fields[key]=selected;
     }
     const checks={};
     for(const key of CHECK_FIELDS){if(typeof value.checks[key]!=='boolean')return null;checks[key]=value.checks[key];}
+    const express=fields.mixRoute==='express',maxYeast=express&&fields.yeastType==='fresh'?4:3;
+    if(Number(fields.yeastPct)>maxYeast || (express&&(checks.autolyse||fields.fermentationMethod!=='room')))return null;
     const exact={};
-    for(const [key,low,high] of [['h',45,85],['s',0,5],['o',0,10],['ySelected',0,3]]){
+    for(const [key,low,high] of [['h',45,85],['s',0,5],['o',0,10],['ySelected',0,maxYeast]]){
       if(object(value.exact)&&bounded(value.exact[key],low,high))exact[key]=value.exact[key];
     }
     return {fields,checks,method:value.method,exact:Object.keys(exact).length?exact:null,preset:cleanText(value.preset)||'custom'};
@@ -45,8 +49,10 @@ const WorkflowCore=(()=>{
     if(!bounded(factor,.01,10))throw new TypeError('Missing dough-style factor.');
     const targetBall=r.checks.sizeFromDiameter?Math.round(Math.PI*(Number(f.diameter)/2)**2*factor/5)*5:Math.min(Number(f.ballWeight),Math.round(Math.PI*20**2*factor/5)*5);
     const h=e.h??Number(f.hydration),s=e.s??Number(f.saltPct),y=e.ySelected??Number(f.yeastPct),o=e.o??Number(f.oilPct);
+    const amounts=core.doughQuantities({pizzas,targetBall,h,s,y,o,practical:r.checks.practical});
+    if(f.mixRoute==='express'){amounts.reserve=0;amounts.mainWater=amounts.water;}
     const ferm=f.fermentationMethod==='room'?'room':f.coldStorageMode==='balls'?'coldBalls':'hybrid';
-    return {...core.doughQuantities({pizzas,targetBall,h,s,y,o,practical:r.checks.practical}),pizzas,targetBall,h,s,y,o,practical:r.checks.practical,style:f.doughStyle,presetKey:r.preset,yeastType:f.yeastType,ferm,bulk:Number(f.bulkHours),cold:ferm==='room'?0:Number(f.coldHours),ball:Number(f.ballHours),room:Number(f.roomTemp),fridge:Number(f.fridgeTemp),doughTemp:f.finalDoughTemp===''?24:Number(f.finalDoughTemp),autolyse:r.checks.autolyse,preparation:core.preparationHours(r.checks.autolyse,r.method)};
+    return {...amounts,pizzas,targetBall,h,s,y,o,practical:r.checks.practical,style:f.doughStyle,presetKey:r.preset,yeastType:f.yeastType,ferm,bulk:Number(f.bulkHours),cold:ferm==='room'?0:Number(f.coldHours),ball:Number(f.ballHours),room:Number(f.roomTemp),fridge:Number(f.fridgeTemp),doughTemp:f.finalDoughTemp===''?24:Number(f.finalDoughTemp),autolyse:r.checks.autolyse,autolyseMinutes:Number(f.autolyseMinutes),mixRoute:f.mixRoute,preparation:core.preparationHours(r.checks.autolyse,r.method,f.autolyseMinutes,f.mixRoute,f.yeastType)};
   }
 
   function profile(value){
@@ -55,7 +61,7 @@ const WorkflowCore=(()=>{
   }
   function storage(value){
     const v=object(value)?value:{};
-    return {ballsPerBox:bounded(v.ballsPerBox,1,24)?Math.floor(v.ballsPerBox):6,boxes:bounded(v.boxes,1,24)?Math.floor(v.boxes):1,depth:bounded(v.depth,1,30)?v.depth:5,layout:['single','stacked'].includes(v.layout)?v.layout:'single',load:['normal','full'].includes(v.load)?v.load:'normal'};
+    return {bulkBoxes:bounded(v.bulkBoxes,1,24)?Math.floor(v.bulkBoxes):1,measuredDepth:v.measuredDepth===true,ballsPerBox:bounded(v.ballsPerBox,1,24)?Math.floor(v.ballsPerBox):6,boxes:bounded(v.boxes,1,24)?Math.floor(v.boxes):1,depth:bounded(v.depth,1,30)?v.depth:5,layout:['single','stacked'].includes(v.layout)?v.layout:'single',load:['normal','full'].includes(v.load)?v.load:'normal'};
   }
   function capacity(pizzas,settings){
     const s=storage(settings),needed=Math.ceil(pizzas/s.ballsPerBox);
@@ -89,7 +95,7 @@ const WorkflowCore=(()=>{
   function createBatch({id:batchId,recipe:snapshot,bakeAt,startedAt,profile:mixer,storage:boxes,scale,plan}){
     const r=recipe(snapshot),route=r?.fields.fermentationMethod==='room'?'room':r?.fields.coldStorageMode==='balls'?'coldBalls':'hybrid';
     if(!r||!id(batchId)||!validTime(startedAt)||!validTime(bakeAt)||bakeAt<=startedAt||!durations(plan,route))throw new RangeError('Invalid batch.');
-    return {id:batchId,recipe:r,route,bakeAt,startedAt,initial:durations(plan,route),timings:durations(plan,route),events:{start:startedAt},profile:profile(mixer),storage:storage(boxes),scale:[1,.1,.01].includes(scale)?scale:.1,readings:[],measurements:{doughTemp:null,fridgeTemp:null},progress:{},revisions:[],status:'active'};
+    return {id:batchId,recipe:r,route,bakeAt,startedAt,initial:durations(plan,route),timings:durations(plan,route),events:{start:startedAt},profile:profile(mixer),storage:storage(boxes),scale:[1,.1,.01].includes(scale)?scale:.1,openingCheck:null,readings:[],measurements:{doughTemp:null,fridgeTemp:null},progress:{},revisions:[],status:'active'};
   }
   function recordEvent(batch,key,at,now=Date.now()){
     const keys=eventKeys(batch.route),index=keys.indexOf(key);
@@ -141,6 +147,7 @@ const WorkflowCore=(()=>{
   // A proposal changes only unfinished final proof. Actual anchors and the
   // requested bake time never move, and elapsed proof cannot be removed.
   function finalProofProposal(batch,c,measurements,core,now=Date.now()){
+    if(c.mixRoute==='express')return {ok:false,reason:'express'};
     if((batch.unknownEvents||[]).length)return {ok:false,reason:'unknown-history'};
     if(batch.events.bake!=null)return {ok:false,reason:'completed'};
     const md=measurements.doughTemp,mf=measurements.fridgeTemp;
@@ -164,6 +171,10 @@ const WorkflowCore=(()=>{
     return {ok:true,ball,remaining:Math.max(0,ball-minimum),gasRatio:gas(ball)/Math.max(.001,target),maturityRatio:core.simulateFermentation(candidate(ball)).maturity/Math.max(.001,core.simulateFermentation(c).maturity)};
   }
 
+  function openingCheck(value){
+    if(!value||!['tight','ready','fragile'].includes(value.feel))return null;
+    return {feel:value.feel,checkAt:value.feel==='tight'&&validTime(value.checkAt)?value.checkAt:null};
+  }
   function sanitizeBatch(value){
     try{
       if(!object(value)||!object(value.events))return null;
@@ -177,6 +188,7 @@ const WorkflowCore=(()=>{
         else if((value.unknownEvents||[]).includes(key))out=recordUnknownEvent(out,key,Infinity);
       }
       out.status=value.status==='finished'?'finished':'active';
+      out.openingCheck=openingCheck(value.openingCheck);
       out.readings=(Array.isArray(value.readings)?value.readings:[]).filter(x=>object(x)&&['doughTemp','fridgeTemp'].includes(x.kind)&&validTime(x.at)&&bounded(x.value,x.kind==='doughTemp'?10:0,x.kind==='doughTemp'?40:15)).slice(-60).map(x=>({kind:x.kind,value:x.value,at:x.at}));
       for(const kind of ['doughTemp','fridgeTemp'])out.measurements[kind]=bounded(value.measurements?.[kind],kind==='doughTemp'?10:0,kind==='doughTemp'?40:15)?value.measurements[kind]:null;
       out.progress=object(value.progress)?Object.fromEntries(Object.entries(value.progress).filter(([key,checked])=>key.length<=200&&key.startsWith('s-')&&checked===true).slice(0,200)):{};
@@ -200,6 +212,6 @@ const WorkflowCore=(()=>{
     if(!object(value)||value.format!=='pizza-dough-recipe'||value.version!==1||!cleanText(value.name)||!recipe(value.recipe))return null;
     return {name:cleanText(value.name),recipe:{...recipe(value.recipe),preset:'custom'}};
   }
-  return Object.freeze({HOUR,FIELD_IDS,CHECK_FIELDS,METHODS,recipe,summary,profile,storage,capacity,weighing,eventKeys,eventDone,recordUnknownEvent,createBatch,recordEvent,phaseDone,timeline,reviseTimings,actualSchedule,finalProofProposal,sanitizeBatch,sanitize,exportRecipe,importRecipe,clone});
+  return Object.freeze({HOUR,FIELD_IDS,CHECK_FIELDS,METHODS,recipe,summary,profile,openingCheck,storage,capacity,weighing,eventKeys,eventDone,recordUnknownEvent,createBatch,recordEvent,phaseDone,timeline,reviseTimings,actualSchedule,finalProofProposal,sanitizeBatch,sanitize,exportRecipe,importRecipe,clone});
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=WorkflowCore;

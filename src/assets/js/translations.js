@@ -39,3 +39,14 @@ Object.assign(EN_TEXT,{
   "Deeglogboek & vergelijkingen":"Dough log & comparisons",
   "Werkelijke hoofdwatertemperatuur (°C)":"Actual main-water temperature (°C)"
 });
+
+Object.assign(EN_TEXT,{
+  'Welk deeg wil je maken?':'Which dough would you like to make?',
+  'Vandaag · 8 uur rijs':'Today · 8-hour rise',
+  'Morgen · 25 uur rijs · mijn standaardrecept':'Tomorrow · 25-hour rise · my default recipe',
+  'Express · ongeveer 1 uur':'Express · about 1 hour',
+  'Rust vóór het kneden':'Rest before kneading',
+  'Kort · 30 minuten':'Short · 30 minutes',
+  'Ruim · 60 minuten':'Longer · 60 minutes',
+  'Laat bloem en water afgedekt in de koelkast staan. Voeg daarna de gist toe. Deze rust komt boven op de rijstijd.':'Cover the flour and water and rest them in the fridge. Add the yeast afterwards. This rest is in addition to the rise.'
+});

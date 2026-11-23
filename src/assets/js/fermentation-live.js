@@ -55,7 +55,7 @@ function predictFinalDoughTemp(mainWaterTemp,c,method=currentMethod){
   const afterRest=thermalEndTemperature(
     afterFirstMix,
     c.autolyse?c.fridge:c.room,
-    c.autolyse?AUTOLYSE_REST_HOURS:DIRECT_REST_HOURS,
+    DoughCore.restHours(c.autolyse,c.autolyseMinutes,c.mixRoute),
     EFFECTIVE_REST_TAU_HOURS
   );
   const additions=[{capacity:initial.capacity,temperature:afterRest}];
@@ -310,12 +310,12 @@ function liveFermentationPlan(c){
   const md=liveMeasurementValue('doughTemp');
   const mf=c.ferm==='room'?null:liveMeasurementValue('fridgeTemp');
   const deadlineKey=[String($('bakeDay')?.value||''),String($('bakeTime')?.value||'')].join('@');
-  const key=[c.ferm,c.bulk,c.cold,c.ball,c.room,c.fridge,c.doughTemp,c.total,c.actualBall,md,mf,currentLang,deadlineKey].join('|');
+  const key=[c.ferm,c.bulk,c.cold,c.ball,c.room,c.fridge,c.doughTemp,c.total,c.actualBall,c.mixRoute,JSON.stringify(c.storage),md,mf,currentLang,deadlineKey].join('|');
   if(_livePlanCache.key===key)return _livePlanCache.value;
 
   const none=md==null&&mf==null;
-  if(none){
-    const result={active:false,effective:{...c},orig:{bulk:c.bulk,cold:c.cold,ball:c.ball},measuredDough:null,measuredFridge:null,gasRatio:1,maturityRatio:1,gasError:0,changed:false,stage:'plan'};
+  if(none||c.mixRoute==='express'){
+    const result={active:!none,effective:{...c,doughTemp:md??c.doughTemp},orig:{bulk:c.bulk,cold:c.cold,ball:c.ball},measuredDough:md,measuredFridge:mf,gasRatio:1,maturityRatio:1,gasError:0,changed:false,stage:'plan'};
     _livePlanCache={key,value:result};return result;
   }
 
@@ -373,6 +373,7 @@ function livePlanChangesHtml(c,live){
   return `<div class="live-plan-changes">${out}</div>`;
 }
 function livePlanSummaryHtml(c,live,context='dough'){
+  if(c.mixRoute==='express')return live.measuredDough==null?'':`<div class="info">${L('Temperatuur genoteerd. Kijk bij Express naar het volume en de soepelheid om de volgende stap te kiezen.','Temperature recorded. With Express, use the rise in volume and the feel of the dough to choose the next step.')}</div>`;
   if(live.batch)return `<div class="info">${L('Meting opgeslagen voor deze batch. Je geregistreerde momenten en gist blijven vaststaan. Beoordeel bovenaan bij “Resterende tijden beoordelen” het voorstel voordat je het toepast.','Measurement saved for this batch. Recorded checkpoints and yeast stay fixed. Review the proposal under “Review remaining times” above before applying it.')}</div>`;
   if(!live.active)return '';
   const cls=livePlanClass(live,c);
@@ -548,7 +549,15 @@ function fermentationSteps(c,startIndex,live){
     : L(`Verdeel in <b>${ballCount} van ongeveer ${ballWeight} g</b>.`,`Divide into <b>${ballCount} of about ${ballWeight} g</b>.`);
   const fridgeControl=fridgeMeasurementControl(c,live);
 
-  if(c.ferm==='hybrid'){
+  if(c.mixRoute==='express'){
+    const usual=Math.abs(p.bulk-25/60)<.002 && Math.abs(p.ball-20/60)<.002;
+    const bulkTime=usual?'20–30':String(Math.round(p.bulk*60));
+    const ballTime=usual?'15–20':String(Math.round(p.ball*60));
+    arr.push(step(i++,L('Laat het deeg op een warme plek rijzen','Rise in a warm spot'),
+      L(`Leg het deeg in een licht ingevette kom en dek af. Reken op ${bulkTime} minuten. Ga verder als het volume ongeveer verdubbeld is.`,`Place the dough in a lightly oiled bowl and cover. Allow ${bulkTime} minutes. Continue when it has roughly doubled.`),'','bulk'));
+    arr.push(step(i++,L('Verdeel en bol op','Divide and shape'),shapeTxt,'','shape'));
+    arr.push(step(i++,L('Laat de bollen rijzen','Let the balls rise'),L(`Dek de bollen af en houd ze warm. Kijk na ${ballTime} minuten of ze luchtig zijn en soepel openen. Geef ze zo nodig meer tijd.`,`Cover the balls and keep them warm. After ${ballTime} minutes, check whether they are puffy and stretch easily. Give them longer if needed.`),'','ballproof'));
+  }else if(c.ferm==='hybrid'){
     if(!skipBulk)arr.push(step(i++,L('Bulkrijs op kamertemperatuur','Bulk proof at room temperature'),bulkTxt,phaseAdjustmentDetail(c,live,'bulk'),'bulk'));
     arr.push(step(i++,skipBulk?L('Direct koud zetten','Refrigerate immediately'):L('Koude fermentatie als één massa','Cold fermentation as one mass'),
       skipBulk
@@ -556,7 +565,7 @@ function fermentationSteps(c,startIndex,live){
             `Skip the warm bulk and refrigerate the dough mass immediately for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`)
         : coldBulkTxt,
       `${skipBulk?skipBulkReason:''}${phaseAdjustmentDetail(c,live,'cold')}${fridgeControl}`,'cold'));
-    arr.push(step(i++,L('Koelkast uit · verdelen en opbollen','Out of the fridge · divide and shape'),L('Haal het deeg uit de koelkast. ','Take the dough out of the fridge. ')+shapeTxt,'','shape'));
+    arr.push(step(i++,L('Koelkast uit · verdelen en opbollen','Out of the fridge · divide and shape'),L('Haal het deeg uit de koelkast. ','Take the dough out of the fridge. ')+shapeTxt+L(' Laat de pas opgebolde bollen afgedekt ontspannen.',' Cover the newly shaped balls and let them relax.'),'','shape'));
     arr.push(step(i++,L('Bolrijs','Ball proof'),L(`Laat ${ballSubject} ongeveer <b>${smartHours(p.ball)}</b> bij ongeveer ${fmt(c.room,1)} °C verder rijzen.`,`Let ${ballSubject} continue proofing for about <b>${smartHours(p.ball)}</b> at roughly ${fmt(c.room,1)} °C.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
   }else if(c.ferm==='room'){
     if(!skipBulk)arr.push(step(i++,L('Bulkrijs op kamertemperatuur','Bulk proof at room temperature'),bulkTxt,phaseAdjustmentDetail(c,live,'bulk'),'bulk'));
@@ -582,12 +591,13 @@ function fermentationSteps(c,startIndex,live){
         : shapeShort,
       skipBulk?skipBulkReason.trim():'','shape'));
     arr.push(step(i++,L(c.pizzas===1?'Koude fermentatie als deegbal':'Koude fermentatie als deegballen',c.pizzas===1?'Cold fermentation as one dough ball':'Cold fermentation as dough balls'),L(`Zet ${ballSubject} ongeveer <b>${smartHours(p.cold)}</b> afgedekt bij gemiddeld ${fmt(p.fridge,1)} °C in de koelkast.`,`Put ${c.pizzas===1?'the covered dough ball':'the covered dough balls'} in the refrigerator for about <b>${smartHours(p.cold)}</b> at an average of ${fmt(p.fridge,1)} °C.`),`${phaseAdjustmentDetail(c,live,'cold')}${fridgeControl}`,'cold'));
-    arr.push(step(i++,L('Laatste opwarming / eindrijs','Final warm-up / final proof'),L(`Haal ${ballSubject} ongeveer <b>${smartHours(p.ball)}</b> voor het bakken uit de koelkast.`,`Take ${ballSubject} out of the refrigerator about <b>${smartHours(p.ball)}</b> before baking.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
+    arr.push(step(i++,L('Laatste opwarming / eindrijs','Final warm-up / final proof'),L(`Haal ${ballSubject} ongeveer <b>${smartHours(p.ball)}</b> voor het bakken uit de koelkast. De bollen zijn al gevormd. Laat ze afgedekt opwarmen.`,`Take ${ballSubject} out of the refrigerator about <b>${smartHours(p.ball)}</b> before baking. The balls are already shaped. Keep them covered while warming.`),phaseAdjustmentDetail(c,live,'ball'),'ballproof'));
   }
   return {html:arr,next:i};
 }
 
 function waterTemperatureGuidance(c,wt){
+  if(c.mixRoute==='express')return {reserveLine:'',mainLine:L('Gebruik al het water handwarm.','Use all the water lukewarm.'),notes:''};
   const reserveLine=L(
     `Houd ongeveer <b>${fmt(c.reserve,c.runAllocation&&!c.practical?1:0)} g reservewater</b> afgedekt op kamertemperatuur voor na de rust. Koel of verwarm dit kleine deel niet mee met het hoofdwater.`,
     `Keep about <b>${fmt(c.reserve,c.runAllocation&&!c.practical?1:0)} g reserved water</b> covered at room temperature for after the rest. Do not chill or warm this small portion with the main water.`
@@ -658,6 +668,48 @@ function waterTemperatureGuidance(c,wt){
   return {reserveLine,mainLine,notes:notes.join('')};
 }
 
+let draftOpeningCheck=null;
+function currentOpeningCheck(){return activeBatch()?activeBatch().openingCheck:draftOpeningCheck;}
+function openingLabels(){
+  return {tight:L('Veert terug','Springs back'),ready:L('Opent soepel','Stretches easily'),fragile:L('Zakt uit of scheurt','Spreads or tears')};
+}
+function openingAdvice(check){
+  if(!check)return '';
+  if(check.feel==='ready')return L('De bol is klaar om te vormen en te beleggen. Houd de lucht in de rand.','Shape and top the pizza now. Keep the rim airy.');
+  if(check.feel==='fragile')return L('Ondersteun de bodem en maak de pizza iets kleiner. Bak een slappe bol eerst. Voelt hij juist strak, dek hem af en probeer later opnieuw.','Support the base and make a smaller pizza. Bake a slack ball first. If it feels tight, cover it and try again later.');
+  if(!check.checkAt)return L('Dek de bol af en probeer over 10–15 minuten opnieuw. Een koude bol kan langer nodig hebben.','Cover the ball and try again in 10–15 minutes. A cold ball may need longer.');
+  if(Date.now()>=check.checkAt)return L('Probeer de eerste bol nu opnieuw.','Try stretching the first ball again now.');
+  const at=new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'nl-NL',{hour:'2-digit',minute:'2-digit'}).format(check.checkAt);
+  return L(`Laat de bol afgedekt liggen. Probeer opnieuw om ${at}.`,`Keep the ball covered. Try again at ${at}.`);
+}
+function ballCheckMarkup(){
+  const check=currentOpeningCheck();
+  return `<div class="ball-check" id="ballOpeningCheck"><strong id="ballOpeningPrompt">${L('Hoe opent de eerste bol?','How does the first ball stretch?')}</strong>
+    <div class="btnrow" role="group" aria-labelledby="ballOpeningPrompt">${Object.entries(openingLabels()).map(([key,title])=>`<button class="btn secondary" type="button" data-ball-feel="${key}" aria-pressed="${check?.feel===key}">${title}</button>`).join('')}</div>
+    <p class="hint" id="ballOpeningAdvice" role="status">${openingAdvice(check)}</p>
+    <button class="btn secondary${check?.feel==='tight'?'':' hidden'}" type="button" data-ball-feel="again">${L('Over 15 min opnieuw','Check again in 15 min')}</button>
+    <button class="btn secondary${check?.feel==='ready'?'':' hidden'}" type="button" data-ball-feel="shape">${L('Start vormen','Start shaping')}</button></div>`;
+}
+function refreshOpeningAdvice(){
+  const node=$('ballOpeningAdvice');
+  if(node){const text=openingAdvice(currentOpeningCheck());if(node.textContent!==text)node.textContent=text;}
+}
+function chooseBallFeel(event){
+  const button=event.target.closest('[data-ball-feel]');if(!button)return;
+  const value=button.dataset.ballFeel;
+  if(value==='shape'){$('step-check-s-open')?.focus();return;}
+  if(!_storageWriter&&activeBatch())return;
+  const check=WorkflowCore.openingCheck(value==='again'?{feel:'tight',checkAt:Date.now()+15*60000}:{feel:value});
+  if(!check)return;
+  if(activeBatch())activeBatch().openingCheck=check;else draftOpeningCheck=check;
+  saveState();
+  const panel=$('ballOpeningCheck');
+  for(const item of panel.querySelectorAll('[aria-pressed]'))item.setAttribute('aria-pressed',String(item.dataset.ballFeel===check.feel));
+  panel.querySelector('[data-ball-feel="again"]').classList.toggle('hidden',check.feel!=='tight');
+  panel.querySelector('[data-ball-feel="shape"]').classList.toggle('hidden',check.feel!=='ready');
+  refreshOpeningAdvice();
+}
+
 function kitchenStepSection(id,icon,title){
   return `<div class="kitchen-step-section" id="${id}" tabindex="-1"><span aria-hidden="true">${icon}</span><h3>${title}</h3></div>`;
 }
@@ -675,12 +727,12 @@ function buildSteps(c){
       `Flour <b>${fmt(c.flour,c.runAllocation&&!c.practical?1:0)} g</b> • water <b>${fmt(c.water,c.runAllocation&&!c.practical?1:0)} g</b> • salt <b>${fmt(c.salt,c.runAllocation&&!c.practical?1:0)} g</b> • ${yeastName(c.yeastType).toLowerCase()} <b>${fmt(c.yeast,c.runAllocation?runDoseDecimals(c.yeast):2)} g</b>${c.o>0?` • oil <b>${fmt(c.oil,c.runAllocation&&!c.practical?1:0)} g</b>`:''}.`),
     `${waterText.reserveLine} ${waterText.mainLine}${waterText.notes}`,'weigh'));
   steps.push(step(i++,L('Eerste menging','First mix'),m.mix,'','mix'));
-  steps.push(step(
+  if(c.mixRoute!=='express')steps.push(step(
     i++,
-    c.autolyse?L('Autolyse (bloem + water) • 30 min','Autolyse (flour + water) • 30 min'):L('Hydratatierust • 20 min','Hydration rest • 20 min'),
+    c.autolyse?L(`Autolyse (bloem + water) • ${c.autolyseMinutes} min`,`Autolyse (flour + water) • ${c.autolyseMinutes} min`):L('Hydratatierust • 20 min','Hydration rest • 20 min'),
     c.autolyse
-      ? L(`Dek de kom af en laat <b>30 minuten</b> in de koelkast rusten.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`,
-          `Cover the bowl and rest it in the fridge for <b>30 minutes</b>.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`)
+      ? L(`Dek de kom af en laat <b>${c.autolyseMinutes} minuten</b> in de koelkast rusten.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`,
+          `Cover the bowl and rest it in the fridge for <b>${c.autolyseMinutes} minutes</b>.${m.autolyseCooling?` ${m.autolyseCooling}`:''}`)
       : L('Dek de kom af en laat <b>20 minuten</b> staan.','Cover the bowl and leave it for <b>20 minutes</b>.'),
     c.autolyse
       ? L('Alleen bloem + water tijdens deze koude autolyse. Hydratatie en glutenontwikkeling gaan in de koelkast door, alleen rustiger.',
@@ -688,7 +740,7 @@ function buildSteps(c){
       : L('De gist zit al in het deeg; dit is dus geen klassieke autolyse.','The yeast is already in the dough, so this is not a classic autolyse.'),
     'rest'
   ));
-  steps.push(step(i++,L('Toevoegen & kneden','Add & knead'),m.add+'<br><br>'+m.knead+oilText,m.note,'knead'));
+  steps.push(step(i++,c.mixRoute==='express'?L('Kneed het deeg','Knead the dough'):L('Toevoegen & kneden','Add & knead'),(m.add?m.add+'<br><br>':'')+m.knead+oilText,m.note,'knead'));
   const sci=yeastRecommendation(c);
   // A reading is optional information, not another required cooking step.
   steps.push(`<div class="step-measurement">${measurementDisclosure('stepDoughMeasurement',doughMeasurementControl(c,live)+measurementPurpose(c),'doughTemp')}</div>`);
@@ -734,6 +786,8 @@ function buildSteps(c){
     L(`Bestuif licht met bloem of semola. Druk vanuit het midden naar buiten en laat de buitenste <b>${fmt(1.5*Math.sqrt(toppingScale),1)}–${fmt(2*Math.sqrt(toppingScale),1)} cm</b> zoveel mogelijk met rust. ${c.byWeight ? `Met dit bolgewicht en deze deegstijl kom je als richtwaarde op ongeveer <b>${fmt(c.targetDiameter,1)} cm</b>.` : `Rek uit tot ongeveer <b>${fmt(c.targetDiameter,1)} cm</b>.`}`,
       `Dust lightly with flour or semola. Press outwards from the centre and leave the outer <b>${fmt(1.5*Math.sqrt(toppingScale),1)}–${fmt(2*Math.sqrt(toppingScale),1)} cm</b> alone as much as possible. ${c.byWeight ? `With this ball weight and dough style you should land at roughly <b>${fmt(c.targetDiameter,1)} cm</b>.` : `Stretch to roughly <b>${fmt(c.targetDiameter,1)} cm</b>.`}`)+peelNote,'','open'));
 
+  steps.push(ballCheckMarkup());
+
   if(appMode==='sauce' && aggSauce.enabled && aggSauce.groups.length){
     const g=aggSauce.groups[0];
     steps.push(step(i++,L('Saus aanbrengen','Apply the sauce'),`${L('Verdeel ongeveer','Spread roughly')} <b>${fmt(g.per??manualSaucePerPizza(),0)} g ${sauceName(g.type)}</b> ${L('per pizza. Laat de buitenste rand vrij.','per pizza. Leave the outer rim clear.')}`,L('Gebruik liever iets te weinig dan te veel; overtollige saus maakt de bodem sneller zacht.','Use slightly too little rather than too much; excess sauce softens the base.'),`sauceapply-${g.type}`));
@@ -778,7 +832,7 @@ function buildSteps(c){
     `<span class="badge">💧 ${fmt(c.water,c.runAllocation&&!c.practical?1:0)} g ${L('water','water')}</span>`,
     `<span class="badge">🧂 ${fmt(c.salt,c.runAllocation&&!c.practical?1:0)} g ${L('zout','salt')}</span>`,
     `<span class="badge">🫧 ${fmtFixed(c.yeast,2)} g ${yeastShort(c.yeastType)}</span>`,
-    `<span class="badge">${c.autolyse?L('✅ autolyse','✅ autolyse'):L('↪️ hydratatierust','↪️ hydration rest')}</span>`,
+    `<span class="badge">${c.mixRoute==='express'?'Express':c.autolyse?L('✅ autolyse','✅ autolyse'):L('↪️ hydratatierust','↪️ hydration rest')}</span>`,
     `<span class="badge">🍕 ${c.pizzas} × ${displayDoughBallWeight(c)} g</span>`
   ].join('');
 }

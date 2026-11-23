@@ -146,7 +146,13 @@ function selectedRecipeTempAdvice(){
   return {rows,commonLow,commonHigh,hasCommon,suggested};
 }
 
+const EXPRESS_YEAST_PCT=Object.freeze({idy:10/750*100,ady:2,fresh:4});
 const presets={
+  express:{
+    name:'Express · ongeveer 1 uur',h:64,s:2.4,yIdy:EXPRESS_YEAST_PCT.idy,o:0,
+    pizzas:4,diameter:30,style:'neapolitan',fermentation:'room',bulk:25/60,cold:0,ball:20/60,
+    room:26,fridge:4,autolyse:false
+  },
   avpnMid:{
     name:'AVPN • 28,5 cm • 58,8% • 18 uur',
     h:58.823529411765,s:2.941176470588,yIdy:0.030392156863,ySelected:0.091176470588,yeastType:'fresh',o:0,
